@@ -2,41 +2,138 @@
 #
 # `repo.id` sert de clé pour l'état local : le changer déplace l'historique des
 # scores et le répertoire d'état de l'apprenant.
+#
+# ## Organisé par COMPÉTENCE, pas par fonctionnalité
+#
+# Les sections ci-dessous ne suivent pas le manuel de Docker, elles suivent ce
+# qu'un apprenant doit savoir démontrer. « Construire des images » est une
+# compétence ; « les instructions du Dockerfile » serait un chapitre de
+# référence, et le blog le tient déjà.
+#
+# L'ordre compte : il est celui dans lequel les compétences se tiennent l'une
+# l'autre. On ne distribue pas une image qu'on ne sait pas construire, et on ne
+# durcit pas un conteneur qu'on ne sait pas exécuter.
+#
+# ## Les labs non encore écrits ne figurent PAS ici
+#
+# Une section ne déclare que les labs qui existent : `validate-structure`
+# refuse un lab déclaré sans `lab.yaml`, et il a raison — un parcours qui
+# promet un lab absent se voit à l'usage, pas à la relecture. Le backlog
+# complet, 89 labs, vit dans `ROADMAP.md` avec son ordre d'écriture.
 schema_version: 1
 
 repo:
   id: containers-dsoxlab-training
   category: containers
-  title: Conteneurs, du Dockerfile aux orchestrateurs
+  title: Conteneurs, du Dockerfile à l'orchestration
   blog_url: https://blog.stephane-robert.info/docs/conteneurs/
   issues_url: https://github.com/stephrobert/containers-dsoxlab-training/issues
   description: |
     Labs vérifiables de la formation Conteneurisation du blog. Chaque lab
-    s'éprouve sur l'état réel du moteur Docker : une image construite, sa
-    taille, l'utilisateur qui l'exécute, les montages d'un conteneur. Le blog
-    enseigne, ce catalogue éprouve.
+    s'éprouve sur l'état réel du moteur : une image construite, sa taille,
+    l'utilisateur qui l'exécute, les montages d'un conteneur, ce que
+    l'application répond. Le blog enseigne, ce catalogue éprouve.
 
-# Aucun bloc `infra:` : tous les labs sont en `runtime: shell` et se jouent sur
-# le poste de l'apprenant, avec son moteur Docker. C'est un choix, et il a une
-# raison : un conteneur n'a pas besoin d'une VM pour être construit, et la
-# formation enseigne Docker tel que l'apprenant l'a installé.
+    Une même application FastAPI traverse tout le parcours et devient
+    progressivement plus correcte. L'apprenant n'a pas besoin de savoir
+    programmer : le code est fourni, il travaille l'image, l'exécution, le
+    réseau, le stockage, la distribution et le durcissement.
+
+# `learning.portal_url` reste vide, et c'est une décision en attente, pas un
+# oubli. Le blog porte bien une page de parcours à cocher
+# (`moteurs-conteneurs/docker/parcours/`, HTTP 200), mais le contrat décrit ce
+# champ comme une URL de REMISE d'une preuve d'apprentissage. Les deux se
+# ressemblent sans se confondre, et inscrire l'une à la place de l'autre ferait
+# annoncer à dsoxlab quelque chose que le site ne fait pas. Voir COVERAGE.md.
+
+# Aucun bloc `infra:` pour l'instant : les labs des vagues 2 et 3 sont tous en
+# `runtime: shell` et se jouent sur le poste de l'apprenant, avec son moteur
+# Docker. C'est un choix, et il a une raison nommée dans le brief : personne ne
+# doit provisionner une machine pour jouer le premier lab.
 #
-# Le jour où un lab exigera un vrai noyau, un cgroup v1 ou un démon à la
-# configuration particulière, il déclarera `runtime.type: vm` et ce fichier
-# gagnera son bloc `infra:`.
+# Les 18 labs `vm` des vagues 4 et 6 — démon, rootless, seccomp, AppArmor,
+# pare-feu, registry TLS, contexts distants, Swarm — l'exigeront, et c'est
+# `infra.bootstrap` de la 0.3.0 qui portera leur socle : joué une fois après
+# `provision`, empreinté, rejoué seulement s'il change.
 
 sections:
-  - id: images
+  # ── c1 : avant de construire, comprendre ce qu'on manipule ───────────────
+  - id: c1-comprendre
+    title: Comprendre et manipuler
+    description: >-
+      Image et conteneur ne sont pas la même chose, et le cycle de vie
+      explique la moitié des pannes. Cinq labs courts, aucun build.
+    labs: []
+
+  # ── c2 : la compétence que l'ancien dépôt couvrait, mesurée cette fois ───
+  - id: c2-construire
     title: Construire des images
-    description: Du premier Dockerfile à l'image multi-étapes, mesurée à chaque passage.
+    description: >-
+      Du premier Dockerfile à l'image multi-étapes non-root, chaque étape
+      mesurée contre la précédente.
     labs:
       - images-premiere-image
-      - images-optimiser-la-taille
-      - images-migrer-vers-alpine
-      - images-build-multi-etapes
 
-  - id: donnees
-    title: Les données du conteneur
-    description: Ce qui survit au conteneur, et ce qui disparaît avec lui.
-    labs:
-      - donnees-volumes-et-montages
+  # ── c3 : absent de l'ancien dépôt, pour 2 505 lignes de guides ───────────
+  - id: c3-distribuer
+    title: Distribuer les images
+    description: >-
+      Pousser, retrouver par digest, publier dans une registry privée, et
+      franchir un air-gap.
+    labs: []
+
+  - id: c4-executer
+    title: Exécuter et limiter
+    description: >-
+      Ce que le conteneur reçoit, ce qu'il signale en mourant, et ce qu'on lui
+      refuse.
+    labs: []
+
+  - id: c5-persister
+    title: Persister et connecter
+    description: >-
+      Ce qui survit au conteneur, ce qui disparaît avec lui, et comment deux
+      services se parlent.
+    labs: []
+
+  - id: c6-composer
+    title: Docker Compose
+    description: >-
+      Une application à plusieurs services, décrite dans un fichier et
+      diagnostiquée quand elle ne monte pas.
+    labs: []
+
+  - id: c7-exploiter
+    title: Exploiter et dépanner
+    description: >-
+      Des incidents réels, courts, où le symptôme ne nomme pas la cause.
+    labs: []
+
+  - id: c8-securiser
+    title: Sécuriser
+    description: >-
+      Un conteneur qui fonctionne n'est pas un conteneur sûr. Capabilities,
+      seccomp, rootless, et le piège du socket Docker.
+    labs: []
+
+  - id: c9-sous-le-capot
+    title: Comprendre sous le capot
+    description: >-
+      Namespaces, cgroups et la chaîne qui va de la CLI au processus, observés
+      et non récités.
+    labs: []
+
+  - id: c10-capstone
+    title: Capstone Docker et Compose
+    description: >-
+      Une chaîne complète, huit pannes injectées, et aucun sujet annoncé.
+    labs: []
+
+  # ── Swarm : parcours avancé, clairement séparé. Kubernetes n'en est pas le
+  # prolongement dans ce dépôt : il a son propre catalogue.
+  - id: sw-swarm
+    title: Docker Swarm, parcours avancé
+    description: >-
+      Un orchestrateur distribué : consensus Raft, quorum, overlay, secrets
+      distribués, et un état de contrôle à protéger.
+    labs: []

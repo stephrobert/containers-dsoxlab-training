@@ -1,0 +1,112 @@
+[project]
+name = "containers-dsoxlab-training"
+version = "0.1.0"
+description = "Labs vérifiables de la formation Conteneurisation — fournisseur de contenu pour la CLI dsoxlab"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.ruff]
+# Les règles sont fixées ICI, et c'est le point important. Les hooks et la CI
+# appellent `uvx ruff`, qui prend la DERNIÈRE version publiée : sans jeu de
+# règles écrit dans le dépôt, ce que ruff juge change le jour où ruff change
+# d'avis, et le job de parité pre-commit cesse de prouver ce qu'il annonce.
+#
+# Jeu repris des catalogues Kubernetes et Terraform, à l'identique : ces dépôts
+# se relisent les uns les autres, et un contributeur qui passe de l'un à
+# l'autre ne doit pas avoir à réapprendre ce qui est accepté.
+target-version = "py311"
+
+# Ce que ruff ne touche JAMAIS.
+#
+# `labs/*/fixtures/` est le point de départ que l'apprenant reçoit, et un lab
+# livrera du code fautif à dessein. Mesuré sur le catalogue GitHub Actions le
+# 2026-09-25 : `ruff --fix` y a trié les imports d'un fichier livré,
+# c'est-à-dire modifié le sujet de l'exercice.
+#
+# Attention, l'exclusion ne suffit pas : elle est IGNORÉE pour tout fichier
+# passé en argument, et pre-commit passe justement les fichiers en argument.
+# Le hook doit porter `--force-exclude`.
+exclude = [
+    "labs/*/fixtures",
+    "labs/*/challenge/work",
+]
+
+[tool.ruff.lint]
+select = [
+    "E4", "E7", "E9", "F",  # les défauts de ruff : erreurs réelles
+    "I",    # imports triés
+    "UP",   # tournures dépassées pour la version cible
+    "B",    # bugbear : les pièges qui se paient à l'exécution
+    "BLE",  # except nu : une exception avalée se paie plus tard
+    "SIM",  # simplifications lisibles
+    "RUF",  # règles propres à ruff
+    "EXE",  # shebang et bit d'exécution cohérents
+    "DTZ",  # dates sans fuseau : elles changent de valeur selon la machine
+    "PLE", "PLW",  # erreurs et avertissements pylint
+    "S",    # bandit, la lecture sécurité
+]
+ignore = [
+    # E501 : les messages d'assertion de ce dépôt enseignent, et les couper à
+    # 88 colonnes les rendrait moins lisibles, pas plus.
+    "E501",
+    # S101 : `assert` est le verbe de pytest. L'interdire dans un dépôt dont le
+    # contenu est fait de tests n'aurait aucun sens.
+    "S101",
+    # S603 et S607 : appeler un sous-processus, et le nommer sans chemin
+    # absolu, est le métier de ce catalogue. `docker` vient du PATH,
+    # délibérément : c'est ainsi que l'apprenant l'appelle, et un chemin
+    # absolu écrit ici masquerait un Docker rootless ou un `docker` fourni par
+    # un autre paquet.
+    "S603", "S607",
+    # S310 : « URL open for permitted schemes ». La règle vise le cas où le
+    # schéma vient d'une entrée utilisateur. Ici, deux destinations seulement,
+    # toutes deux en constante dans le fichier qui les emploie : la boucle
+    # locale d'un conteneur que le test vient de lancer, et le blog, dont
+    # `scripts/verifier-ancres.py` lit les ancres.
+    #
+    # Mesuré sur le catalogue Terraform : poser un `# noqa` par appel a cassé
+    # deux fichiers, parce que ces appels s'étendent sur plusieurs lignes et
+    # que la directive atterrissait au milieu d'un argument. Une règle qui se
+    # justifie une fois se désactive une fois.
+    "S310",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Les tests de labs comparent des valeurs nommées par le sujet : un port 8000,
+# un UID 0, un code de sortie 137. Les extraire en constantes éloignerait le
+# chiffre de ce qu'il mesure.
+"labs/**/test_functional.py" = ["PLR2004"]
+
+[tool.pytest.ini_options]
+# Le contrat dsoxlab impose que chaque lab nomme son test
+# `challenge/tests/test_functional.py`. Tous ces fichiers partagent le même
+# basename dans des répertoires sans `__init__.py` : le mode d'import
+# « prepend » les prendrait pour un seul module et échouerait en « import file
+# mismatch ». importlib les isole par leur chemin.
+addopts = "--import-mode=importlib"
+
+# Ne collecter QUE les tests des challenges. Tout `test_*.py` ailleurs sous
+# `labs/` appartient aux fixtures, c'est-à-dire au sujet de l'exercice : le
+# collecter ferait échouer `dsoxlab check` sur du code que l'apprenant doit
+# justement réparer.
+testpaths = ["labs"]
+norecursedirs = [
+    "solution", "fixtures", "work", "*.egg", ".git",
+]
+
+[tool.uv]
+# Ce dépôt n'est pas un package Python : c'est un fournisseur de labs.
+package = false
+
+[dependency-groups]
+# dsoxlab n'est PAS déclaré ici, et c'est délibéré : c'est un OUTIL, pas une
+# dépendance de ce dépôt. Il s'installe à part :
+#     uv tool install dsoxlab      # ou : uvx dsoxlab <commande>
+#
+# C'est la règle commune aux six dépôts. Le garder en dev-dep faisait ouvrir
+# une PR Dependabot à chaque version de la CLI sur un dépôt qui ne l'embarque
+# pas.
+dev = [
+    "pyyaml>=6",
+    "pytest>=8",
+]

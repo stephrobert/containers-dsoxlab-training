@@ -21,3 +21,7 @@ __pycache__/
 # un `*.log` et un `*.tfstate` du .gitignore avaient avalé cinq fixtures, et
 # trois labs étaient cassés pour tout clone alors qu'ils passaient en local.
 !labs/**/fixtures/**
+
+# Inventaire des guides du blog, regenere par scripts/inventaire-guides.py :
+# derive dune source qui vit ailleurs, donc non versionne.
+guides.json

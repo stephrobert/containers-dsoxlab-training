@@ -379,7 +379,7 @@ class Conteneur:
         derniere = ""
         while time.monotonic() < limite:
             try:
-                with urllib.request.urlopen(  # noqa: S310
+                with urllib.request.urlopen(
                     f"http://127.0.0.1:{self.port}{chemin}", timeout=5
                 ) as reponse:
                     return reponse.status, reponse.read().decode("utf-8", "replace")

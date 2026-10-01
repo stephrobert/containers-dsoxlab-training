@@ -1,0 +1,40 @@
+# Les outils du catalogue, épinglés. `mise install` les pose tous, à la version
+# mesurée ici, sans curl d'archive ni gestionnaire de paquets système.
+#
+# Versions mesurées le 2026-10-01 par `mise ls-remote <outil> | tail -1`. Une
+# montée de version se fait ici, et se date.
+#
+# ## Docker n'y est PAS, et ce n'est pas un oubli
+#
+# `mise ls-remote docker` ne rend rien : le registre n'a pas de plugin pour le
+# moteur, et c'est logique. Docker n'est pas un binaire qu'on dépose dans un
+# répertoire : c'est un **démon**, avec un service systemd, un groupe
+# d'utilisateurs, un socket et une configuration de noyau. Il s'installe par le
+# gestionnaire de paquets de la distribution, et le blog a un guide pour cela :
+#
+#     https://blog.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/
+#
+# Le catalogue le VÉRIFIE au lieu de l'installer : `conftest.py` échoue avec un
+# message qui dit quoi faire si `docker info` ne répond pas, et le premier lab
+# du bloc c1 en fait son sujet.
+
+[tools]
+# Analyse statique des Dockerfile. Sert les labs du bloc c2 : un Dockerfile qui
+# passe les tests peut encore porter des défauts que hadolint nomme.
+hadolint = "2.15.1"
+
+# Lecture couche par couche d'une image. C'est l'outil qui rend visible ce que
+# les labs d'optimisation font mesurer, et l'ancien TP2 s'en servait déjà.
+dive = "0.13.1"
+
+# Scanner de vulnérabilités, pour le bloc c8. Le lab qui l'emploie doit faire
+# constater qu'un résultat est un ÉTAT daté, et non une propriété de l'image :
+# l'ancien TP3 concluait « l'image Alpine ne contient aucune vulnérabilité »,
+# ce que ce catalogue corrige.
+trivy = "0.74.0"
+
+# L'outillage Python du catalogue : ses vérificateurs et ses tests.
+uv = "0.12.18"
+
+# Validation du schéma de `dependabot.yml`, comme dans les catalogues frères.
+"pipx:check-jsonschema" = "0.38.2"
