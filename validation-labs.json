@@ -14,10 +14,10 @@
   },
   "date": "2026-10-01",
   "docker": "29.1.3",
-  "duree_s": 9,
+  "duree_s": 11,
   "ecarts": [],
   "etapes": [
-   "état photographié : 362 image(s), 16 conteneur(s), 141 volume(s)",
+   "état photographié : 394 image(s), 17 conteneur(s), 146 volume(s)",
    "avant le travail : 0/7",
    "après la solution : 7/7",
    "après clean et run : 0/7",
