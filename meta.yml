@@ -1,0 +1,42 @@
+# Catalogue containers-dsoxlab-training, décrit par le contrat v1 de dsoxlab.
+#
+# `repo.id` sert de clé pour l'état local : le changer déplace l'historique des
+# scores et le répertoire d'état de l'apprenant.
+schema_version: 1
+
+repo:
+  id: containers-dsoxlab-training
+  category: containers
+  title: Conteneurs, du Dockerfile aux orchestrateurs
+  blog_url: https://blog.stephane-robert.info/docs/conteneurs/
+  issues_url: https://github.com/stephrobert/containers-dsoxlab-training/issues
+  description: |
+    Labs vérifiables de la formation Conteneurisation du blog. Chaque lab
+    s'éprouve sur l'état réel du moteur Docker : une image construite, sa
+    taille, l'utilisateur qui l'exécute, les montages d'un conteneur. Le blog
+    enseigne, ce catalogue éprouve.
+
+# Aucun bloc `infra:` : tous les labs sont en `runtime: shell` et se jouent sur
+# le poste de l'apprenant, avec son moteur Docker. C'est un choix, et il a une
+# raison : un conteneur n'a pas besoin d'une VM pour être construit, et la
+# formation enseigne Docker tel que l'apprenant l'a installé.
+#
+# Le jour où un lab exigera un vrai noyau, un cgroup v1 ou un démon à la
+# configuration particulière, il déclarera `runtime.type: vm` et ce fichier
+# gagnera son bloc `infra:`.
+
+sections:
+  - id: images
+    title: Construire des images
+    description: Du premier Dockerfile à l'image multi-étapes, mesurée à chaque passage.
+    labs:
+      - images-premiere-image
+      - images-optimiser-la-taille
+      - images-migrer-vers-alpine
+      - images-build-multi-etapes
+
+  - id: donnees
+    title: Les données du conteneur
+    description: Ce qui survit au conteneur, et ce qui disparaît avec lui.
+    labs:
+      - donnees-volumes-et-montages

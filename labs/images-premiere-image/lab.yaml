@@ -1,0 +1,39 @@
+# Lab images-premiere-image : construire la premiere image de l'application.
+#
+# Le fil rouge du catalogue est cette API FastAPI. Elle traversera toute la
+# formation en devenant progressivement plus correcte : ici, elle n'a meme pas
+# encore de Dockerfile.
+id: images-premiere-image
+title: "First image: the application ships in a container, and proves it answers"
+level: c2
+description: |
+  An inventory API with no Dockerfile. Write the one that ships it, prove it
+  answers in a container, and prove the image is self-contained: it must start
+  with no network at all.
+section: images
+difficulty: beginner
+lab_type: lab
+estimated_time: 30m
+skills:
+  - docker
+  - dockerfile
+  - build
+  - fastapi
+# `any` : le lab tourne sur le poste de l'apprenant, avec son moteur Docker.
+# Rien ici ne depend de la distribution de l'hote.
+distros:
+  - any
+# La lecon jumelee, et la SECTION qui porte exactement ce que le lab eprouve.
+# L'ancre est acceptee par la politique d'URL du contrat, verifie le 2026-10-01.
+doc_url: https://blog.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/
+runtime:
+  type: shell
+  workdir: challenge/work
+  # Une fixture non declaree ici n'est PAS copiee, meme presente dans
+  # fixtures/ : le repertoire de travail serait vide et l'apprenant sans rien
+  # a faire.
+  fixtures:
+    - app/main.py
+    - app/requirements.txt
+validation:
+  functional: true

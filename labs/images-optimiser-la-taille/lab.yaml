@@ -1,0 +1,22 @@
+# Lab images-optimiser-la-taille. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-optimiser-la-taille                      # REQUIS
+title: "À remplir"            # REQUIS
+level: l1                     # REQUIS
+description: "À remplir : ce que l'apprenant saura faire à la fin."
+skills:                       # REQUIS, non vide
+  - a-remplir
+distros:                      # REQUIS, non vide
+  - any
+doc_url: https://example.org/a-remplir   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: shell
+  workdir: challenge/work
+  # Une fixture NON déclarée ici n'est PAS copiée, même présente dans
+  # fixtures/ : le répertoire de travail serait vide et l'apprenant sans rien
+  # à faire.
+  fixtures: []
+validation:
+  functional: true
