@@ -147,4 +147,3 @@ Vous avez appris à :
 - Réduire la taille de l'image Docker.
 - Vérifier la sécurité de l'image avec Trivy.
 - Comparer les vulnérabilités entre Debian et Alpine.
-

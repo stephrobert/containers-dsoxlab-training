@@ -1,0 +1,114 @@
+# Les hooks du catalogue.
+#
+# Repris de `terraform-dsoxlab-training` et `github-actions-training`, dont la
+# CI rejoue exactement cette configuration plutôt qu'une copie : un hook ajouté
+# ici est un contrôle ajouté à la CI, et les deux ne peuvent pas diverger.
+#
+# ## Ce qui est propre à ce dépôt
+#
+# Rien ici ne lance Docker. Un build prend dix-sept secondes à froid, un lab en
+# construit une à plusieurs images, et un hook qui attendrait cela ne serait
+# pas lancé. La validation des labs a son script, `scripts/valider-labs.py`, et
+# sa place est dans un job de CI dédié.
+#
+# `scripts/verifier-ancres.py` fait du RÉSEAU : il lit les pages du blog pour
+# contrôler que chaque fragment de `doc_url` existe. Il est donc en
+# `pre-push`, pas en `pre-commit` — un hook qui échoue dans un train n'apprend
+# rien à personne.
+#
+# ## Deux étapes
+#
+# `pre-commit` porte ce qui est instantané. `pre-push` porte ce qui coûte :
+# `validate-structure` lit tous les labs, et le contrôle des ancres sort sur le
+# réseau.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+      - id: mixed-line-ending
+
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (lint du python du catalogue)
+        # `--force-exclude` n'est pas une précaution : sans lui, l'`exclude` du
+        # pyproject est IGNORÉ pour tout fichier passé en argument, et
+        # pre-commit passe justement les fichiers en argument. Mesuré sur le
+        # catalogue GitHub Actions le 2026-09-25 : ruff a ainsi trié les
+        # imports d'une fixture de lab, c'est-à-dire modifié le point de départ
+        # livré à l'apprenant, alors que `ruff check .` lancé à la main
+        # respectait l'exclusion.
+        entry: uvx ruff check --fix --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: hadolint
+        name: hadolint (les Dockerfile du dépôt, pas ceux des fixtures)
+        entry: scripts/hooks/hadolint-cible.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: meta-declare-les-labs
+        name: meta.yml et labs/ décrivent le même catalogue
+        entry: uv run --no-sync pytest tests/test_meta_declare_les_labs.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: style-apprenant
+        name: pas d'emoji ni de tiret cadratin dans ce que l'apprenant lit
+        entry: uv run --no-sync pytest tests/test_style_apprenant.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: indices
+        name: quatre indices, bilingues, en base64, à coût croissant
+        entry: uv run --no-sync pytest tests/test_hints_ecrits.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: outillage-coherent
+        name: chaque hook pointe un test, chaque test est câblé
+        entry: uv run --no-sync pytest tests/test_outillage_coherent.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: validate-structure
+        name: dsoxlab validate-structure
+        entry: uvx dsoxlab validate-structure
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: catalogue-a-jour
+        name: le catalogue des README est à jour
+        entry: uv run --no-sync python scripts/gen_catalog.py --check
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: ancres-des-doc-url
+        name: chaque doc_url ancré pointe une section qui existe
+        # Réseau : `validate-structure --check-urls` contrôle le code HTTP de
+        # la page, pas le fragment. Une ancre fausse donne un lien qui répond
+        # 200 et dépose le lecteur en haut d'un guide de mille lignes.
+        entry: uv run --no-sync python scripts/verifier-ancres.py --labs
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

@@ -1,0 +1,10 @@
+---
+# Surcharge de langue : `title` et `description` pour le français, et RIEN
+# d'autre. Toute autre clé y est ignorée, et `validate-structure` le dit.
+# L'`id` est toléré sans être lu : il nomme le lab pour qui ouvre le fichier.
+id: images-premiere-image
+title: "Première image : l'application voyage en conteneur, et le prouve"
+description: |
+  Une API d'inventaire sans Dockerfile. Écrivez celui qui l'embarque, prouvez
+  qu'elle répond dans un conteneur, et prouvez que l'image est autonome : elle
+  doit démarrer sans aucun réseau.

@@ -1,0 +1,27 @@
+# Progression et contexte : locaux à chaque machine, jamais versionnés.
+.dsoxlab.db
+.dsoxlab-context.json
+
+# Clé privée d'automatisation, posée par `dsoxlab instructor bootstrap`.
+ssh/id_ed25519
+
+# Répertoires de travail des labs `shell` : ce que l'apprenant y écrit lui
+# appartient, et le catalogue les recrée à chaque `run`.
+labs/**/challenge/work/
+
+# Caches Python du catalogue et de ses tests.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Les FIXTURES, elles, sont versionnées, y compris quand leur extension
+# ressemble à un artefact. Mesuré sur le catalogue Terraform le 2026-09-25 :
+# un `*.log` et un `*.tfstate` du .gitignore avaient avalé cinq fixtures, et
+# trois labs étaient cassés pour tout clone alors qu'ils passaient en local.
+!labs/**/fixtures/**
+
+# Inventaire des guides du blog, regenere par scripts/inventaire-guides.py :
+# derive dune source qui vit ailleurs, donc non versionne.
+guides.json

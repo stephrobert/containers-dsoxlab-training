@@ -1,0 +1,38 @@
+{
+ "images-premiere-image": {
+  "apres": {
+   "echecs": [],
+   "passed": 7,
+   "score": 100,
+   "total": 7
+  },
+  "avant": {
+   "echecs": [],
+   "passed": 0,
+   "score": 0,
+   "total": 7
+  },
+  "date": "2026-10-01",
+  "docker": "29.1.3",
+  "duree_s": 11,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 394 image(s), 17 conteneur(s), 146 volume(s)",
+   "avant le travail : 0/7",
+   "après la solution : 7/7",
+   "après clean et run : 0/7",
+   "moteur rendu intact"
+  ],
+  "id": "images-premiere-image",
+  "journal": ".cache/dsoxlab/containers-training/validation-images-premiere-image.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [],
+   "passed": 0,
+   "score": 0,
+   "total": 7
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ }
+}

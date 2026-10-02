@@ -1,85 +1,179 @@
-# Conteneurisation - Du Docker aux orchestrateurs
+# Container labs
 
-Ce dépôt propose un parcours progressif pour comprendre et maîtriser la
-conteneurisation, depuis la création d’images Docker jusqu’à l’orchestration
-avancée avec Kubernetes.
+**Language:** [English](./README.md) · [Français](./README.fr.md)
 
-Avant de plonger dans l'univers des conteneurs Docker, il est essentiel de
-comprendre ce qu'est la **containerisation** et comment elle fonctionne. Vous
-pouvez consulter mon [**introduction à la
-containerisation**](https://blog.stephane-robert.info/docs/conteneurs/).
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](./LICENSE)
 
-Ce n'est pas un cours, mais plutôt un guide pour vous aider à vous y retrouver
-dans le monde des conteneurs.
+A catalogue of **verifiable labs** for the Containers course on
+[blog.stephane-robert.info](https://blog.stephane-robert.info/docs/conteneurs/),
+driven by the [dsoxlab](https://github.com/stephrobert/dsoxlab) CLI.
 
-Une fois que vous aurez compris les concepts de base, vous pourrez explorer
-l'univers des conteneurs et de l'orchestration. Ce dépôt est conçu pour vous
-permettre de progresser à votre rythme, en vous fournissant des exercices
-pratiques et des exemples concrets.
+## What it is
 
-## 📚 Organisation du dépôt
+A set of exercises that **measure** what you can do. Each lab lays down a
+starting state, gives you a situation, and checks the result by querying the
+Docker engine: the image built, its size, the user running it, the container's
+mounts, what the application answers.
 
-- [`00-Docker`](./00-Docker-images) — Introduction à Docker, création
-  d’images personnalisées, utilisations des volumes et des réseaux.
-- [`01-Docker-compose`](./01-Docker-compose) — Composition d’applications
-  multi-conteneurs avec Docker Compose.
-- [`02-Docker-swarm`](./02-Docker-swarm) — Orchestration native de Docker avec
-  Docker Swarm.
-- [`03-Kubernetes`](./03-Kubernetes) — Déploiement et gestion avancée avec
-  Kubernetes.
+A single FastAPI application runs through the whole path and becomes
+progressively more correct. **You do not need to know how to program**: the
+code is given. You work on the image, the runtime, the network, storage,
+distribution and hardening.
 
-## 🎯 Objectifs
+## What it is not
 
-- Comprendre les concepts fondamentaux des conteneurs.
-- Créer, gérer et orchestrer des conteneurs dans différents environnements.
-- Fournir des exemples reproductibles et concrets pour l’apprentissage.
+**It is not a course.** The courses live on the blog, and this repository does
+not rewrite them:
 
-## 🔧 Prérequis
-
-- [Docker](https://blog.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/)
-- [Git](https://blog.stephane-robert.info/docs/developper/version/git/introduction/)
-- [Minikube](https://blog.stephane-robert.info/docs/conteneurs/orchestrateurs/minikube/)
-- [Vagrant](https://blog.stephane-robert.info/docs/infra-as-code/provisionnement/vagrant/introduction/)
-  avec VirtualBox ou
-  [KVM](https://blog.stephane-robert.info/docs/virtualiser/type1/kvm/) ou
-  [proxmox](https://blog.stephane-robert.info/docs/virtualiser/type1/kvm/)
-- [Kubectl](https://blog.stephane-robert.info/docs/conteneurs/orchestrateurs/outils/kubectl/)
-  ou autre outil selon le dossier
-
-Ce dépôt est un support d’apprentissage évolutif, n’hésitez pas à proposer des
-améliorations ou à poser des questions via les
-[issues](https://github.com/stephrobert/kubernetes-training/issues).
-
-## Mise à jour du dépôt
-
-Je vais continuer à mettre à jour ce dépôt avec de nouveaux exercices et des
-améliorations. Pour récupérer les dernières modifications, vous pouvez
-simplement exécuter :
-
-```bash
-git pull origin main
+```text
+blog.stephane-robert.info     explains, teaches
+this repository               makes you practise, measures, proves
 ```
 
-## Contribuer
+Every lab carries a `doc_url` to the lesson it proves, anchored on the exact
+section. If a lab resists you, the lesson is one click away.
 
-Bien entendu, vous êtes invités à contribuer à ce dépôt en proposant des
-améliorations ou en corrigeant des erreurs. N'hésitez pas à ouvrir une **issue**
-ou à soumettre une **pull request**.
+**It is not a Kubernetes course.** Kubernetes has its own catalogue,
+[kubernetes-dsoxlab-training](https://github.com/stephrobert/kubernetes-dsoxlab-training),
+with CKA, CKAD and CKS labs on a real kubeadm cluster. Nothing here mentions
+`kubectl`, Helm or manifests.
 
-Plus d'infos [ici](https://github.com/stephrobert/containers-training/blob/main/contributing.md)
+**It is not a full DevSecOps course.** Trivy, Cosign, GitHub Actions and GitLab
+CI appear when a container skill calls for them, and no further: they have
+their own guides.
 
-## Me soutenir
+## Requirements
 
-Si vous appréciez ce travail et souhaitez me soutenir, vous pouvez me payer un
-café ☕️:
+| What you need | Why |
+| --- | --- |
+| **A Docker engine that answers** | every lab queries it. `docker info` must succeed |
+| **`uv`** | it installs dsoxlab and the catalogue's tooling |
+| **`mise`**, optional | it provides hadolint, dive and trivy at pinned versions |
 
-[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/stephanerobert89902)
+This catalogue does not install Docker: it is a daemon, with a service, a user
+group and a socket. The blog has a guide for that, and the first lab of the
+path makes checking it its subject.
 
-## Copyright et licence
+## Install
 
-Tous les contenus contenus dans ce repo sont :
+```bash
+# 1. dsoxlab, the tool that runs the labs
+uv tool install dsoxlab
 
-- Copyright ©2025 Stéphane Robert
-- Distribués sous [licence Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+# 2. this catalogue
+git clone https://github.com/stephrobert/containers-dsoxlab-training.git
+cd containers-dsoxlab-training
 
-![Creative Commons BY-SA](https://mirrors.creativecommons.org/presskit/buttons/88x31/png/by-sa.png)
+# 3. the pinned tooling, optional but recommended
+mise install
+```
+
+No provisioning is needed to start: the labs of the first blocks run on your
+own machine, with your Docker engine. Labs that require a dedicated machine
+declare it, and `dsoxlab provision` will take care of it the day you reach
+them.
+
+## Your first lab, in five minutes
+
+```bash
+export LAB_HOME=$PWD
+
+dsoxlab list-labs                        # what the catalogue holds
+dsoxlab run       images-premiere-image  # lay down the starting point
+dsoxlab challenge images-premiere-image  # the mission
+# ... you work in challenge/work ...
+dsoxlab check     images-premiere-image  # the score
+```
+
+## How it works
+
+| Command | What it does |
+| --- | --- |
+| `dsoxlab list-labs` | the catalogue, in teaching order |
+| `dsoxlab run <id>` | copies the starting point into `challenge/work` |
+| `dsoxlab challenge <id>` | the mission: what to reach, not how |
+| `dsoxlab check <id>` | runs the tests and returns a score out of 100 |
+| `dsoxlab hint <id>` | one hint, at a cost deducted from the score |
+| `dsoxlab submit <id>` | records the result for good |
+| `dsoxlab progress` | where you stand, lab by lab |
+| `dsoxlab clean <id>` | removes the working directory |
+
+### The tests read state, never your commands
+
+You reach the result by whatever path you like. A test in this catalogue looks
+like this:
+
+```python
+assert inspecter_image(tag)["Config"]["ExposedPorts"]   # what the image declares
+code, body = conteneur.repondre("/health")              # what the application returns
+assert conteneur.utilisateur() != "0"                   # who actually runs it
+```
+
+And never like this:
+
+```python
+assert "docker build" in history   # which proves nothing
+```
+
+### Hints cost points, and that is deliberate
+
+Four hints per lab, from the vaguest to the most explicit. Each one costs. The
+last names the tool that shows the fault when everything looks right without
+being right, but none gives the Dockerfile away.
+
+### Three levels of exercise
+
+| Type | What you get |
+| --- | --- |
+| `lab` | an explanation and a focused mission |
+| `challenge` | an objective and constraints, no recipe |
+| `capstone` | a real situation, and the problem is not announced |
+
+You progressively lose the guidance. That is the point of the path.
+
+## Docker, Compose, Swarm: three distinct blocks
+
+| Block | What it teaches | What it requires |
+| --- | --- | --- |
+| **Docker** | images, runtime, data, network, security, internals | your engine, sometimes a dedicated machine |
+| **Compose** | a multi-service application, described and diagnosed | your engine |
+| **Swarm** | a distributed orchestrator: Raft, quorum, overlay, secrets | several machines |
+
+Swarm is an **advanced, clearly separate path**. It is not a stepping stone to
+Kubernetes in this repository: it is an orchestrator in its own right, with its
+consensus and its control state to protect.
+
+## The catalogue
+
+<!-- LABS:START -->
+### Construire des images
+
+| Lab (id) | Title | Level | Certif | Runtime | Companion guide |
+|---|---|---|---|---|---|
+| `images-premiere-image` | First image: the application ships in a container, and proves it answers | c2 | - | shell + Docker | [guide](https://blog.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+
+_1 labs, table generated by `scripts/gen_catalog.py`._
+<!-- LABS:END -->
+
+## Where this catalogue stands
+
+It is under construction. `ROADMAP.md` holds the full backlog, organised by
+skill and in waves, `COVERAGE.md` the matrix of the blog's guides, and
+`AUDIT.md` what the rebuild kept from the former repository and what it threw
+away.
+
+`validation-labs.json` holds each lab's verdict: a lab appears there only once
+it has been played in both directions, scoring zero before the work and full
+marks after.
+
+## Contributing and license
+
+- Contributing: see [CONTRIBUTING](./CONTRIBUTING.md).
+- Conduct: [Code of Conduct](./CODE_OF_CONDUCT.md) · Security: [SECURITY](./SECURITY.md).
+- What changed, and when: [CHANGELOG](./CHANGELOG.md).
+- License: [CC BY 4.0](./LICENSE).
+
+This catalogue supersedes
+[containers-training](https://github.com/stephrobert/containers-training), which
+stays in place: its five hands-on guides remain readable there, and their
+substance is carried over here as measured labs.

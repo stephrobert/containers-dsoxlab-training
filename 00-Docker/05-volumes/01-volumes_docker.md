@@ -125,4 +125,3 @@ Vous avez appris à :
 - Utiliser des volumes `tmpfs` pour des données temporaires.
 - Monter un volume NFS pour partager des données entre plusieurs conteneurs.
 - Appliquer les bonnes pratiques de nettoyage et de gestion des volumes.
-
