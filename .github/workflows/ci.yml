@@ -1,0 +1,264 @@
+# La CI d'un dépôt de CONTENU : un catalogue de labs, pas un paquet Python.
+#
+# Rien n'est construit, rien n'est publié. Ce qui est vérifié : que le contrat
+# du catalogue tient, que les hooks passent, et que les labs se jouent
+# vraiment — avec Docker, sur le runner.
+#
+# ## Ce que cette CI ne contrôle JAMAIS
+#
+# Les `labs/*/fixtures/`. Un point de départ peut porter un Dockerfile qui
+# tourne en root, un secret en variable d'environnement ou une image non
+# épinglée : c'est le sujet de l'exercice. hadolint y rendrait un échec
+# permanent, et le seul moyen de le faire taire serait de retirer du lab ce qui
+# fait le lab. L'exemplarité est due aux `solution/`, et c'est là que le
+# contrôle porte.
+#
+# ## CodeQL n'est PAS ici, et ce n'est pas un oubli
+#
+# Ce dépôt est PRIVÉ. Mesuré sur le catalogue Terraform le 2026-09-25 : sur un
+# dépôt privé de compte personnel, le code scanning n'est pas disponible sans
+# Advanced Security, et le téléversement échoue sur
+#
+#     Resource not accessible by integration
+#
+# avec un workflow identique mot pour mot à celui d'un dépôt public où il
+# passe. Un job rouge pour une raison extérieure au code masque les échecs
+# réels. CodeQL s'ajoutera le jour où ce dépôt deviendra public.
+#
+# ## Durcissement
+#
+# Chaque action est épinglée sur un SHA complet avec sa version en commentaire,
+# le jeton par défaut n'a aucune permission, chaque job ne prend que ce qu'il
+# lui faut, checkout ne persiste jamais d'identifiants, et chaque job est borné
+# dans le temps.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Refus par défaut : un job déclare ce dont il a besoin, rien ne s'hérite.
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Porte rapide : les jobs lourds n'ont pas à tourner si le lint échoue.
+  lint:
+    name: Lint et contrat du catalogue
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+
+      - name: Installer les dépendances du catalogue
+        run: uv sync --frozen
+
+      - name: Ruff, avec les règles du dépôt
+        run: uvx ruff check --force-exclude .
+
+      - name: Les vérificateurs du catalogue
+        run: uv run --no-sync pytest tests/ -q
+
+      # dsoxlab est un OUTIL, jamais une dépendance de ce dépôt : c'est la
+      # règle commune aux six catalogues.
+      - name: Le contrat de chaque lab
+        run: uvx dsoxlab validate-structure
+
+      - name: Le catalogue des README est à jour
+        run: uv run --no-sync python scripts/gen_catalog.py --check
+
+      # Un verrou qui a dérivé de son pyproject ne verrouille plus rien : les
+      # scanners continuent de lire `uv.lock`, qui ne décrit plus ce qui
+      # s'installe.
+      - name: Le verrou décrit bien le pyproject
+        run: uv lock --check
+
+  ancres:
+    name: Chaque doc_url ancré pointe une section qui existe
+    needs: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          # Le job lit les pages du blog : une politique bloquante demanderait
+          # de lister son hôte et son CDN.
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+
+      - name: Installer les dépendances du catalogue
+        run: uv sync --frozen
+
+      # `validate-structure --check-urls` contrôle le code HTTP de la page, pas
+      # le fragment. Une ancre fausse donne un lien qui répond 200 et dépose le
+      # lecteur en haut d'un guide de mille lignes. Ce contrôle est né après
+      # avoir produit 44 ancres fausses sur 64.
+      - name: Les ancres des labs, et celles du backlog
+        run: uv run --no-sync python scripts/verifier-ancres.py
+
+  dockerfiles:
+    name: Hadolint sur les solutions, jamais sur les fixtures
+    needs: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Le binaire de la release épinglée, vérifié par son empreinte publiée
+      # avant d'être employé : aucun script distant tubé dans un shell.
+      - name: Installer hadolint
+        env:
+          HADOLINT_VERSION: "2.15.1"
+        run: |
+          set -euo pipefail
+          base="https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}"
+          curl -fsSL -o /tmp/hadolint "${base}/hadolint-Linux-x86_64"
+          curl -fsSL -o /tmp/hadolint.sha256 "${base}/hadolint-Linux-x86_64.sha256" || true
+          if [ -s /tmp/hadolint.sha256 ]; then
+            awk '{print $1"  /tmp/hadolint"}' /tmp/hadolint.sha256 | sha256sum -c -
+          else
+            echo "::warning::aucune empreinte publiée pour cette release, binaire non vérifié"
+          fi
+          sudo install -m 0755 /tmp/hadolint /usr/local/bin/hadolint
+          hadolint --version
+
+      - name: Hadolint sur les Dockerfile des solutions
+        run: bash scripts/hooks/hadolint-cible.sh
+
+  pre-commit:
+    name: Parité pre-commit (tous les hooks)
+    needs: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # les hooks qui parcourent l'historique
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+
+      # mise pose hadolint, dive et trivy aux versions que `mise.toml` épingle.
+      - name: Installer les outils épinglés
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.5
+          cache: true
+
+      - name: Installer les dépendances du catalogue
+        run: uv sync --frozen
+
+      - name: Tous les hooks, étape commit
+        run: uvx pre-commit@4.6.0 run --all-files --show-diff-on-failure --color always
+
+      - name: Tous les hooks, étape pre-push
+        run: uvx pre-commit@4.6.0 run --all-files --hook-stage pre-push --show-diff-on-failure --color always
+
+  labs:
+    name: Les labs se jouent vraiment (Docker)
+    needs: lint
+    runs-on: ubuntu-24.04
+    # Chaque lab construit une à plusieurs images et lance des conteneurs :
+    # c'est le job long du dépôt, et le seul qui prouve quelque chose sur le
+    # contenu. Mesuré en local : 17 s pour un build à froid, 9 s pour le cycle
+    # complet d'un lab une fois l'image en cache.
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          # Docker tire ses images de base et pip ses paquets : une politique
+          # bloquante demanderait de lister le registre, PyPI et leurs CDN.
+          # `audit` enregistre sans couper, et le durcissement de ce job passe
+          # par sa permission en lecture seule.
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+
+      - name: Installer les dépendances du catalogue
+        run: uv sync --frozen
+
+      - name: Installer dsoxlab
+        run: |
+          set -euo pipefail
+          uv tool install dsoxlab
+          dsoxlab --version
+
+      # Le moteur du runner, et son MODE DE STOCKAGE : les tailles d'image en
+      # dépendent, et le verdict l'enregistre. Un runner en classic image store
+      # et un poste en containerd ne rendent pas le même chiffre pour la même
+      # image, dans un rapport de quatre.
+      - name: Ce que le moteur du runner annonce
+        run: |
+          docker version --format 'moteur {{.Server.Version}}'
+          docker info --format 'stockage {{.DriverStatus}}'
+
+      # Ce qui rend `validation-labs.json` opposable : un verdict local qui ne
+      # se reproduit pas ici est ROUGE.
+      - name: Rejouer le cycle « 0 avant, 100 après »
+        run: uv run --no-sync python scripts/valider-labs.py
+
+      # Le verdict versionné doit couvrir TOUT le catalogue : un lab ajouté
+      # sans validation fait échouer ce contrôle, même si les autres verdicts
+      # sont verts.
+      - name: Le verdict versionné couvre le catalogue et est vert
+        run: uv run --no-sync python scripts/valider-labs.py --check
+
+      - name: Ce que la campagne a changé, s'il y a lieu
+        if: always()
+        run: git --no-pager diff --stat validation-labs.json
