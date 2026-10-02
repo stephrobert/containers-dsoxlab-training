@@ -66,7 +66,7 @@ jobs:
           persist-credentials: false
 
       - name: Installer uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Installer les dépendances du catalogue
         run: uv sync --frozen
@@ -112,7 +112,7 @@ jobs:
           persist-credentials: false
 
       - name: Installer uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Installer les dépendances du catalogue
         run: uv sync --frozen
@@ -183,7 +183,7 @@ jobs:
           fetch-depth: 0 # les hooks qui parcourent l'historique
 
       - name: Installer uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       # mise pose hadolint, dive et trivy aux versions que `mise.toml` épingle.
       - name: Installer les outils épinglés
@@ -228,7 +228,7 @@ jobs:
           persist-credentials: false
 
       - name: Installer uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Installer les dépendances du catalogue
         run: uv sync --frozen
