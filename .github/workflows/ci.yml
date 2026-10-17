@@ -80,7 +80,7 @@ jobs:
       # dsoxlab est un OUTIL, jamais une dépendance de ce dépôt : c'est la
       # règle commune aux six catalogues.
       - name: Le contrat de chaque lab
-        run: uvx dsoxlab validate-structure
+        run: uvx 'dsoxlab>=0.5.0' validate-structure
 
       - name: Le catalogue des README est à jour
         run: uv run --no-sync python scripts/gen_catalog.py --check
