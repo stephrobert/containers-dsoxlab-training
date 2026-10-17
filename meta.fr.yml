@@ -1,0 +1,88 @@
+# Surcharge française du catalogue, lue par dsoxlab (0.1.54) et par les
+# générateurs de README. Elle ne porte QUE `repo.title`,
+# `repo.description` et les `title` / `description` des sections,
+# appariés par `id` et jamais par position : une section insérée au
+# milieu ne décale donc rien.
+#
+# La langue par défaut de l'outil est l'anglais : `meta.yml` porte
+# l'anglais, ce fichier le français. Jusqu'au 2026-10-17, ce dépôt n'avait
+# pas de surcharge et son `meta.yml` portait le français : une session
+# anglaise lisait donc onze titres de sections en français.
+
+repo:
+  title: "Conteneurs, du Dockerfile à l'orchestration"
+  description: |
+    Labs vérifiables de la formation Conteneurisation du blog. Chaque lab
+    s'éprouve sur l'état réel du moteur : une image construite, sa taille,
+    l'utilisateur qui l'exécute, les montages d'un conteneur, ce que
+    l'application répond. Le blog enseigne, ce catalogue éprouve.
+
+    Une même application FastAPI traverse tout le parcours et devient
+    progressivement plus correcte. L'apprenant n'a pas besoin de savoir
+    programmer : le code est fourni, il travaille l'image, l'exécution, le
+    réseau, le stockage, la distribution et le durcissement.
+
+sections:
+  - id: c1-comprendre
+    title: "Comprendre et manipuler"
+    description: >-
+      Image et conteneur ne sont pas la même chose, et le cycle de vie
+      explique la moitié des pannes. Cinq labs courts, aucun build.
+
+  - id: c2-construire
+    title: "Construire des images"
+    description: >-
+      Du premier Dockerfile à l'image multi-étapes non-root, chaque étape
+      mesurée contre la précédente.
+
+  - id: c3-distribuer
+    title: "Distribuer les images"
+    description: >-
+      Pousser, retrouver par digest, publier dans une registry privée, et
+      franchir un air-gap.
+
+  - id: c4-executer
+    title: "Exécuter et limiter"
+    description: >-
+      Ce que le conteneur reçoit, ce qu'il signale en mourant, et ce qu'on lui
+      refuse.
+
+  - id: c5-persister
+    title: "Persister et connecter"
+    description: >-
+      Ce qui survit au conteneur, ce qui disparaît avec lui, et comment deux
+      services se parlent.
+
+  - id: c6-composer
+    title: "Docker Compose"
+    description: >-
+      Une application à plusieurs services, décrite dans un fichier et
+      diagnostiquée quand elle ne monte pas.
+
+  - id: c7-exploiter
+    title: "Exploiter et dépanner"
+    description: >-
+      Des incidents réels, courts, où le symptôme ne nomme pas la cause.
+
+  - id: c8-securiser
+    title: "Sécuriser"
+    description: >-
+      Un conteneur qui fonctionne n'est pas un conteneur sûr. Capabilities,
+      seccomp, rootless, et le piège du socket Docker.
+
+  - id: c9-sous-le-capot
+    title: "Comprendre sous le capot"
+    description: >-
+      Namespaces, cgroups et la chaîne qui va de la CLI au processus, observés
+      et non récités.
+
+  - id: c10-capstone
+    title: "Capstone Docker et Compose"
+    description: >-
+      Une chaîne complète, huit pannes injectées, et aucun sujet annoncé.
+
+  - id: sw-swarm
+    title: "Docker Swarm, parcours avancé"
+    description: >-
+      Un orchestrateur distribué : consensus Raft, quorum, overlay, secrets
+      distribués, et un état de contrôle à protéger.

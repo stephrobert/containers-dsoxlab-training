@@ -188,7 +188,7 @@ consensus and its control state to protect.
 ## The catalogue
 
 <!-- LABS:START -->
-### Construire des images
+### Build images
 
 | Lab (id) | Title | Level | Certif | Runtime | Companion guide |
 |---|---|---|---|---|---|

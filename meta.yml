@@ -25,19 +25,19 @@ schema_version: 1
 repo:
   id: containers-dsoxlab-training
   category: containers
-  title: Conteneurs, du Dockerfile à l'orchestration
+  title: "Containers, from the Dockerfile to orchestration"
   blog_url: https://blog.stephane-robert.info/docs/conteneurs/
   issues_url: https://github.com/stephrobert/containers-dsoxlab-training/issues
   description: |
-    Labs vérifiables de la formation Conteneurisation du blog. Chaque lab
-    s'éprouve sur l'état réel du moteur : une image construite, sa taille,
-    l'utilisateur qui l'exécute, les montages d'un conteneur, ce que
-    l'application répond. Le blog enseigne, ce catalogue éprouve.
+    Verifiable labs for the blog's containerisation course. Every lab is
+    graded on the real state of the engine: an image that was built, its
+    size, the user that runs it, a container's mounts, what the application
+    answers. The blog teaches, this catalogue proves.
 
-    Une même application FastAPI traverse tout le parcours et devient
-    progressivement plus correcte. L'apprenant n'a pas besoin de savoir
-    programmer : le code est fourni, il travaille l'image, l'exécution, le
-    réseau, le stockage, la distribution et le durcissement.
+    One and the same FastAPI application runs through the whole path and
+    becomes progressively more correct. The learner does not need to know
+    how to program: the code is provided, and the work is on the image, the
+    runtime, networking, storage, distribution and hardening.
 
 # `learning.portal_url` reste vide, et c'est une décision en attente, pas un
 # oubli. Le blog porte bien une page de parcours à cocher
@@ -59,81 +59,81 @@ repo:
 sections:
   # ── c1 : avant de construire, comprendre ce qu'on manipule ───────────────
   - id: c1-comprendre
-    title: Comprendre et manipuler
+    title: "Understand and handle"
     description: >-
-      Image et conteneur ne sont pas la même chose, et le cycle de vie
-      explique la moitié des pannes. Cinq labs courts, aucun build.
+      An image and a container are not the same thing, and the lifecycle
+      explains half of the failures. Five short labs, no build.
     labs: []
 
   # ── c2 : la compétence que l'ancien dépôt couvrait, mesurée cette fois ───
   - id: c2-construire
-    title: Construire des images
+    title: "Build images"
     description: >-
-      Du premier Dockerfile à l'image multi-étapes non-root, chaque étape
-      mesurée contre la précédente.
+      From a first Dockerfile to a non-root multi-stage image, each step
+      measured against the previous one.
     labs:
       - images-premiere-image
 
   # ── c3 : absent de l'ancien dépôt, pour 2 505 lignes de guides ───────────
   - id: c3-distribuer
-    title: Distribuer les images
+    title: "Distribute images"
     description: >-
-      Pousser, retrouver par digest, publier dans une registry privée, et
-      franchir un air-gap.
+      Push, find an image again by its digest, publish to a private registry,
+      and cross an air gap.
     labs: []
 
   - id: c4-executer
-    title: Exécuter et limiter
+    title: "Run and constrain"
     description: >-
-      Ce que le conteneur reçoit, ce qu'il signale en mourant, et ce qu'on lui
-      refuse.
+      What the container is given, what it reports as it dies, and what it is
+      denied.
     labs: []
 
   - id: c5-persister
-    title: Persister et connecter
+    title: "Persist and connect"
     description: >-
-      Ce qui survit au conteneur, ce qui disparaît avec lui, et comment deux
-      services se parlent.
+      What outlives the container, what disappears with it, and how two
+      services talk to each other.
     labs: []
 
   - id: c6-composer
-    title: Docker Compose
+    title: "Docker Compose"
     description: >-
-      Une application à plusieurs services, décrite dans un fichier et
-      diagnostiquée quand elle ne monte pas.
+      An application made of several services, described in one file and
+      diagnosed when it fails to come up.
     labs: []
 
   - id: c7-exploiter
-    title: Exploiter et dépanner
+    title: "Operate and troubleshoot"
     description: >-
-      Des incidents réels, courts, où le symptôme ne nomme pas la cause.
+      Real incidents, short ones, where the symptom does not name the cause.
     labs: []
 
   - id: c8-securiser
-    title: Sécuriser
+    title: "Secure"
     description: >-
-      Un conteneur qui fonctionne n'est pas un conteneur sûr. Capabilities,
-      seccomp, rootless, et le piège du socket Docker.
+      A container that works is not a container that is safe. Capabilities,
+      seccomp, rootless, and the trap of the Docker socket.
     labs: []
 
   - id: c9-sous-le-capot
-    title: Comprendre sous le capot
+    title: "Understand what is underneath"
     description: >-
-      Namespaces, cgroups et la chaîne qui va de la CLI au processus, observés
-      et non récités.
+      Namespaces, cgroups and the chain that goes from the CLI to the process,
+      observed rather than recited.
     labs: []
 
   - id: c10-capstone
-    title: Capstone Docker et Compose
+    title: "Docker and Compose capstone"
     description: >-
-      Une chaîne complète, huit pannes injectées, et aucun sujet annoncé.
+      A complete chain, eight injected failures, and no topic announced.
     labs: []
 
   # ── Swarm : parcours avancé, clairement séparé. Kubernetes n'en est pas le
   # prolongement dans ce dépôt : il a son propre catalogue.
   - id: sw-swarm
-    title: Docker Swarm, parcours avancé
+    title: "Docker Swarm, advanced path"
     description: >-
-      Un orchestrateur distribué : consensus Raft, quorum, overlay, secrets
-      distribués, et un état de contrôle à protéger.
+      A distributed orchestrator: Raft consensus, quorum, overlay networks,
+      distributed secrets, and control state to protect.
     labs: []
