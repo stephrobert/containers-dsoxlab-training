@@ -73,7 +73,7 @@ own machine, with your Docker engine. Labs that require a dedicated machine
 declare it, and `dsoxlab provision` will take care of it the day you reach
 them.
 
-## Your first lab, in five minutes
+### Your first lab, in five minutes
 
 ```bash
 export LAB_HOME=$PWD
@@ -85,7 +85,35 @@ dsoxlab challenge images-premiere-image  # the mission
 dsoxlab check     images-premiere-image  # the score
 ```
 
+### Keeping it up to date
+
+```bash
+uv tool upgrade dsoxlab        # the engine, published on PyPI
+git -C <this repo> pull        # the catalogue
+```
+
+The engine and the catalogue move independently: a new `dsoxlab` never requires
+re-cloning the labs, and new labs never require upgrading the tool, as long as
+the contract version matches.
+
 ## How it works
+
+### The declarative contract (two levels)
+
+The catalogue is described by data, not code, which is what keeps the `dsoxlab`
+engine domain-agnostic:
+
+- **`meta.yml`** at the root declares the repository identity and the **order**
+  of the eleven sections shown by `list-labs`;
+- **`lab.yaml`** per lab declares its `skills`, `level`, `runtime` (type,
+  fixtures, services), `distros`, `doc_url` and a `validation` block. A
+  `lab.fr.yaml` overrides `title` and `description` in French, and nothing else.
+
+`dsoxlab validate-structure` checks the whole contract, and the sections
+declared in `meta.yml` with no lab yet are exactly how this catalogue states
+what it still owes.
+
+### The lab lifecycle
 
 | Command | What it does |
 | --- | --- |
@@ -98,7 +126,19 @@ dsoxlab check     images-premiere-image  # the score
 | `dsoxlab progress` | where you stand, lab by lab |
 | `dsoxlab clean <id>` | removes the working directory |
 
-### The tests read state, never your commands
+### Runtimes
+
+| Runtime | What the lab asks for |
+|---|---|
+| `shell` | a terminal and a working Docker daemon. The tests inspect the images, containers and networks that Docker actually holds. |
+
+This catalogue declares no `infra:` block at all: no virtual machine, no
+`dsoxlab provision`. Containers are what is being taught, so they run on your
+own engine.
+
+### The validation model
+
+**The tests read state, never your commands.**
 
 You reach the result by whatever path you like. A test in this catalogue looks
 like this:
@@ -115,7 +155,9 @@ And never like this:
 assert "docker build" in history   # which proves nothing
 ```
 
-### Hints cost points, and that is deliberate
+### Scoring, hints, progress
+
+**Hints cost points, and that is deliberate.**
 
 Four hints per lab, from the vaguest to the most explicit. Each one costs. The
 last names the tool that shows the fault when everything looks right without
@@ -166,14 +208,18 @@ away.
 it has been played in both directions, scoring zero before the work and full
 marks after.
 
-## Contributing and license
+## Contributing
 
 - Contributing: see [CONTRIBUTING](./CONTRIBUTING.md).
 - Conduct: [Code of Conduct](./CODE_OF_CONDUCT.md) · Security: [SECURITY](./SECURITY.md).
 - What changed, and when: [CHANGELOG](./CHANGELOG.md).
-- License: [CC BY 4.0](./LICENSE).
+- What changed before this catalogue: see below.
 
 This catalogue supersedes
 [containers-training](https://github.com/stephrobert/containers-training), which
 stays in place: its five hands-on guides remain readable there, and their
 substance is carried over here as measured labs.
+
+## License
+
+See [`LICENSE`](./LICENSE) (CC BY 4.0).
