@@ -55,6 +55,28 @@ HEAD = {
 MENTION_DOCKER = {"en": "shell + Docker", "fr": "shell + Docker"}
 
 
+def _titres_fr() -> dict[str, str]:
+    """Titres français des sections, appariés par `id` et non par position.
+
+    C'est le mécanisme du contrat dsoxlab (0.1.54) : `meta.yml` porte
+    l'anglais, `meta.fr.yml` la surcharge. Son absence n'est pas une erreur,
+    c'est le cas de la langue par défaut.
+    """
+    fichier = ROOT / "meta.fr.yml"
+    if not fichier.exists():
+        return {}
+    try:
+        traduit = lire_yaml(fichier)
+    except YamlIllisible as exc:
+        print(f"  titres français ignorés : {exc}", file=sys.stderr)
+        return {}
+    return {
+        str(s.get("id", "")): str(s.get("title", ""))
+        for s in (traduit.get("sections") or [])
+        if s.get("title")
+    }
+
+
 def _runtime_label(lab: dict, lang: str) -> str:
     """Ce qu'il faut avoir sous la main pour jouer ce lab."""
     runtime = lab.get("runtime") or {}
@@ -105,7 +127,15 @@ def _sections() -> list[tuple[str, str, list[dict]]]:
             labs.append(lab)
 
         if labs:
-            trouvees.append((section.get("id", ""), section.get("title", ""), labs))
+            trouvees.append((
+                section.get("id", ""),
+                {
+                    "en": section.get("title", ""),
+                    "fr": _titres_fr().get(str(section.get("id", "")))
+                    or section.get("title", ""),
+                },
+                labs,
+            ))
     return trouvees
 
 
@@ -132,8 +162,8 @@ def _table(lang: str) -> str:
     lignes: list[str] = []
     sections = _sections()
 
-    for _id, titre, labs in sections:
-        lignes.append(f"### {titre}")
+    for _id, titres, labs in sections:
+        lignes.append(f"### {titres[lang]}")
         lignes.append("")
         lignes.append("| " + " | ".join(entetes) + " |")
         lignes.append("|" + "|".join(["---"] * len(entetes)) + "|")
