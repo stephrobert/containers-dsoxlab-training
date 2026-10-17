@@ -37,6 +37,7 @@ from conftest import (
     exiger_build,
     exiger_workdir,
     inspecter_image,
+    message,
     nom_objet,
     retirer_image,
     taille_affichee,
@@ -78,22 +79,32 @@ def test_l_image_part_de_debian_12(image: str) -> None:
     contrôle de ce lab qui lit le texte, et il n'a pas d'autre moyen.
     """
     bases = etapes(WORKDIR / "Dockerfile")
-    assert bases, (
-        "Aucune instruction `FROM` dans votre Dockerfile.\n\nC'est la première "
+    assert bases, message(
+        en="No `FROM` instruction in your Dockerfile.\n\nIt is the first "
+        "line of any Dockerfile: it says what the image is built on, "
+        "and nothing can happen before it.",
+        fr="Aucune instruction `FROM` dans votre Dockerfile.\n\nC'est la première "
         "ligne de tout Dockerfile : elle dit sur quoi l'image est construite, "
-        "et rien ne peut se faire avant elle."
+        "et rien ne peut se faire avant elle.",
     )
-    assert len(bases) == 1, (
-        f"Votre Dockerfile porte {len(bases)} instructions `FROM` : {bases}.\n\n"
+    assert len(bases) == 1, message(
+        en=f"Your Dockerfile carries {len(bases)} `FROM` instructions: {bases}.\n\n"
+        "This lab builds an image in a single stage. Multi-stage is the "
+        "subject of a lab further along the series, and it would bring nothing here.",
+        fr=f"Votre Dockerfile porte {len(bases)} instructions `FROM` : {bases}.\n\n"
         "Ce lab construit une image en une seule étape. Le multi-étapes est le "
-        "sujet d'un lab plus loin dans la série, et il n'apporterait rien ici."
+        "sujet d'un lab plus loin dans la série, et il n'apporterait rien ici.",
     )
     socle = bases[0].split()[0]
-    assert socle.startswith("debian:12"), (
-        f"L'image part de `{socle}`, et la mission demande Debian 12.\n\n"
+    assert socle.startswith("debian:12"), message(
+        en=f"The image starts from `{socle}`, and the mission asks for Debian 12.\n\n"
+        "This is not a whim: the whole series starts again from that image to "
+        "show, measurement after measurement, what each optimisation removes. "
+        "Starting elsewhere would make the point of comparison disappear.",
+        fr=f"L'image part de `{socle}`, et la mission demande Debian 12.\n\n"
         "Ce n'est pas un caprice : toute la série repart de cette image pour "
         "montrer, mesure après mesure, ce que chaque optimisation retire. "
-        "Commencer ailleurs ferait disparaître le point de comparaison."
+        "Commencer ailleurs ferait disparaître le point de comparaison.",
     )
 
 
@@ -103,18 +114,27 @@ def test_l_application_repond_dans_un_conteneur(image: str) -> None:
         image, nom_objet(LAB_ID, "repond"), publier=True, port_interne=PORT
     ) as conteneur:
         code, corps = conteneur.repondre("/health")
-        assert code == 200, (
-            f"`GET /health` rend {code or 'rien du tout'}.\n\n"
+        assert code == 200, message(
+            en=f"`GET /health` returns {code or 'nothing at all'}.\n\n"
+            f"Container log:\n{conteneur.journal()}\n\n"
+            "Three possible causes, in order of frequency: the application "
+            "is not started by the `CMD`; it listens on `127.0.0.1`, which "
+            "inside a container names only the container itself; or it "
+            "listens on a port other than the one declared.",
+            fr=f"`GET /health` rend {code or 'rien du tout'}.\n\n"
             f"Journal du conteneur :\n{conteneur.journal()}\n\n"
             "Trois causes possibles, dans l'ordre de fréquence : l'application "
             "n'est pas lancée par le `CMD` ; elle écoute sur `127.0.0.1`, qui "
             "dans un conteneur ne désigne que le conteneur lui-même ; ou elle "
-            "écoute sur un autre port que celui déclaré."
+            "écoute sur un autre port que celui déclaré.",
         )
-        assert '"ok"' in corps, (
-            f"`/health` répond 200 mais rend `{corps[:120]}`, et non "
+        assert '"ok"' in corps, message(
+            en=f"`/health` answers 200 but returns `{corps[:120]}`, and not "
+            '`{"status": "ok"}`. The application being served is not the one from '
+            "the starting point.",
+            fr=f"`/health` répond 200 mais rend `{corps[:120]}`, et non "
             '`{"status": "ok"}`. L\'application servie n\'est pas celle du '
-            "point de départ."
+            "point de départ.",
         )
 
 
@@ -126,17 +146,24 @@ def test_le_port_est_declare_par_expose(image: str) -> None:
     quel port cette image attend qu'on lui publie.
     """
     ports = inspecter_image(image).get("Config", {}).get("ExposedPorts") or {}
-    assert ports, (
-        "L'image ne déclare aucun port.\n\n`EXPOSE` n'ouvre rien et ne publie "
+    assert ports, message(
+        en="The image declares no port.\n\n`EXPOSE` opens nothing and publishes "
+        "nothing: it is documentation, read by `docker inspect`, by "
+        "Compose and by whoever takes over your image. Without it, they have to "
+        "read your code to guess the port.",
+        fr="L'image ne déclare aucun port.\n\n`EXPOSE` n'ouvre rien et ne publie "
         "rien : c'est de la documentation, lue par `docker inspect`, par "
         "Compose et par celui qui reprendra votre image. Sans elle, il doit "
-        "lire votre code pour deviner le port."
+        "lire votre code pour deviner le port.",
     )
     attendu = f"{PORT}/tcp"
-    assert attendu in ports, (
-        f"L'image déclare {sorted(ports)}, et l'application écoute sur "
+    assert attendu in ports, message(
+        en=f"The image declares {sorted(ports)}, and the application listens on "
+        f"{PORT}.\n\nAn `EXPOSE` that does not match the port being served is worse "
+        "than none: it sends the reader to the wrong place.",
+        fr=f"L'image déclare {sorted(ports)}, et l'application écoute sur "
         f"{PORT}.\n\nUn `EXPOSE` qui ne correspond pas au port servi est pire "
-        "qu'absent : il envoie le lecteur au mauvais endroit."
+        "qu'absent : il envoie le lecteur au mauvais endroit.",
     )
 
 
@@ -153,20 +180,29 @@ def test_l_image_embarque_python_et_les_dependances(image: str) -> None:
         commande=["sleep", "60"],
     ) as conteneur:
         res = conteneur.dans("python3", "--version")
-        assert res.returncode == 0, (
-            "`python3 --version` échoue dans le conteneur.\n\n"
+        assert res.returncode == 0, message(
+            en="`python3 --version` fails inside the container.\n\n"
+            f"{(res.stdout + res.stderr).strip()[:300]}\n\n"
+            "The `debian:12` image does not contain Python: that is precisely "
+            "what the lab's first step makes you observe. It must be "
+            "installed during the build.",
+            fr="`python3 --version` échoue dans le conteneur.\n\n"
             f"{(res.stdout + res.stderr).strip()[:300]}\n\n"
             "L'image `debian:12` ne contient pas Python : c'est précisément ce "
             "que la première étape du lab fait constater. Il doit être "
-            "installé pendant le build."
+            "installé pendant le build.",
         )
 
         importe = conteneur.dans("python3", "-c", "import fastapi, uvicorn")
-        assert importe.returncode == 0, (
-            "Python est là, mais `import fastapi, uvicorn` échoue.\n\n"
+        assert importe.returncode == 0, message(
+            en="Python is there, but `import fastapi, uvicorn` fails.\n\n"
+            f"{(importe.stdout + importe.stderr).strip()[:300]}\n\n"
+            "The dependencies from `requirements.txt` must be installed "
+            "in the image, at build time.",
+            fr="Python est là, mais `import fastapi, uvicorn` échoue.\n\n"
             f"{(importe.stdout + importe.stderr).strip()[:300]}\n\n"
             "Les dépendances de `requirements.txt` doivent être installées "
-            "dans l'image, au build."
+            "dans l'image, au build.",
         )
 
 
@@ -211,13 +247,22 @@ def test_l_image_est_autonome_sans_aucun_reseau(image: str) -> None:
             time.sleep(0.5)
         else:
             pytest.fail(
-                "Sans réseau, l'application ne répond pas.\n\n"
+                message(
+                en="Without a network, the application does not answer.\n\n"
+                f"Last attempt: {derniere[:400]}\n\n"
+                f"Container log:\n{conteneur.journal()}\n\n"
+                "An image must be self-contained: everything the application "
+                "requires is installed during the build, never at startup. "
+                "If your dependencies are installed in the `CMD`, they "
+                "will be missing wherever the network is.",
+                fr="Sans réseau, l'application ne répond pas.\n\n"
                 f"Dernière tentative : {derniere[:400]}\n\n"
                 f"Journal du conteneur :\n{conteneur.journal()}\n\n"
                 "Une image doit être autonome : tout ce que l'application "
                 "exige est installé pendant le build, jamais au démarrage. "
                 "Si vos dépendances s'installent dans le `CMD`, elles "
-                "manqueront partout où le réseau manque."
+                "manqueront partout où le réseau manque.",
+            )
             )
 
     # La seconde moitié : l'image reste fonctionnelle AVEC le réseau. Un
@@ -227,10 +272,13 @@ def test_l_image_est_autonome_sans_aucun_reseau(image: str) -> None:
         image, nom_objet(LAB_ID, "avec-reseau"), publier=True, port_interne=PORT
     ) as conteneur:
         code, _ = conteneur.repondre("/health")
-        assert code == 200, (
-            "L'application répond sans réseau mais plus avec : "
+        assert code == 200, message(
+            en="The application answers without a network but no longer with one: "
+            f"`GET /health` returns {code or 'nothing'}.\n\n"
+            f"{conteneur.journal()}",
+            fr="L'application répond sans réseau mais plus avec : "
             f"`GET /health` rend {code or 'rien'}.\n\n"
-            f"{conteneur.journal()}"
+            f"{conteneur.journal()}",
         )
 
     # Ce que l'apprenant a sous les yeux, dit une fois dans le rapport : c'est
@@ -248,11 +296,15 @@ def test_le_repertoire_de_travail_de_l_image_est_declare(image: str) -> None:
     """
     config = inspecter_image(image).get("Config", {})
     travail = (config.get("WorkingDir") or "").rstrip("/")
-    assert travail, (
-        "L'image ne déclare aucun `WORKDIR`.\n\nLes chemins relatifs partent "
+    assert travail, message(
+        en="The image declares no `WORKDIR`.\n\nRelative paths then start "
+        "from the root, and `uvicorn main:app` does not find its module: "
+        "it looks for it in `/`. Declaring the application's directory also "
+        "makes the rest of the Dockerfile readable.",
+        fr="L'image ne déclare aucun `WORKDIR`.\n\nLes chemins relatifs partent "
         "alors de la racine, et `uvicorn main:app` ne trouve pas son module : "
         "il le cherche dans `/`. Déclarer le répertoire de l'application rend "
-        "aussi la suite du Dockerfile lisible."
+        "aussi la suite du Dockerfile lisible.",
     )
 
 
@@ -265,13 +317,18 @@ def test_la_commande_de_demarrage_est_declaree(image: str) -> None:
     """
     config = inspecter_image(image).get("Config", {})
     demarrage = (config.get("Cmd") or []) + (config.get("Entrypoint") or [])
-    assert demarrage, (
-        "L'image ne déclare ni `CMD` ni `ENTRYPOINT`.\n\n`docker run` "
+    assert demarrage, message(
+        en="The image declares neither `CMD` nor `ENTRYPOINT`.\n\n`docker run` "
+        "would then run the command of `debian:12`, that is, a shell "
+        "that stops immediately.",
+        fr="L'image ne déclare ni `CMD` ni `ENTRYPOINT`.\n\n`docker run` "
         "exécuterait alors la commande de `debian:12`, c'est-à-dire un shell "
-        "qui s'arrête immédiatement."
+        "qui s'arrête immédiatement.",
     )
     joint = " ".join(demarrage)
-    assert "uvicorn" in joint or "main" in joint, (
-        f"La commande de démarrage est `{joint}`, et ne lance pas "
-        "l'application.\n\nC'est `uvicorn` qui sert une application FastAPI."
+    assert "uvicorn" in joint or "main" in joint, message(
+        en=f"The start command is `{joint}`, and it does not start "
+        "the application.\n\nIt is `uvicorn` that serves a FastAPI application.",
+        fr=f"La commande de démarrage est `{joint}`, et ne lance pas "
+        "l'application.\n\nC'est `uvicorn` qui sert une application FastAPI.",
     )
