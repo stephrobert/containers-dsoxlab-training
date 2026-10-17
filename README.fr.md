@@ -73,7 +73,7 @@ blocs se jouent sur votre machine, avec votre moteur Docker. Les labs qui
 exigent une machine dédiée le déclarent, et `dsoxlab provision` s'en occupera
 le jour où vous les atteindrez.
 
-## Votre premier lab, en cinq minutes
+### Votre premier lab, en cinq minutes
 
 ```bash
 export LAB_HOME=$PWD
@@ -85,7 +85,36 @@ dsoxlab challenge images-premiere-image  # la mission
 dsoxlab check     images-premiere-image  # le score
 ```
 
+### Garder à jour
+
+```bash
+uv tool upgrade dsoxlab        # le moteur, publié sur PyPI
+git -C <ce dépôt> pull         # le catalogue
+```
+
+Le moteur et le catalogue avancent indépendamment : un nouveau `dsoxlab` ne
+demande jamais de recloner les labs, et de nouveaux labs ne demandent jamais de
+mettre l'outil à jour, tant que la version du contrat correspond.
+
 ## Comment ça marche
+
+### Le contrat déclaratif, à deux niveaux
+
+Le catalogue est décrit par des données, pas par du code, et c'est ce qui garde
+le moteur `dsoxlab` indépendant du domaine :
+
+- **`meta.yml`** à la racine déclare l'identité du dépôt et l'**ordre** des
+  onze sections affichées par `list-labs` ;
+- **`lab.yaml`** par lab déclare ses `skills`, son `level`, son `runtime`
+  (type, fixtures, services), ses `distros`, son `doc_url` et un bloc
+  `validation`. Un `lab.fr.yaml` surcharge `title` et `description` en
+  français, et rien d'autre.
+
+`dsoxlab validate-structure` contrôle tout le contrat, et les sections
+déclarées dans `meta.yml` sans lab sont précisément la façon dont ce catalogue
+dit ce qu'il doit encore.
+
+### Le cycle de vie d'un lab
 
 | Commande | Ce qu'elle fait |
 | --- | --- |
@@ -98,7 +127,19 @@ dsoxlab check     images-premiere-image  # le score
 | `dsoxlab progress` | où vous en êtes, lab par lab |
 | `dsoxlab clean <id>` | retire le répertoire de travail |
 
-### Les tests lisent l'état, jamais vos commandes
+### Les runtimes
+
+| Runtime | Ce que le lab demande |
+|---|---|
+| `shell` | un terminal et un démon Docker qui tourne. Les tests inspectent les images, conteneurs et réseaux que Docker contient vraiment. |
+
+Ce catalogue ne déclare aucun bloc `infra:` : aucune machine virtuelle, aucun
+`dsoxlab provision`. Les conteneurs sont le sujet enseigné, donc ils tournent
+sur votre propre moteur.
+
+### Le modèle de validation
+
+**Les tests lisent l'état, jamais vos commandes.**
 
 Vous arrivez au résultat par le chemin que vous voulez. Un test de ce catalogue
 ressemble à ceci :
@@ -115,7 +156,9 @@ Et jamais à ceci :
 assert "docker build" in historique   # ce qui ne prouve rien
 ```
 
-### Les indices ont un coût, et c'est voulu
+### Score, indices, avancement
+
+**Les indices ont un coût, et c'est voulu.**
 
 Quatre indices par lab, du plus vague au plus explicite. Chacun retire des
 points. Le dernier nomme l'outil qui montre la faute quand tout semble juste
@@ -165,14 +208,18 @@ compétence et par vagues, `COVERAGE.md` la matrice des guides du blog, et
 lorsqu'il a été joué dans les deux sens, score nul avant le travail et plein
 après.
 
-## Contribuer et licence
+## Contribuer
 
 - Contribuer : voir [CONTRIBUTING](./CONTRIBUTING.fr.md).
 - Conduite : [Code de conduite](./CODE_OF_CONDUCT.fr.md) · Sécurité : [SECURITY](./SECURITY.fr.md).
 - Ce qui a changé, et quand : [CHANGELOG](./CHANGELOG.fr.md).
-- Licence : [CC BY 4.0](./LICENSE).
+- Ce qui existait avant ce catalogue : voir plus bas.
 
 Ce catalogue remplace
 [containers-training](https://github.com/stephrobert/containers-training), qui
 reste en place : ses cinq TP y sont lisibles, et leur substance est reprise ici
 sous forme de labs mesurés.
+
+## Licence
+
+Voir [`LICENSE`](./LICENSE) (CC BY 4.0).
