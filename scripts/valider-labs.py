@@ -52,8 +52,8 @@ from pathlib import Path
 # `dsoxlab check --json` et en tire un verdict à trois issues. `scripts/` est
 # sur `sys.path` parce que c'est le répertoire de ce fichier.
 import verdict_check
-from lecture_solution import est_chiffree, lire_solution
 import yaml
+from lecture_solution import est_chiffree, lire_solution
 
 RACINE = Path(__file__).resolve().parent.parent
 LABS = RACINE / "labs"

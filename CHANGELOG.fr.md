@@ -39,6 +39,24 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
   près, somme SHA256 comparée avant et après. Les 31 tests du dépôt passent et
   `validate-structure` est vert.
 
+- **`scripts/hooks/hadolint-cible.sh` déchiffre avant d'analyser.** C'était le
+  second lecteur du fichier, et le plus discret : hadolint lirait l'en-tête
+  vault et son pavé hexadécimal sans y voir une seule instruction, donc il
+  rendrait du vert sans avoir rien contrôlé. Il analyse maintenant une copie
+  déchiffrée, dont le nom conserve le chemin d'origine pour que ses messages
+  restent lisibles.
+
+  En CI, `.vault-pass` n'existe pas, et c'est la convention de toute la
+  collection : aucun catalogue ne confie son secret à la forge. Le contrôle
+  s'y déclare donc **non joué**, par un avertissement visible dans
+  l'interface, au lieu de passer pour un succès. Il se joue chez le formateur,
+  qui a le secret. C'est le coût assumé du chiffrement, et il valait d'être
+  écrit plutôt que découvert.
+
+  Les deux chemins ont été éprouvés plutôt que supposés : avec le secret,
+  hadolint analyse le Dockerfile et rend son `DL3008` ; sans lui, le script
+  avertit et sort en 0.
+
 ## [0.2.1] - 2026-10-19
 
 ### Modifié

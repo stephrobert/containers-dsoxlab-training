@@ -39,6 +39,23 @@ of the Docker engine and in which storage mode. That is what
   byte for byte, SHA256 compared before and after. The repository's 31 tests
   pass and `validate-structure` is green.
 
+- **`scripts/hooks/hadolint-cible.sh` decrypts before scanning.** It was the
+  second reader of that file, and the quieter one: hadolint would read the
+  vault header and its hex blob without seeing a single instruction, so it
+  would report green without having checked anything. It now scans a decrypted
+  copy whose name keeps the original path, so its messages stay readable.
+
+  In CI, `.vault-pass` does not exist, and that is the convention across the
+  whole collection: no catalogue entrusts its secret to the forge. The check
+  therefore declares itself **not run**, through a warning visible in the UI,
+  instead of passing for a success. It runs on the trainer's machine, where
+  the secret lives. That is the accepted cost of encryption, and it was worth
+  writing down rather than discovering.
+
+  Both paths were exercised rather than assumed: with the secret, hadolint
+  scans the Dockerfile and reports its `DL3008`; without it, the script warns
+  and exits 0.
+
 ## [0.2.1] - 2026-10-19
 
 ### Changed
