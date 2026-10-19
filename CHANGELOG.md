@@ -56,6 +56,23 @@ of the Docker engine and in which storage mode. That is what
   scans the Dockerfile and reports its `DL3008`; without it, the script warns
   and exits 0.
 
+- **The "0 before, 100 after" replay no longer runs in CI, and that is the
+  accepted cost of encryption.** The cycle lays the trainer solution over the
+  working directory, so it needs the plaintext, and `.vault-pass` is not on
+  the forge. Both affected steps therefore declare themselves not run, through
+  a visible warning, rather than passing for a success.
+
+  What is lost is real and deserves naming: the standing of
+  `validation-labs.json` no longer rests on this CI but on the local campaign
+  that produced it. That is now the situation of the eleven other catalogues
+  in the collection, none of whose CI replays a lab. The committed record
+  holds `images-premiere-image → VALIDE` as of 2026-10-01, and that is the
+  proof.
+
+  The other option existed and was set aside: entrusting `.vault-pass` to a
+  repository secret would have kept the replay, at the price of putting on the
+  forge the secret no catalogue puts there.
+
 ## [0.2.1] - 2026-10-19
 
 ### Changed

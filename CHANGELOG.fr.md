@@ -57,6 +57,22 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
   hadolint analyse le Dockerfile et rend son `DL3008` ; sans lui, le script
   avertit et sort en 0.
 
+- **Le rejeu « 0 avant, 100 après » ne se joue plus en CI, et c'est le coût
+  assumé du chiffrement.** Ce cycle pose la solution du formateur sur le
+  répertoire de travail : il lui faut le clair, et `.vault-pass` n'est pas sur
+  la forge. Les deux étapes concernées se déclarent donc non jouées, par un
+  avertissement visible, plutôt que de passer pour un succès.
+
+  Ce qu'on perd est réel et mérite d'être nommé : l'opposabilité de
+  `validation-labs.json` ne tient plus à cette CI mais à la campagne locale
+  qui l'a produit. C'est désormais la situation des onze autres catalogues de
+  la collection, dont aucune CI ne rejoue de lab. Le relevé commité porte
+  `images-premiere-image → VALIDE` au 2026-10-01, et c'est lui qui prouve.
+
+  L'autre voie existait, et elle a été écartée : confier `.vault-pass` à un
+  secret de dépôt aurait gardé le rejeu, au prix de mettre sur la forge le
+  secret qu'aucun catalogue n'y met.
+
 ## [0.2.1] - 2026-10-19
 
 ### Modifié
