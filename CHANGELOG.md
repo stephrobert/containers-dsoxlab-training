@@ -2,16 +2,33 @@
 
 **Language:** [English](./CHANGELOG.md) · [Français](./CHANGELOG.fr.md)
 
-This log is **dated, not versioned**, like the GitHub Actions catalogue's. A
-version number promises compatibility between two states of a piece of
-software; a lab catalogue has no such promise to make, and a learner never
-plays "version 1.2" of a lab, they play the one that is online.
+This log is **dated and versioned**. It was dated only until 2026-10-17, on the
+grounds that a lab catalogue promises no compatibility between two of its
+states; the twelve catalogues now publish one release each, and this one is no
+longer the exception. The date is kept because it says something the version
+does not: **when** a lab was proven.
 
 What the date does bring: knowing **when** a lab was proven, with which version
 of the Docker engine and in which storage mode. That is what
 `validation-labs.json` records lab by lab, and what this log summarises.
 
 ---
+
+## [0.2.1] - 2026-10-19
+
+### Changed
+
+- **Every `doc_url` now points at `www.stephane-robert.info`.** The site moved
+  from `blog.` to `www.`, and the old host redirects with a 301 to the same
+  path. Nothing was broken: `validate-structure --check-urls` follows
+  redirections, and this catalogue was green before a single line changed. The
+  migration is housekeeping, not repair: a `doc_url` should point at the page
+  rather than depend on a redirection that will be removed one day.
+
+  The paths are identical between the two hosts, so only the host changed. The
+  359 `doc_url` the catalogues declare were looked up in the site's own
+  repository, offline: all of them exist there, including twenty-three pages
+  the old host answered with a 404.
 
 ## 2026-10-01
 
