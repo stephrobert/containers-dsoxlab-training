@@ -13,6 +13,32 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ---
 
+## [0.2.2] - 2026-10-19
+
+### Sécurité
+
+- **La solution du formateur est chiffrée par ansible-vault.** Le
+  `Dockerfile` de `images-premiere-image` était commité en clair, dans un
+  dépôt public : l'apprenant qui clone avait la réponse du premier lab sous la
+  main. Les autres catalogues chiffrent les leurs, et celui-ci ne le faisait
+  pas.
+
+  Il passait aussi au travers du contrôle, et ça valait d'être corrigé en
+  amont : `dsoxlab validate-structure` ne regardait que six extensions
+  (`.yaml`, `.yml`, `.sh`, `.py`, `.bash`, `.txt`), donc un fichier nommé
+  `Dockerfile` n'était même pas ouvert. Le moteur contrôle désormais tout
+  fichier texte d'un répertoire de solutions, à partir de la 0.5.4.
+
+  `scripts/valider-labs.py` pose la solution par-dessus le répertoire de
+  travail, fichier par fichier : il la **déchiffre maintenant à la pose**, par
+  `scripts/lecture_solution.py`. Sans quoi `docker build` aurait lu
+  « $ANSIBLE_VAULT;1.1;AES256 » comme une instruction, et son erreur aurait
+  parlé de syntaxe Dockerfile plutôt que de chiffrement.
+
+  Vérifié sur le comportement : la pose rend le Dockerfile original à l'octet
+  près, somme SHA256 comparée avant et après. Les 31 tests du dépôt passent et
+  `validate-structure` est vert.
+
 ## [0.2.1] - 2026-10-19
 
 ### Modifié

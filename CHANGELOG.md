@@ -14,6 +14,31 @@ of the Docker engine and in which storage mode. That is what
 
 ---
 
+## [0.2.2] - 2026-10-19
+
+### Security
+
+- **The trainer solution is encrypted with ansible-vault.** The `Dockerfile`
+  of `images-premiere-image` was committed in plaintext, in a public
+  repository: anyone cloning had the answer to the first lab at hand. The
+  other catalogues encrypt theirs; this one did not.
+
+  It also slipped past the check, which was worth fixing upstream:
+  `dsoxlab validate-structure` only looked at six extensions (`.yaml`, `.yml`,
+  `.sh`, `.py`, `.bash`, `.txt`), so a file named `Dockerfile` was never even
+  opened. As of 0.5.4 the engine checks every text file in a solution
+  directory.
+
+  `scripts/valider-labs.py` lays the solution over the working directory file
+  by file: it now **decrypts as it lays**, through
+  `scripts/lecture_solution.py`. Otherwise `docker build` would have read
+  "$ANSIBLE_VAULT;1.1;AES256" as an instruction, and its error would have
+  spoken of Dockerfile syntax rather than encryption.
+
+  Verified on behaviour: laying the solution returns the original Dockerfile
+  byte for byte, SHA256 compared before and after. The repository's 31 tests
+  pass and `validate-structure` is green.
+
 ## [0.2.1] - 2026-10-19
 
 ### Changed
