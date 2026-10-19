@@ -105,7 +105,7 @@ Le blog porte une page de parcours avec suivi de progression :
 
 ```console
 $ curl -s -o /dev/null -w '%{http_code}' -L \
-    https://blog.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/parcours/
+    https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/parcours/
 200
 ```
 

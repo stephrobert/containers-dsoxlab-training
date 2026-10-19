@@ -26,7 +26,7 @@ repo:
   id: containers-dsoxlab-training
   category: containers
   title: "Containers, from the Dockerfile to orchestration"
-  blog_url: https://blog.stephane-robert.info/docs/conteneurs/
+  blog_url: https://www.stephane-robert.info/docs/conteneurs/
   issues_url: https://github.com/stephrobert/containers-dsoxlab-training/issues
   description: |
     Verifiable labs for the blog's containerisation course. Every lab is

@@ -112,7 +112,7 @@ for fichier in sorted(RACINE.rglob("*.mdx")):
     guides.append(
         {
             "fichier": relatif,
-            "url": "https://blog.stephane-robert.info/docs/conteneurs/"
+            "url": "https://www.stephane-robert.info/docs/conteneurs/"
             + relatif.removesuffix(".mdx").removesuffix("/index")
             + "/",
             "titre": entete(texte, "title"),

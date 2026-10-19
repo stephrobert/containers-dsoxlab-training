@@ -12,7 +12,7 @@
 # d'utilisateurs, un socket et une configuration de noyau. Il s'installe par le
 # gestionnaire de paquets de la distribution, et le blog a un guide pour cela :
 #
-#     https://blog.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/
+#     https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/
 #
 # Le catalogue le VÉRIFIE au lieu de l'installer : `conftest.py` échoue avec un
 # message qui dit quoi faire si `docker info` ne répond pas, et le premier lab

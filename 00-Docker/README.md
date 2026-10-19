@@ -18,17 +18,17 @@ L'objectif est de maîtriser les bonnes pratiques de construction d'image :
 ## 🎯 Prérequis pour suivre ce TP
 
 - [**Compétences en ligne de
-  commande**](https://blog.stephane-robert.info/docs/admin-serveurs/linux/introduction/)
+  commande**](https://www.stephane-robert.info/docs/admin-serveurs/linux/introduction/)
   :
   - Être à l’aise avec un terminal Linux.
   - Connaître les commandes de base (`ls`, `cd`, `mkdir`, `rm`, etc.).
   - Savoir utiliser un éditeur de texte en ligne de commande (`nano`, `vim`,
     etc.). Pouquoi pas essayer
-    [vscode](https://blog.stephane-robert.info/docs/developper/autres-outils/ide/visual-studio-code/)
+    [vscode](https://www.stephane-robert.info/docs/developper/autres-outils/ide/visual-studio-code/)
     ?
 
 - [**Notions de base sur les
-  conteneurs**](https://blog.stephane-robert.info/docs/conteneurs/)
+  conteneurs**](https://www.stephane-robert.info/docs/conteneurs/)
   :
   - Comprendre le principe d’un **conteneur**.
   - Savoir à quoi sert une **image Docker** et comment elle est construite.

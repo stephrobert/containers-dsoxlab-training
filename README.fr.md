@@ -5,7 +5,7 @@
 [![Licence : CC BY 4.0](https://img.shields.io/badge/Licence-CC%20BY%204.0-lightgrey.svg)](./LICENSE)
 
 Catalogue de **labs vérifiables** de la formation Conteneurisation du blog
-[blog.stephane-robert.info](https://blog.stephane-robert.info/docs/conteneurs/),
+[www.stephane-robert.info](https://www.stephane-robert.info/docs/conteneurs/),
 joué par la CLI [dsoxlab](https://github.com/stephrobert/dsoxlab).
 
 ## Ce que c'est
@@ -26,7 +26,7 @@ et le durcissement.
 réécrit pas :
 
 ```text
-blog.stephane-robert.info     explique, enseigne
+www.stephane-robert.info     explique, enseigne
 ce dépôt                      fait pratiquer, mesure, prouve
 ```
 
@@ -193,7 +193,7 @@ consensus et son état de contrôle à protéger.
 
 | Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
 |---|---|---|---|---|---|
-| `images-premiere-image` | Première image : l'application voyage en conteneur, et le prouve | c2 | - | shell + Docker | [guide](https://blog.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+| `images-premiere-image` | Première image : l'application voyage en conteneur, et le prouve | c2 | - | shell + Docker | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
 
 _1 labs, table générée par `scripts/gen_catalog.py`._
 <!-- LABS:END -->

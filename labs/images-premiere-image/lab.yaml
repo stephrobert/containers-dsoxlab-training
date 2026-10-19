@@ -25,7 +25,7 @@ distros:
   - any
 # La lecon jumelee, et la SECTION qui porte exactement ce que le lab eprouve.
 # L'ancre est acceptee par la politique d'URL du contrat, verifie le 2026-10-01.
-doc_url: https://blog.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/
 runtime:
   type: shell
   workdir: challenge/work

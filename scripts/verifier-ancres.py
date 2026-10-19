@@ -40,7 +40,7 @@ import yaml
 RACINE = Path(__file__).resolve().parent.parent
 LABS = RACINE / "labs"
 ROADMAP = RACINE / "ROADMAP.md"
-PREFIXE = "https://blog.stephane-robert.info/docs/conteneurs/"
+PREFIXE = "https://www.stephane-robert.info/docs/conteneurs/"
 
 # Le site refuse l'agent par défaut de Python : mesuré le 2026-10-01, il rend
 # 404 sur une page qui répond 200 à curl. Sans cet en-tête, le contrôle
