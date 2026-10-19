@@ -166,4 +166,4 @@ dsoxlab check images-premiere-image
 dsoxlab hint  images-premiere-image
 ```
 
-Reference: [writing a Dockerfile](https://blog.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/)
+Reference: [writing a Dockerfile](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/)

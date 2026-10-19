@@ -34,7 +34,7 @@ recopié.
 C'est le partage que la refonte installe, et il n'est pas propre à ce dépôt :
 
 ```text
-blog.stephane-robert.info     explique, enseigne
+www.stephane-robert.info     explique, enseigne
 containers-dsoxlab-training   fait pratiquer, mesure, prouve
 ```
 

@@ -9,7 +9,7 @@
 
 👉 Avant de commencer, assurez-vous d’avoir Docker installé sur votre machine :
 📘 [Guide d'installation de
-Docker](https://blog.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/)
+Docker](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/)
 
 ## 🔰 Étape 1 - Démarrer depuis une image de base
 
@@ -316,7 +316,7 @@ docker image inspect fastapi-auto --format='{{.Size}}' | numfmt --to=iec
 
 📦 `dive` est un outil très pratique pour **explorer visuellement les couches**
 d’une image Docker. Plus d'infos sur
-[dive](https://blog.stephane-robert.info/docs/conteneurs/outils/dive/)
+[dive](https://www.stephane-robert.info/docs/conteneurs/outils/dive/)
 
 #### 🛠️ Installer `dive`
 

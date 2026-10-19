@@ -23,7 +23,7 @@ pas le fragment. `scripts/verifier-ancres.py` est né de là.
 Le préfixe d'URL commun, omis dans les tableaux pour qu'ils restent lisibles :
 
 ```text
-https://blog.stephane-robert.info/docs/conteneurs/
+https://www.stephane-robert.info/docs/conteneurs/
 ```
 
 ## Comment lire ce backlog
