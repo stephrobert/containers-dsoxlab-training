@@ -25,3 +25,7 @@ __pycache__/
 # Inventaire des guides du blog, regenere par scripts/inventaire-guides.py :
 # derive dune source qui vit ailleurs, donc non versionne.
 guides.json
+
+# Le mot de passe qui déchiffre la solution du formateur. Jamais commité :
+# le commiter annulerait le chiffrement, puisqu'il voyage avec ce qu'il ouvre.
+.vault-pass
