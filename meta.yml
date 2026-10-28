@@ -56,6 +56,27 @@ repo:
 # `infra.bootstrap` de la 0.3.0 qui portera leur socle : joué une fois après
 # `provision`, empreinté, rejoué seulement s'il change.
 
+infra:
+  provider:
+    - kvm
+  network: lab-containers
+  cidr: 10.10.120.0/24
+  hosts:
+    # Un hote unique : les labs de ce catalogue manipulent des images et des
+    # conteneurs sur UNE machine, pas un cluster. 2 Go suffisent a un demon
+    # Docker et a quelques conteneurs applicatifs ; le disque porte les couches
+    # d images, qui sont ce qui grossit le plus vite.
+    - name: docker.lab
+      distro: debian13
+      role: debian-family
+      ram_mb: 2048
+      vcpu: 2
+      disk_gb: 20
+  providers:
+    kvm:
+      libvirt_uri: "qemu:///system"
+      bridge_name: "virbr-cont"
+
 sections:
   # ── c1 : avant de construire, comprendre ce qu'on manipule ───────────────
   - id: c1-comprendre
@@ -72,7 +93,7 @@ sections:
       From a first Dockerfile to a non-root multi-stage image, each step
       measured against the previous one.
     labs:
-      - images-premiere-image
+      - images-identifier-image
 
   # ── c3 : absent de l'ancien dépôt, pour 2 505 lignes de guides ───────────
   - id: c3-distribuer

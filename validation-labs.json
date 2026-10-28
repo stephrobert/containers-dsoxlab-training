@@ -1,38 +1,57 @@
 {
- "images-premiere-image": {
-  "apres": {
-   "echecs": [],
-   "passed": 7,
-   "score": 100,
-   "total": 7
-  },
-  "avant": {
-   "echecs": [],
-   "passed": 0,
-   "score": 0,
-   "total": 7
-  },
-  "date": "2026-10-01",
-  "docker": "29.1.3",
-  "duree_s": 11,
-  "ecarts": [],
-  "etapes": [
-   "état photographié : 394 image(s), 17 conteneur(s), 146 volume(s)",
-   "avant le travail : 0/7",
-   "après la solution : 7/7",
-   "après clean et run : 0/7",
-   "moteur rendu intact"
-  ],
-  "id": "images-premiere-image",
-  "journal": ".cache/dsoxlab/containers-training/validation-images-premiere-image.log",
-  "raisons": [],
-  "rejeu": {
-   "echecs": [],
-   "passed": 0,
-   "score": 0,
-   "total": 7
-  },
-  "store": "containerd",
-  "verdict": "VALIDE"
- }
+  "images-identifier-image": {
+    "apres": {
+      "echecs": [],
+      "passed": 4,
+      "recorded": true,
+      "score": 100,
+      "skipped": 0,
+      "status": "passed",
+      "total": 4
+    },
+    "avant": {
+      "echecs": [
+        "test_la_plateforme_annoncee_est_celle_de_l_image",
+        "test_la_reponse_nomme_le_digest_de_l_image_de_base",
+        "test_la_reponse_nomme_le_digest_reel_du_tag",
+        "test_le_digest_de_la_premiere_construction_est_refuse"
+      ],
+      "passed": 0,
+      "recorded": true,
+      "score": 0,
+      "skipped": 0,
+      "status": "failed",
+      "total": 4
+    },
+    "date": "2026-10-28",
+    "docker": "29.1.3",
+    "duree_s": 56,
+    "ecarts": [],
+    "etapes": [
+      "état photographié : 553 image(s), 7 conteneur(s), 381 volume(s)",
+      "avant le travail : 0/4",
+      "après la solution : 4/4",
+      "après clean et run : 0/4",
+      "moteur rendu intact"
+    ],
+    "id": "images-identifier-image",
+    "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-images-identifier-image.log",
+    "raisons": [],
+    "rejeu": {
+      "echecs": [
+        "test_la_plateforme_annoncee_est_celle_de_l_image",
+        "test_la_reponse_nomme_le_digest_de_l_image_de_base",
+        "test_la_reponse_nomme_le_digest_reel_du_tag",
+        "test_le_digest_de_la_premiere_construction_est_refuse"
+      ],
+      "passed": 0,
+      "recorded": true,
+      "score": 0,
+      "skipped": 0,
+      "status": "failed",
+      "total": 4
+    },
+    "store": "containerd",
+    "verdict": "VALIDE"
+  }
 }

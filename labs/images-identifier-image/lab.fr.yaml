@@ -1,0 +1,5 @@
+# Surcharge française du lab images-identifier-image. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Identité d'une image : le tag ment, le digest non"
+description: "Dire exactement quelle image tourne : comparer un tag à un digest, lire un index multi-plateforme, et repérer une image remplacée sous le même tag."
