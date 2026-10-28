@@ -68,10 +68,11 @@ cd containers-dsoxlab-training
 mise install
 ```
 
-Aucun provisionnement n'est nécessaire pour commencer : les labs des premiers
-blocs se jouent sur votre machine, avec votre moteur Docker. Les labs qui
-exigent une machine dédiée le déclarent, et `dsoxlab provision` s'en occupera
-le jour où vous les atteindrez.
+Chaque lab se joue dans une **machine virtuelle jetable**, que
+`dsoxlab provision` monte pour vous et que `dsoxlab destroy` retire. Vous
+n'installez donc rien sur votre poste, Docker compris : c'est le lab qui pose
+le moteur, dans une Debian 13 qui ne survit pas à la séance. Comptez quelques
+minutes de provisionnement avant le premier lab.
 
 ### Votre premier lab, en cinq minutes
 
@@ -132,11 +133,18 @@ dit ce qu'il doit encore.
 
 | Runtime | Ce que le lab demande |
 |---|---|
-| `shell` | un terminal et un démon Docker qui tourne. Les tests inspectent les images, conteneurs et réseaux que Docker contient vraiment. |
+| `vm` | une Debian 13 jetable, montée par `dsoxlab provision` et détruite par `dsoxlab destroy`. Le lab y installe Docker ; les tests inspectent les images, conteneurs et réseaux que ce moteur contient vraiment. |
 
-Ce catalogue ne déclare aucun bloc `infra:` : aucune machine virtuelle, aucun
-`dsoxlab provision`. Les conteneurs sont le sujet enseigné, donc ils tournent
-sur votre propre moteur.
+**Vous n'installez pas Docker sur votre poste.** C'est une décision de ce
+catalogue, prise le 2026-10-28 : une machine virtuelle se jette, un démon
+Docker posé sur votre machine de travail reste, avec son groupe `docker`, son
+service et ses images. Les labs vous coûtent donc un `dsoxlab provision` de
+quelques minutes, et rien d'autre.
+
+En retour, ils peuvent enseigner ce qu'un conteneur sur votre poste
+n'enseignerait pas : la configuration du démon, le mode rootless, seccomp,
+AppArmor, le pare-feu, une registry avec son certificat. Et un lab qui remplit
+le disque à dessein le remplit chez lui.
 
 ### Le modèle de validation
 
@@ -179,9 +187,9 @@ Vous perdez progressivement les indications. C'est l'objet du parcours.
 
 | Bloc | Ce qu'il apprend | Ce qu'il exige |
 | --- | --- | --- |
-| **Docker** | images, exécution, données, réseau, sécurité, internes | votre moteur, parfois une machine dédiée |
-| **Compose** | une application à plusieurs services, décrite et diagnostiquée | votre moteur |
-| **Swarm** | un orchestrateur distribué : Raft, quorum, overlay, secrets | plusieurs machines |
+| **Docker** | images, exécution, données, réseau, sécurité, internes | une VM jetable |
+| **Compose** | une application à plusieurs services, décrite et diagnostiquée | la même VM |
+| **Swarm** | un orchestrateur distribué : Raft, quorum, overlay, secrets | plusieurs VM |
 
 Swarm est un **parcours avancé, clairement séparé**. Ce n'est pas une étape
 vers Kubernetes dans ce dépôt : c'est un orchestrateur à part entière, avec son
@@ -194,9 +202,9 @@ consensus et son état de contrôle à protéger.
 
 | Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
 |---|---|---|---|---|---|
-| `images-identifier-image` | Identité d'une image : le tag ment, le digest non | c2 | - | vm | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+| `images-identifier-image` | Identité d'une image : le tag ment, le digest non | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
 
-_1 labs, table générée par `scripts/gen_catalog.py`._
+_1 lab, table générée par `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Où en est ce catalogue

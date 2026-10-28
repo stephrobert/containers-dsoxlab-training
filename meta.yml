@@ -45,14 +45,24 @@ repo:
 # pour l'instant », juste au-dessus d'un bloc infra. Corrigé en même temps que
 # les sections.
 #
-# La règle du catalogue reste `runtime: shell` par défaut, pour qu'on n'ait pas
-# à provisionner une machine pour jouer le premier lab. Mais 35 des 90 labs du
-# backlog exigent une VM (démon, rootless, seccomp, AppArmor, pare-feu,
-# registry TLS, contexts distants, Swarm), et le premier lab écrit en fait
-# partie : la promesse « le début de la formation se joue sur un simple poste »
-# est donc à rouvrir, ce que `ROADMAP.md` dit en toutes lettres.
+# TOUS LES LABS SONT EN `runtime: vm`. Décision de Stéphane du 2026-10-28 : on
+# ne force pas l'apprenant à installer Docker sur son poste. Le lab monte cette
+# Debian 13, y installe le moteur, et la détruit à la fin ; une VM se jette, un
+# démon Docker posé sur un portable de bureau reste.
 #
-# `infra.bootstrap` de la 0.3.0 portera leur socle : joué une fois après
+# L'ancienne règle disait l'inverse, `runtime: shell` par défaut, au nom du §20
+# du brief. Elle était aussi la seule à le dire : les 46 contrats de TP de
+# `src/data/parcours/docker.yaml` déclarent tous
+# `environnement.reference: vm_linux_jetable`.
+#
+# UN SEUL HÔTE SUFFIT POUR 62 DES 90 LABS du backlog. Six contrats
+# (`conteneurs-18`, `21`, `22`, `32`, `34`, `44`) exigent deux environnements
+# isolés, et Swarm une topologie à part. Le second hôte s'ajoutera donc EN FIN
+# DE LISTE, jamais au milieu : l'adresse et la MAC dérivent de la position
+# (`cidrhost(cidr, idx + 11)`), et une insertion réattribue les adresses des
+# suivants, ce que libvirt refuse en cours de route.
+#
+# `infra.bootstrap` de la 0.3.0 portera le socle commun : joué une fois après
 # `provision`, empreinté, rejoué seulement s'il change.
 
 infra:

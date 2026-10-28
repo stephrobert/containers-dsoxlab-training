@@ -60,7 +60,6 @@ https://www.stephane-robert.info/docs/conteneurs/
 | --- | --- |
 | **id** | identifiant dsoxlab, en français, `<compétence>-<sujet>` |
 | **type** | `lab` guidé, `challenge` sans recette, `capstone` sans sujet annoncé |
-| **rt** | runtime : `sh` pour le poste de l'apprenant, `vm` pour une machine dédiée |
 | **val** | `f` fonctionnel, `s` sécurité, quand le second a un sens réel |
 | **prér.** | labs supposés joués, pour les capstones et les challenges |
 
@@ -68,20 +67,51 @@ Un identifiant ne porte **pas de numéro** : un numéro date de l'ordre
 d'écriture du catalogue, jamais de l'ordre de lecture de la formation, et les
 deux divergent dès qu'une leçon bouge. L'ordre est porté par le parcours.
 
-**Le runtime n'est pas un détail.** Un lab `sh` se joue en quelques secondes
-sur le moteur de l'apprenant ; un lab `vm` exige un provisionnement de
-plusieurs minutes. Le brief l'exige au §20 : ne pas faire provisionner cinq
-machines pour jouer le premier lab. La règle de ce catalogue est donc :
+## Tous les labs tournent dans une VM, et il n'y a plus de colonne pour le dire
 
-> `sh` par défaut. `vm` seulement quand le lab touche au **démon**, au
-> **noyau** ou à **plusieurs hôtes** : daemon.json, rootless, seccomp,
-> AppArmor, pare-feu, NFS, contexts distants, Swarm.
+**Décision de Stéphane du 2026-10-28 : on ne force pas l'apprenant à installer
+Docker sur son poste.** Le lab monte une Debian 13 jetable par
+`dsoxlab provision`, y installe le moteur, et la détruit à la fin.
 
-Ce qui donne, sur les **90** labs de ce fichier, **55 en `sh`** et **35 en
-`vm`**, dont les 18 de Swarm. Ces deux nombres sont comptés sur les tableaux
-ci-dessous, pas estimés : la version précédente de ce fichier annonçait
-« 67 labs, 49 en sh et 18 en vm » dans sa prose et 89 dans son tableau de
-synthèse, deux lignes qui ne pouvaient pas être vraies ensemble.
+C'est la raison qui change, pas seulement la valeur. L'ancienne règle était
+`sh` par défaut, au nom du §20 du brief : ne pas faire provisionner une machine
+pour jouer le premier lab. Elle faisait payer ce confort par l'installation
+d'un démon Docker sur la machine de travail de l'apprenant, c'est-à-dire par
+un changement durable sur un poste qui ne nous appartient pas, pour une
+formation qu'on quitte au bout de quelques heures. Une VM se jette ; un
+`apt install docker.io` sur un portable de bureau reste.
+
+**Et le catalogue était le seul à dire le contraire.** Les **46 contrats de TP**
+de `src/data/parcours/docker.yaml` déclarent tous
+`environnement.reference: vm_linux_jetable`, et `projet.laboratoire` annonçait
+déjà « VM Linux jetable Debian 13 ». Cette décision ne retourne donc pas le
+pilotage : elle y ramène le catalogue, qui avait gardé la règle de son brief
+d'origine.
+
+La colonne `rt` est retirée des tableaux : elle ne porterait plus qu'une seule
+valeur, et une colonne muette est exactement le travers que `gen_catalog.py`
+reproche à la sienne. Les **90** labs de ce fichier sont donc en `runtime: vm`.
+
+### Ce qui exige une SECONDE machine, et reste à câbler
+
+`meta.yml` ne déclare aujourd'hui qu'un hôte, `docker.lab`. Six contrats du
+pilotage en demandent deux, et il faudra les ajouter avant d'écrire ces
+labs :
+
+| Contrat | Ce qu'il exige |
+| --- | --- |
+| `conteneurs-21`, `conteneurs-22`, `conteneurs-44` | deux environnements isolés (publier ici, récupérer là) |
+| `conteneurs-32`, `conteneurs-34` | deux environnements isolés (sauvegarder, restaurer ailleurs) |
+| `conteneurs-18` | deux architectures, ou un périmètre réduit déclaré |
+
+Un hôte nouveau **s'ajoute en fin de liste** dans `infra.hosts` : l'adresse IP
+et la MAC dérivent de la position (`cidrhost(cidr, idx + 11)`), et insérer au
+milieu réattribue les adresses des suivants, ce que libvirt refuse en cours de
+route.
+
+Swarm reste à part, avec ses trois managers : c'est l'arbitrage de topologie
+qui n'est pas rendu, et le périmètre de la formation l'envoie de toute façon
+vers un parcours distinct.
 
 ---
 
@@ -89,22 +119,22 @@ synthèse, deux lignes qui ne pouvaient pas être vraies ensemble.
 
 ### `conteneurs-utilisation` : utiliser les conteneurs (14 labs)
 
-| id | type | rt | val | doc_url ancré |
-| --- | --- | --- | --- | --- |
-| `docker-verifier-son-moteur` | lab | sh | f | `moteurs-conteneurs/docker/installation/#vérification-de-linstallation` |
-| `docker-premier-conteneur` | lab | sh | f | `moteurs-conteneurs/docker/cli/#lancer-et-gérer-les-conteneurs-docker` |
-| `docker-cycle-de-vie` | lab | sh | f | `moteurs-conteneurs/docker/concepts/#cycle-de-vie-dun-conteneur` |
-| `container-entrypoint-et-cmd` | lab | sh | f | `moteurs-conteneurs/docker/execution-depannage/#le-cycle-de-vie-dun-conteneur` |
-| `container-signaux-et-pid-1` | lab | sh | f | `moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-` |
-| `docker-inspecter-un-conteneur` | lab | sh | f | `moteurs-conteneurs/docker/execution-depannage/#les-commandes-indispensables` |
-| `docker-anatomie-dune-image` | lab | sh | f | `images-conteneurs/#comment-est-construite-une-image-de-conteneur-` |
-| `reseau-bridge-par-defaut` | lab | sh | f | `moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation` |
-| `reseau-bridge-dedie` | lab | sh | f | `moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation` |
-| `reseau-publication-de-ports` | lab | sh | f+s | `moteurs-conteneurs/docker/network/#bonnes-pratiques-réseau` |
-| `reseau-interne` | lab | sh | f+s | `moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale` |
-| `reseau-diagnostic-dns` | challenge | sh | f | `moteurs-conteneurs/docker/network/#dépannage-réseau-docker` |
-| `donnees-volumes-et-montages` | lab | sh | f | `moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes` |
-| `donnees-permissions-uid-gid` | lab | sh | f | `moteurs-conteneurs/docker/volumes/#les-volumes-standards` |
+| id | type | val | doc_url ancré |
+| --- | --- | --- | --- |
+| `docker-verifier-son-moteur` | lab | f | `moteurs-conteneurs/docker/installation/#vérification-de-linstallation` |
+| `docker-premier-conteneur` | lab | f | `moteurs-conteneurs/docker/cli/#lancer-et-gérer-les-conteneurs-docker` |
+| `docker-cycle-de-vie` | lab | f | `moteurs-conteneurs/docker/concepts/#cycle-de-vie-dun-conteneur` |
+| `container-entrypoint-et-cmd` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#le-cycle-de-vie-dun-conteneur` |
+| `container-signaux-et-pid-1` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-` |
+| `docker-inspecter-un-conteneur` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#les-commandes-indispensables` |
+| `docker-anatomie-dune-image` | lab | f | `images-conteneurs/#comment-est-construite-une-image-de-conteneur-` |
+| `reseau-bridge-par-defaut` | lab | f | `moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation` |
+| `reseau-bridge-dedie` | lab | f | `moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation` |
+| `reseau-publication-de-ports` | lab | f+s | `moteurs-conteneurs/docker/network/#bonnes-pratiques-réseau` |
+| `reseau-interne` | lab | f+s | `moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale` |
+| `reseau-diagnostic-dns` | challenge | f | `moteurs-conteneurs/docker/network/#dépannage-réseau-docker` |
+| `donnees-volumes-et-montages` | lab | f | `moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes` |
+| `donnees-permissions-uid-gid` | lab | f | `moteurs-conteneurs/docker/volumes/#les-volumes-standards` |
 
 `docker-premier-conteneur` est le lab d'entrée du catalogue : il doit se jouer
 en moins d'une minute, sans rien construire, sinon il décourage avant
@@ -117,28 +147,30 @@ sont une autre compétence, et ils sont dans `compose-application`.
 
 ### `conteneurs-isolation` : mesurer l'isolation et remettre en service (10 labs)
 
-| id | type | rt | val | prér. | doc_url ancré |
-| --- | --- | --- | --- | --- | --- |
-| `internes-namespaces` | lab | vm | f | - | `moteurs-conteneurs/docker/sous-le-capot/#namespaces--isoler-ce-que-le-conteneur-voit` |
-| `internes-cgroups-v2` | lab | vm | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
-| `internes-stockage-des-images` | lab | sh | f | - | `moteurs-conteneurs/docker/sous-le-capot/` |
-| `internes-chaine-dexecution` | lab | vm | f | - | `moteurs-conteneurs/docker/sous-le-capot/#comment-ces-mécanismes-fonctionnent-ensemble` |
-| `container-limite-cpu` | lab | sh | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
-| `container-ulimits-et-shm` | lab | sh | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
-| `troubleshoot-exit-127` | lab | sh | f | - | `moteurs-conteneurs/docker/execution-depannage/#décoder-les-exit-codes` |
-| `troubleshoot-conflit-de-port` | lab | sh | f | - | `moteurs-conteneurs/docker/execution-depannage/#checklist-de-debug-réseau` |
-| `troubleshoot-permission-refusee` | lab | sh | f | `donnees-permissions-uid-gid` | `moteurs-conteneurs/docker/volumes/#les-volumes-standards` |
-| `troubleshoot-boucle-de-redemarrage` | lab | sh | f | - | `moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement` |
+| id | type | val | prér. | doc_url ancré |
+| --- | --- | --- | --- | --- |
+| `internes-namespaces` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#namespaces--isoler-ce-que-le-conteneur-voit` |
+| `internes-cgroups-v2` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
+| `internes-stockage-des-images` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/` |
+| `internes-chaine-dexecution` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#comment-ces-mécanismes-fonctionnent-ensemble` |
+| `container-limite-cpu` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
+| `container-ulimits-et-shm` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
+| `troubleshoot-exit-127` | lab | f | - | `moteurs-conteneurs/docker/execution-depannage/#décoder-les-exit-codes` |
+| `troubleshoot-conflit-de-port` | lab | f | - | `moteurs-conteneurs/docker/execution-depannage/#checklist-de-debug-réseau` |
+| `troubleshoot-permission-refusee` | lab | f | `donnees-permissions-uid-gid` | `moteurs-conteneurs/docker/volumes/#les-volumes-standards` |
+| `troubleshoot-boucle-de-redemarrage` | lab | f | - | `moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement` |
 
-`internes-stockage-des-images` reste en `sh`, et il a une raison d'exister que
-l'audit a trouvée : sur cette machine, la même image mesure **83 Mio par l'API
-et 329 Mio par `docker images`**, parce que le moteur emploie le containerd
-image store. Le lab fait constater l'écart et dire lequel des deux chiffres
-répond à quelle question.
+`internes-stockage-des-images` a une raison d'exister que l'audit a trouvée :
+sur le poste de mesure, la même image pesait **83 Mio par l'API et 329 Mio par
+`docker images`**, parce que le moteur y employait le containerd image store.
+Le lab fait constater l'écart et dire lequel des deux chiffres répond à quelle
+question. **À rejouer dans la VM avant de l'écrire** : le moteur installé par
+le lab n'emploie pas forcément ce magasin, et un lab qui enseigne un écart doit
+d'abord constater que l'écart existe là où l'apprenant le jouera.
 
-Les quatre `troubleshoot` en `sh` préparent l'**épreuve 1** du niveau, qui
-demande de remettre un conteneur en service : un symptôme, et rien qui nomme la
-cause. Les incidents qui touchent l'hôte, eux, sont au niveau c4.
+Les quatre `troubleshoot` préparent l'**épreuve 1** du niveau, qui demande de
+remettre un conteneur en service : un symptôme, et rien qui nomme la cause. Les
+incidents qui touchent l'hôte, eux, sont au niveau c4.
 
 ---
 
@@ -146,27 +178,26 @@ cause. Les incidents qui touchent l'hôte, eux, sont au niveau c4.
 
 ### `images-construction` : construire ses images (11 labs)
 
-| id | type | rt | val | doc_url ancré |
-| --- | --- | --- | --- | --- |
-| **`images-identifier-image`** | lab | vm | f | `images-conteneurs/ecrire-dockerfile/` |
-| **`images-premiere-image`** | lab | sh | f | `images-conteneurs/ecrire-dockerfile/` |
-| `images-ordre-des-couches` | lab | sh | f | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-1--maximiser-le-cache-avec-lordre-des-instructions` |
-| `images-contexte-de-build` | lab | sh | f+s | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-2--utiliser-dockerignore` |
-| `images-optimiser-la-taille` | lab | sh | f | `images-conteneurs/optimiser-taille-image/` |
-| `images-migrer-vers-alpine` | lab | sh | f | `images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base` |
-| `images-build-multi-etapes` | lab | sh | f | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères` |
-| `images-non-root` | lab | sh | f+s | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root` |
-| `images-healthcheck` | lab | sh | f | `moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck` |
-| `buildkit-cache-monte` | lab | sh | f | `images-conteneurs/build/buildkit/#cache-avancé` |
-| `buildkit-secret-de-build` | challenge | sh | f+s | `moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build` |
+| id | type | val | doc_url ancré |
+| --- | --- | --- | --- |
+| **`images-identifier-image`** | lab | f | `images-conteneurs/ecrire-dockerfile/` |
+| **`images-premiere-image`** | lab | f | `images-conteneurs/ecrire-dockerfile/` |
+| `images-ordre-des-couches` | lab | f | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-1--maximiser-le-cache-avec-lordre-des-instructions` |
+| `images-contexte-de-build` | lab | f+s | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-2--utiliser-dockerignore` |
+| `images-optimiser-la-taille` | lab | f | `images-conteneurs/optimiser-taille-image/` |
+| `images-migrer-vers-alpine` | lab | f | `images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base` |
+| `images-build-multi-etapes` | lab | f | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères` |
+| `images-non-root` | lab | f+s | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root` |
+| `images-healthcheck` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck` |
+| `buildkit-cache-monte` | lab | f | `images-conteneurs/build/buildkit/#cache-avancé` |
+| `buildkit-secret-de-build` | challenge | f+s | `moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build` |
 
 `images-identifier-image` est **le seul lab écrit** de ce catalogue, attesté
-`VALIDE` le 2026-10-28. Il réalise le contrat `conteneurs-11` du pilotage et
-tourne en `vm`, par application du pilotage et non par préférence : son
+`VALIDE` le 2026-10-28. Il réalise le contrat `conteneurs-11` du pilotage. Son
 scénario remplace une image sous le même tag et lit ce que le moteur déclare,
-donc il lui faut un moteur à lui. C'est aussi la raison pour laquelle la
-promesse « le premier niveau se joue sans provisionner une machine » n'est plus
-tenable telle quelle, et il faut le dire.
+donc il lui faut un moteur à lui : il a été écrit en `vm` avant que la règle du
+catalogue ne le soit, et c'est en le validant que la contradiction est
+apparue.
 
 `images-non-root` est marqué `security: true` et ce n'est pas décoratif :
 l'audit a trouvé l'ancien TP annonçant l'utilisateur non-root comme
@@ -181,20 +212,20 @@ corriger. Lui donner la recette retirerait tout l'intérêt.
 
 Entièrement absent de l'ancien dépôt, pour 2 505 lignes de guides disponibles.
 
-| id | type | rt | val | doc_url ancré |
-| --- | --- | --- | --- | --- |
-| `registry-tag-push-pull` | lab | sh | f | `registres/#docker-push--envoyer-une-image-vers-la-registry` |
-| `registry-tag-contre-digest` | lab | sh | f+s | `registres/#tags-vs-digests--la-distinction-critique` |
-| `images-epingler-par-digest` | lab | sh | f+s | `registres/#tags-vs-digests--la-distinction-critique` |
-| `registry-locale-tls` | lab | vm | f+s | `registres/distribution/#configurer-tls` |
-| `registry-authentification` | lab | vm | f+s | `registres/distribution/#configurer-lauthentification` |
-| `registry-air-gap` | challenge | sh | f | `outils/skopeo/#environnements-air-gap-déconnectés` |
+| id | type | val | doc_url ancré |
+| --- | --- | --- | --- |
+| `registry-tag-push-pull` | lab | f | `registres/#docker-push--envoyer-une-image-vers-la-registry` |
+| `registry-tag-contre-digest` | lab | f+s | `registres/#tags-vs-digests--la-distinction-critique` |
+| `images-epingler-par-digest` | lab | f+s | `registres/#tags-vs-digests--la-distinction-critique` |
+| `registry-locale-tls` | lab | f+s | `registres/distribution/#configurer-tls` |
+| `registry-authentification` | lab | f+s | `registres/distribution/#configurer-lauthentification` |
+| `registry-air-gap` | challenge | f | `outils/skopeo/#environnements-air-gap-déconnectés` |
 
-`registry-locale-tls` et `registry-authentification` sont en `vm` : une registry
-avec un certificat exige de toucher la configuration du démon de l'apprenant,
-ce qu'un catalogue ne fait pas sur une machine qui n'est pas la sienne. Le brief
-le demande explicitement, `insecure-registries` ne doit pas être le chemin
-nominal.
+`registry-locale-tls` et `registry-authentification` touchent la configuration
+du démon pour lui faire accepter un certificat. C'était l'argument qui les
+mettait en `vm` quand les autres étaient sur le poste ; il devient l'argument
+qui montre pourquoi la VM est la bonne règle pour tous. `insecure-registries`
+ne doit pas être le chemin nominal, le brief le demande explicitement.
 
 `registry-air-gap` prépare l'**épreuve 2** du niveau : livrer une image
 utilisable ailleurs, sans accès au registre d'origine.
@@ -205,17 +236,17 @@ utilisable ailleurs, sans accès au registre d'origine.
 
 ### `compose-application` : décrire une application avec Compose (9 labs)
 
-| id | type | rt | val | doc_url ancré |
-| --- | --- | --- | --- | --- |
-| `compose-premiere-stack` | lab | sh | f | `orchestrateurs/docker-compose/#votre-premier-composeyaml` |
-| `compose-resolution-des-variables` | lab | sh | f | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-isolation-reseau` | lab | sh | f+s | `orchestrateurs/docker-compose/#concepts-clés` |
-| `compose-persistance` | lab | sh | f | `orchestrateurs/docker-compose/#concepts-clés` |
-| `compose-tache-de-migration` | lab | sh | f | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-secrets` | lab | sh | f+s | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-sante-et-dependances` | lab | sh | f | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-ressources` | lab | sh | f | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-plusieurs-environnements` | lab | sh | f | `orchestrateurs/docker-compose/#configuration-avancée` |
+| id | type | val | doc_url ancré |
+| --- | --- | --- | --- |
+| `compose-premiere-stack` | lab | f | `orchestrateurs/docker-compose/#votre-premier-composeyaml` |
+| `compose-resolution-des-variables` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
+| `compose-isolation-reseau` | lab | f+s | `orchestrateurs/docker-compose/#concepts-clés` |
+| `compose-persistance` | lab | f | `orchestrateurs/docker-compose/#concepts-clés` |
+| `compose-tache-de-migration` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
+| `compose-secrets` | lab | f+s | `orchestrateurs/docker-compose/#configuration-avancée` |
+| `compose-sante-et-dependances` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
+| `compose-ressources` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
+| `compose-plusieurs-environnements` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
 
 **Ce bloc tient sur un guide de 798 lignes dont les sections sont larges.**
 Les ancres ci-dessus sont justes, mais `#configuration-avancée` sert six labs :
@@ -229,10 +260,10 @@ ce module en huit leçons.
 
 ### `compose-exploitation` : exploiter une application Compose (2 labs)
 
-| id | type | rt | val | prér. | doc_url ancré |
-| --- | --- | --- | --- | --- | --- |
-| `donnees-postgres-sauvegarde` | challenge | sh | f | - | `moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker` |
-| `compose-capstone` | capstone | sh | f+s | les labs de `compose-application` | `orchestrateurs/docker-compose/` |
+| id | type | val | prér. | doc_url ancré |
+| --- | --- | --- | --- | --- |
+| `donnees-postgres-sauvegarde` | challenge | f | - | `moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker` |
+| `compose-capstone` | capstone | f+s | les labs de `compose-application` | `orchestrateurs/docker-compose/` |
 
 **Ce module est le trou que le reclassement a mis au jour.** Il annonce quatre
 leçons et ne reçoit que deux labs : la sauvegarde est couverte, le capstone
@@ -250,25 +281,25 @@ un volume.
 
 ### `docker-administration` : administrer et durcir un hôte (17 labs)
 
-| id | type | rt | val | doc_url ancré |
-| --- | --- | --- | --- | --- |
-| `docker-configurer-le-demon` | lab | vm | f | `moteurs-conteneurs/docker/daemon-config/` |
-| `docker-contexte-ssh` | lab | vm | f+s | `moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe` |
-| `docker-rotation-des-journaux` | lab | vm | f | `moteurs-conteneurs/docker/daemon-config/#logging-drivers` |
-| `securite-groupe-docker` | lab | vm | f+s | `moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker` |
-| `securite-socket-lecture-seule` | challenge | vm | f+s | `moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas` |
-| `securite-socket-proxy` | lab | vm | f+s | `moteurs-conteneurs/docker/socket-proxy/` |
-| `securite-rootless` | lab | vm | f+s | `moteurs-conteneurs/docker/securite/#rootless-mode` |
-| `securite-capabilities` | lab | sh | f+s | `moteurs-conteneurs/docker/sous-le-capot/#capabilities--fragmenter-les-privilèges-root` |
-| `securite-no-new-privileges` | lab | sh | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
-| `securite-seccomp` | lab | vm | f+s | `moteurs-conteneurs/docker/securite/#profils-seccomp` |
-| `securite-apparmor` | lab | vm | f+s | `moteurs-conteneurs/docker/securite/#apparmor-et-selinux` |
-| `container-systeme-en-lecture-seule` | lab | sh | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
-| `container-limite-de-processus` | lab | sh | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
-| `secrets-au-runtime` | lab | sh | f+s | `moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes` |
-| `container-memoire-et-oom` | lab | sh | f | `moteurs-conteneurs/docker/execution-depannage/#diagnostic-approfondi--le-cas-oom-kill` |
-| `troubleshoot-disque-plein` | challenge | vm | f | `moteurs-conteneurs/docker/daemon-config/#optimisations-production` |
-| `donnees-volume-orphelin` | challenge | sh | f | `moteurs-conteneurs/docker/volumes/#bonnes-pratiques-de-gestion-des-volumes` |
+| id | type | val | doc_url ancré |
+| --- | --- | --- | --- |
+| `docker-configurer-le-demon` | lab | f | `moteurs-conteneurs/docker/daemon-config/` |
+| `docker-contexte-ssh` | lab | f+s | `moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe` |
+| `docker-rotation-des-journaux` | lab | f | `moteurs-conteneurs/docker/daemon-config/#logging-drivers` |
+| `securite-groupe-docker` | lab | f+s | `moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker` |
+| `securite-socket-lecture-seule` | challenge | f+s | `moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas` |
+| `securite-socket-proxy` | lab | f+s | `moteurs-conteneurs/docker/socket-proxy/` |
+| `securite-rootless` | lab | f+s | `moteurs-conteneurs/docker/securite/#rootless-mode` |
+| `securite-capabilities` | lab | f+s | `moteurs-conteneurs/docker/sous-le-capot/#capabilities--fragmenter-les-privilèges-root` |
+| `securite-no-new-privileges` | lab | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
+| `securite-seccomp` | lab | f+s | `moteurs-conteneurs/docker/securite/#profils-seccomp` |
+| `securite-apparmor` | lab | f+s | `moteurs-conteneurs/docker/securite/#apparmor-et-selinux` |
+| `container-systeme-en-lecture-seule` | lab | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
+| `container-limite-de-processus` | lab | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
+| `secrets-au-runtime` | lab | f+s | `moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes` |
+| `container-memoire-et-oom` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#diagnostic-approfondi--le-cas-oom-kill` |
+| `troubleshoot-disque-plein` | challenge | f | `moteurs-conteneurs/docker/daemon-config/#optimisations-production` |
+| `donnees-volume-orphelin` | challenge | f | `moteurs-conteneurs/docker/volumes/#bonnes-pratiques-de-gestion-des-volumes` |
 
 C'est le module le plus chargé du backlog, et c'est cohérent : il réunit les
 sept leçons qui vont du démon au diagnostic, et la sécurité n'y est pas un
@@ -280,10 +311,12 @@ important », et il mérite son statut de challenge : il doit prouver que
 moteur. **Un système de fichiers en lecture seule n'est pas une API en lecture
 seule.**
 
-`securite-apparmor` est en `vm`, et le brief l'exige : ne jamais prétendre
-avoir validé AppArmor dans un environnement qui ne l'applique pas. Le catalogue
-Kubernetes a mesuré exactement cela, un kubelet refusant un profil faute
-d'AppArmor actif dans le nœud.
+`securite-apparmor` demande une vérification que la VM ne dispense pas : ne
+jamais prétendre avoir validé AppArmor dans un environnement qui ne l'applique
+pas. Le catalogue Kubernetes a mesuré exactement cela, un kubelet refusant un
+profil faute d'AppArmor actif dans le nœud. Le lab doit donc constater
+qu'AppArmor est **actif** sur l'image Debian 13 du catalogue, et refuser de
+noter s'il ne l'est pas.
 
 `container-memoire-et-oom` doit faire constater ce que le brief souligne :
 `exit 137` **ne prouve pas** un OOM. Le test lit `.State.OOMKilled`, le code de
@@ -306,11 +339,11 @@ donc un second hôte, et elle attendra qu'un guide la couvre.
 
 ### `docker-industrialisation` : industrialiser la livraison (3 labs)
 
-| id | type | rt | val | prér. | doc_url ancré |
-| --- | --- | --- | --- | --- | --- |
-| `compose-dans-une-ci` | challenge | sh | f | - | `orchestrateurs/docker-compose/#commandes-essentielles` |
-| `image-scan-de-vulnerabilites` | lab | sh | f+s | - | `registres/quay-io/#publier-une-image-sur-quayio` |
-| `capstone-chaine-complete` | capstone | vm | f+s | les capstones des trois niveaux précédents | - |
+| id | type | val | prér. | doc_url ancré |
+| --- | --- | --- | --- | --- |
+| `compose-dans-une-ci` | challenge | f | - | `orchestrateurs/docker-compose/#commandes-essentielles` |
+| `image-scan-de-vulnerabilites` | lab | f+s | - | `registres/quay-io/#publier-une-image-sur-quayio` |
+| `capstone-chaine-complete` | capstone | f+s | les capstones des trois niveaux précédents | - |
 
 `image-scan-de-vulnerabilites` doit corriger l'erreur de l'ancien TP3 : le lab
 fait constater qu'un scan est un **état daté**, et son test ne dépend pas du
@@ -348,10 +381,10 @@ Les identifiants sont ceux du brief, qui les a nommés précisément. Leur
 | sécurité et DR | `swarm-autolock`, `swarm-perte-de-quorum` | `#rotation-des-certificats`, `#forcer-un-nouveau-cluster-urgence` |
 | capstone | `swarm-capstone` | le guide entier |
 
-Tous en `runtime: vm`, et c'est la question ouverte du §20 : **trois managers
-plus des workers, pour dix-huit labs, imposeraient un provisionnement lourd à
-qui veut jouer le premier lab Docker.** Trois pistes, à trancher avant d'écrire
-le premier :
+Leur difficulté n'est plus le runtime, puisque tout le catalogue est en VM :
+c'est le **nombre** de machines. **Trois managers plus des workers, pour
+dix-huit labs**, c'est une topologie sans rapport avec l'hôte unique des autres
+labs. Trois pistes, à trancher avant d'écrire le premier :
 
 1. `infra.bootstrap` de la 0.3.0 pose le cluster une fois pour toutes, empreinté
    et rejoué seulement s'il change ; les labs Swarm n'ont alors plus à
@@ -399,23 +432,29 @@ passent donc devant les redondances à trancher.
 
 ## L'ordre d'écriture
 
-L'ordre suit les niveaux, et à l'intérieur d'un niveau les labs `sh` d'abord :
+Il suit les niveaux, dans l'ordre du parcours :
 
 ```text
-1   conteneurs-utilisation                  14 labs, tous en sh
-2   images-construction (reste)             10 labs en sh, après le lab écrit
-3   conteneurs-isolation (partie sh)         6 labs en sh
-4   compose-application                      9 labs en sh
-5   compose-exploitation                     2 labs + 3 à décrire
-6   images-distribution                      4 en sh, 2 en vm
-7   conteneurs-isolation (partie vm)         3 labs en vm
-8   docker-administration                    6 en sh, 11 en vm
-9   docker-industrialisation                 2 en sh, 1 capstone vm + 2 à décrire
-10  swarm-hors-tronc                        18 labs en vm, après arbitrage
+1   conteneurs-utilisation                  14 labs
+2   images-construction                     10 labs, après celui déjà écrit
+3   conteneurs-isolation                    10 labs
+4   images-distribution                      6 labs
+5   compose-application                      9 labs
+6   compose-exploitation                     2 labs + 3 à décrire
+7   docker-administration                   17 labs
+8   docker-industrialisation                 3 labs + 2 à décrire
+9   swarm-hors-tronc                        18 labs, topologie à part
 ```
 
-Les quatre premières étapes sont jouables sans provisionner une machine, à une
-exception près qu'il faut nommer : `images-identifier-image`, le seul lab déjà
-écrit, est en `vm`. La promesse « le début de la formation se joue sur un
-simple poste avec Docker » est donc **à rouvrir**, et c'est un arbitrage pour
-Stéphane, pas une correction à faire en passant.
+**Quand faut-il le second hôte ? La question n'est pas encore tranchée, et je
+ne la tranche pas ici par déduction.** Le pilotage nomme six contrats qui
+exigent deux environnements isolés, mais ce backlog a été écrit avant eux : la
+correspondance entre ses identifiants de labs et les `conteneurs-NN` des
+contrats n'est pas établie. Deux d'entre eux relèvent de modules qui arrivent
+tôt (`conteneurs-18` en construction, `conteneurs-32` en persistance), donc le
+second hôte peut être nécessaire dès les premières étapes.
+
+Ce qui se fait avant d'écrire ces labs, dans cet ordre : établir la
+correspondance contrat par contrat, puis ajouter l'hôte **en fin** de
+`infra.hosts`. Ce qui ne se fait pas : l'ajouter d'avance, ce qui ferait
+provisionner deux machines à qui joue le premier lab.
