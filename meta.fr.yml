@@ -22,67 +22,67 @@ repo:
     programmer : le code est fourni, il travaille l'image, l'exécution, le
     réseau, le stockage, la distribution et le durcissement.
 
+# Les `id` sont ceux des modules du programme cible de
+# `src/data/parcours/docker.yaml`, et l'appariement se fait par eux : c'est le
+# point qui avait diverge avant le 2026-10-28, quand ce fichier portait onze
+# sections face a huit modules. Le `title` reste libre, et c'est lui que
+# l'apprenant lit.
 sections:
-  - id: c1-comprendre
-    title: "Comprendre et manipuler"
+  - id: conteneurs-utilisation
+    title: "Utiliser les conteneurs"
     description: >-
-      Image et conteneur ne sont pas la même chose, et le cycle de vie
-      explique la moitié des pannes. Cinq labs courts, aucun build.
+      Image et conteneur ne sont pas la même chose, et le cycle de vie explique
+      la moitié des pannes. Lancer, inspecter, publier un port, conserver des
+      données : aucun build pour l'instant.
 
-  - id: c2-construire
-    title: "Construire des images"
+  - id: conteneurs-isolation
+    title: "Mesurer l'isolation, et remettre un conteneur en service"
+    description: >-
+      Namespaces, cgroups et la chaîne qui va de la CLI au processus, observés
+      et non récités. Puis des incidents courts, où le symptôme ne nomme pas la
+      cause.
+
+  - id: images-construction
+    title: "Construire ses images"
     description: >-
       Du premier Dockerfile à l'image multi-étapes non-root, chaque étape
       mesurée contre la précédente.
 
-  - id: c3-distribuer
-    title: "Distribuer les images"
+  - id: images-distribution
+    title: "Distribuer ses images"
     description: >-
       Pousser, retrouver par digest, publier dans une registry privée, et
       franchir un air-gap.
 
-  - id: c4-executer
-    title: "Exécuter et limiter"
+  - id: compose-application
+    title: "Décrire une application avec Compose"
     description: >-
-      Ce que le conteneur reçoit, ce qu'il signale en mourant, et ce qu'on lui
-      refuse.
+      Une application à plusieurs services, décrite dans un fichier : réseaux,
+      données, secrets, santé et ressources.
 
-  - id: c5-persister
-    title: "Persister et connecter"
+  - id: compose-exploitation
+    title: "Exploiter une application Compose"
     description: >-
-      Ce qui survit au conteneur, ce qui disparaît avec lui, et comment deux
-      services se parlent.
+      Journaux et ressources, sauvegarde et restauration, mise à jour et retour
+      arrière, puis une stack à relever seul.
 
-  - id: c6-composer
-    title: "Docker Compose"
+  - id: docker-administration
+    title: "Administrer et durcir un hôte Docker"
     description: >-
-      Une application à plusieurs services, décrite dans un fichier et
-      diagnostiquée quand elle ne monte pas.
+      Le démon, la socket, le rootless, les capabilities, seccomp et AppArmor,
+      et le diagnostic d'un hôte qui ne répond plus. Un conteneur qui
+      fonctionne n'est pas un conteneur sûr.
 
-  - id: c7-exploiter
-    title: "Exploiter et dépanner"
+  - id: docker-industrialisation
+    title: "Industrialiser la chaîne de livraison"
     description: >-
-      Des incidents réels, courts, où le symptôme ne nomme pas la cause.
+      Build et publication automatisés, ce qu'une image contient vraiment, la
+      promotion d'un artefact, et une chaîne complète à reprendre sans que le
+      sujet soit annoncé.
 
-  - id: c8-securiser
-    title: "Sécuriser"
-    description: >-
-      Un conteneur qui fonctionne n'est pas un conteneur sûr. Capabilities,
-      seccomp, rootless, et le piège du socket Docker.
-
-  - id: c9-sous-le-capot
-    title: "Comprendre sous le capot"
-    description: >-
-      Namespaces, cgroups et la chaîne qui va de la CLI au processus, observés
-      et non récités.
-
-  - id: c10-capstone
-    title: "Capstone Docker et Compose"
-    description: >-
-      Une chaîne complète, huit pannes injectées, et aucun sujet annoncé.
-
-  - id: sw-swarm
-    title: "Docker Swarm, parcours avancé"
+  - id: swarm-hors-tronc
+    title: "Docker Swarm, parcours avancé hors formation"
     description: >-
       Un orchestrateur distribué : consensus Raft, quorum, overlay, secrets
-      distribués, et un état de contrôle à protéger.
+      distribués, et un état de contrôle à protéger. Hors du tronc de la
+      formation Conteneurs et Docker, qui renvoie Swarm à un parcours distinct.

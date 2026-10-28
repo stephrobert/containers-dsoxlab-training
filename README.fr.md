@@ -104,7 +104,8 @@ Le catalogue est décrit par des données, pas par du code, et c'est ce qui gard
 le moteur `dsoxlab` indépendant du domaine :
 
 - **`meta.yml`** à la racine déclare l'identité du dépôt et l'**ordre** des
-  onze sections affichées par `list-labs` ;
+  huit sections affichées par `list-labs`, qui portent les identifiants des
+  modules de la formation, plus le parcours Swarm déclaré hors tronc ;
 - **`lab.yaml`** par lab déclare ses `skills`, son `level`, son `runtime`
   (type, fixtures, services), ses `distros`, son `doc_url` et un bloc
   `validation`. Un `lab.fr.yaml` surcharge `title` et `description` en
@@ -189,11 +190,11 @@ consensus et son état de contrôle à protéger.
 ## Le catalogue
 
 <!-- LABS:START -->
-### Construire des images
+### Construire ses images
 
 | Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
 |---|---|---|---|---|---|
-| `images-premiere-image` | Première image : l'application voyage en conteneur, et le prouve | c2 | - | shell + Docker | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+| `images-identifier-image` | Identité d'une image : le tag ment, le digest non | c2 | - | vm | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
 
 _1 labs, table générée par `scripts/gen_catalog.py`._
 <!-- LABS:END -->
