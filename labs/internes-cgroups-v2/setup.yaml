@@ -1,0 +1,10 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer le lab internes-cgroups-v2
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: À remplir
+      ansible.builtin.debug:
+        msg: "Remplacez cette tâche par la mise en situation."

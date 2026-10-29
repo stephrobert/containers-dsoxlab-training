@@ -1,0 +1,22 @@
+# Lab buildkit-secret-de-build. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: buildkit-secret-de-build                      # REQUIS
+title: "À remplir"            # REQUIS
+level: c2                     # REQUIS
+description: "À remplir : ce que l'apprenant saura faire à la fin."
+skills:                       # REQUIS, non vide
+  - a-remplir
+distros:                      # REQUIS, non vide
+  - any
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build   # REQUIS, http(s)
+lab_type: challenge
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

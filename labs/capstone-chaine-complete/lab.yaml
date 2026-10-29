@@ -1,0 +1,22 @@
+# Lab capstone-chaine-complete. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: capstone-chaine-complete                      # REQUIS
+title: "À remplir"            # REQUIS
+level: c4                     # REQUIS
+description: "À remplir : ce que l'apprenant saura faire à la fin."
+skills:                       # REQUIS, non vide
+  - a-remplir
+distros:                      # REQUIS, non vide
+  - any
+doc_url: https://www.stephane-robert.info/docs/conteneurs/-   # REQUIS, http(s)
+lab_type: capstone
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

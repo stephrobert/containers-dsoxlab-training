@@ -120,7 +120,21 @@ sections:
       An image and a container are not the same thing, and the lifecycle
       explains half of the failures. Running, inspecting, publishing a port,
       keeping data: no build yet.
-    labs: []
+    labs:
+      - docker-verifier-son-moteur
+      - docker-premier-conteneur
+      - docker-cycle-de-vie
+      - container-entrypoint-et-cmd
+      - container-signaux-et-pid-1
+      - docker-inspecter-un-conteneur
+      - docker-anatomie-dune-image
+      - reseau-bridge-par-defaut
+      - reseau-bridge-dedie
+      - reseau-publication-de-ports
+      - reseau-interne
+      - reseau-diagnostic-dns
+      - donnees-volumes-et-montages
+      - donnees-permissions-uid-gid
 
   - id: conteneurs-isolation
     title: "Measure isolation, and put a container back in service"
@@ -128,7 +142,17 @@ sections:
       Namespaces, cgroups and the chain that goes from the CLI to the process,
       observed rather than recited. Then short incidents where the symptom does
       not name the cause.
-    labs: []
+    labs:
+      - internes-namespaces
+      - internes-cgroups-v2
+      - internes-stockage-des-images
+      - internes-chaine-dexecution
+      - container-limite-cpu
+      - container-ulimits-et-shm
+      - troubleshoot-exit-127
+      - troubleshoot-conflit-de-port
+      - troubleshoot-permission-refusee
+      - troubleshoot-boucle-de-redemarrage
 
   # ── Niveau c2 : construire et distribuer ses images ─────────────────────
   - id: images-construction
@@ -138,13 +162,28 @@ sections:
       measured against the previous one.
     labs:
       - images-identifier-image
+      - images-ordre-des-couches
+      - images-contexte-de-build
+      - images-optimiser-la-taille
+      - images-migrer-vers-alpine
+      - images-build-multi-etapes
+      - images-non-root
+      - images-healthcheck
+      - buildkit-cache-monte
+      - buildkit-secret-de-build
 
   - id: images-distribution
     title: "Distribute images"
     description: >-
       Push, find an image again by its digest, publish to a private registry,
       and cross an air gap.
-    labs: []
+    labs:
+      - registry-tag-push-pull
+      - registry-tag-contre-digest
+      - images-epingler-par-digest
+      - registry-locale-tls
+      - registry-authentification
+      - registry-air-gap
 
   # ── Niveau c3 : exploiter une application avec Compose ──────────────────
   - id: compose-application
@@ -152,14 +191,25 @@ sections:
     description: >-
       An application made of several services, described in one file: networks,
       data, secrets, health and resources.
-    labs: []
+    labs:
+      - compose-premiere-stack
+      - compose-resolution-des-variables
+      - compose-isolation-reseau
+      - compose-persistance
+      - compose-tache-de-migration
+      - compose-secrets
+      - compose-sante-et-dependances
+      - compose-ressources
+      - compose-plusieurs-environnements
 
   - id: compose-exploitation
     title: "Operate a Compose application"
     description: >-
       Logs and resources, backup and restore, update and roll back, then a
       stack to bring back by oneself.
-    labs: []
+    labs:
+      - donnees-postgres-sauvegarde
+      - compose-capstone
 
   # ── Niveau c4 : fiabiliser, sécuriser et industrialiser ─────────────────
   - id: docker-administration
@@ -168,7 +218,24 @@ sections:
       The daemon, the socket, rootless, capabilities, seccomp and AppArmor, and
       the diagnosis of a host that no longer answers. A container that works is
       not a container that is safe.
-    labs: []
+    labs:
+      - docker-configurer-le-demon
+      - docker-contexte-ssh
+      - docker-rotation-des-journaux
+      - securite-groupe-docker
+      - securite-socket-lecture-seule
+      - securite-socket-proxy
+      - securite-rootless
+      - securite-capabilities
+      - securite-no-new-privileges
+      - securite-seccomp
+      - securite-apparmor
+      - container-systeme-en-lecture-seule
+      - container-limite-de-processus
+      - secrets-au-runtime
+      - container-memoire-et-oom
+      - troubleshoot-disque-plein
+      - donnees-volume-orphelin
 
   - id: docker-industrialisation
     title: "Industrialise the delivery chain"
@@ -176,7 +243,10 @@ sections:
       Automated build and publication, what an image really contains, artefact
       promotion, and a complete chain to take over without being told the
       topic.
-    labs: []
+    labs:
+      - compose-dans-une-ci
+      - image-scan-de-vulnerabilites
+      - capstone-chaine-complete
 
   # ── Hors tronc de la formation, et déclaré comme tel ────────────────────
   #
