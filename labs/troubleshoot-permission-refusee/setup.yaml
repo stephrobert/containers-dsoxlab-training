@@ -1,10 +1,226 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Trois refus d'accès qui se lisent comme
+# un seul « ça ne marche pas », et dont les causes n'ont rien à voir. C'est la
+# même méthode que `troubleshoot-exit-127` : une grille, et non un symptôme.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et les trois messages DIFFÈRENT déjà :
+#
+#   A, bind mount en lecture seule
+#     « sh: can't create /ref/essai: Read-only file system »
+#     inspection : RW=false, et les droits du répertoire sont pourtant larges
+#
+#   B, répertoire à root et conteneur non-root
+#     « sh: can't create /donnees/essai: Permission denied »
+#     inspection : RW=true, l'uid du conteneur est 1000, le répertoire est 0:0
+#
+#   C, script monté sans bit exécutable
+#     code 126, champ d'erreur OCI, mode du fichier `-rw-r--r--`
+#     inspection : RW=true, droits larges, c'est le MODE DU FICHIER qui manque
+#
+# LA LEÇON EST DANS LA PAIRE A/B. « Read-only file system » et « Permission
+# denied » sont deux diagnostics distincts, et on les lit souvent comme un seul.
+# Le premier dit que le MONTAGE interdit l'écriture ; le second que le montage
+# l'autorise et que les DROITS la refusent. L'inspection les sépare en un mot.
+#
+# ET LE C RELIE CE LAB AU PRÉCÉDENT : son code est celui du fichier trouvé mais
+# non exécutable, déjà rencontré dans `troubleshoot-exit-127`. Ici la cause est
+# ailleurs : le fichier vient d'un montage, et son mode est celui de l'hôte.
 - name: Préparer le lab troubleshoot-permission-refusee
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-permission:1.0
+    atelier: /opt/lab-permission
+    uid_applicatif: 1000
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f perm-a perm-b perm-c temoin-sans-bit
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer les trois répertoires de l'épreuve
+      ansible.builtin.file:
+        path: "{{ atelier }}/{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - lecture-seule
+        - au-root
+        - scripts
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    - name: Déposer la référence que le premier conteneur devra modifier
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/lecture-seule/politique.txt"
+        mode: "0644"
+        content: |
+          conservation : 90 jours
+
+    # LE SCRIPT EST DÉPOSÉ SANS SON BIT EXÉCUTABLE, et c'est la troisième panne.
+    # Le mode vient de l'hôte : un montage n'en change aucun.
+    - name: Déposer le script, SANS son bit exécutable
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/scripts/lancer.sh"
+        mode: "0644"
+        content: |
+          #!/bin/sh
+          echo le-script-a-tourne > /tmp/preuve.txt
+          sleep infinity
+
+    # PANNE A : le montage interdit l'écriture.
+    - name: Lancer `perm-a`, dont le montage est en lecture seule
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name perm-a
+          -v {{ atelier }}/lecture-seule:/ref:ro
+          {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    # PANNE B : le montage autorise l'écriture, les droits la refusent.
+    - name: Lancer `perm-b`, non-root sur un répertoire qui appartient à root
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name perm-b --user {{ uid_applicatif }}:{{ uid_applicatif }}
+          -v {{ atelier }}/au-root:/donnees
+          {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    # PANNE C : le fichier est là, et il n'est pas exécutable. La commande
+    # échoue, d'où le `failed_when: false` délibéré.
+    - name: Lancer `perm-c`, qui exécute un script sans bit exécutable
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name perm-c
+          -v {{ atelier }}/scripts:/scripts
+          {{ tag_local }} /scripts/lancer.sh
+      changed_when: true
+      failed_when: false
+
+    # LE TÉMOIN, et c'est la troisième fois que cette parade sert dans la
+    # section : une valeur de diagnostic ne peut pas se lire sur un objet que la
+    # réparation modifie. `perm-c` tournera une fois son script rendu
+    # exécutable, et son code de sortie disparaîtra avec son échec.
+    #
+    # `temoin-sans-bit` monte le même répertoire et échoue de la même façon.
+    # L'énoncé interdit de le réparer, et un contrôle vérifie qu'il est resté en
+    # panne : sans cela, le réparer rendrait la question sans objet.
+    - name: Poser un témoin, qui restera en l'état pour que son code soit lisible
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name temoin-sans-bit
+          -v {{ atelier }}/scripts:/scripts
+          {{ tag_local }} /scripts/lancer.sh
+      changed_when: true
+      failed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          rw_b=
+          uid_b=
+          code_c=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : trois acces refuses, trois causes
+
+          Trois conteneurs n arrivent pas a faire leur travail, et les trois
+          butent sur un refus d acces. On lit les trois comme un seul probleme,
+          et les trois causes n ont rien a voir.
+
+            perm-a   n arrive pas a ecrire dans /ref
+            perm-b   n arrive pas a ecrire dans /donnees
+            perm-c   n a meme pas demarre
+            temoin-sans-bit   n a pas demarre non plus, pour la meme raison, et
+                              vous NE LE REPAREREZ PAS : son code doit rester
+                              lisible jusqu au bout
+
+          Essayez vous-meme les deux ecritures, et COMPAREZ LES MESSAGES. Ils ne
+          disent pas la meme chose, et c est la cle : l un parle du systeme de
+          fichiers, l autre des droits. Le premier accuse le MONTAGE, le second
+          dit que le montage est d accord et que ce sont les DROITS qui
+          refusent.
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            rw_b=<ce que l inspection de perm-b declare pour son montage>
+            uid_b=<l uid sous lequel perm-b tourne>
+            code_c=<le code de sortie de temoin-sans-bit>
+
+          La premiere reponse est celle qui compte : elle prouve que la panne de
+          `perm-b` n est PAS celle de `perm-a`, alors que le symptome se
+          ressemble.
+
+          Enfin, reparez les trois :
+
+            perm-a   doit pouvoir ecrire dans /ref
+            perm-b   doit pouvoir ecrire dans /donnees, SANS passer root
+            perm-c   doit TOURNER, et avoir produit /tmp/preuve.txt
+
+          Pour `perm-b`, repasser en root reglerait le symptome et serait la
+          mauvaise reponse : le lab precedent sur les permissions a montre
+          laquelle est la bonne.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les trois pannes : le montage de
+    # `perm-a` est bien en lecture seule, `perm-b` ne peut pas écrire, et
+    # `perm-c` ne tourne pas.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker container inspect perm-a --format '{{ "{{" }}(index .Mounts 0).RW{{ "}}" }}')" = "false"
+          && ! docker exec perm-b sh -c 'touch /donnees/.essai-setup' 2>/dev/null
+          && test "$(docker container inspect perm-c --format '{{ "{{" }}.State.Running{{ "}}" }}')" = "false"
+          && test "$(docker container inspect temoin-sans-bit --format '{{ "{{" }}.State.Running{{ "}}" }}')" = "false"
+      changed_when: false
