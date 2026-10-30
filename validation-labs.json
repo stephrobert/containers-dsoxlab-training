@@ -657,6 +657,61 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "images-ordre-des-couches": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_l_image_fonctionne_et_porte_ses_dependances",
+    "test_l_image_ne_porte_que_ce_qui_lui_sert",
+    "test_un_changement_de_code_ne_refait_pas_l_installation",
+    "test_un_changement_de_manifeste_refait_l_installation"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 68,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 554 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "images-ordre-des-couches",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-images-ordre-des-couches.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_l_image_fonctionne_et_porte_ses_dependances",
+    "test_l_image_ne_porte_que_ce_qui_lui_sert",
+    "test_un_changement_de_code_ne_refait_pas_l_installation",
+    "test_un_changement_de_manifeste_refait_l_installation"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "internes-cgroups-v2": {
   "apres": {
    "echecs": [],
