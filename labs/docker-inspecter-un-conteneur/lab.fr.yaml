@@ -1,5 +1,5 @@
 # Surcharge française du lab docker-inspecter-un-conteneur. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Interroger un conteneur en marche"
+description: "Obtenir d'un conteneur en marche ce qu'aucun fichier de l'hôte ne dit : un jeton dans ses journaux, l'adresse que le moteur lui a donnée, le port qu'il publie, et un fichier qu'il a écrit après son démarrage."

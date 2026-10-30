@@ -1,5 +1,5 @@
 # Surcharge française du lab docker-cycle-de-vie. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Le cycle de vie : redémarrer n'est pas recréer"
+description: "Se déplacer dans les états d'un conteneur sans repartir de zéro : redémarrer celui qui dort en gardant son identité et ses données, mettre l'autre en pause, et lire un code de sortie."

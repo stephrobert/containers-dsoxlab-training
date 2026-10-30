@@ -82,6 +82,20 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: assertions-bilingues
+        name: ce que l'apprenant lit quand un test refuse existe en EN et en FR
+        entry: uv run --no-sync pytest tests/test_assertions_bilingues.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: images-epinglees
+        name: les images que les setups tirent sont épinglées par digest
+        entry: uv run --no-sync pytest tests/test_images_epinglees.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: outillage-coherent
         name: chaque hook pointe un test, chaque test est câblé
         entry: uv run --no-sync pytest tests/test_outillage_coherent.py -q

@@ -1,5 +1,5 @@
 # Surcharge française du lab reseau-interne. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Deux isolations qui ne se ressemblent pas"
+description: "Obtenir les deux isolations sur une même machine : un conteneur sans aucun réseau, et un réseau confiné dont les membres se parlent par leur nom mais ne sortent jamais."

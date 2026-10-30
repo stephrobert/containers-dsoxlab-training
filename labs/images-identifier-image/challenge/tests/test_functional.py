@@ -19,6 +19,13 @@ différentes sous le même tag `inventaire:1.0`. Un apprenant qui recopie le
 digest de la PREMIÈRE construction, encore visible dans l'historique du
 terminal ou dans `digest-v1.txt`, est refusé par le test du cas négatif : c'est
 la réponse de surface que le contrat demande explicitement de rejeter.
+
+POURQUOI CHAQUE MESSAGE PASSE PAR `message()`. Ce que ce fichier affiche quand
+un contrôle refuse est la seule consigne que l'apprenant reçoit à cet instant :
+c'est de l'interface, et le catalogue existe dans deux langues. Le contrat
+dsoxlab imposant un nom de fichier unique, il n'y a pas de version anglaise
+possible par duplication, d'où le helper du `conftest.py`, qui choisit sur
+`DSOXLAB_LANG`. `tests/test_assertions_bilingues.py` tient la règle.
 """
 
 from __future__ import annotations
@@ -28,7 +35,7 @@ import re
 
 import pytest
 
-from conftest import lab_host
+from conftest import lab_host, message
 
 REPONSE = "/opt/lab-images/reponse.txt"
 TAG = "inventaire:1.0"
@@ -58,13 +65,15 @@ def _lire_reponse(host) -> dict[str, str]:
     """
     f = host.file(REPONSE)
     if not f.exists:
-        pytest.fail(
-            f"{REPONSE} est absent. La mission demande d'y écrire trois lignes : "
-            "digest=, base= et plateforme=."
-        )
+        pytest.fail(message(
+            en=f"{REPONSE} is missing. The mission asks for three lines in it: "
+               "digest=, base= and plateforme=.",
+            fr=f"{REPONSE} est absent. La mission demande d'y écrire trois lignes : "
+               "digest=, base= et plateforme=.",
+        ))
     paires = {}
-    for ligne in f.content_string.splitlines():
-        ligne = ligne.strip()
+    for brute in f.content_string.splitlines():
+        ligne = brute.strip()
         if not ligne or ligne.startswith("#") or "=" not in ligne:
             continue
         cle, _, valeur = ligne.partition("=")
@@ -76,7 +85,10 @@ def _digest_reel(host, reference: str) -> str:
     """Le digest que la machine donne à une image, lu par le démon lui-même."""
     res = host.run("docker image inspect %s --format '{{json .Id}}'", reference)
     if res.rc != 0:
-        pytest.fail(f"l'image {reference} est introuvable sur la machine : {res.stderr.strip()}")
+        pytest.fail(message(
+            en=f"image {reference} cannot be found on the machine: {res.stderr.strip()}",
+            fr=f"l'image {reference} est introuvable sur la machine : {res.stderr.strip()}",
+        ))
     return json.loads(res.stdout.strip()).strip()
 
 
@@ -89,16 +101,22 @@ def test_la_reponse_nomme_le_digest_reel_du_tag(host) -> None:
     """
     paires = _lire_reponse(host)
     annonce = paires.get("digest", "")
-    assert annonce, (
-        "la ligne `digest=` manque dans la réponse. C'est l'identité de l'image "
-        f"que le tag {TAG} désigne aujourd'hui."
+    assert annonce, message(
+        en=f"the `digest=` line is missing from the answer. It is the identity of "
+           f"the image that {TAG} points at today.",
+        fr=f"la ligne `digest=` manque dans la réponse. C'est l'identité de l'image "
+           f"que {TAG} désigne aujourd'hui.",
     )
     reel = _digest_reel(host, TAG)
-    assert annonce == reel, (
-        f"le digest annoncé ne correspond pas à l'image que {TAG} désigne.\n"
-        f"  annoncé : {annonce}\n"
-        f"  réel    : {reel}\n"
-        "Le tag a été construit deux fois : il ne pointe plus la première image."
+    assert annonce == reel, message(
+        en=f"the digest you state is not the image {TAG} points at.\n"
+           f"  stated : {annonce}\n"
+           f"  actual : {reel}\n"
+           "The tag was built twice: it no longer points at the first image.",
+        fr=f"le digest annoncé ne correspond pas à l'image que {TAG} désigne.\n"
+           f"  annoncé : {annonce}\n"
+           f"  réel    : {reel}\n"
+           "Le tag a été construit deux fois : il ne pointe plus la première image.",
     )
 
 
@@ -113,12 +131,18 @@ def test_le_digest_de_la_premiere_construction_est_refuse(host) -> None:
     annonce = paires.get("digest", "")
     v1 = host.file("/opt/lab-images/digest-v1.txt")
     if not v1.exists:
-        pytest.skip("digest-v1.txt absent : le setup n'a pas posé le cas négatif")
+        pytest.skip(message(
+            en="digest-v1.txt is missing: the setup did not lay the negative case",
+            fr="digest-v1.txt absent : le setup n'a pas posé le cas négatif",
+        ))
     ancien = v1.content_string.strip()
-    assert annonce != ancien, (
-        "le digest annoncé est celui de la PREMIÈRE construction, celle que le "
-        "tag ne désigne plus. C'est la trace laissée par le setup, pas une "
-        "mesure de l'image en place."
+    assert annonce != ancien, message(
+        en="the digest you state is the FIRST build's, the one the tag no longer "
+           "points at. That is the trace the setup left behind, not a measurement "
+           "of the image in place.",
+        fr="le digest annoncé est celui de la PREMIÈRE construction, celle que le "
+           "tag ne désigne plus. C'est la trace laissée par le setup, pas une "
+           "mesure de l'image en place.",
     )
 
 
@@ -131,16 +155,23 @@ def test_la_reponse_nomme_le_digest_de_l_image_de_base(host) -> None:
     """
     paires = _lire_reponse(host)
     annonce = paires.get("base", "")
-    assert annonce, "la ligne `base=` manque : c'est le digest de l'image debian:13 locale."
+    assert annonce, message(
+        en="the `base=` line is missing: it is the digest of the local debian:13 image.",
+        fr="la ligne `base=` manque : c'est le digest de l'image debian:13 locale.",
+    )
     reel = _digest_reel(host, "debian:13")
-    assert annonce == reel, (
-        f"le digest de base annoncé ne correspond pas à debian:13 sur cette machine.\n"
-        f"  annoncé : {annonce}\n  réel    : {reel}"
+    assert annonce == reel, message(
+        en=f"the base digest you state is not debian:13 on this machine.\n"
+           f"  stated : {annonce}\n  actual : {reel}",
+        fr=f"le digest de base annoncé ne correspond pas à debian:13 sur cette machine.\n"
+           f"  annoncé : {annonce}\n  réel    : {reel}",
     )
     construite = _digest_reel(host, TAG)
-    assert annonce != construite, (
-        "le digest de base annoncé est celui de l'image construite. Une image "
-        "et son socle ont deux identités distinctes."
+    assert annonce != construite, message(
+        en="the base digest you state is the built image's. An image and the one "
+           "it was built from have two distinct identities.",
+        fr="le digest de base annoncé est celui de l'image construite. Une image "
+           "et son socle ont deux identités distinctes.",
     )
 
 
@@ -152,15 +183,25 @@ def test_la_plateforme_annoncee_est_celle_de_l_image(host) -> None:
     """
     paires = _lire_reponse(host)
     annonce = paires.get("plateforme", "").lower()
-    assert annonce, "la ligne `plateforme=` manque : elle s'écrit `os/architecture`."
-    assert re.fullmatch(r"[a-z0-9]+/[a-z0-9]+", annonce), (
-        f"`{annonce}` n'a pas la forme attendue `os/architecture`, par exemple `linux/amd64`."
+    assert annonce, message(
+        en="the `plateforme=` line is missing: it reads `os/architecture`.",
+        fr="la ligne `plateforme=` manque : elle s'écrit `os/architecture`.",
+    )
+    assert re.fullmatch(r"[a-z0-9]+/[a-z0-9]+", annonce), message(
+        en=f"`{annonce}` does not have the expected `os/architecture` form, "
+           "for instance `linux/amd64`.",
+        fr=f"`{annonce}` n'a pas la forme attendue `os/architecture`, "
+           "par exemple `linux/amd64`.",
     )
     res = host.run(
         "docker image inspect %s --format '{{.Os}}/{{.Architecture}}'", TAG
     )
-    assert res.rc == 0, f"impossible de lire la plateforme de {TAG} : {res.stderr.strip()}"
+    assert res.rc == 0, message(
+        en=f"cannot read the platform of {TAG}: {res.stderr.strip()}",
+        fr=f"impossible de lire la plateforme de {TAG} : {res.stderr.strip()}",
+    )
     reel = res.stdout.strip().lower()
-    assert annonce == reel, (
-        f"la plateforme annoncée ({annonce}) n'est pas celle de l'image ({reel})."
+    assert annonce == reel, message(
+        en=f"the platform you state ({annonce}) is not the image's ({reel}).",
+        fr=f"la plateforme annoncée ({annonce}) n'est pas celle de l'image ({reel}).",
     )

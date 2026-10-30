@@ -1,5 +1,5 @@
 # Surcharge française du lab docker-anatomie-dune-image. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "L'anatomie d'une image : couches, partage, configuration"
+description: "Disséquer une image plutôt que lire son Dockerfile : compter les couches qu'elle porte vraiment, mesurer ce qu'elle partage avec une image sœur, et retrouver la révision qui ne vit que dans sa configuration."

@@ -1,10 +1,213 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un conteneur qui écrit ses données
+# DANS SA PROPRE COUCHE, c'est-à-dire la faute la plus coûteuse de Docker : tout
+# marche, jusqu'au jour où le conteneur est recréé. Le lab fait corriger cette
+# faute en posant les trois types de montage, un par besoin.
+#
+# LA PIÈCE MAÎTRESSE : `historique.log`. Le setup l'écrit dans la couche du
+# conteneur, avec un contenu TIRÉ AU HASARD, et garde son empreinte SHA256 sur
+# l'hôte. L'apprenant doit le faire passer dans le volume AVANT de détruire le
+# conteneur. S'il détruit d'abord, le fichier est perdu et il n'y a pas de
+# rattrapage : il faut rejouer le lab. C'est dur, c'est la leçon, et l'énoncé
+# l'annonce franchement plutôt que de le laisser découvrir.
+#
+# POURQUOI UNE EMPREINTE ET PAS LE CONTENU. Les tests doivent pouvoir vérifier
+# que le fichier arrivé dans le volume est bien l'original. Garder son contenu
+# sur l'hôte donnerait la réponse ; garder son SHA256 permet de vérifier sans
+# rien révéler, et l'apprenant peut s'en servir pour se contrôler lui-même.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et une mesure a changé l'écriture des
+# tests : un tmpfs N'APPARAÎT PAS dans `.Mounts`. Il vit dans
+# `.HostConfig.Tmpfs`. Un test qui l'aurait cherché dans `.Mounts` aurait
+# échoué quoi que fasse l'apprenant.
+#
+# Vérifié aussi : un volume nommé se pré-remplit par un conteneur jetable, un
+# bind en lecture seule refuse bien l'écriture, et un fichier de la couche ne
+# survit pas à la recréation du conteneur, là où la marque du volume survit.
 - name: Préparer le lab donnees-volumes-et-montages
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-volumes:1.0
+    atelier: /opt/lab-volumes
+    volume_donnees: coffre-donnees
+    chemin_donnees: /var/lib/donnees
+    chemin_reference: /etc/reference
+    chemin_travail: /var/cache/travail
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui ouvre le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser son conteneur
+      ansible.builtin.shell:
+        cmd: docker rm -f archive 2>/dev/null || true
+      changed_when: false
+
+    # LE VOLUME EST RECRÉÉ À CHAQUE PASSAGE : s'il survivait avec
+    # `historique.log` dedans, le quatrième contrôle serait vrai avant tout
+    # travail, et le lab se noterait sur le travail de la veille.
+    - name: Retirer le volume du passage précédent, APRÈS son conteneur
+      ansible.builtin.shell:
+        cmd: docker volume rm {{ volume_donnees }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail et celui de la référence
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ atelier }}/reference"
+
+    - name: Déposer la référence que l'hôte fournit au conteneur
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reference/politique.txt"
+        mode: "0644"
+        content: |
+          politique de conservation : 90 jours
+          responsable : exploitation
+
+    - name: Créer le volume que les données devront rejoindre
+      ansible.builtin.command:
+        cmd: docker volume create {{ volume_donnees }}
+      changed_when: true
+
+    # LA MARQUE DU VOLUME prouve qu'il est monté AU BON ENDROIT : un apprenant
+    # qui monterait un autre volume, ou le bon au mauvais chemin, ne la verrait
+    # pas. Posée par un conteneur jetable, seule façon d'écrire dans un volume
+    # sans conteneur permanent.
+    - name: Poser une marque dans le volume, par un conteneur jetable
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - --rm
+          - -v
+          - "{{ volume_donnees }}:/cible"
+          - "{{ tag_local }}"
+          - sh
+          - -c
+          - echo "coffre=ce-volume-est-le-bon" > /cible/marque.txt
+      changed_when: true
+
+    # LE CONTENEUR FAUTIF : aucun montage, et ses données dans sa couche.
+    - name: Lancer `archive`, qui écrit ses données dans sa propre couche
+      ansible.builtin.command:
+        cmd: docker run -d --name archive {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Tirer au hasard le contenu de l'historique, pour qu'il ne soit nulle part
+      ansible.builtin.command:
+        cmd: od -An -tx1 -N24 /dev/urandom
+      register: tirage_historique
+      changed_when: false
+
+    - name: Écrire l'historique DANS LA COUCHE du conteneur, et nulle part ailleurs
+      ansible.builtin.command:
+        argv:
+          - docker
+          - exec
+          - archive
+          - sh
+          - -c
+          - >-
+            mkdir -p {{ chemin_donnees }} && printf 'historique=%s\n'
+            '{{ tirage_historique.stdout | replace(" ", "") | trim }}'
+            > {{ chemin_donnees }}/historique.log
+      changed_when: true
+
+    # L'EMPREINTE, et non le contenu : elle permet aux tests de vérifier que le
+    # fichier arrivé dans le volume est bien l'original, sans que le contenu
+    # traîne sur l'hôte. L'apprenant peut s'en servir pour se contrôler.
+    - name: Relever l'empreinte de l'historique, lisible par l'apprenant
+      ansible.builtin.shell:
+        cmd: >
+          docker exec archive sha256sum {{ chemin_donnees }}/historique.log
+          | awk '{print $1}' > {{ atelier }}/historique.sha256
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : ranger les donnees la ou elles survivent
+
+          Le conteneur `archive` tourne. Il ecrit ses donnees dans SA PROPRE
+          COUCHE, ce qui marche tant que personne ne le recree.
+
+            {{ chemin_donnees }}/historique.log   dans la couche. IRREMPLACABLE.
+
+          AVERTISSEMENT, lisez-le avant de taper quoi que ce soit : son contenu
+          est tire au hasard et n existe NULLE PART ailleurs. Si vous detruisez
+          le conteneur avant d en avoir sorti ce fichier, il est perdu et il n y
+          a aucun rattrapage : il faudra rejouer le lab avec `dsoxlab reset`.
+          Son empreinte SHA256 est dans {{ atelier }}/historique.sha256, pour
+          que vous puissiez verifier vous-meme votre copie.
+
+          Recreez `archive` sous le MEME nom, avec les trois montages :
+
+            {{ chemin_donnees }}     le volume nomme `{{ volume_donnees }}`
+            {{ chemin_reference }}   le repertoire {{ atelier }}/reference de
+                                     l HOTE, en LECTURE SEULE
+            {{ chemin_travail }}     un espace en memoire, qui ne persiste rien
+
+          Quatre choses sont attendues :
+
+            1. le volume est monte sur {{ chemin_donnees }}, et le conteneur y
+               voit le fichier `marque.txt` que le volume porte deja.
+            2. {{ chemin_reference }} vient de l hote et l ecriture y est
+               REFUSEE.
+            3. {{ chemin_travail }} est un espace en memoire, et le conteneur
+               peut y ecrire.
+            4. `historique.log` se trouve DANS LE VOLUME, avec son contenu
+               d origine.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les faits dont dépend l'énoncé :
+    # le conteneur n'a aucun montage, son historique est bien dans sa couche, et
+    # le volume ne le porte pas encore.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker container inspect archive --format '{{ "{{" }}len .Mounts{{ "}}" }}')" -eq 0
+          && docker exec archive test -f {{ chemin_donnees }}/historique.log
+          && ! docker run --rm -v {{ volume_donnees }}:/cible {{ tag_local }} test -f /cible/historique.log
+      changed_when: false

@@ -1,10 +1,43 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# UN CONTENEUR EN PAUSE NE SE SUPPRIME PAS COMME UN AUTRE. `docker rm` refuse
+# un conteneur gelé, et `docker rm -f` le prend. C'est la raison du `-f` ici, et
+# elle vaut d'être écrite : sans lui, le `clean` échouerait exactement sur le
+# lab dont le sujet est la mise en pause, et le message parlerait d'un refus
+# sans dire pourquoi.
+#
+# TROIS NOMS, DONT UN QUE LE SETUP NE CRÉE PAS. `sortie` est le conteneur de
+# l'apprenant : le laisser derrière ferait hériter le lab suivant d'un état
+# qu'il n'a pas posé.
 - name: Défaire le lab docker-cycle-de-vie
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-cycle:1.0
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les trois conteneurs, en pause ou non
+      ansible.builtin.shell:
+        cmd: docker rm -f dormeur actif sortie 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de l'empreinte et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-cycle
+        - /opt/MISSION.md

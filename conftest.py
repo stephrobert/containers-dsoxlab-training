@@ -45,10 +45,10 @@ import urllib.request
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import yaml
-from typing import TYPE_CHECKING, Any
 
 REPO_ROOT = Path(__file__).resolve().parent
 LABS_ROOT = REPO_ROOT / "labs"
@@ -959,4 +959,3 @@ def _apply_lab_state(request) -> None:
     )
     if not result.ok:
         raise RuntimeError(message_echec_solution(lab_root.name, result))
-

@@ -1,13 +1,16 @@
 # Lab reseau-interne. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: reseau-interne                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Two isolations that are not alike"            # REQUIS
 level: c1                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Obtain both isolations on one machine: a container with no network at all, and a confined network whose members talk to each other by name but never get out."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - reseau
+  - isolation
+  - confinement
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
@@ -19,4 +22,5 @@ runtime:
   default: cible
 validation:
   functional: true
+  security: true
   persistence_after_reboot: false

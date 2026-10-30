@@ -1,5 +1,5 @@
-# Surcharge française du lab container-signaux-et-pid-1. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+# Surcharge française du lab container-signaux-et-pid-1. Elle ne porte QUE
+# `title` et `description` : tout autre champ y est ignoré en silence, parce que
+# le contrat ne se traduit pas.
+title: "Qui est PID 1 décide si votre conteneur s'arrête ou se fait tuer"
+description: "Diagnostiquer un conteneur qui met le délai complet à mourir puis sort en 137, trouver que le signal n'atteint pas l'application, et corriger l'image sans retirer son script d'entrée."

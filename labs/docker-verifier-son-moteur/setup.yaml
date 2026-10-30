@@ -1,10 +1,129 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un moteur INSTALLÉ mais HORS SERVICE,
+# sur les trois plans qui comptent et qui sont indépendants : le service est
+# arrêté, il est désactivé au démarrage, et l'apprenant n'appartient pas au
+# groupe qui donne accès au socket. Les trois se réparent par trois gestes
+# différents, et c'est tout le sujet du lab : « docker est installé » ne veut
+# pas dire « docker est utilisable ».
+#
+# POURQUOI PAS UN MOTEUR SAIN. La règle du dépôt est qu'un test doit porter sur
+# ce que l'état de départ ne porte pas. Un setup qui démarrerait le service
+# rendrait deux des quatre contrôles verts avant tout travail, et le lab
+# noterait son propre setup.
+#
+# POURQUOI L'IMAGE EST TIRÉE ICI. Le quatrième contrôle demande qu'un conteneur
+# ait réellement tourné. Le tirer pendant le travail de l'apprenant marcherait
+# aussi, mais ferait dépendre la note d'un accès au registre : un lab qui échoue
+# parce que le réseau a hoqueté n'apprend rien. L'image est donc posée ici,
+# pendant que le moteur tourne encore, et le moteur est arrêté ensuite.
 - name: Préparer le lab docker-verifier-son-moteur
   hosts: lab_target
   become: true
+  vars:
+    # L'apprenant, tel que l'inventaire le nomme. `ansible` est le compte de
+    # service par lequel dsoxlab et les playbooks se connectent, et c'est donc
+    # lui dont l'accès au moteur se mesure.
+    compte_apprenant: "{{ ansible_user | default('ansible') }}"
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # L'image doit être là AVANT que le moteur ne soit arrêté, sans quoi le
+    # tirage échouerait. L'ordre de ces tâches n'est donc pas interchangeable.
+    - name: Démarrer le moteur le temps de poser l'image du lab
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+
+    - name: Tirer l'image qui servira de preuve d'exécution
+      ansible.builtin.command:
+        cmd: >
+          docker pull
+          hello-world@sha256:c567b231f65614688711a75f31518a064258a51d442117a3e771a3a8fdba78ef
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    # Le digest ne porte pas de nom : `docker run hello-world` ne trouverait
+    # rien. On lui en donne un, pour que la mission reste jouable sans recopier
+    # soixante-quatre caractères hexadécimaux.
+    - name: Nommer l'image tirée, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: >
+          docker tag
+          hello-world@sha256:c567b231f65614688711a75f31518a064258a51d442117a3e771a3a8fdba78ef
+          lab-preuve:1.0
+      changed_when: true
+
+    - name: Retirer toute trace d'exécution laissée par un passage précédent
+      ansible.builtin.shell:
+        cmd: docker container prune -f || true
+      changed_when: false
+
+    # ── Et maintenant, on casse, sur les trois plans ────────────────────────
+
+    - name: Arrêter le moteur et le désactiver au démarrage
+      ansible.builtin.systemd_service:
+        name: docker
+        state: stopped
+        enabled: false
+
+    # Le socket d'activation est le piège de cette mise en situation : systemd
+    # redémarrerait `docker.service` à la première connexion au socket, et le
+    # moteur se retrouverait actif sans que l'apprenant ait rien fait. Mesuré
+    # sur Debian 13 : `docker.socket` est activé par le paquet.
+    - name: Arrêter aussi le socket, sinon le moteur se relance tout seul
+      ansible.builtin.systemd_service:
+        name: docker.socket
+        state: stopped
+        enabled: false
+
+    # SURTOUT PAS `ansible.builtin.user` avec `groups: ""` et `append: false`.
+    # Ce module remplace alors TOUS les groupes secondaires, et le compte perd
+    # `sudo` en même temps que `docker` : l'apprenant se retrouve sans le moyen
+    # de réparer ce que le lab lui demande de réparer. Mesuré sur la machine
+    # avant d'écrire ces lignes : `ansible` appartient à `ansible sudo docker`.
+    # On retire donc UN groupe, nommément.
+    - name: Retirer l'apprenant du seul groupe qui donne accès au moteur
+      ansible.builtin.command:
+        cmd: gpasswd -d {{ compte_apprenant }} docker
+      register: retrait
+      changed_when: retrait.rc == 0
+      # rc=3 : le compte n'est déjà pas membre. C'est l'état voulu, pas un
+      # échec, et un lab rejoué deux fois doit passer la seconde fois.
+      failed_when: retrait.rc not in [0, 3]
+
+    - name: Vérifier que le compte garde sudo, et n'a plus docker
+      ansible.builtin.command:
+        cmd: id -nG {{ compte_apprenant }}
+      register: groupes
+      changed_when: false
+      failed_when: >
+        'sudo' not in groupes.stdout.split()
+        or 'docker' in groupes.stdout.split()
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : rendre ce moteur reellement utilisable
+
+          Docker est installe sur cette machine. Il n'est pas utilisable.
+
+          Quatre choses sont verifiees, et elles sont independantes :
+
+            1. le service repond ;
+            2. il repartira tout seul au prochain redemarrage ;
+            3. votre compte parle au moteur SANS sudo ;
+            4. un conteneur a reellement ete execute.
+
+          L'image `lab-preuve:1.0` est deja presente : aucun acces au registre
+          n'est necessaire.
+
+          Rien dans cette mission ne demande de reinstaller le paquet.

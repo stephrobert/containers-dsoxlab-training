@@ -1,5 +1,5 @@
 # Surcharge française du lab donnees-permissions-uid-gid. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Deux conteneurs, un volume, des droits qui tiennent"
+description: "Un volume appartient à root et un conteneur non-root n'y écrit pas. Remplacer les deux mauvaises réponses habituelles, tourner en root et ouvrir le volume à tous, par celle qui tient : aligner le groupe partagé."

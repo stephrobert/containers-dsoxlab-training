@@ -1,10 +1,41 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# CE QU'IL FAUT VRAIMENT DÉFAIRE. Le validateur relève les images par leur
+# `repository:tag`, les conteneurs par leur nom, et n'admet aucun écart. Trois
+# conteneurs sont donc nommés ici, y compris `premier` que le setup ne crée
+# PAS : c'est le travail de l'apprenant, et le laisser derrière ferait croire
+# au lab suivant qu'il a hérité d'un conteneur qu'il n'a pas posé.
+#
+# L'IMAGE SE RETIRE PAR SES DEUX RÉFÉRENCES. Le tag local et le digest
+# désignent la même image : ne retirer que le tag laisserait une entrée
+# `alpine:<none>` dans l'inventaire du moteur, donc un écart. On ne touche
+# en revanche JAMAIS à `debian:13`, dont un autre lab du catalogue a besoin.
 - name: Défaire le lab docker-premier-conteneur
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-base:1.0
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les trois conteneurs du lab, y compris celui de l'apprenant
+      ansible.builtin.shell:
+        cmd: docker rm -f premier vitrine rebut 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer l'énoncé déposé sur la machine
+      ansible.builtin.file:
+        path: /opt/MISSION.md
+        state: absent

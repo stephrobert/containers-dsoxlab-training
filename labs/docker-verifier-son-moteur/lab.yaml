@@ -1,13 +1,29 @@
 # Lab docker-verifier-son-moteur. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+#
+# PREMIER LAB DE LA SECTION `conteneurs-utilisation`, et premier geste du
+# catalogue : avant de lancer quoi que ce soit, savoir si le moteur est
+# réellement en état. Son identifiant le nomme par son GESTE et non par son
+# rang, parce qu'un numéro date de l'ordre d'écriture et jamais de l'ordre de
+# lecture.
+#
+# POURQUOI UN MOTEUR CASSÉ PLUTÔT QU'UN MOTEUR SAIN. La règle du dépôt est
+# qu'un test doit porter sur ce que l'état de départ ne porte PAS. Un setup qui
+# installerait et démarrerait Docker rendrait « le moteur répond » vrai avant
+# tout travail : le lab noterait alors son propre setup. L'état de départ est
+# donc un moteur installé mais hors service, ce qui est aussi la situation
+# réelle la plus fréquente après une installation par paquet.
 id: docker-verifier-son-moteur                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Is the engine actually working? Four answers, not one"            # REQUIS
 level: c1                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Check that a container engine is genuinely usable: service running, enabled at boot, reachable without sudo, and able to execute a container."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - systemd
+  - diagnostic
+  - permissions
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/#vérification-de-linstallation   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
@@ -19,4 +35,7 @@ runtime:
   default: cible
 validation:
   functional: true
-  persistence_after_reboot: false
+  # Le lab EXIGE la persistance, et c'est le point de sa troisième question :
+  # un moteur démarré à la main repart à l'arrêt au prochain redémarrage, et
+  # c'est l'erreur qui se découvre en production, pas en atelier.
+  persistence_after_reboot: true

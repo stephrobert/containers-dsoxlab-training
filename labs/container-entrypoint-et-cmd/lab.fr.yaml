@@ -1,5 +1,5 @@
-# Surcharge française du lab container-entrypoint-et-cmd. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+# Surcharge française du lab container-entrypoint-et-cmd. Elle ne porte QUE
+# `title` et `description` : tout autre champ y est ignoré en silence, parce que
+# le contrat ne se traduit pas.
+title: "ENTRYPOINT et CMD : lequel vos arguments remplacent-ils ?"
+description: "Faire constater les quatre comportements que produisent ENTRYPOINT et CMD face aux arguments de docker run : le défaut, le remplacement total, le complément, et le contournement."

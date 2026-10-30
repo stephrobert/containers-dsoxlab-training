@@ -1,10 +1,144 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Deux conteneurs dans deux états, et
+# une EMPREINTE conservée sur l'hôte. Le lab précédent enseignait trois verbes ;
+# celui-ci enseigne que les états forment un graphe, et qu'on s'y déplace sans
+# repartir de zéro. D'où la pièce maîtresse : l'identifiant de `dormeur` est
+# relevé AVANT que l'apprenant ne touche à quoi que ce soit, et comparé après.
+#
+# POURQUOI RELEVER UN IDENTIFIANT. C'est le seul moyen de distinguer « j'ai
+# redémarré le conteneur » de « j'en ai lancé un autre du même nom ». Les deux
+# donnent un conteneur qui tourne, et seul le premier est le geste enseigné.
+# Sans cette empreinte, le lab noterait un résultat sans voir le chemin, alors
+# qu'ici le chemin EST la compétence.
+#
+# POURQUOI UN FICHIER ÉCRIT DANS LE CONTENEUR. Pour que la faute ait une
+# conséquence visible : un conteneur recréé perd ce qui avait été écrit dedans.
+# Le contrôle qui lit ce fichier n'est pas une redite du précédent, c'est ce
+# qu'un apprenant constate lui-même quand il a recréé au lieu de redémarrer.
 - name: Préparer le lab docker-cycle-de-vie
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-cycle:1.0
+    empreinte: /opt/lab-cycle/id-dormeur.txt
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui le précède dans le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f dormeur actif sortie 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire qui portera l'empreinte
+      ansible.builtin.file:
+        path: /opt/lab-cycle
+        state: directory
+        mode: "0755"
+
+    # ── `dormeur` : lancé, marqué, puis arrêté ──────────────────────────────
+
+    - name: Lancer `dormeur`
+      ansible.builtin.command:
+        cmd: docker run -d --name dormeur {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Écrire dans `dormeur` une marque qu'un conteneur recréé n'aurait pas
+      ansible.builtin.command:
+        cmd: >
+          docker exec dormeur sh -c
+          "echo je-suis-le-conteneur-dorigine > /empreinte.txt"
+      changed_when: true
+
+    - name: Relever l'identifiant de `dormeur` AVANT tout travail
+      ansible.builtin.shell:
+        cmd: >
+          docker container inspect dormeur --format '{{ "{{" }}.Id{{ "}}" }}'
+          > {{ empreinte }}
+      changed_when: true
+
+    - name: Arrêter `dormeur`, qui existe donc encore
+      ansible.builtin.command:
+        cmd: docker stop dormeur
+      changed_when: true
+
+    # ── `actif` : il tourne, et devra être mis en pause ─────────────────────
+
+    - name: Lancer `actif`
+      ansible.builtin.command:
+        cmd: docker run -d --name actif {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.command:
+        cmd: docker ps -a --format '{{ "{{" }}.Names{{ "}}" }} {{ "{{" }}.State{{ "}}" }}'
+      register: situation
+      changed_when: false
+      failed_when: >
+        'dormeur exited' not in situation.stdout
+        or 'actif running' not in situation.stdout
+        or 'sortie' in situation.stdout
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : se deplacer dans le cycle de vie
+
+          L'image `lab-cycle:1.0` est deja presente. Rien a tirer, rien a
+          construire.
+
+          Deux conteneurs existent :
+
+            dormeur   ARRETE. Il porte un fichier /empreinte.txt
+            actif     il TOURNE
+
+          Quatre choses sont attendues :
+
+            1. `dormeur` TOURNE a nouveau, et c'est le MEME conteneur : son
+               identifiant ne doit pas avoir change. Le relancer a l'identique
+               sous le meme nom ne compte pas.
+            2. son fichier /empreinte.txt est toujours la.
+            3. `actif` est EN PAUSE, ni arrete ni supprime.
+            4. un conteneur nomme `sortie` est TERMINE, avec le code de
+               sortie 42.
+
+          L'identifiant d'origine de `dormeur` est note dans
+          /opt/lab-cycle/id-dormeur.txt : vous pouvez verifier vous-meme.

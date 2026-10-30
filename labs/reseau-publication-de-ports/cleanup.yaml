@@ -1,10 +1,44 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# CE QU'IL DOIT IMPÉRATIVEMENT RETIRER : les trois conteneurs, quelle que soit
+# la façon dont l'apprenant les a recréés. Ce lab fait justement détruire et
+# recréer : les conteneurs présents à la fin ne sont pas ceux que le setup a
+# lancés, mais ils portent les mêmes noms, et c'est par les noms qu'on les
+# retire.
+#
+# L'IMAGE DE SERVICE PART AUSSI. Elle est construite par le setup, et un
+# `docker rmi` sur un tag dont des conteneurs dérivent échouerait : d'où les
+# conteneurs d'abord, l'image ensuite.
 - name: Défaire le lab reseau-publication-de-ports
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-publication:1.0
+    atelier: /opt/lab-publication
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les trois conteneurs, AVANT l'image dont ils dérivent
+      ansible.builtin.shell:
+        cmd: docker rm -f vitrine annexe interne 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'image de service, puis l'image de base par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines et le cache de construction
+      ansible.builtin.shell:
+        cmd: docker image prune -f && docker builder prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de construction et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

@@ -1,13 +1,15 @@
 # Lab docker-inspecter-un-conteneur. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: docker-inspecter-un-conteneur                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Interrogate a running container"            # REQUIS
 level: c1                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Get out of a running container what nothing on the host says: a token from its logs, the address the engine gave it, the port it publishes, and a file it wrote after starting."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - inspection
+  - depannage
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#les-commandes-indispensables   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m

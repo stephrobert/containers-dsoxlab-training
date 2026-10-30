@@ -1,10 +1,54 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# LE VOLUME DOIT PARTIR, et c'est le geste décisif. Ses PERMISSIONS sont ce que
+# le lab fait corriger : s'il survivait corrigé, trois contrôles sur quatre
+# seraient vrais au passage suivant avant tout travail. Un volume recréé
+# repart de `0:0` et `755`, mesuré, et c'est l'état de départ du lab.
+#
+# L'ORDRE COMPTE DEUX FOIS : `docker volume rm` refuse un volume encore utilisé
+# par un conteneur, même arrêté, et `docker rmi` refuse une image dont des
+# conteneurs dérivent.
 - name: Défaire le lab donnees-permissions-uid-gid
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-permissions:1.0
+    atelier: /opt/lab-permissions
+    volume_rapports: rapports-partages
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les deux conteneurs, AVANT le volume et l'image
+      ansible.builtin.shell:
+        cmd: docker rm -f rapport verificateur 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le volume du lab, ses permissions comprises
+      ansible.builtin.shell:
+        cmd: docker volume rm {{ volume_rapports }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les volumes anonymes qu'un essai a pu laisser
+      ansible.builtin.shell:
+        cmd: docker volume prune -f || true
+      changed_when: false
+
+    - name: Retirer l'image du lab, puis l'image de base par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines et le cache de construction
+      ansible.builtin.shell:
+        cmd: docker image prune -f && docker builder prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de construction et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

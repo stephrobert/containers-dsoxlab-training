@@ -1,10 +1,58 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# LE VOLUME DOIT PARTIR, et c'est le geste le plus important de ce cleanup. Un
+# volume survit à son conteneur, c'est tout son intérêt et c'est aussi ce qui
+# le rend dangereux ici : s'il restait avec `historique.log` dedans, le
+# quatrième contrôle serait vrai au passage suivant avant tout travail, et le
+# lab se noterait sur le travail de la veille.
+#
+# L'ORDRE COMPTE : `docker volume rm` refuse un volume encore utilisé par un
+# conteneur, même arrêté. Le conteneur part donc d'abord.
+#
+# ET LE RÉPERTOIRE DE L'HÔTE AUSSI : un bind mount ne copie rien, il expose le
+# répertoire tel quel. Laisser `reference/` derrière laisserait un morceau du
+# lab sur la machine.
 - name: Défaire le lab donnees-volumes-et-montages
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-volumes:1.0
+    atelier: /opt/lab-volumes
+    volume_donnees: coffre-donnees
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer le conteneur, AVANT le volume qu'il utilise
+      ansible.builtin.shell:
+        cmd: docker rm -f archive 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le volume du lab, données comprises
+      ansible.builtin.shell:
+        cmd: docker volume rm {{ volume_donnees }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les volumes anonymes qu'un essai a pu laisser
+      ansible.builtin.shell:
+        cmd: docker volume prune -f || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail, la référence et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

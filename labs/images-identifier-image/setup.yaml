@@ -54,6 +54,10 @@
     #
     # La mission demande le digest de `debian:13` « telle qu'elle est sur
     # cette machine » : il faut donc qu'elle y soit vraiment.
+    #
+    # dsoxlab:tag-nu-volontaire : épingler ce tirage écrirait dans le setup la
+    # réponse exacte que le test demande à la ligne `base=`. Le lab ne
+    # mesurerait plus rien, il se corrigerait lui-même.
     - name: Tirer l'image de base, que BuildKit ne dépose pas dans le magasin
       ansible.builtin.command:
         cmd: docker pull debian:13
@@ -68,6 +72,9 @@
     # Deux Dockerfile qui ne diffèrent que par une ligne. Construits l'un après
     # l'autre sous le même tag, ils fabriquent la situation à diagnostiquer :
     # le tag `inventaire:1.0` désignera la SECONDE, et plus rien ne le dira.
+    # dsoxlab:tag-nu-volontaire : ce `FROM` doit désigner la MÊME image que le
+    # tirage ci-dessus, dont le digest est la réponse attendue. L'épingler ici
+    # la donnerait, et le sujet du lab est justement qu'un tag ne garantit rien.
     - name: Écrire la première version de l'image
       ansible.builtin.copy:
         dest: /opt/lab-images/Dockerfile.v1
@@ -78,6 +85,9 @@
           RUN echo "inventaire 1.0" > /etc/inventaire.txt
           CMD ["cat", "/etc/inventaire.txt"]
 
+    # dsoxlab:tag-nu-volontaire : même raison que la tâche précédente. Les deux
+    # versions partent du même socle, et c'est ce qui rend les deux images
+    # indiscernables par leur tag tout en ayant deux digests.
     - name: Écrire la version substituée, sous le même tag
       ansible.builtin.copy:
         dest: /opt/lab-images/Dockerfile.v2

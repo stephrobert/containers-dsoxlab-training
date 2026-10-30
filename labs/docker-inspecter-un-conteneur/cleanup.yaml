@@ -1,10 +1,43 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# CE QU'IL DOIT IMPÉRATIVEMENT RETIRER : le répertoire de travail entier. Les
+# réponses de l'apprenant y sont, et la trace qu'il a sortie du conteneur
+# aussi. Les laisser derrière rendrait le prochain passage déjà résolu pour
+# trois contrôles sur quatre, et le lab se noterait sur un travail ancien.
+#
+# POURQUOI LES VALEURS N'ONT PAS BESOIN D'ÊTRE EFFACÉES. Elles n'existent que
+# dans le conteneur et dans ce que le moteur en montre : le retirer les emporte.
+# C'est la contrepartie du choix du setup, qui n'écrit aucune réponse nulle part.
 - name: Défaire le lab docker-inspecter-un-conteneur
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-inspection:1.0
+    atelier: /opt/lab-inspection
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer le conteneur, qu'il tourne encore ou non
+      ansible.builtin.shell:
+        cmd: docker rm -f greffier 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail, les réponses et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

@@ -1,5 +1,5 @@
 # Surcharge française du lab reseau-bridge-par-defaut. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Le réseau par défaut, et ce qu'il ne fait pas"
+description: "Cartographier le réseau que personne ne choisit : trouver l'adresse d'un conteneur, la passerelle que le moteur lui a donnée, l'interface de l'hôte qui la porte, et joindre un écouteur dont le nom ne se résout pas."

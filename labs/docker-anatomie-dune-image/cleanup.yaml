@@ -1,10 +1,43 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# CE QU'IL DOIT IMPÉRATIVEMENT RETIRER : les deux images ET le répertoire de
+# travail. Les réponses de l'apprenant y sont, et les laisser derrière rendrait
+# le prochain passage déjà résolu.
+#
+# POURQUOI RETIRER LES IMAGES, ET PAS SEULEMENT LEURS TAGS. La révision est
+# posée en label sur `greffe:1.0` : une image conservée garderait la révision
+# du passage précédent, et le prochain `run` reconstruirait par-dessus. Le
+# contrôle de la révision deviendrait alors vrai sans travail, puisque la
+# réponse d'hier serait encore valable aujourd'hui.
 - name: Défaire le lab docker-anatomie-dune-image
   hosts: lab_target
   become: true
+  vars:
+    base_epinglee: >-
+      debian@sha256:2dc419c6d7fe3dad0a2f9fd469c34cc90b0f9ba642d8fde837fe3d7d34a0e7f1
+    atelier: /opt/lab-anatomie
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les deux images du lab
+      ansible.builtin.shell:
+        cmd: docker rmi -f greffe:1.0 greffe:2.0 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'image de base, par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ base_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines et le cache de construction
+      ansible.builtin.shell:
+        cmd: docker image prune -f && docker builder prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail, les réponses et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md
