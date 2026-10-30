@@ -1,10 +1,43 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# RETIRER LE CONTENEUR SUFFIT, et c'est la démonstration du lab : sa couche
+# d'écriture part avec lui, et avec elle les mégaoctets que l'apprenant y a
+# écrits. Un lab qui aurait fait écrire dans un volume aurait dû nettoyer
+# davantage, et c'est toute la différence que le lab enseigne.
+#
+# LE `image prune` N'EST PAS DÉCORATIF ICI : la couche d'écriture détruite
+# libère le disque, mais les couches de l'image, elles, restent tant que
+# l'image reste.
 - name: Défaire le lab internes-stockage-des-images
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-stockage:1.0
+    atelier: /opt/lab-stockage
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer le conteneur, et avec lui sa couche d'écriture
+      ansible.builtin.shell:
+        cmd: docker rm -f entrepot 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines, qui survivent à l'image
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail, les réponses et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

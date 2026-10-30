@@ -1,16 +1,19 @@
 # Lab internes-chaine-dexecution. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: internes-chaine-dexecution                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Who really starts a container"            # REQUIS
 level: c1                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Walk the chain between the daemon and a container's process, discover that its parent is none of the ones you expect, then restart the daemon and see the container survive it."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - internes
+  - runtime
+  - processus
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#comment-ces-mécanismes-fonctionnent-ensemble   # REQUIS, http(s)
 lab_type: lab
-estimated_time: 30m
+estimated_time: 35m
 runtime:
   type: vm
   targets:                    # REQUIS pour vm, non vide
