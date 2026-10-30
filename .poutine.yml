@@ -27,3 +27,13 @@ skip:
       - pkg:githubactions/step-security/harden-runner
       # Sigstore - the upstream project behind cosign keyless signing.
       - pkg:githubactions/sigstore/cosign-installer
+      # jdx - mise, which installs the exact tool versions mise.toml pins
+      # (hadolint, dive, trivy). Declared alongside the other trusted third
+      # party actions in `.plumber.yaml: trustedGithubActions`, so that the
+      # decision is taken once for both analysers rather than twice with two
+      # different reasons.
+      #
+      # Measured on 2026-10-30: this is the only repository of the catalogue
+      # family that calls this action at all, which is why poutine reports it
+      # here and nowhere else. It is pinned by SHA.
+      - pkg:githubactions/jdx/mise-action
