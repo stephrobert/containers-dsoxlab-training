@@ -602,6 +602,61 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "images-contexte-de-build": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_l_image_porte_le_code_et_la_version_partagee",
+    "test_la_construction_se_rejoue_par_un_script",
+    "test_le_fichier_partage_reste_la_source_unique",
+    "test_ni_le_secret_ni_les_archives_n_entrent_dans_l_image"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 65,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 554 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "images-contexte-de-build",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-images-contexte-de-build.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_l_image_porte_le_code_et_la_version_partagee",
+    "test_la_construction_se_rejoue_par_un_script",
+    "test_le_fichier_partage_reste_la_source_unique",
+    "test_ni_le_secret_ni_les_archives_n_entrent_dans_l_image"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "images-identifier-image": {
   "apres": {
    "echecs": [],
