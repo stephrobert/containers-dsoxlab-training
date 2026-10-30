@@ -1,13 +1,15 @@
 # Lab images-contexte-de-build. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-contexte-de-build                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "A file that exists, and cannot be found"   # REQUIS
 level: c2                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Tell apart what a build context contains from what the disk holds: read a message that blames a file which exists, choose the context, point at the Dockerfile, and keep a secret out of the image."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - dockerfile
+  - contexte-de-build
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-2--utiliser-dockerignore   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m

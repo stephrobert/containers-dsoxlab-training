@@ -1,10 +1,203 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un dépôt à plusieurs répertoires, dont
+# une application qui a besoin d'un fichier rangé AILLEURS, et un Dockerfile qui
+# va le chercher avec `..`. La construction échoue, et le message est le sujet
+# du lab.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, le même Dockerfile sous les deux
+# constructeurs :
+#
+#   buildkit (le défaut aujourd'hui)
+#     ERROR: ... "/commun/version.txt": not found
+#     IL DIT « INTROUVABLE », et le fichier existe. Le `..` est normalisé, puis
+#     écrasé : le moteur ne regarde que dans le contexte, et rend compte de ce
+#     qu'il voit, pas de ce qui est.
+#
+#   le constructeur classique (DOCKER_BUILDKIT=0)
+#     COPY failed: forbidden path outside the build context: ../commun/...
+#     CELUI-LÀ NOMMAIT LA CAUSE. Le message s'est dégradé en changeant de
+#     constructeur, et c'est pourquoi tant de réponses trouvées en ligne
+#     parlent d'un fichier manquant.
+#
+# ET UNE MESURE QUI CHANGE CE QU'ON CROIT SAVOIR. Sous buildkit, un contexte
+# volumineux n'est PAS envoyé en entier : avec 20 Mo d'archives sur le disque,
+# `transferring context` a mesuré 2 octets, et l'image pesait exactement la
+# taille du socle. Le poids du contexte n'est donc plus l'argument ; ce qui
+# reste vrai, c'est qu'une copie en bloc fait entrer dans l'image ce qui ne
+# doit pas y être, un secret compris.
 - name: Préparer le lab images-contexte-de-build
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    atelier: /opt/lab-contexte
+    depot: /opt/lab-contexte/depot
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image de départ, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer le socle, pour que le Dockerfile du lab le désigne par un nom
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} lab-contexte:1.0
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser son image
+      ansible.builtin.shell:
+        cmd: docker rmi -f appli:contexte 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'atelier d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: absent
+
+    # LES DEUX VALEURS SONT TIRÉES ICI. Le jeton part dans le code, la version
+    # dans le fichier partagé : la première prouve que l'image porte le code
+    # courant, la seconde que le fichier partagé n'a pas été recopié à la main.
+    - name: Tirer le jeton de l'application et la version du fichier partagé
+      ansible.builtin.set_fact:
+        jeton: "jeton-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=12) }}"
+        version: "v-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=10) }}"
+
+    - name: Déposer les répertoires du dépôt
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ depot }}"
+        - "{{ depot }}/appli"
+        - "{{ depot }}/appli/src"
+        - "{{ depot }}/commun"
+        - "{{ depot }}/secrets"
+        - "{{ depot }}/archives"
+
+    # LE FICHIER PARTAGÉ, et c'est la contrainte du lab : il sert à plusieurs
+    # applications, donc il reste la source unique. Le recopier dans le
+    # répertoire de l'application réglerait la construction et créerait la
+    # divergence que ce rangement existe pour éviter.
+    - name: Déposer le fichier partagé, hors du répertoire de l'application
+      ansible.builtin.copy:
+        dest: "{{ depot }}/commun/version.txt"
+        mode: "0644"
+        content: |
+          {{ version }}
+
+    - name: Déposer le code de l'application, qui porte le jeton
+      ansible.builtin.copy:
+        dest: "{{ depot }}/appli/src/main.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          echo {{ jeton }}
+          echo "version partagee : $(cat /app/commun/version.txt)"
+
+    # LE SECRET N'A RIEN À FAIRE DANS UNE IMAGE, et il est là pour que la
+    # copie en bloc ait un prix. Mode 0600 : il se lit, mais il ne se lit pas
+    # par accident.
+    - name: Déposer un secret dans le dépôt, qui ne doit jamais entrer dans l'image
+      ansible.builtin.copy:
+        dest: "{{ depot }}/secrets/jeton-prod.txt"
+        mode: "0600"
+        content: |
+          ceci-est-un-secret-de-production-et-il-ne-doit-pas-entrer-dans-une-image
+
+    - name: Déposer un gros fichier dans le dépôt, qui n'a rien à y faire non plus
+      ansible.builtin.command:
+        cmd: dd if=/dev/zero of={{ depot }}/archives/dump.bin bs=1M count=20
+      args:
+        creates: "{{ depot }}/archives/dump.bin"
+
+    # LE DOCKERFILE DE DÉPART ÉCHOUE, et son message accuse un fichier qui
+    # existe. C'est tout le lab : la cause n'est pas l'absence du fichier, mais
+    # la frontière du contexte.
+    - name: Déposer le Dockerfile de départ, qui va chercher hors du contexte
+      ansible.builtin.copy:
+        dest: "{{ depot }}/appli/Dockerfile"
+        mode: "0644"
+        content: |
+          # CE DOCKERFILE ECHOUE, et le message parle d un fichier introuvable.
+          # Le fichier existe pourtant : il est dans ../commun/, a cote.
+          FROM lab-contexte:1.0
+          WORKDIR /app
+          COPY ../commun/version.txt /app/commun/version.txt
+          COPY src /app/src
+          CMD ["/app/src/main.sh"]
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : un fichier qui existe, et que le moteur ne trouve pas
+
+          Le depot est dans {{ depot }} :
+
+            appli/        l application, son Dockerfile et son code
+            commun/       un fichier PARTAGE entre plusieurs applications
+            secrets/      un secret de production
+            archives/     20 Mo dont personne n a besoin
+
+          Construisez l application, et lisez le message. Il dit que
+          `/commun/version.txt` est introuvable. Allez voir : le fichier est
+          la. Ce n est donc pas lui qui manque.
+
+          Faites tourner `appli:contexte`, qui doit imprimer son jeton ET la
+          version partagee.
+
+          TROIS CONTRAINTES, et chacune est notee :
+
+            1. `commun/version.txt` reste la SOURCE UNIQUE. Le recopier dans
+               appli/ reglerait la construction et creerait la divergence que
+               ce rangement existe pour eviter.
+            2. ni le secret ni les archives n entrent dans l image.
+            3. la construction se rejoue par un script `construire.sh` a la
+               racine du depot, en CHEMINS RELATIFS, pour qu il marche depuis
+               n importe quelle copie du depot.
+
+          La troisieme contrainte n est pas une coquetterie : une construction
+          qui ne tient que dans l historique d un terminal n est pas
+          reproductible, et c est elle que les controles rejouent.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. La construction de départ DOIT échouer, et le
+    # script attendu ne doit pas exister.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          ! docker build -t appli:essai-setup {{ depot }}/appli >/dev/null 2>&1
+          && test ! -e {{ depot }}/construire.sh
+          && test -f {{ depot }}/commun/version.txt
+          && test -f {{ depot }}/secrets/jeton-prod.txt
+      changed_when: false
