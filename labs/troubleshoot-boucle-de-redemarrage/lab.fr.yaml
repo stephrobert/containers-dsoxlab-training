@@ -1,5 +1,5 @@
 # Surcharge française du lab troubleshoot-boucle-de-redemarrage. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Une boucle de redémarrage, et deux issues"
+description: "Diagnostiquer un conteneur que le moteur relance sans fin : lire ce que sa politique décide, le distinguer de celui que le moteur a abandonné, et lever la cause au lieu de faire taire la boucle."

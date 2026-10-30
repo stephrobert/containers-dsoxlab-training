@@ -1,10 +1,265 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Trois conteneurs qui partagent le même
+# défaut, et trois comportements différents, parce que leurs politiques de
+# redémarrage ne sont pas les mêmes. C'est tout le lab : la politique ne corrige
+# rien, elle décide seulement de ce qui se passe après l'échec.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et les trois issues diffèrent :
+#
+#   `--restart on-failure:N`
+#     le moteur relance N fois, puis renonce. État `exited`, `RestartCount`
+#     figé à N, `ExitCode` celui de la dernière tentative.
+#
+#   `--restart always` (ou `unless-stopped`)
+#     le moteur relance SANS FIN. État `restarting`, `RestartCount` qui grimpe
+#     (10 en soixante secondes), et un délai d'attente qui croît entre deux
+#     tentatives.
+#
+#   la cause levée, SANS TOUCHER AU CONTENEUR
+#     celui en politique infinie repart TOUT SEUL, mesuré en une soixantaine
+#     de secondes. Celui qui a atteint son plafond ne repart pas : le moteur a
+#     renoncé, et il faut le relancer à la main.
+#
+# AUCUNE DES TROIS RÉPONSES N'EST ÉCRITE ICI. Le plafond, le code de sortie et
+# la politique sont TIRÉS AU HASARD à chaque passage, et les contrôles les
+# recalculent en interrogeant le moteur au moment de la notation. Un lab dont
+# les réponses sont dans le dépôt se résout en lisant le dépôt.
 - name: Préparer le lab troubleshoot-boucle-de-redemarrage
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-boucle:1.0
+    atelier: /opt/lab-boucle
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f appli-plafond appli-sans-fin appli-saine
+          2>/dev/null || true
+      changed_when: false
+
+    # LES TROIS VALEURS SONT TIRÉES ICI, et nulle part ailleurs. Le plafond
+    # évite 1 et 2, où l'on ne verrait pas la différence avec un conteneur qui
+    # renonce tout de suite ; le code évite 0, 1, 2 et la plage 125-127, qui
+    # ont chacun un sens dans ce catalogue et orienteraient le diagnostic.
+    - name: Tirer le plafond de relances, le code d'échec et la politique
+      ansible.builtin.set_fact:
+        plafond: "{{ range(3, 7) | random }}"
+        code_echec: "{{ range(3, 10) | random }}"
+        politique_infinie: "{{ ['always', 'unless-stopped'] | random }}"
+
+    - name: Déposer les deux répertoires de configuration, dont un VIDE
+      ansible.builtin.file:
+        path: "{{ atelier }}/{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - conf
+        - conf-saine
+
+    - name: Retirer un jeton et des réponses laissés par un passage précédent
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}/conf/jeton"
+        - "{{ atelier }}/reponses.txt"
+
+    # LE SCRIPT DIT CE QUI LUI MANQUE, sur sa sortie d'erreur. Sans cela, le
+    # lab n'enseignerait pas le dépannage mais la devinette : un conteneur qui
+    # échoue en silence ne se diagnostique pas, il se remplace.
+    - name: Déposer le script des trois conteneurs, celui qui échoue sans son jeton
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/demarrer.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          if [ ! -f /conf/jeton ]; then
+            echo "FATAL: /conf/jeton absent, demarrage impossible" >&2
+            exit {{ code_echec }}
+          fi
+          echo demarre > /tmp/trace
+          exec sleep infinity
+
+    # LE TÉMOIN, ET LA RAISON DE SON PLAFOND. `appli-plafond` porte DEUX des
+    # trois réponses, et ses deux valeurs sont figées : le moteur a renoncé, le
+    # compteur ne bouge plus, le code reste celui de la dernière tentative.
+    # L'énoncé interdit de le réparer, et un contrôle le vérifie : un conteneur
+    # relancé n'a plus ni ce compteur ni ce code.
+    - name: Lancer `appli-plafond`, qui renoncera après son plafond de relances
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name appli-plafond
+          --restart on-failure:{{ plafond }}
+          -v {{ atelier }}/conf:/conf
+          -v {{ atelier }}/demarrer.sh:/demarrer.sh:ro
+          {{ tag_local }} /demarrer.sh
+      changed_when: true
+
+    - name: Lancer `appli-sans-fin`, que le moteur relancera indéfiniment
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name appli-sans-fin
+          --restart {{ politique_infinie }}
+          -v {{ atelier }}/conf:/conf
+          -v {{ atelier }}/demarrer.sh:/demarrer.sh:ro
+          {{ tag_local }} /demarrer.sh
+      changed_when: true
+
+    # CELLE-CI MARCHE, et c'est le second témoin : son jeton est ailleurs, dans
+    # un répertoire qui le porte. Elle est là pour que la réparation la plus
+    # destructrice se voie : repartir d'une table rase emporterait un service
+    # qui tournait, et rien ne disait qu'il était inutile.
+    - name: Déposer le jeton du conteneur sain, dans SON répertoire
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/conf-saine/jeton"
+        mode: "0644"
+        content: |
+          jeton-du-service-sain
+
+    - name: Lancer `appli-saine`, qui tourne et doit continuer de tourner
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name appli-saine
+          --restart always
+          -v {{ atelier }}/conf-saine:/conf
+          -v {{ atelier }}/demarrer.sh:/demarrer.sh:ro
+          {{ tag_local }} /demarrer.sh
+      changed_when: true
+
+    # L'EMPREINTE DU CONTENEUR SAIN. Ce n'est pas une réponse à deviner, c'est
+    # un invariant : elle permet au contrôle de dire si le conteneur sain est
+    # CELUI du départ, et non un homonyme recréé après coup.
+    - name: Relever l'identifiant du conteneur sain, pour le contrôle d'intégrité
+      ansible.builtin.command:
+        cmd: docker container inspect appli-saine --format {{ '{{' }}.Id{{ '}}' }}
+      register: id_saine
+      changed_when: false
+
+    - name: Déposer cette empreinte à côté de l'atelier
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/.empreinte-saine"
+        mode: "0644"
+        content: "{{ id_saine.stdout | trim }}\n"
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          tentatives=
+          code=
+          politique=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : deux conteneurs en echec, deux issues
+
+          Trois conteneurs, un seul defaut, trois comportements :
+
+            appli-plafond    le moteur a RENONCE a le relancer
+            appli-sans-fin   le moteur le relance encore, et encore
+            appli-saine      tourne, et doit continuer de tourner
+
+          Lisez d abord les traces de `appli-sans-fin`. Elles disent ce qui
+          manque, et elles le disent autant de fois qu il y a eu de tentatives.
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            tentatives=<combien de fois le moteur a relance appli-plafond>
+            code=<le code de sortie de appli-plafond>
+            politique=<la politique de redemarrage de appli-sans-fin, telle
+                       que le moteur la declare>
+
+          Vous NE REPARAREZ PAS `appli-plafond` : c est sur lui que se lisent
+          les deux premieres reponses, et un conteneur relance ne porte plus ni
+          ce compteur ni ce code.
+
+          Enfin, reparez `appli-sans-fin` :
+
+            il doit TOURNER, et avoir produit sa trace
+            sa POLITIQUE de redemarrage doit etre INCHANGEE
+            `appli-saine` doit etre INTACTE, le conteneur du depart
+
+          Retirer la politique ferait taire le symptome sans rien regler : le
+          conteneur cesserait de boucler parce qu il cesserait d etre relance.
+          Ce n est pas la politique qui est en faute, c est la cause.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle attend que le plafond soit atteint : c'est
+    # ce qui rend ses deux valeurs stables, donc lisibles.
+    # LES DEUX CONDITIONS ENSEMBLE, ET C'EST UNE CORRECTION. Attendre le seul
+    # compteur ne suffit pas : il atteint le plafond AU MOMENT de la dernière
+    # relance, alors que le conteneur tourne encore et s'apprête à échouer.
+    # Mesuré le 2026-10-30, le contrôle suivant refusait une fois sur deux, sur
+    # un état `running` parfaitement normal. Le conteneur est épuisé quand le
+    # compteur est au plafond ET que le moteur l'a laissé arrêté.
+    - name: Attendre que `appli-plafond` ait épuisé ses relances, ET soit arrêté
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker container inspect appli-plafond
+          --format '{{ "{{" }}.RestartCount{{ "}}" }}')" = "{{ plafond }}"
+          && test "$(docker container inspect appli-plafond
+          --format '{{ "{{" }}.State.Status{{ "}}" }}')" = "exited"
+      register: epuise
+      until: epuise.rc == 0
+      retries: 40
+      delay: 3
+      changed_when: false
+
+    # LE CONTENEUR QUI BOUCLE SE CONSTATE SUR SON COMPTEUR, ET NON SUR SON
+    # ÉTAT. Mesuré le 2026-10-30 : entre deux tentatives, il passe par
+    # `running` le temps que son script échoue, et un contrôle sur l'état est
+    # donc vrai une fois sur deux. Le compteur de relances, lui, ne redescend
+    # jamais : c'est la preuve stable qu'il boucle.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker container inspect appli-plafond --format '{{ "{{" }}.State.Status{{ "}}" }}')" = "exited"
+          && test "$(docker container inspect appli-saine --format '{{ "{{" }}.State.Running{{ "}}" }}')" = "true"
+          && test "$(docker container inspect appli-sans-fin --format '{{ "{{" }}.RestartCount{{ "}}" }}')" -ge 1
+          && test ! -f {{ atelier }}/conf/jeton
+      changed_when: false

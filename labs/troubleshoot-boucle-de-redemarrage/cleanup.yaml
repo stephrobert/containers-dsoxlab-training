@@ -1,10 +1,45 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# LES CONTENEURS D'ABORD, ET POUR UNE RAISON PRÉCISE : deux d'entre eux portent
+# une politique de redémarrage, et le moteur les relance tant qu'ils existent.
+# Retirer le répertoire avant les conteneurs laisserait `appli-sans-fin` boucler
+# sur une configuration disparue, en écrivant dans le journal du moteur.
+#
+# LE RÉPERTOIRE DOIT PARTIR EN ENTIER : il porte le jeton que la réparation
+# dépose, et son empreinte. S'il survivait réparé, le lab serait déjà résolu au
+# passage suivant, avant tout travail.
 - name: Défaire le lab troubleshoot-boucle-de-redemarrage
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-boucle:1.0
+    atelier: /opt/lab-boucle
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les trois conteneurs du lab, AVANT leur configuration
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f appli-plafond appli-sans-fin appli-saine
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer l'atelier entier, jeton et empreinte compris, et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md
