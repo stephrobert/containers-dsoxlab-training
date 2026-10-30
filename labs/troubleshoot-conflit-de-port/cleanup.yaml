@@ -1,10 +1,57 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# LE PROCESSUS DE L'HÔTE DOIT ÊTRE TUÉ, et c'est le geste que ce cleanup est
+# seul à devoir faire dans tout le catalogue : les autres labs ne posent rien
+# hors des conteneurs. Un écouteur oublié tiendrait son port indéfiniment, et le
+# lab suivant qui voudrait ce port échouerait sans rapport avec son sujet.
+#
+# `pkill -f` NE SE TUE PAS LUI-MÊME ICI, contrairement au cas rencontré dans
+# `container-limite-cpu` : le motif cherché est la ligne de commande de
+# l'écouteur, et le shell qui porte le `pkill` ne la contient pas. Le `|| true`
+# suffit donc, et il couvre le cas où l'apprenant a déjà tué le processus.
 - name: Défaire le lab troubleshoot-conflit-de-port
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-conflit:1.0
+    atelier: /opt/lab-conflit
+    port_hote: 18201
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les quatre conteneurs du lab
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f occupant intrus-a intrus-b temoin-refuse
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Tuer l'écouteur de l'hôte, qui tiendrait son port indéfiniment
+      ansible.builtin.shell:
+        cmd: pkill -f "n[c] -l -k -p {{ port_hote }}" || true
+      changed_when: false
+
+    - name: Vérifier que le port de l'hôte est bien libéré
+      ansible.builtin.shell:
+        cmd: ss -ltn | grep -qv ':{{ port_hote }}' || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail, les réponses et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

@@ -1,5 +1,5 @@
 # Surcharge française du lab troubleshoot-conflit-de-port. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Deux conflits de port, deux causes"
+description: "Comparer deux messages d'erreur qui se ressemblent, découvrir que l'un désigne un conteneur et l'autre un programme que Docker ne montre pas, et rendre leurs ports aux deux conteneurs refusés."

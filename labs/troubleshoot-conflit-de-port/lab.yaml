@@ -1,13 +1,16 @@
 # Lab troubleshoot-conflit-de-port. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: troubleshoot-conflit-de-port                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Two port conflicts, two causes"            # REQUIS
 level: c1                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Compare two error messages that look alike, discover that one points at a container and the other at a program Docker does not show, and give both refused containers their ports back."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - depannage
+  - reseau
+  - ports
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#checklist-de-debug-réseau   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
