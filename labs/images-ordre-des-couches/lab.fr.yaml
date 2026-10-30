@@ -1,5 +1,5 @@
 # Surcharge française du lab images-ordre-des-couches. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Le même Dockerfile, et un cache qui sert enfin"
+description: "Réordonner un Dockerfile autour de ce dont chaque étape dépend, pour qu'un changement de code ne refasse plus le travail coûteux, et tenir hors de l'image ce qui n'a aucune raison d'y être."

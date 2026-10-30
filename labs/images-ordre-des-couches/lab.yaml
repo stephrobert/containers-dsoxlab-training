@@ -1,13 +1,15 @@
 # Lab images-ordre-des-couches. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-ordre-des-couches                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "The same Dockerfile, and a cache that finally serves"   # REQUIS
 level: c2                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Reorder a Dockerfile around what each step depends on, so that a code change no longer redoes the expensive work, and keep out of the image what has no reason to be there."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - dockerfile
+  - cache-de-construction
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-1--maximiser-le-cache-avec-lordre-des-instructions   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
