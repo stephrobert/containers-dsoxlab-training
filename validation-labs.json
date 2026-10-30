@@ -133,12 +133,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-10-29",
+  "date": "2026-10-30",
   "docker": "29.1.3",
-  "duree_s": 45,
+  "duree_s": 49,
   "ecarts": [],
   "etapes": [
-   "état photographié : 553 image(s), 7 conteneur(s), 381 volume(s)",
+   "état photographié : 554 image(s), 7 conteneur(s), 381 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
