@@ -1261,5 +1261,60 @@
   },
   "store": "containerd",
   "verdict": "VALIDE"
+ },
+ "troubleshoot-permission-refusee": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_la_reponse_dit_que_le_montage_de_b_autorise_l_ecriture",
+    "test_la_reponse_donne_l_identite_du_conteneur_b",
+    "test_la_reponse_donne_le_code_de_sortie_de_c",
+    "test_les_trois_pannes_sont_reparees"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 56,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 554 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "troubleshoot-permission-refusee",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-troubleshoot-permission-refusee.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_la_reponse_dit_que_le_montage_de_b_autorise_l_ecriture",
+    "test_la_reponse_donne_l_identite_du_conteneur_b",
+    "test_la_reponse_donne_le_code_de_sortie_de_c",
+    "test_les_trois_pannes_sont_reparees"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
  }
 }
