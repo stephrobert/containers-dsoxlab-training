@@ -1,10 +1,218 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Une image qui marche, construite sur un
+# socle Debian, et dont le script utilise deux constructions de bash. Changer le
+# socle pour Alpine la casse, et le message ne dit pas pourquoi.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30 :
+#
+#   | socle | taille |
+#   | debian:13-slim | 78,9 Mo |
+#   | alpine:3.22 | 8,3 Mo, soit 9,5 fois moins |
+#
+#   le MÊME script, en entrypoint sur Alpine
+#     « exec /src/traiter.sh: no such file or directory »
+#   le même, lancé par sh
+#     « sh: /src/traiter.sh: not found », code 127
+#   et le fichier
+#     -rwxr-xr-x  205 octets, parfaitement présent et exécutable
+#
+# LE MESSAGE NOMME LE SCRIPT, et ce n'est pas le script qui manque : c'est
+# l'interpréteur de son shebang. Le noyau cherche `/bin/bash`, ne le trouve pas,
+# et l'erreur remonte sous le nom du fichier qu'on a demandé. C'est le même code
+# 127 que `troubleshoot-exit-127`, et la même famille de message trompeur que
+# `images-contexte-de-build`.
+#
+# L'ÉQUIVALENT POSIX REND LE MÊME RÉSULTAT sur les deux socles, mesuré :
+# `somme=26 max=11` de part et d'autre. Migrer, ce n'est donc pas changer une
+# ligne, c'est adapter ce qui dépendait du socle.
+#
+# LES DONNÉES SONT TIRÉES AU HASARD à chaque passage, et les contrôles
+# recalculent le résultat attendu : rien dans le dépôt ne le porte.
 - name: Préparer le lab images-migrer-vers-alpine
   hosts: lab_target
   become: true
+  vars:
+    socle_lourd: >-
+      debian@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4
+    socle_leger: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    atelier: /opt/lab-migration
+    contexte: /opt/lab-migration/appli
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer les deux socles, par leur digest
+      ansible.builtin.command:
+        cmd: docker pull {{ item }}
+      loop:
+        - "{{ socle_lourd }}"
+        - "{{ socle_leger }}"
+      register: tirages
+      changed_when: "'Downloaded newer image' in tirages.stdout"
+
+    # LES DEUX SOCLES SONT NOMMÉS, pour que le Dockerfile les désigne de
+    # mémoire. Le digest reste la source : le nom n'est qu'un raccourci local.
+    - name: Nommer les deux socles
+      ansible.builtin.command:
+        cmd: docker tag {{ item.digest }} {{ item.nom }}
+      loop:
+        - { digest: "{{ socle_lourd }}", nom: "lab-socle-lourd:1.0" }
+        - { digest: "{{ socle_leger }}", nom: "lab-socle-leger:1.0" }
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses images
+      ansible.builtin.shell:
+        cmd: docker rmi -f appli:legere appli:lourde 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'atelier d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: absent
+
+    - name: Tirer le jeton de l'application et les quatre valeurs à traiter
+      ansible.builtin.set_fact:
+        jeton: "jeton-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=12) }}"
+        # UNE LISTE, et non une chaîne à découper : les contrôles
+        # relisent le fichier produit, pas cette variable.
+        valeurs:
+          - "{{ range(3, 90) | random }}"
+          - "{{ range(3, 90) | random }}"
+          - "{{ range(3, 90) | random }}"
+          - "{{ range(3, 90) | random }}"
+
+    - name: Déposer les répertoires de l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ contexte }}"
+        - "{{ contexte }}/src"
+        - "{{ contexte }}/donnees"
+
+    # UNE BOUCLE EXPLICITE, et non un `join` dans un bloc littéral : la
+    # seconde forme dépend de deux couches d'échappement, YAML puis Jinja, et
+    # la règle change avec le style du scalaire. Celle-ci écrit une valeur, un
+    # saut de ligne, et recommence.
+    - name: Déposer les données à traiter, une valeur par ligne
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/donnees/valeurs.txt"
+        mode: "0644"
+        content: "{% for v in valeurs %}{{ v }}\n{% endfor %}"
+
+    # LE SCRIPT UTILISE DEUX CONSTRUCTIONS DE BASH, et c'est ce qui casse à la
+    # migration : `mapfile` et le double crochet n'existent pas en sh POSIX.
+    - name: Déposer le script de l'application, écrit en bash
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/src/traiter.sh"
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Deux constructions de bash, et aucune n'existe en sh POSIX :
+          # `mapfile` et le double crochet. Le socle les fournissait.
+          mapfile -t valeurs < /donnees/valeurs.txt
+          somme=0
+          maxi=0
+          for v in "${valeurs[@]}"; do
+            somme=$((somme + v))
+            if [[ $v -gt $maxi ]]; then maxi=$v; fi
+          done
+          echo {{ jeton }}
+          echo "somme=$somme"
+          echo "max=$maxi"
+
+    - name: Déposer le Dockerfile de l'application, sur son socle lourd
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/Dockerfile"
+        mode: "0644"
+        content: |
+          # CETTE IMAGE MARCHE, et elle pese 79 Mo pour un script de 300
+          # octets. Changer la ligne FROM ne suffira pas : le script depend de
+          # ce que ce socle lui donne.
+          FROM lab-socle-lourd:1.0
+          COPY src/traiter.sh /usr/local/bin/traiter
+          COPY donnees /donnees
+          CMD ["/usr/local/bin/traiter"]
+
+    # L'IMAGE DE DÉPART EST CONSTRUITE, et elle sert de RÉFÉRENCE : les
+    # contrôles comparent la taille de l'image légère à la sienne, et le
+    # résultat de l'une à celui de l'autre. Sans elle, il faudrait écrire un
+    # seuil dans le dépôt, qui serait faux au premier changement de socle.
+    - name: Construire l'image de départ, qui sert de référence
+      ansible.builtin.command:
+        cmd: docker build -t appli:lourde {{ contexte }}
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : 79 Mo pour un script de 300 octets
+
+          L image `appli:lourde` marche. Lancez-la, elle imprime son jeton,
+          une somme et un maximum. Pesez-la ensuite : 79 Mo, pour un script
+          de trois cents octets et quatre nombres.
+
+          Un socle Alpine est deja sur la machine, sous le nom
+          `lab-socle-leger:1.0`, et il pese 8 Mo. Construisez `appli:legere`
+          dessus.
+
+          CHANGER LA LIGNE `FROM` NE SUFFIRA PAS. Essayez, et lisez le
+          message : il nomme le script et dit qu il est introuvable. Allez
+          verifier, le script est la, executable. Ce n est donc pas lui qui
+          manque.
+
+          L image `appli:legere` doit :
+
+            imprimer le meme jeton, la meme somme et le meme maximum que
+              `appli:lourde`
+            peser une fraction de `appli:lourde`
+            etre construite sur le socle leger
+            CALCULER, et non reciter : les controles lui donneront d autres
+              donnees que celles du depot, et attendront le bon resultat
+
+          Le contexte est dans {{ contexte }}. Ne modifiez pas
+          `appli:lourde` : c est la reference a laquelle vous etes compare.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. L'image de référence doit marcher, et celle de
+    # l'apprenant ne doit pas exister.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker run --rm --name dsoxlab-essai-setup-migration appli:lourde | grep -q '^somme='
+          && ! docker image inspect appli:legere >/dev/null 2>&1
+          && docker image inspect lab-socle-leger:1.0 >/dev/null 2>&1
+      changed_when: false
+
+    - name: Retirer le conteneur d'essai du setup, sans attendre le moteur
+      ansible.builtin.shell:
+        cmd: docker rm -f dsoxlab-essai-setup-migration 2>/dev/null || true
+      changed_when: false

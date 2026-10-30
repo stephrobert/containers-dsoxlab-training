@@ -1,10 +1,62 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# L'IMAGE DE RÉFÉRENCE PART AVEC LE RESTE. `appli:lourde` est construite par le
+# setup, et les contrôles s'y comparent : la laisser derrière ferait comparer le
+# travail d'un passage à la référence d'un autre, dont les données tirées au
+# hasard ne sont plus les mêmes.
 - name: Défaire le lab images-migrer-vers-alpine
   hosts: lab_target
   become: true
+  vars:
+    socle_lourd: >-
+      debian@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4
+    socle_leger: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    atelier: /opt/lab-migration
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    # LES CONTENEURS D'ESSAI, par leurs noms. Un test interrompu en laisserait
+    # un, et le filtre par image ne suffit pas : l'image peut déjà être partie.
+    - name: Retirer les conteneurs d'essai des contrôles et de la solution
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f dsoxlab-essai-migration dsoxlab-essai-migration-ref
+          dsoxlab-essai-solution-migration dsoxlab-essai-setup-migration
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les conteneurs dérivés des images du lab
+      ansible.builtin.shell:
+        cmd: >
+          docker ps -aq --filter ancestor=appli:legere --filter ancestor=appli:lourde
+          | xargs -r docker rm -f
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les images du lab, celle de l'apprenant, la référence et les socles
+      ansible.builtin.shell:
+        cmd: >
+          docker rmi -f appli:legere appli:lourde
+          lab-socle-lourd:1.0 lab-socle-leger:1.0
+          {{ socle_lourd }} {{ socle_leger }}
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer l'atelier entier, Dockerfile migré compris, et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md
