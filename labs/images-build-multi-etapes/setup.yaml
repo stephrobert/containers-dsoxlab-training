@@ -1,10 +1,229 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un Dockerfile d'une seule étape, posé
+# sur un socle qui porte l'outillage de fabrication. L'image finale emporte cet
+# outillage, et AUCUN NETTOYAGE NE PEUT L'EN RETIRER : il n'a pas été installé
+# par une instruction, il vient du socle. C'est ce qui distingue ce lab de
+# `images-optimiser-la-taille`, où le nettoyage était simplement au mauvais
+# endroit.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30 :
+#
+#   | image | taille | outillage présent |
+#   | socle d'exécution | 8,3 Mo | sans objet |
+#   | socle d'atelier | 39,8 Mo | oui |
+#   | une seule étape | 39,8 Mo | OUI |
+#   | deux étapes | 8,3 Mo | NON |
+#
+# La seconde étape rend donc 4,8 fois moins lourd, et le produit est identique.
+#
+# L'EMPREINTE EST LA PREUVE QUE LA FABRICATION A EU LIEU. Mesuré le même jour :
+# elle change quand la source change, et reste stable quand la source ne change
+# pas. C'est ce qui permet au quatrième contrôle de distinguer un produit
+# fabriqué d'un fichier recopié.
+#
+# LA SOURCE EST TIRÉE AU HASARD à chaque passage, et le produit la reprend : les
+# contrôles la relisent dans le dépôt plutôt que de l'attendre.
 - name: Préparer le lab images-build-multi-etapes
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    atelier_tag: lab-atelier:1.0
+    execution_tag: lab-execution:1.0
+    atelier: /opt/lab-multietapes
+    contexte: /opt/lab-multietapes/appli
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image de départ, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer le socle d'exécution, celui qui ne porte aucun outillage
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ execution_tag }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses images
+      ansible.builtin.shell:
+        cmd: >
+          docker rmi -f appli:finale {{ atelier_tag }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'atelier d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: absent
+
+    - name: Tirer le jeton de l'application et la version de la source
+      ansible.builtin.set_fact:
+        jeton: "jeton-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=12) }}"
+        version: "v-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=10) }}"
+
+    - name: Déposer les répertoires de l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ atelier }}/socle"
+        - "{{ contexte }}"
+        - "{{ contexte }}/source"
+
+    # L'OUTIL DE FABRICATION REFUSE DE TOURNER SANS SON OUTILLAGE, et c'est
+    # délibéré : cela rend impossible la fausse réponse qui consisterait à
+    # fabriquer sur le socle d'exécution. La fabrication a besoin de l'atelier,
+    # l'exécution n'en a pas besoin : c'est tout le sujet du lab.
+    - name: Déposer l'outil de fabrication, qui exige son outillage
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/socle/fabriquer"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # Il REFUSE de tourner sans son outillage : fabriquer sur le socle
+          # d'execution est donc impossible, et la seconde etape n'est pas une
+          # elegance, c'est la seule voie.
+          set -e
+          test -d /usr/lib/atelier || {
+            echo "FATAL: outillage absent de /usr/lib/atelier" >&2
+            exit 2
+          }
+          mkdir -p /produit
+          # L'EMPREINTE EST TIREE ICI, au moment ou la fabrication tourne : un
+          # produit recopie depuis l'hote n'en porterait pas, et une
+          # fabrication rejouee en porte une autre.
+          empreinte=$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')
+          {
+            echo "empreinte=$empreinte"
+            echo "source=$(cat /source/version.txt)"
+          } > /produit/artefact.txt
+
+    # LE SOCLE D'ATELIER PORTE 30 Mo D'OUTILLAGE, et il les porte dans SON
+    # Dockerfile : aucune instruction de l'application ne peut les retirer.
+    - name: Déposer le Dockerfile du socle d'atelier
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/socle/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          COPY fabriquer /usr/local/bin/fabriquer
+          RUN chmod 0755 /usr/local/bin/fabriquer \
+           && mkdir -p /usr/lib/atelier \
+           && dd if=/dev/urandom of=/usr/lib/atelier/libgros.so bs=1M count=30 status=none
+
+    - name: Construire le socle d'atelier, outillage compris
+      ansible.builtin.command:
+        cmd: docker build -t {{ atelier_tag }} {{ atelier }}/socle
+      changed_when: true
+
+    - name: Déposer la source dont la fabrication dépend
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/source/version.txt"
+        mode: "0644"
+        content: |
+          {{ version }}
+
+    - name: Déposer le lanceur de l'application
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/lancer.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          echo {{ jeton }}
+          cat /produit/artefact.txt
+
+    # LE DOCKERFILE DE DÉPART MARCHE, et c'est ce qui rend le défaut invisible :
+    # l'application tourne, le produit est juste. L'image emporte simplement un
+    # atelier dont personne n'a besoin à l'exécution.
+    - name: Déposer le Dockerfile de départ, à une seule étape
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/Dockerfile"
+        mode: "0644"
+        content: |
+          # CE DOCKERFILE MARCHE, et l'image finale pese 39 Mo dont 30 d'un
+          # outillage qui ne sert QU'A LA FABRICATION. Aucun nettoyage ne peut
+          # le retirer : il vient du socle, pas d'une instruction d'ici.
+          FROM lab-atelier:1.0
+          COPY source /source
+          RUN fabriquer
+          COPY lancer.sh /usr/local/bin/lancer
+          CMD ["/usr/local/bin/lancer"]
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : 30 Mo d'outillage dans une image qui n'en a plus besoin
+
+          Le contexte est dans {{ contexte }}. Construisez le Dockerfile tel
+          quel sous le nom `appli:finale` : il marche, l'application tourne,
+          le produit est juste.
+
+          Entrez ensuite dans l'image, et cherchez `/usr/lib/atelier` et
+          `/usr/local/bin/fabriquer`. Ils y sont, et ils ne servent plus a
+          rien : la fabrication est terminee.
+
+          ESSAYEZ DE LES RETIRER, et constatez que vous ne pouvez pas. Ils ne
+          viennent pas d une instruction de ce Dockerfile, ils viennent du
+          SOCLE. Un `rm -rf` dans une instruction suivante les cacherait au
+          conteneur sans retirer un octet a l image, et vous avez deja vu
+          pourquoi dans le lab sur les couches.
+
+          Il n y a donc qu une voie : que l image finale ne parte PAS de
+          l atelier. Un socle d execution est deja sur la machine, sous le nom
+          `lab-execution:1.0`.
+
+          `appli:finale` doit :
+
+            imprimer son jeton et le contenu du produit
+            NE PORTER NI l outillage NI l outil de fabrication
+            etre construite sur le socle d execution
+            porter un produit REELLEMENT FABRIQUE, et non recopie
+
+          Le dernier point se mesure : le produit porte une empreinte tiree au
+          moment ou la fabrication tourne, et les controles changeront la
+          source pour verifier qu elle suit.
+
+          A noter : l outil de fabrication REFUSE de tourner sans son
+          outillage. Fabriquer sur le socle d execution est donc impossible,
+          et ce n est pas un oubli.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker image inspect {{ atelier_tag }} >/dev/null 2>&1
+          && docker image inspect {{ execution_tag }} >/dev/null 2>&1
+          && ! docker image inspect appli:finale >/dev/null 2>&1
+          && grep -q '^FROM lab-atelier:1.0$' {{ contexte }}/Dockerfile
+      changed_when: false
