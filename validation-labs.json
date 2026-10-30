@@ -1152,6 +1152,61 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "troubleshoot-boucle-de-redemarrage": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_la_boucle_est_reparee_sans_rien_couper",
+    "test_la_reponse_donne_la_politique_du_conteneur_qui_boucle",
+    "test_la_reponse_donne_le_code_de_sortie",
+    "test_la_reponse_donne_le_nombre_de_relances"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 54,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 554 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "troubleshoot-boucle-de-redemarrage",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-troubleshoot-boucle-de-redemarrage.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_la_boucle_est_reparee_sans_rien_couper",
+    "test_la_reponse_donne_la_politique_du_conteneur_qui_boucle",
+    "test_la_reponse_donne_le_code_de_sortie",
+    "test_la_reponse_donne_le_nombre_de_relances"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "troubleshoot-conflit-de-port": {
   "apres": {
    "echecs": [],
