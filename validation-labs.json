@@ -54,6 +54,61 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "container-limite-cpu": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_la_limite_a_reellement_mordu",
+    "test_la_reponse_dit_combien_de_cpu_le_conteneur_voit",
+    "test_la_reponse_nomme_le_quota_du_cgroup",
+    "test_le_conteneur_epingle_voit_moins_de_cpu"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 71,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 554 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "container-limite-cpu",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-container-limite-cpu.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_la_limite_a_reellement_mordu",
+    "test_la_reponse_dit_combien_de_cpu_le_conteneur_voit",
+    "test_la_reponse_nomme_le_quota_du_cgroup",
+    "test_le_conteneur_epingle_voit_moins_de_cpu"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "container-signaux-et-pid-1": {
   "apres": {
    "echecs": [],
@@ -98,6 +153,61 @@
     "test_le_conteneur_corrige_a_vu_passer_le_signal",
     "test_le_conteneur_corrige_s_arrete_proprement",
     "test_le_conteneur_fautif_a_ete_arrete_et_porte_le_symptome"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "container-ulimits-et-shm": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_la_memoire_partagee_compte_dans_la_memoire_du_conteneur",
+    "test_la_reponse_dit_la_limite_de_descripteurs_par_defaut",
+    "test_la_reponse_dit_la_taille_par_defaut_de_la_memoire_partagee",
+    "test_le_conteneur_porte_les_deux_reglages"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 41,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 554 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "container-ulimits-et-shm",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-container-ulimits-et-shm.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_la_memoire_partagee_compte_dans_la_memoire_du_conteneur",
+    "test_la_reponse_dit_la_limite_de_descripteurs_par_defaut",
+    "test_la_reponse_dit_la_taille_par_defaut_de_la_memoire_partagee",
+    "test_le_conteneur_porte_les_deux_reglages"
    ],
    "passed": 0,
    "recorded": true,
