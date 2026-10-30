@@ -602,6 +602,61 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "internes-chaine-dexecution": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_chaque_conteneur_a_son_propre_shim",
+    "test_la_reponse_nomme_le_parent_du_shim",
+    "test_la_reponse_nomme_le_runtime_employe",
+    "test_la_reponse_nomme_le_shim_de_ce_conteneur"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 47,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 553 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "internes-chaine-dexecution",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-internes-chaine-dexecution.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_chaque_conteneur_a_son_propre_shim",
+    "test_la_reponse_nomme_le_parent_du_shim",
+    "test_la_reponse_nomme_le_runtime_employe",
+    "test_la_reponse_nomme_le_shim_de_ce_conteneur"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "internes-namespaces": {
   "apres": {
    "echecs": [],
@@ -646,6 +701,61 @@
     "test_la_reponse_nomme_le_namespace_pid_du_conteneur",
     "test_la_reponse_nomme_le_pid_du_processus_sur_l_hote",
     "test_un_conteneur_voit_les_processus_de_l_hote"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "internes-stockage-des-images": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_la_couche_d_ecriture_pese_ce_que_le_conteneur_y_a_mis",
+    "test_la_reponse_nomme_la_couche_d_ecriture",
+    "test_la_reponse_nomme_le_pilote_de_stockage",
+    "test_le_fichier_ecrit_dans_le_conteneur_est_sur_le_disque_de_l_hote"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 43,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 553 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "internes-stockage-des-images",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-internes-stockage-des-images.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_la_couche_d_ecriture_pese_ce_que_le_conteneur_y_a_mis",
+    "test_la_reponse_nomme_la_couche_d_ecriture",
+    "test_la_reponse_nomme_le_pilote_de_stockage",
+    "test_le_fichier_ecrit_dans_le_conteneur_est_sur_le_disque_de_l_hote"
    ],
    "passed": 0,
    "recorded": true,
