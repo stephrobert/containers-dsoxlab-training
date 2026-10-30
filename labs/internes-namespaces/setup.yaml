@@ -1,10 +1,156 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un seul conteneur qui dort, et c'est
+# suffisant : le sujet n'est pas ce que le conteneur fait, c'est ce que l'hôte
+# en voit. Un namespace est une VUE, pas une barrière, et tout le lab consiste à
+# le constater depuis les deux côtés.
+#
+# LA COMMANDE EST UN MARQUEUR. `sleep 987654` n'a aucune utilité pour le
+# conteneur : elle sert à être reconnaissable dans la liste des processus de
+# l'hôte, où elle apparaît telle quelle. L'énoncé la nomme, parce que chercher
+# une aiguille sans savoir à quoi elle ressemble n'enseigne rien.
+#
+# LA LEÇON DE SÉCURITÉ DU LAB, mesurée sur docker.lab le 2026-10-30 : Docker
+# isole pid, net, mnt, uts, ipc et cgroup, mais PAS user. Le conteneur partage
+# donc le namespace USER de l'hôte, et `user:[4026531837]` y est identique de
+# part et d'autre. Conséquence : root dans le conteneur est root sur l'hôte. Ce
+# n'est pas une faille, c'est le réglage par défaut, et c'est ce qui rend tant
+# d'autres précautions nécessaires.
+#
+# Vérifié aussi : le PID 1 du conteneur est un processus ordinaire de l'hôte
+# sous un autre PID, sa ligne de commande y est lisible, et un conteneur lancé
+# dans le namespace PID de l'hôte voit ce processus SOUS LE PID DE L'HÔTE.
+#
+# AUCUNE VALEUR N'EST ÉCRITE NULLE PART. Le PID change à chaque démarrage, et
+# les identifiants de namespace à chaque création : il n'y a rien à recopier
+# d'un passage précédent.
 - name: Préparer le lab internes-namespaces
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-namespaces:1.0
+    atelier: /opt/lab-namespaces
+    marqueur: 987654
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui ouvre le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f cloisonne indiscret 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    - name: Lancer `cloisonne`, dont la commande est un marqueur reconnaissable
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name cloisonne {{ tag_local }}
+          sh -c "sleep {{ marqueur }}"
+      changed_when: true
+
+    - name: Attendre que le moteur lui attribue un PID sur l'hôte
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker container inspect cloisonne
+          --format '{{ "{{" }}.State.Pid{{ "}}" }}')" -gt 0
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          pid_hote=
+          ns_pid=
+          partage=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : un namespace est une vue, pas une barriere
+
+          Le conteneur `cloisonne` tourne. A l interieur, son processus
+          principal est le PID 1 et sa commande est `sleep {{ marqueur }}`.
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            pid_hote=<le PID que ce MEME processus porte sur L HOTE>
+            ns_pid=<l identifiant du namespace PID de `cloisonne`,
+                    de la forme pid:[...]>
+            partage=<le NOM du seul namespace que `cloisonne` partage avec
+                     l hote>
+
+          Puis lancez un conteneur nomme `indiscret` qui VOIT les processus de
+          l hote, et donc le `sleep {{ marqueur }}` de son voisin.
+
+          Le PID change a chaque demarrage et les identifiants de namespace a
+          chaque creation : il n y a rien a recopier d un passage precedent.
+
+          Pour la troisieme question, sachez que les namespaces d un processus
+          se lisent dans /proc/<pid>/ns/ : il y en a sept, et il suffit de
+          comparer ceux de `cloisonne` a ceux du processus 1 de l hote. Celui
+          qui est partage explique pourquoi root dans un conteneur est un sujet
+          de securite.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les deux faits dont dépend
+    # l'énoncé : `cloisonne` tourne avec son marqueur, et `indiscret` n'existe
+    # pas encore.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker exec cloisonne sh -c 'ps -o args' | grep -q '{{ marqueur }}'
+          && ! docker container inspect indiscret >/dev/null 2>&1
+      changed_when: false

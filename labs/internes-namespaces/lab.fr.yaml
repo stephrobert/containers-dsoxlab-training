@@ -1,5 +1,5 @@
 # Surcharge française du lab internes-namespaces. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Un namespace est une vue, pas un mur"
+description: "Retrouver sur l'hôte le processus qu'un conteneur appelle PID 1, lire les namespaces que le noyau lui a donnés, et découvrir par comparaison celui que Docker n'isole pas : la raison pour laquelle root dans un conteneur est un sujet de sécurité."

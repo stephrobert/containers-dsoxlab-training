@@ -1,16 +1,19 @@
 # Lab internes-cgroups-v2. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: internes-cgroups-v2                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Cgroups: what a container may consume"            # REQUIS
 level: c1                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Find a container's cgroup on the host, read the memory limit it carries, discover what the same file says of a container with no limit, then set two ceilings in a single move."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - internes
+  - cgroups
+  - limites
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise   # REQUIS, http(s)
 lab_type: lab
-estimated_time: 30m
+estimated_time: 35m
 runtime:
   type: vm
   targets:                    # REQUIS pour vm, non vide
@@ -19,4 +22,5 @@ runtime:
   default: cible
 validation:
   functional: true
+  security: true
   persistence_after_reboot: false
