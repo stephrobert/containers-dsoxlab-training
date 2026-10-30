@@ -16,8 +16,8 @@ décrit le **geste d'écriture**.
 | Rangement dans les neuf sections de `meta.yml` | fait, `validate-structure` rend « Tous les labs sont valides » |
 | `level` (`c1` à `c4`), `doc_url` ancré, `lab_type` | **pré-remplis** depuis le backlog, dans `lab.yaml` et `lab.fr.yaml` |
 | Hôte des cibles | aligné sur `docker.lab`, le seul hôte que `meta.yml` déclare |
-| Labs **écrits et attestés** | **15**, relevé du 2026-10-30 dans `validation-labs.json` |
-| Section **`conteneurs-utilisation`** | **terminée**, 14 labs sur 14 |
+| Labs **écrits et attestés** | se mesure, voir la commande ci-dessous. Aucun chiffre n'est écrit ici : celui qui y figurait est resté faux une demi-journée |
+| Sections **terminées** | `conteneurs-utilisation` (14 sur 14) et `conteneurs-isolation` (10 sur 10) |
 
 Le compte des labs attestés ne s'écrit pas de mémoire, il se mesure :
 
@@ -150,11 +150,11 @@ l'apprenant.
 ## L'ordre d'écriture
 
 Celui du parcours, et il est déjà justifié dans `ROADMAP.md`. Le reste-à-faire
-ci-dessous est celui du **2026-10-30**, la section 1 étant terminée :
+ci-dessous est celui du **2026-10-30 au soir**, deux sections étant terminées :
 
     1  conteneurs-utilisation       TERMINEE, 14 labs sur 14
-    2  images-construction          9 labs restants sur 10
-    3  conteneurs-isolation        10 labs
+    2  conteneurs-isolation         TERMINEE, 10 labs sur 10
+    3  images-construction          2 labs restants sur 10
     4  images-distribution          6 labs
     5  compose-application          9 labs
     6  compose-exploitation         2 labs
@@ -181,3 +181,70 @@ bloc `<Lab>`. Aucune page ne cite encore ce catalogue : le câblage est un
 travail du dépôt du site, et il suit la livraison, il ne la précède pas.
 
 Le dépôt se commite **en local**. La livraison est un geste humain.
+
+## Reprendre le travail : l'état au soir du 2026-10-30
+
+### Sur quelle branche
+
+**`chantier/labs-restants`**, et pas une autre. Elle part de `main` et porte les
+71 labs : les 32 attestés et les 39 au gabarit.
+
+`main` ne porte que les **32 labs attestés** : la livraison du 2026-10-30 a
+écarté les squelettes pour qu'ils n'apparaissent pas au catalogue avant d'avoir
+été écrits. Les y ramener serait une régression, pas une mise à jour.
+
+`feat/section-conteneurs-utilisation` est l'ancienne branche de travail. Ses 44
+commits sont déjà sur `main` sous la forme d'un seul, par un merge en squash :
+en ouvrir une PR les rejouerait et ramènerait les squelettes. GitHub propose ce
+bouton de lui-même, et il ne faut pas le suivre.
+
+### Le prochain lab, et ce qui est déjà mesuré pour lui
+
+`images-construction` n'a plus que **`buildkit-cache-monte`** et
+**`buildkit-secret-de-build`**.
+
+Pour le second, les mesures sont faites, sur `docker.lab` le 2026-10-30. Elles
+ont coûté une VM et un quart d'heure, et elles portent le lab en entier :
+
+| Façon de passer le secret | Dans l'environnement | Dans `docker history` | Dans l'archive des couches |
+| --- | --- | --- | --- |
+| `--build-arg` | non | **oui** | non |
+| `COPY` puis `rm` | non | non | **oui**, une occurrence |
+| `--mount=type=secret` | non | non | **non**, zéro occurrence |
+
+Deux choses à en tirer pour l'écriture. Le `--build-arg` ne laisse rien dans le
+conteneur et **reste dans l'historique de l'image**, que `docker history` rend
+en clair : c'est la fuite qu'on ne voit pas en inspectant le conteneur. Et le
+`COPY` suivi d'un `rm` est le même défaut que `images-optimiser-la-taille` : la
+couche garde le fichier, et `docker save` le montre.
+
+La mesure se refait avec le script du scratchpad de la session, ou se réécrit en
+dix lignes : construire trois images, chercher la chaîne du secret dans
+`docker history`, puis dans l'archive produite par `docker save`.
+
+Pour `buildkit-cache-monte`, **rien n'est mesuré** : tout reste à faire.
+
+### Les gestes de reprise, dans l'ordre
+
+```bash
+cd ~/Projets/containers-dsoxlab-training
+git switch chantier/labs-restants && git pull
+git switch main && git pull && git switch chantier/labs-restants
+git rebase main                     # main a pu avancer, la CI y est verte
+dsoxlab doctor                      # la VM docker.lab doit repondre
+```
+
+Puis le contrat d'écriture de ce fichier s'applique sans changement : squelette
+de `dsoxlab new lab`, mesure avant d'écrire, tests qui notent zéro sur l'état de
+départ, et `python3 scripts/valider-labs.py --lab <id>` qui doit rendre VALIDE
+dans les deux sens avant tout commit.
+
+### Ce qui attend une action humaine
+
+La **PR #20** (montée de `jdx/mise-action`) attend une réapprobation : une mise
+à jour de sa branche a invalidé l'approbation précédente, la règle
+`require_last_push_approval` étant active.
+
+La branche `feat/section-conteneurs-utilisation` peut être supprimée : son
+contenu est à deux endroits, les 32 labs sur `main` et les 39 squelettes sur
+`chantier/labs-restants`, ce dernier point ayant été vérifié lab par lab.
