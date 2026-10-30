@@ -1,0 +1,24 @@
+# Lab images-healthcheck. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-healthcheck                      # REQUIS
+title: "'Up' says nothing about the service"   # REQUIS
+level: c2                     # REQUIS
+description: "Probe the work rather than the process: write a health check that sees a service going quiet without dying, that reports its recovery, and whose bounds do not stack up."
+skills:                       # REQUIS, non vide
+  - docker
+  - dockerfile
+  - supervision
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

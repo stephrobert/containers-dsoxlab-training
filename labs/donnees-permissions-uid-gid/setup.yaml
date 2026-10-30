@@ -1,0 +1,194 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Les deux mauvaises réponses au même
+# problème, celles qu'on trouve vraiment en production :
+#   - faire tourner le conteneur en ROOT, parce que « sinon il ne peut pas
+#     écrire » ;
+#   - et, quand ça ne suffit pas, ouvrir le volume à tout le monde.
+# Le lab fait remplacer les deux par la bonne : aligner le GROUPE.
+#
+# POURQUOI LE GROUPE ET PAS LE PROPRIÉTAIRE. Deux conteneurs doivent écrire
+# dans le même volume, sous deux UID différents. Aucun propriétaire ne peut
+# convenir aux deux ; un groupe partagé, oui. C'est la situation réelle dès
+# qu'une application et son outil de sauvegarde partagent des données, et c'est
+# pour cela que le lab porte DEUX conteneurs.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et ces chiffres sont le lab :
+#   - un volume fraîchement créé appartient à `0:0` et vaut `755` ;
+#   - un conteneur non-root n'y écrit pas ;
+#   - après `chown root:2000` et `chmod 2775`, les deux UID écrivent, et les
+#     fichiers créés portent le groupe `2000` grâce au bit setgid ;
+#   - `2775` ne donne PAS l'écriture aux autres, là où `777` la donnerait.
+#
+# LE BIT SETGID EST LA VRAIE TECHNIQUE, et c'est ce qui distingue une solution
+# qui tient d'une solution qui marche une fois : sans lui, chaque fichier créé
+# porterait le groupe primaire de son auteur, et le voisin ne pourrait pas le
+# modifier. L'énoncé ne le nomme pas : il demande que les deux écrivent, ce qui
+# y conduit.
+- name: Préparer le lab donnees-permissions-uid-gid
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-permissions:1.0
+    atelier: /opt/lab-permissions
+    volume_rapports: rapports-partages
+    chemin_rapports: /rapports
+    gid_equipe: 2000
+    uid_redacteur: 1000
+    uid_verificateur: 1001
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui ouvre le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f rapport verificateur 2>/dev/null || true
+      changed_when: false
+
+    # LE VOLUME EST RECRÉÉ À CHAQUE PASSAGE : s'il survivait avec ses
+    # permissions corrigées, trois contrôles sur quatre seraient vrais avant
+    # tout travail.
+    - name: Retirer le volume du passage précédent, APRÈS ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker volume rm {{ volume_rapports }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de construction
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    # L'IMAGE PORTE LES DEUX COMPTES, et c'est indispensable : un `--user` qui
+    # désigne un UID inconnu de l'image fonctionne, mais le shell n'a alors ni
+    # nom ni répertoire personnel, et les messages d'erreur deviennent
+    # incompréhensibles. Les deux comptes partagent le groupe `equipe`.
+    - name: Écrire l'image qui porte les deux comptes et leur groupe commun
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          RUN addgroup -g {{ gid_equipe }} equipe \
+           && adduser -D -u {{ uid_redacteur }} -G equipe redacteur \
+           && adduser -D -u {{ uid_verificateur }} -G equipe verificateur
+          CMD ["sh", "-c", "sleep infinity"]
+
+    - name: Construire l'image, pour que l'apprenant puisse recréer
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    - name: Créer le volume que les deux conteneurs doivent partager
+      ansible.builtin.command:
+        cmd: docker volume create {{ volume_rapports }}
+      changed_when: true
+
+    # FAUTE 1 : le producteur tourne en root, « parce que sinon il ne peut pas
+    # écrire ». Tout marche, et chaque fichier qu'il crée appartient à root.
+    - name: Lancer `rapport` en root, la mauvaise réponse la plus répandue
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name rapport
+          -v {{ volume_rapports }}:{{ chemin_rapports }} {{ tag_local }}
+      changed_when: true
+
+    # LE SECOND CONTENEUR, lui, respecte la règle : il tourne en non-root. Et
+    # c'est précisément pour cela qu'il n'écrit rien, ce qui est le symptôme
+    # que le scénario raconte.
+    - name: Lancer `verificateur` en non-root, qui ne peut donc rien écrire
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name verificateur
+          --user {{ uid_verificateur }}:{{ gid_equipe }}
+          -v {{ volume_rapports }}:{{ chemin_rapports }} {{ tag_local }}
+      changed_when: true
+
+    - name: Attendre que les deux conteneurs répondent
+      ansible.builtin.shell:
+        cmd: docker exec rapport id -u && docker exec verificateur id -u
+      register: attente
+      until: attente.rc == 0
+      retries: 10
+      delay: 2
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : deux conteneurs, un volume, et des droits qui tiennent
+
+          Deux conteneurs partagent le volume `{{ volume_rapports }}`, monte
+          sur {{ chemin_rapports }}. Ils sont batis sur `{{ tag_local }}`, qui
+          porte deux comptes dans le MEME groupe :
+
+            redacteur       uid {{ uid_redacteur }}, groupe equipe (gid {{ gid_equipe }})
+            verificateur    uid {{ uid_verificateur }}, groupe equipe (gid {{ gid_equipe }})
+
+          L etat actuel est le resultat de deux mauvaises reponses :
+
+            rapport        tourne en ROOT, parce que sinon il n ecrivait pas
+            verificateur   tourne en non-root, et il n ecrit rien
+
+          Quatre choses sont attendues :
+
+            1. `rapport` ne tourne PLUS en root.
+            2. un fichier que `rapport` ecrit dans {{ chemin_rapports }} lui
+               appartient, et porte le groupe partage.
+            3. le repertoire {{ chemin_rapports }} appartient au groupe partage
+               et lui donne l ECRITURE.
+            4. `verificateur`, dont l uid est DIFFERENT, ecrit aussi dans
+               {{ chemin_rapports }} -- et le repertoire n est PAS ouvert en
+               ecriture a tout le monde.
+
+          Gardez les noms des conteneurs : les controles les cherchent
+          nommement.
+
+          Deux choses a savoir. L utilisateur d un conteneur se fixe a sa
+          CREATION : il faut le recreer. Et on ne peut pas ecrire dans un
+          volume sans un conteneur qui le monte : pour changer ses droits,
+          lancez-en un jetable qui le monte, avec les privileges qu il faut.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les trois faits dont dépend
+    # l'énoncé : `rapport` est en root, le volume appartient à root, et
+    # `verificateur` ne peut rien y écrire.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker exec rapport id -u)" -eq 0
+          && test "$(docker exec rapport stat -c '%g' {{ chemin_rapports }})" -eq 0
+          && ! docker exec verificateur sh -c 'touch {{ chemin_rapports }}/.essai-setup' 2>/dev/null
+      changed_when: false

@@ -2,6 +2,10 @@
 
 **Langue :** [English](./README.md) · [Français](./README.fr.md)
 
+[![CI](https://github.com/stephrobert/containers-dsoxlab-training/actions/workflows/ci.yml/badge.svg)](https://github.com/stephrobert/containers-dsoxlab-training/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/stephrobert/containers-dsoxlab-training?label=OpenSSF%20Scorecard)](https://securityscorecards.dev/viewer/?uri=github.com/stephrobert/containers-dsoxlab-training)
+[![Plumber compliance](https://score.getplumber.io/github.com/stephrobert/containers-dsoxlab-training.svg)](https://score.getplumber.io/github.com/stephrobert/containers-dsoxlab-training)
+[![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 [![Licence : CC BY 4.0](https://img.shields.io/badge/Licence-CC%20BY%204.0-lightgrey.svg)](./LICENSE)
 
 Catalogue de **labs vérifiables** de la formation Conteneurisation du blog
@@ -68,10 +72,11 @@ cd containers-dsoxlab-training
 mise install
 ```
 
-Aucun provisionnement n'est nécessaire pour commencer : les labs des premiers
-blocs se jouent sur votre machine, avec votre moteur Docker. Les labs qui
-exigent une machine dédiée le déclarent, et `dsoxlab provision` s'en occupera
-le jour où vous les atteindrez.
+Chaque lab se joue dans une **machine virtuelle jetable**, que
+`dsoxlab provision` monte pour vous et que `dsoxlab destroy` retire. Vous
+n'installez donc rien sur votre poste, Docker compris : c'est le lab qui pose
+le moteur, dans une Debian 13 qui ne survit pas à la séance. Comptez quelques
+minutes de provisionnement avant le premier lab.
 
 ### Votre premier lab, en cinq minutes
 
@@ -104,7 +109,8 @@ Le catalogue est décrit par des données, pas par du code, et c'est ce qui gard
 le moteur `dsoxlab` indépendant du domaine :
 
 - **`meta.yml`** à la racine déclare l'identité du dépôt et l'**ordre** des
-  onze sections affichées par `list-labs` ;
+  huit sections affichées par `list-labs`, qui portent les identifiants des
+  modules de la formation, plus le parcours Swarm déclaré hors tronc ;
 - **`lab.yaml`** par lab déclare ses `skills`, son `level`, son `runtime`
   (type, fixtures, services), ses `distros`, son `doc_url` et un bloc
   `validation`. Un `lab.fr.yaml` surcharge `title` et `description` en
@@ -131,11 +137,18 @@ dit ce qu'il doit encore.
 
 | Runtime | Ce que le lab demande |
 |---|---|
-| `shell` | un terminal et un démon Docker qui tourne. Les tests inspectent les images, conteneurs et réseaux que Docker contient vraiment. |
+| `vm` | une Debian 13 jetable, montée par `dsoxlab provision` et détruite par `dsoxlab destroy`. Le lab y installe Docker ; les tests inspectent les images, conteneurs et réseaux que ce moteur contient vraiment. |
 
-Ce catalogue ne déclare aucun bloc `infra:` : aucune machine virtuelle, aucun
-`dsoxlab provision`. Les conteneurs sont le sujet enseigné, donc ils tournent
-sur votre propre moteur.
+**Vous n'installez pas Docker sur votre poste.** C'est une décision de ce
+catalogue, prise le 2026-10-28 : une machine virtuelle se jette, un démon
+Docker posé sur votre machine de travail reste, avec son groupe `docker`, son
+service et ses images. Les labs vous coûtent donc un `dsoxlab provision` de
+quelques minutes, et rien d'autre.
+
+En retour, ils peuvent enseigner ce qu'un conteneur sur votre poste
+n'enseignerait pas : la configuration du démon, le mode rootless, seccomp,
+AppArmor, le pare-feu, une registry avec son certificat. Et un lab qui remplit
+le disque à dessein le remplit chez lui.
 
 ### Le modèle de validation
 
@@ -178,9 +191,9 @@ Vous perdez progressivement les indications. C'est l'objet du parcours.
 
 | Bloc | Ce qu'il apprend | Ce qu'il exige |
 | --- | --- | --- |
-| **Docker** | images, exécution, données, réseau, sécurité, internes | votre moteur, parfois une machine dédiée |
-| **Compose** | une application à plusieurs services, décrite et diagnostiquée | votre moteur |
-| **Swarm** | un orchestrateur distribué : Raft, quorum, overlay, secrets | plusieurs machines |
+| **Docker** | images, exécution, données, réseau, sécurité, internes | une VM jetable |
+| **Compose** | une application à plusieurs services, décrite et diagnostiquée | la même VM |
+| **Swarm** | un orchestrateur distribué : Raft, quorum, overlay, secrets | plusieurs VM |
 
 Swarm est un **parcours avancé, clairement séparé**. Ce n'est pas une étape
 vers Kubernetes dans ce dépôt : c'est un orchestrateur à part entière, avec son
@@ -189,13 +202,54 @@ consensus et son état de contrôle à protéger.
 ## Le catalogue
 
 <!-- LABS:START -->
-### Construire des images
+### Utiliser les conteneurs
 
 | Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
 |---|---|---|---|---|---|
-| `images-premiere-image` | Première image : l'application voyage en conteneur, et le prouve | c2 | - | shell + Docker | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+| `docker-verifier-son-moteur` | Le moteur fonctionne-t-il vraiment ? Quatre réponses, pas une | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/#vérification-de-linstallation) |
+| `docker-premier-conteneur` | Lancer, arrêter, supprimer : trois verbes qui ne se recouvrent pas | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/#lancer-et-gérer-les-conteneurs-docker) |
+| `docker-cycle-de-vie` | Le cycle de vie : redémarrer n'est pas recréer | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/concepts/#cycle-de-vie-dun-conteneur) |
+| `container-entrypoint-et-cmd` | ENTRYPOINT et CMD : lequel vos arguments remplacent-ils ? | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#le-cycle-de-vie-dun-conteneur) |
+| `container-signaux-et-pid-1` | Qui est PID 1 décide si votre conteneur s'arrête ou se fait tuer | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-) |
+| `docker-inspecter-un-conteneur` | Interroger un conteneur en marche | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#les-commandes-indispensables) |
+| `docker-anatomie-dune-image` | L'anatomie d'une image : couches, partage, configuration | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/#comment-est-construite-une-image-de-conteneur-) |
+| `reseau-bridge-par-defaut` | Le réseau par défaut, et ce qu'il ne fait pas | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation) |
+| `reseau-bridge-dedie` | Un réseau à soi : nommer et isoler | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation) |
+| `reseau-publication-de-ports` | Publier un port, et seulement où il faut | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#bonnes-pratiques-réseau) |
+| `reseau-interne` | Deux isolations qui ne se ressemblent pas | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale) |
+| `reseau-diagnostic-dns` | La boutique ne trouve plus son catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
+| `donnees-volumes-et-montages` | Où les données survivent : les trois types de montage | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes) |
+| `donnees-permissions-uid-gid` | Deux conteneurs, un volume, des droits qui tiennent | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
 
-_1 labs, table générée par `scripts/gen_catalog.py`._
+### Mesurer l'isolation, et remettre un conteneur en service
+
+| Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
+|---|---|---|---|---|---|
+| `internes-namespaces` | Un namespace est une vue, pas un mur | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#namespaces--isoler-ce-que-le-conteneur-voit) |
+| `internes-cgroups-v2` | Les cgroups : ce qu'un conteneur peut consommer | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise) |
+| `internes-stockage-des-images` | Où atterrissent vraiment les fichiers d'un conteneur | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/) |
+| `internes-chaine-dexecution` | Qui lance vraiment un conteneur | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#comment-ces-mécanismes-fonctionnent-ensemble) |
+| `container-limite-cpu` | Brider un processeur, et le prouver | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise) |
+| `container-ulimits-et-shm` | La mémoire partagée et les descripteurs | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise) |
+| `troubleshoot-exit-127` | Trois pannes, trois codes, une grille | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#décoder-les-exit-codes) |
+| `troubleshoot-conflit-de-port` | Deux conflits de port, deux causes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#checklist-de-debug-réseau) |
+| `troubleshoot-permission-refusee` | Trois accès refusés, trois causes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
+| `troubleshoot-boucle-de-redemarrage` | Une boucle de redémarrage, et deux issues | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement) |
+
+### Construire ses images
+
+| Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
+|---|---|---|---|---|---|
+| `images-identifier-image` | Identité d'une image : le tag ment, le digest non | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+| `images-ordre-des-couches` | Le même Dockerfile, et un cache qui sert enfin | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-1--maximiser-le-cache-avec-lordre-des-instructions) |
+| `images-contexte-de-build` | Un fichier qui existe, et qu'on ne trouve pas | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-2--utiliser-dockerignore) |
+| `images-optimiser-la-taille` | Ce qu'une couche garde | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/) |
+| `images-migrer-vers-alpine` | Changer de socle n'est pas changer une ligne | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base) |
+| `images-build-multi-etapes` | Ce qui vient du socle ne se retire pas | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères) |
+| `images-non-root` | USER change l'identité, et aucun droit | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root) |
+| `images-healthcheck` | « Up » ne dit rien du service | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck) |
+
+_32 labs, table générée par `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Où en est ce catalogue

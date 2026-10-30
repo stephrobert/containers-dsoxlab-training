@@ -82,6 +82,97 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: assertions-bilingues
+        name: ce que l'apprenant lit quand un test refuse existe en EN et en FR
+        entry: uv run --no-sync pytest tests/test_assertions_bilingues.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: images-epinglees
+        name: les images que les setups tirent sont épinglées par digest
+        entry: uv run --no-sync pytest tests/test_images_epinglees.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # Une solution lisible dans le dépôt que l'apprenant clone ne gâche pas un
+      # lab une fois : git garde l'historique. L'en-tête ansible-vault est la
+      # preuve du chiffrement, on la lit plutôt que de faire confiance à
+      # l'auteur. Le contrôle tourne SANS `.vault-pass`, donc il est jouable en
+      # CI et par n'importe qui.
+      - id: solutions-chiffrees
+        name: aucune solution de référence ne part en clair
+        entry: uv run --no-sync pytest tests/test_solutions_chiffrees.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # Un lien interne cassé ne fait échouer aucun test fonctionnel : il ne
+      # casse que la navigation, en silence. Le catalogue Ansible jumeau en a
+      # relevé 150 d'un coup le jour où le contrôle y a été écrit. Aucun réseau,
+      # donc il a sa place dans un hook.
+      - id: liens-internes
+        name: les liens relatifs des Markdown pointent un fichier existant
+        entry: uv run --no-sync pytest tests/test_liens_internes.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # Les deux descriptions d'un lab doivent dire la même chose : celle qui
+      # s'exécute (test_functional.py) et celle qui se lit (README). Quand la
+      # première prouve huit choses et que la seconde annonce « À remplir »,
+      # c'est la seconde que l'apprenant croit.
+      - id: langue-officielle
+        name: un lab écrit ne se déclare pas non écrit
+        entry: uv run --no-sync pytest tests/test_langue_officielle.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # pytest compte un lab entièrement skippé comme une exécution réussie. Ce
+      # contrôle tient le choix de ce catalogue, où un squelette LÈVE : il est
+      # rouge tant qu'il n'est pas écrit, jamais vert et muet.
+      - id: maturite-des-labs
+        name: un squelette ne passe pas pour un lab qui prouve quelque chose
+        entry: uv run --no-sync pytest tests/test_maturite_des_labs.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # trufflehog ne signale que les secrets qu'il a pu VALIDER auprès du
+      # service (`--results=verified`). Une clé révoquée, un jeton expiré ou un
+      # faux secret pédagogique ne déclenchent donc rien, et restent pourtant
+      # dans l'historique d'un dépôt public. Ce contrôle lit les FORMES, et les
+      # deux sont complémentaires.
+      - id: aucun-jeton-versionne
+        name: aucun jeton, clé AWS ou clé privée dans ce que git porte
+        entry: uv run --no-sync pytest tests/test_aucun_jeton_versionne.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # L'issue #237 de dsoxlab, par l'autre bout : un énoncé qui désigne un
+      # endroit où rien n'est lu coûte une demi-heure à qui le suit à la lettre.
+      # Ici, ce qu'un énoncé désigne est d'abord la MACHINE, puisque tous les
+      # labs sont en `runtime: vm`.
+      - id: briefs-pointent-juste
+        name: un énoncé ne cite ni hôte ni chemin inexistant
+        entry: uv run --no-sync pytest tests/test_briefs_pointent_juste.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # Le scan de secrets VALIDÉS, qui complète le contrôle des formes
+      # ci-dessus. `--no-update` : la version employée est celle que la CI
+      # installe depuis une archive de release vérifiée par son empreinte, pas
+      # celle qu'un auto-update ramènerait sans que personne ne la choisisse.
+      - id: trufflehog
+        name: trufflehog (scan de secrets validés)
+        entry: trufflehog git file://. --since-commit HEAD --results=verified --fail --no-update
+        language: system
+        pass_filenames: false
+
       - id: outillage-coherent
         name: chaque hook pointe un test, chaque test est câblé
         entry: uv run --no-sync pytest tests/test_outillage_coherent.py -q

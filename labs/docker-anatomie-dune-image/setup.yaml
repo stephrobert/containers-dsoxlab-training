@@ -1,0 +1,203 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Deux images construites depuis la même
+# base, dont les PREMIÈRES INSTRUCTIONS SONT IDENTIQUES. C'est la condition du
+# partage de couches, et le partage est le sujet : il explique pourquoi dix
+# images d'un même socle ne pèsent pas dix fois le socle.
+#
+# LE PIÈGE EST MESURÉ, PAS SUPPOSÉ. `greffe:1.0` porte CINQ couches pour trois
+# instructions qui semblent en créer une chacune (deux `RUN` et un `COPY`),
+# plus la base. La cinquième vient de `WORKDIR`, qui crée le répertoire quand
+# il n'existe pas. Relevé sur docker.lab le 2026-10-30, et c'est précisément
+# ce qui rend le lab utile : la seule source fiable est le moteur, pas la
+# lecture du Dockerfile.
+#
+# POURQUOI UN LABEL PASSÉ EN LIGNE DE COMMANDE. Il n'est écrit dans AUCUN
+# fichier de la machine : ni dans les Dockerfile, que l'apprenant peut lire, ni
+# dans l'historique de l'image, ce qui a été vérifié. Sa valeur est tirée au
+# hasard à chaque passage. Elle ne s'obtient donc qu'en inspectant la
+# configuration de l'image, et c'est la quatrième question.
+#
+# L'image de base est épinglée par digest, et les deux Dockerfile la reçoivent
+# par la même variable : deux `FROM` qui divergeraient casseraient le partage
+# sans rien dire.
+- name: Préparer le lab docker-anatomie-dune-image
+  hosts: lab_target
+  become: true
+  vars:
+    base_epinglee: >-
+      debian@sha256:2dc419c6d7fe3dad0a2f9fd469c34cc90b0f9ba642d8fde837fe3d7d34a0e7f1
+    atelier: /opt/lab-anatomie
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui le précède dans le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses images
+      ansible.builtin.shell:
+        cmd: docker rmi -f greffe:1.0 greffe:2.0 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ base_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Déposer le fichier que les deux constructions copient
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/charge.txt"
+        mode: "0644"
+        content: |
+          contexte partage par les deux constructions
+
+    # LES TROIS PREMIÈRES LIGNES DES DEUX FICHIERS SONT IDENTIQUES, au
+    # caractère près, et le contexte de construction aussi : c'est ce qui rend
+    # les couches partageables. La moindre différence, même un espace, en
+    # produirait deux jeux distincts.
+    - name: Écrire la version 1.0, celle qu'on va disséquer
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile.v1"
+        mode: "0644"
+        content: |
+          FROM {{ base_epinglee }}
+          RUN mkdir -p /opt/greffe && echo socle > /opt/greffe/socle.txt
+          COPY charge.txt /opt/greffe/charge.txt
+          RUN echo "greffe 1.0" > /opt/greffe/version.txt
+          ENV GREFFE_MODE=lecture
+          WORKDIR /opt/greffe
+          CMD ["cat", "/opt/greffe/version.txt"]
+
+    - name: Écrire la version 2.0, qui part du même socle
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile.v2"
+        mode: "0644"
+        content: |
+          FROM {{ base_epinglee }}
+          RUN mkdir -p /opt/greffe && echo socle > /opt/greffe/socle.txt
+          COPY charge.txt /opt/greffe/charge.txt
+          RUN echo "extension 2.0" > /opt/greffe/extension.txt
+
+    - name: Tirer la révision au hasard, pour qu'elle ne soit dans aucun fichier
+      ansible.builtin.command:
+        cmd: od -An -tx1 -N6 /dev/urandom
+      register: tirage_revision
+      changed_when: false
+
+    - name: Construire `greffe:1.0`, en lui posant sa révision en ligne de commande
+      ansible.builtin.command:
+        argv:
+          - docker
+          - build
+          - -q
+          - -f
+          - "{{ atelier }}/Dockerfile.v1"
+          - --label
+          - "org.opencontainers.image.revision={{ tirage_revision.stdout | replace(' ', '') | trim }}"
+          - -t
+          - greffe:1.0
+          - "{{ atelier }}"
+      changed_when: true
+
+    - name: Construire `greffe:2.0`, qui réutilise les couches du socle
+      ansible.builtin.command:
+        cmd: >
+          docker build -q -f {{ atelier }}/Dockerfile.v2
+          -t greffe:2.0 {{ atelier }}
+      changed_when: true
+
+    - name: Déposer le formulaire de réponses, avec ses quatre clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          couches=
+          partagees=
+          propres=
+          revision=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : disséquer une image
+
+          Deux images sont construites sur cette machine, depuis la MEME base
+          et avec les MEMES premieres instructions :
+
+            greffe:1.0    celle qu on dissseque
+            greffe:2.0    celle qui part du meme socle
+
+          Leurs Dockerfile sont lisibles dans {{ atelier }}. Ne vous y fiez
+          pas : toutes les instructions ne creent pas une couche, et certaines
+          en creent une sans qu on s y attende. Le moteur est la seule source.
+
+          Renseignez les quatre lignes de {{ atelier }}/reponses.txt :
+
+            couches=<le nombre de couches de greffe:1.0>
+            partagees=<le nombre de couches communes aux DEUX images>
+            propres=<le nombre de couches de greffe:2.0 absentes de greffe:1.0>
+            revision=<la revision que greffe:1.0 porte dans sa configuration>
+
+          La revision n est ecrite dans aucun fichier de cette machine, et
+          elle n est pas dans l historique de l image : elle est dans sa
+          CONFIGURATION. Elle est tiree au hasard a chaque passage.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur le fait dont dépend tout
+    # l'énoncé : les deux images existent, et elles partagent réellement des
+    # couches. Un partage à zéro voudrait dire que les constructions ont
+    # divergé, et les trois premières questions n'auraient plus de sens.
+    - name: Vérifier que les deux images existent et partagent bien des couches
+      ansible.builtin.shell:
+        cmd: >
+          docker image inspect greffe:1.0
+          --format '{{ "{{" }}json .RootFS.Layers{{ "}}" }}'
+          | grep -o 'sha256:[0-9a-f]\{1,\}' | sort > /tmp/.anatomie-1
+          && docker image inspect greffe:2.0
+          --format '{{ "{{" }}json .RootFS.Layers{{ "}}" }}'
+          | grep -o 'sha256:[0-9a-f]\{1,\}' | sort > /tmp/.anatomie-2
+          && test "$(comm -12 /tmp/.anatomie-1 /tmp/.anatomie-2 | grep -c .)" -ge 2
+      changed_when: false
+
+    - name: Retirer les listes de travail de la vérification
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/.anatomie-1
+        - /tmp/.anatomie-2

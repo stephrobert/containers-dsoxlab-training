@@ -1,0 +1,5 @@
+# Surcharge française du lab troubleshoot-permission-refusee. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Trois accès refusés, trois causes"
+description: "Distinguer trois refus d'accès qu'on lit comme un seul : le montage qui interdit, les droits qui refusent, et le mode d'un fichier que nul montage ne change. Puis réparer les trois, sans passer root."

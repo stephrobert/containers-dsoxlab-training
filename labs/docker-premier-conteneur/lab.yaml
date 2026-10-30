@@ -1,0 +1,41 @@
+# Lab docker-premier-conteneur. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+#
+# LAB D'ENTRÉE DU CATALOGUE. Le backlog l'impose : il doit se jouer en moins
+# d'une minute, sans rien construire, sinon il décourage avant d'enseigner.
+# D'où un setup qui pose tout ce qu'il faut, et trois gestes à faire, pas un de
+# plus. Son identifiant le nomme par son GESTE et non par son rang, parce qu'un
+# numéro date de l'ordre d'écriture et jamais de l'ordre de lecture.
+#
+# IL SUPPOSE UN MOTEUR EN ÉTAT, ce qui est le sujet du lab précédent,
+# `docker-verifier-son-moteur`. Son setup le remet donc en service sans rien en
+# faire noter : un lab ne note qu'une chose, et ici c'est le cycle de vie d'un
+# conteneur.
+id: docker-premier-conteneur                      # REQUIS
+title: "Run, stop, remove: three verbs that do not overlap"            # REQUIS
+level: c1                     # REQUIS
+description: "The container life cycle in three actions: run one and keep it alive, stop another without removing it, and remove a third. A stopped container still exists."
+skills:                       # REQUIS, non vide
+  - docker
+  - cli
+  - cycle-de-vie
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/#lancer-et-gérer-les-conteneurs-docker   # REQUIS, http(s)
+lab_type: lab
+# Mesuré : la solution de référence s'applique en quelques secondes, et les
+# trois gestes attendus sont trois commandes. Le quart d'heure annoncé est du
+# temps de lecture et d'essais, pas du temps de machine.
+estimated_time: 15m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  # Rien ici ne doit survivre à un redémarrage : un conteneur arrêté et un
+  # conteneur supprimé sont des états du moteur, pas de la machine. Le déclarer
+  # serait annoncer une garantie que le lab ne mesure pas.
+  persistence_after_reboot: false

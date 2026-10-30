@@ -1,0 +1,5 @@
+# Surcharge française du lab troubleshoot-exit-127. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Trois pannes, trois codes, une grille"
+description: "Lire les codes de sortie de trois conteneurs qui ont échoué pour trois raisons, découvrir qu'un journal vide accompagne un statut inattendu, et réparer sur la même image pour prouver qu'elle n'était pas en cause."

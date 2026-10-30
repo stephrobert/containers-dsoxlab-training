@@ -2,6 +2,10 @@
 
 **Language:** [English](./README.md) · [Français](./README.fr.md)
 
+[![CI](https://github.com/stephrobert/containers-dsoxlab-training/actions/workflows/ci.yml/badge.svg)](https://github.com/stephrobert/containers-dsoxlab-training/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/stephrobert/containers-dsoxlab-training?label=OpenSSF%20Scorecard)](https://securityscorecards.dev/viewer/?uri=github.com/stephrobert/containers-dsoxlab-training)
+[![Plumber compliance](https://score.getplumber.io/github.com/stephrobert/containers-dsoxlab-training.svg)](https://score.getplumber.io/github.com/stephrobert/containers-dsoxlab-training)
+[![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](./LICENSE)
 
 A catalogue of **verifiable labs** for the Containers course on
@@ -68,10 +72,11 @@ cd containers-dsoxlab-training
 mise install
 ```
 
-No provisioning is needed to start: the labs of the first blocks run on your
-own machine, with your Docker engine. Labs that require a dedicated machine
-declare it, and `dsoxlab provision` will take care of it the day you reach
-them.
+Every lab runs inside a **throwaway virtual machine**, which
+`dsoxlab provision` brings up for you and `dsoxlab destroy` removes. You
+install nothing on your own machine, Docker included: the lab installs the
+engine, in a Debian 13 that does not outlive the session. Allow a few minutes
+of provisioning before the first lab.
 
 ### Your first lab, in five minutes
 
@@ -104,7 +109,8 @@ The catalogue is described by data, not code, which is what keeps the `dsoxlab`
 engine domain-agnostic:
 
 - **`meta.yml`** at the root declares the repository identity and the **order**
-  of the eleven sections shown by `list-labs`;
+  of the eight sections shown by `list-labs`, which carry the ids of the
+  course modules, plus the Swarm path declared outside the course;
 - **`lab.yaml`** per lab declares its `skills`, `level`, `runtime` (type,
   fixtures, services), `distros`, `doc_url` and a `validation` block. A
   `lab.fr.yaml` overrides `title` and `description` in French, and nothing else.
@@ -130,11 +136,18 @@ what it still owes.
 
 | Runtime | What the lab asks for |
 |---|---|
-| `shell` | a terminal and a working Docker daemon. The tests inspect the images, containers and networks that Docker actually holds. |
+| `vm` | a throwaway Debian 13, brought up by `dsoxlab provision` and torn down by `dsoxlab destroy`. The lab installs Docker there; the tests inspect the images, containers and networks that this engine actually holds. |
 
-This catalogue declares no `infra:` block at all: no virtual machine, no
-`dsoxlab provision`. Containers are what is being taught, so they run on your
-own engine.
+**You do not install Docker on your own machine.** That is a decision of this
+catalogue, taken on 2026-10-28: a virtual machine is thrown away, whereas a
+Docker daemon left on your working machine stays, with its `docker` group, its
+service and its images. The labs therefore cost you a `dsoxlab provision` of a
+few minutes, and nothing else.
+
+In exchange they can teach what a container on your own machine could not: the
+daemon configuration, rootless mode, seccomp, AppArmor, the firewall, a
+registry with its certificate. And a lab that fills the disk on purpose fills
+its own.
 
 ### The validation model
 
@@ -177,9 +190,9 @@ You progressively lose the guidance. That is the point of the path.
 
 | Block | What it teaches | What it requires |
 | --- | --- | --- |
-| **Docker** | images, runtime, data, network, security, internals | your engine, sometimes a dedicated machine |
-| **Compose** | a multi-service application, described and diagnosed | your engine |
-| **Swarm** | a distributed orchestrator: Raft, quorum, overlay, secrets | several machines |
+| **Docker** | images, runtime, data, network, security, internals | a throwaway VM |
+| **Compose** | a multi-service application, described and diagnosed | the same VM |
+| **Swarm** | a distributed orchestrator: Raft, quorum, overlay, secrets | several VMs |
 
 Swarm is an **advanced, clearly separate path**. It is not a stepping stone to
 Kubernetes in this repository: it is an orchestrator in its own right, with its
@@ -188,13 +201,54 @@ consensus and its control state to protect.
 ## The catalogue
 
 <!-- LABS:START -->
+### Use containers
+
+| Lab (id) | Title | Level | Certif | Runtime | Companion guide |
+|---|---|---|---|---|---|
+| `docker-verifier-son-moteur` | Is the engine actually working? Four answers, not one | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/#vérification-de-linstallation) |
+| `docker-premier-conteneur` | Run, stop, remove: three verbs that do not overlap | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/#lancer-et-gérer-les-conteneurs-docker) |
+| `docker-cycle-de-vie` | The life cycle: restarting is not recreating | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/concepts/#cycle-de-vie-dun-conteneur) |
+| `container-entrypoint-et-cmd` | ENTRYPOINT and CMD: which one do your arguments replace? | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#le-cycle-de-vie-dun-conteneur) |
+| `container-signaux-et-pid-1` | Who is PID 1 decides whether your container stops or gets killed | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-) |
+| `docker-inspecter-un-conteneur` | Interrogate a running container | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#les-commandes-indispensables) |
+| `docker-anatomie-dune-image` | The anatomy of an image: layers, sharing, configuration | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/#comment-est-construite-une-image-de-conteneur-) |
+| `reseau-bridge-par-defaut` | The default network, and what it does not do | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation) |
+| `reseau-bridge-dedie` | A network of your own: naming and isolating | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation) |
+| `reseau-publication-de-ports` | Publishing a port, and only where it belongs | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#bonnes-pratiques-réseau) |
+| `reseau-interne` | Two isolations that are not alike | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale) |
+| `reseau-diagnostic-dns` | The shop cannot find its catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
+| `donnees-volumes-et-montages` | Where data survives: the three kinds of mount | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes) |
+| `donnees-permissions-uid-gid` | Two containers, one volume, rights that hold | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
+
+### Measure isolation, and put a container back in service
+
+| Lab (id) | Title | Level | Certif | Runtime | Companion guide |
+|---|---|---|---|---|---|
+| `internes-namespaces` | A namespace is a view, not a wall | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#namespaces--isoler-ce-que-le-conteneur-voit) |
+| `internes-cgroups-v2` | Cgroups: what a container may consume | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise) |
+| `internes-stockage-des-images` | Where a container's files really land | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/) |
+| `internes-chaine-dexecution` | Who really starts a container | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#comment-ces-mécanismes-fonctionnent-ensemble) |
+| `container-limite-cpu` | Capping a processor, and proving it | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise) |
+| `container-ulimits-et-shm` | Shared memory and descriptors | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise) |
+| `troubleshoot-exit-127` | Three failures, three codes, one grid | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#décoder-les-exit-codes) |
+| `troubleshoot-conflit-de-port` | Two port conflicts, two causes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#checklist-de-debug-réseau) |
+| `troubleshoot-permission-refusee` | Three refused accesses, three causes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
+| `troubleshoot-boucle-de-redemarrage` | A restart loop, and two outcomes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement) |
+
 ### Build images
 
 | Lab (id) | Title | Level | Certif | Runtime | Companion guide |
 |---|---|---|---|---|---|
-| `images-premiere-image` | First image: the application ships in a container, and proves it answers | c2 | - | shell + Docker | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+| `images-identifier-image` | Image identity: the tag lies, the digest does not | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+| `images-ordre-des-couches` | The same Dockerfile, and a cache that finally serves | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-1--maximiser-le-cache-avec-lordre-des-instructions) |
+| `images-contexte-de-build` | A file that exists, and cannot be found | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-2--utiliser-dockerignore) |
+| `images-optimiser-la-taille` | What a layer keeps | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/) |
+| `images-migrer-vers-alpine` | Changing base is not changing a line | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base) |
+| `images-build-multi-etapes` | What comes from the base cannot be removed | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères) |
+| `images-non-root` | USER changes the identity, and no right | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root) |
+| `images-healthcheck` | 'Up' says nothing about the service | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck) |
 
-_1 labs, table generated by `scripts/gen_catalog.py`._
+_32 labs, table generated by `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Where this catalogue stands

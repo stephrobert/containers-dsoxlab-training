@@ -1,0 +1,120 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Deux conteneurs déjà là, dans deux
+# états différents, et aucun du troisième. L'apprenant a donc exactement trois
+# gestes à faire, un par verbe du CLI : lancer, arrêter, supprimer. C'est le
+# lab d'entrée du catalogue : il doit se jouer en moins d'une minute, sans rien
+# construire et sans rien tirer d'un registre pendant le travail.
+#
+# POURQUOI DEUX CONTENEURS ET NON UN. « Arrêter » et « supprimer » sont deux
+# gestes distincts que le CLI ne confond pas, et que les débutants confondent
+# toujours : un conteneur arrêté existe encore, et c'est précisément ce qui
+# surprend. Un seul conteneur ne permettrait pas de noter les deux séparément.
+#
+# POURQUOI ALPINE ET NON L'IMAGE DEBIAN DÉJÀ PRÉSENTE. Pour ne dépendre
+# d'aucun autre lab, et surtout pour que le `cleanup` puisse retirer son image
+# sans risquer d'emporter celle dont `images-identifier-image` a besoin. Un lab
+# qui nettoie l'état d'un autre est une panne qui se découvre ailleurs.
+- name: Préparer le lab docker-premier-conteneur
+  hosts: lab_target
+  become: true
+  vars:
+    # L'image est épinglée par digest : c'est la règle du dépôt, et ici elle
+    # garantit en plus que le lab se rejoue à l'identique dans six mois.
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-base:1.0
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab-ci suppose un moteur en état : ce n'est pas son sujet, c'est celui
+    # de `docker-verifier-son-moteur`, qui le précède dans le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    # Le digest ne porte pas de nom utilisable de mémoire. On lui en donne un,
+    # pour que la mission ne demande pas de recopier soixante-quatre caractères.
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    # Repartir d'une table rase : un passage précédent a pu laisser les trois
+    # conteneurs, et le lab serait alors déjà résolu avant d'être posé.
+    - name: Retirer les conteneurs d'un passage précédent
+      ansible.builtin.shell:
+        cmd: docker rm -f premier vitrine rebut 2>/dev/null || true
+      changed_when: false
+
+    - name: Lancer le conteneur que l'apprenant devra ARRÊTER
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name vitrine {{ tag_local }}
+          sh -c "echo vitrine-en-service; sleep infinity"
+      changed_when: true
+
+    # Créé puis arrêté : il EXISTE sans tourner. C'est l'état qui surprend, et
+    # celui que le quatrième contrôle demande de faire disparaître.
+    - name: Créer le conteneur que l'apprenant devra SUPPRIMER
+      ansible.builtin.command:
+        cmd: docker create --name rebut {{ tag_local }} sh -c "echo rebut"
+      changed_when: true
+
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.command:
+        cmd: docker ps -a --format '{{ "{{" }}.Names{{ "}}" }} {{ "{{" }}.State{{ "}}" }}'
+      register: situation
+      changed_when: false
+      failed_when: >
+        'vitrine running' not in situation.stdout
+        or 'rebut created' not in situation.stdout
+        or 'premier' in situation.stdout
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : trois gestes, trois etats
+
+          L'image `lab-base:1.0` est deja presente. Aucun acces a un registre
+          n'est necessaire, et il n'y a rien a construire.
+
+          Sur cette machine, deux conteneurs existent deja :
+
+            vitrine   il TOURNE
+            rebut     il existe, ARRETE
+
+          Trois gestes sont attendus :
+
+            1. lancer un conteneur nomme `premier`, qui TOURNE, et dont les
+               journaux portent la ligne exacte : premier-est-la
+            2. ARRETER `vitrine`, sans le supprimer
+            3. SUPPRIMER `rebut`
+
+          Un conteneur arrete existe encore : c'est ce qui distingue les gestes
+          2 et 3, et c'est le point de ce lab.

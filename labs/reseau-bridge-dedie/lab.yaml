@@ -1,0 +1,25 @@
+# Lab reseau-bridge-dedie. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: reseau-bridge-dedie                      # REQUIS
+title: "A network of your own: naming and isolating"            # REQUIS
+level: c1                     # REQUIS
+description: "Create a dedicated network with a chosen addressing plan, move two containers onto it, and measure both of its effects: their names now resolve, and a container left behind can no longer reach them."
+skills:                       # REQUIS, non vide
+  - docker
+  - reseau
+  - isolation
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

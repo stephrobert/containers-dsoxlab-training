@@ -1,0 +1,30 @@
+# Lab images-identifier-image. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+#
+# Ce lab réalise le contrat `conteneurs-11` du pilotage de la formation
+# (src/data/parcours/docker.yaml) : « Identifier exactement l'image exécutée et
+# sa plateforme ». Son identifiant le nomme par son GESTE et non par son rang,
+# parce qu'un numéro date de l'ordre d'écriture et jamais de l'ordre de lecture.
+id: images-identifier-image                      # REQUIS
+title: "Image identity: the tag lies, the digest does not"            # REQUIS
+level: c2                     # REQUIS
+description: "Tell exactly which image is running: compare a tag to a digest, read a multi-platform index, and catch an image that was replaced under the same tag."
+skills:                       # REQUIS, non vide
+  - docker
+  - oci
+  - digest
+  - supply-chain
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab        # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

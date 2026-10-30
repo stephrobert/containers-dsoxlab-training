@@ -1,0 +1,24 @@
+# Lab docker-anatomie-dune-image. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: docker-anatomie-dune-image                      # REQUIS
+title: "The anatomy of an image: layers, sharing, configuration"            # REQUIS
+level: c1                     # REQUIS
+description: "Dissect an image rather than read its Dockerfile: count the layers it really has, measure what it shares with a sibling image, and find the revision that lives only in its configuration."
+skills:                       # REQUIS, non vide
+  - docker
+  - images
+  - couches
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/#comment-est-construite-une-image-de-conteneur-   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

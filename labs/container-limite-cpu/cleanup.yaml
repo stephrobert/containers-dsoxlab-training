@@ -1,0 +1,45 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# RETIRER LES CONTENEURS SUFFIT, et c'est le compteur d'étranglements qui le
+# rend indispensable : il vit dans le cgroup, et le cgroup part avec le
+# conteneur. S'il survivait, le quatrième contrôle serait vrai au passage
+# suivant avant tout travail, puisque la limite aurait déjà mordu.
+#
+# `epingle` EST RETIRÉ ALORS QUE LE SETUP NE LE CRÉE PAS : c'est l'apprenant qui
+# le lance.
+#
+# LES BOUCLES DE CHARGE partent avec leur conteneur : un `docker rm -f` tue tous
+# ses processus, et il n'y a donc rien à arrêter d'abord.
+- name: Défaire le lab container-limite-cpu
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-cpu:1.0
+    atelier: /opt/lab-cpu
+  tasks:
+    - name: Retirer les deux conteneurs, et avec eux leurs cgroups
+      ansible.builtin.shell:
+        cmd: docker rm -f brideur epingle 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail, les réponses et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

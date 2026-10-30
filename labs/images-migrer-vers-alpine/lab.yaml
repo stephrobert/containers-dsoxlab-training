@@ -1,0 +1,24 @@
+# Lab images-migrer-vers-alpine. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-migrer-vers-alpine                      # REQUIS
+title: "Changing base is not changing a line"   # REQUIS
+level: c2                     # REQUIS
+description: "Migrate an application to a nine times lighter base: read a message that blames a script which exists, adapt what depended on the old base, and keep the result identical."
+skills:                       # REQUIS, non vide
+  - docker
+  - dockerfile
+  - socle-d-image
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

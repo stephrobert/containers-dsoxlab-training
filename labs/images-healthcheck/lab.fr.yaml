@@ -1,0 +1,5 @@
+# Surcharge française du lab images-healthcheck. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "« Up » ne dit rien du service"
+description: "Sonder le travail plutôt que le processus : écrire une sonde de santé qui voit un service se taire sans mourir, qui dit son rétablissement, et dont les bornes ne s'empilent pas."

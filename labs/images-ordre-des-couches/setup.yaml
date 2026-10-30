@@ -1,0 +1,212 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un contexte de construction et un
+# Dockerfile qui marche, mais dont l'ordre des instructions détruit le cache à
+# chaque modification du code. C'est le défaut le plus répandu des Dockerfile
+# d'application, et il ne se voit pas : l'image est juste, la construction est
+# simplement refaite en entier pour rien.
+#
+# LE TRAVAIL COÛTEUX NE DÉPEND PAS DU RÉSEAU. `installer` est un outil déposé
+# dans l'image de base, qui lit le manifeste et dort une seconde par ligne. Un
+# lab qui ferait un vrai `apt-get` ou `pip install` mesurerait la bande passante
+# du jour, et échouerait sur une machine sans accès sortant en accusant
+# l'apprenant.
+#
+# L'EMPREINTE EST LA PREUVE, et c'est la trouvaille de ce lab. `installer` tire
+# seize octets au hasard et les écrit dans l'image : deux images qui portent la
+# MÊME empreinte n'ont pas rejoué l'instruction, donc la couche vient du cache.
+# Mesuré le 2026-10-30 : l'identifiant de couche, lui, vaut `<missing>` sous
+# buildkit et ne distingue rien.
+#
+# LE SETUP NE CONSTRUIT PAS L'IMAGE. Les quatre contrôles sont donc faux avant
+# tout travail, y compris ceux qui ne portent pas sur l'ordre : construire fait
+# partie de la mission.
+- name: Préparer le lab images-ordre-des-couches
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    socle: lab-couches:1.0
+    atelier: /opt/lab-couches
+    contexte: /opt/lab-couches/appli
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image de départ, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses images
+      ansible.builtin.shell:
+        cmd: >
+          docker rmi -f appli:ordonnee {{ socle }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'atelier d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: absent
+
+    # LE JETON EST TIRÉ ICI, et il part dans le CODE de l'application. C'est lui
+    # qui prouve que l'image construite porte bien le code courant, et non une
+    # image d'un passage antérieur restée dans le cache.
+    - name: Tirer le jeton que l'application imprimera
+      ansible.builtin.set_fact:
+        jeton: "jeton-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=12) }}"
+
+    - name: Déposer les répertoires de l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ atelier }}/socle"
+        - "{{ contexte }}"
+        - "{{ contexte }}/src"
+        - "{{ contexte }}/notes"
+
+    # `installer` EST LE TRAVAIL COÛTEUX, et il est volontairement lent : une
+    # seconde par dépendance. Sans ce coût, l'ordre des instructions serait une
+    # question de principe, et personne n'apprend un principe qui ne coûte rien.
+    - name: Déposer l'outil d'installation, qui laisse son empreinte
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/socle/installer"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # L'EMPREINTE EST LA PREUVE : elle est tiree au moment ou cette
+          # instruction tourne. Deux images qui portent la meme n'ont pas rejoue
+          # l'instruction, donc la couche vient du cache.
+          set -e
+          mkdir -p /opt/deps
+          head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n' > /opt/deps/.empreinte
+          while read -r dep; do
+            [ -z "$dep" ] && continue
+            sleep 1
+            echo "$dep" > "/opt/deps/$dep"
+          done < "$1"
+
+    - name: Déposer le Dockerfile du socle
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/socle/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          COPY installer /usr/local/bin/installer
+          RUN chmod 0755 /usr/local/bin/installer
+
+    - name: Construire le socle, qui porte l'outil d'installation
+      ansible.builtin.command:
+        cmd: docker build -t {{ socle }} {{ atelier }}/socle
+      changed_when: true
+
+    - name: Déposer le manifeste des dépendances
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/dependances.txt"
+        mode: "0644"
+        content: |
+          alpha
+          beta
+          gamma
+
+    - name: Déposer le code de l'application, qui porte le jeton
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/src/main.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          echo {{ jeton }}
+
+    # LE BROUILLON EST DANS LE CONTEXTE, ET IL N'A RIEN À FAIRE DANS L'IMAGE.
+    # C'est la seconde moitié du lab : un `COPY . /app` ne copie pas « le
+    # code », il copie TOUT, le Dockerfile et les brouillons compris.
+    - name: Déposer un brouillon dans le contexte, qui ne doit pas entrer dans l'image
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/notes/brouillon.log"
+        mode: "0644"
+        content: |
+          notes de travail, 2 Mo de journal en vrai, et aucune raison d y etre
+
+    # LE DOCKERFILE DE DÉPART MARCHE, et c'est ce qui rend le défaut invisible.
+    # L'image est juste ; elle est simplement reconstruite en entier dès qu'une
+    # ligne de code change.
+    - name: Déposer le Dockerfile de départ, dont l'ordre détruit le cache
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/Dockerfile"
+        mode: "0644"
+        content: |
+          # Ce Dockerfile MARCHE. C est bien la son piege : l image produite est
+          # juste, et pourtant chaque modification du code refait tout.
+          FROM lab-couches:1.0
+          WORKDIR /app
+          COPY . /app
+          RUN installer /app/dependances.txt
+          CMD ["/app/src/main.sh"]
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : le meme Dockerfile, et un cache qui sert enfin
+
+          Le contexte de construction est dans {{ contexte }}. Le Dockerfile
+          qui s y trouve MARCHE : construisez-le, l image est juste.
+
+          Mesurez ensuite ce qu il coute. Construisez une premiere fois,
+          changez une ligne de {{ contexte }}/src/main.sh, reconstruisez, et
+          regardez combien de temps passe l installation des dependances. Elle
+          n a pas change, et elle est refaite.
+
+          Reordonnez les instructions pour que ce travail soit servi par le
+          cache quand le CODE change, et refait quand le MANIFESTE change.
+
+          Et ne faites pas entrer dans l image ce qui n a rien a y faire : le
+          contexte porte un brouillon et le Dockerfile lui-meme, qu un `COPY .`
+          embarque sans rien demander.
+
+          Construisez l image finale sous le nom `appli:ordonnee`. Elle doit
+          imprimer son jeton quand on la lance, et porter les trois
+          dependances declarees.
+
+          Rien a ecrire ailleurs : ce lab se note sur l image, pas sur un
+          formulaire.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Le socle doit exister, l'image de l'apprenant
+    # ne doit pas exister, et le contexte doit porter le Dockerfile de départ.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker image inspect {{ socle }} >/dev/null 2>&1
+          && ! docker image inspect appli:ordonnee >/dev/null 2>&1
+          && grep -q 'COPY \. /app' {{ contexte }}/Dockerfile
+          && test -f {{ contexte }}/notes/brouillon.log
+      changed_when: false

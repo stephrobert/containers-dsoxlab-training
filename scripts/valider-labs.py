@@ -54,6 +54,7 @@ from pathlib import Path
 import verdict_check
 import yaml
 from lecture_solution import est_chiffree, lire_solution
+from lecture_yaml import lire_yaml
 
 RACINE = Path(__file__).resolve().parent.parent
 LABS = RACINE / "labs"
@@ -169,6 +170,25 @@ def check(lab_id: str, journal) -> dict:
         raise Echec(str(erreur)) from erreur
 
 
+def python_dsoxlab() -> str:
+    """Le Python qui porte pytest et testinfra : celui livré avec `dsoxlab`.
+
+    NI `sys.executable`, NI le python de `mise` : aucun des deux ne porte
+    pytest. L'erreur est silencieuse et coûteuse, parce qu'elle ressemble à un
+    échec du lab. Mesurée deux fois le 2026-10-28, sur ce catalogue et sur
+    `proxmox-dsoxlab-training` : « No module named pytest », puis un verdict
+    qui accuse la solution.
+
+    C'est le calcul que font les validateurs des dépôts qui gèrent déjà des VM.
+    """
+    binaire = shutil.which("dsoxlab")
+    if binaire:
+        candidat = Path(binaire).resolve().parent / "python"
+        if candidat.is_file():
+            return str(candidat)
+    return sys.executable
+
+
 def poser_solution(lab: Path, journal) -> None:
     """Pose `solution/` par-dessus le répertoire de travail, fichier par fichier.
 
@@ -177,6 +197,53 @@ def poser_solution(lab: Path, journal) -> None:
     sont pas. Le catalogue Terraform a perdu une campagne entière sur ce défaut
     exact, quinze labs rendant 0 puis 0 parce que la pose était à plat.
     """
+    # UN LAB VM NE SE RÉSOUT PAS EN COPIANT DES FICHIERS EN LOCAL.
+    #
+    # La suite de cette fonction pose `solution/` dans le workdir du lab :
+    # c'est le geste d'un atelier `shell`, où l'apprenant travaille sur la
+    # machine qui lance les tests. Un lab `vm` travaille sur une MACHINE
+    # DISTANTE, et sa solution est un playbook à y jouer.
+    #
+    # Ce cas est déjà traité, et une seule fois : la fixture autouse
+    # `_apply_lab_state` du conftest joue `solution/<lab>/solution.yaml` par
+    # ansible-runner, déchiffre le vault au passage, et ne fait rien quand
+    # `LAB_NO_REPLAY=1` est posé. On lui délègue donc, au lieu d'écrire ici un
+    # second mécanisme qui dériverait du premier.
+    #
+    # C'est ce que fait `valider-labs.py` des dépôts qui gèrent déjà des VM :
+    # ils lancent la suite SANS `LAB_NO_REPLAY`, et le `check` qui suit fait
+    # foi. Ajouté le 2026-10-28, quand le premier lab VM de ce catalogue a
+    # rendu 0/100 après sa solution alors que le lab était bon.
+    rel = lab.relative_to(RACINE / "labs")
+    if (lire_yaml(lab / "lab.yaml") or {}).get("runtime", {}).get("type") == "vm":
+        playbook = RACINE / "solution" / rel / "solution.yaml"
+        if not playbook.is_file():
+            raise Echec(f"lab vm sans solution/{rel}/solution.yaml : rien à jouer sur la machine")
+        journal.write(f"\n# solution vm déléguée au conftest : {playbook.relative_to(RACINE)}\n")
+        journal.flush()
+        env = {k: v for k, v in os.environ.items() if k not in ("LAB_NO_REPLAY", "VIRTUAL_ENV")}
+        proc = subprocess.run(
+            [python_dsoxlab(), "-m", "pytest", str(lab / "challenge" / "tests"),
+             "-q", "-p", "no:cacheprovider", "--no-header"],
+            cwd=RACINE, env=env, capture_output=True, text=True, timeout=1800, check=False,
+        )
+        sortie = proc.stdout + proc.stderr
+        journal.write(sortie)
+        journal.flush()
+        # ON LIT LE CODE DE RETOUR, PAS SEULEMENT UN MOTIF.
+        #
+        # Une première version ne cherchait que « solution.yaml a échoué » dans
+        # la sortie. Le pytest avait alors rendu « No module named pytest » et
+        # ce motif était absent : la pose n'avait pas eu lieu, et la fonction
+        # rendait la main sans rien dire. Le cycle concluait « la solution
+        # laisse 4 tests en échec », ce qui accusait le lab au lieu du harnais.
+        #
+        # Un code de retour non nul couvre les deux cas : la solution qui
+        # échoue, et le harnais qui n'a pas démarré.
+        if proc.returncode != 0:
+            raise Echec(f"la solution n'a pas pu être posée (rc={proc.returncode}) : {sortie[-400:]}")
+        return
+
     source = lab / "solution"
     if not source.is_dir():
         raise Echec(

@@ -1,0 +1,177 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Une image dont le script d'entrée
+# lance l'application SANS `exec`, et un conteneur en marche issu d'elle. C'est
+# le défaut le plus répandu des images maison, et il ne se voit qu'à l'arrêt :
+# le conteneur met le délai complet à mourir, puis sort en 137.
+#
+# CE QUI A ÉTÉ MESURÉ AVANT D'ÉCRIRE CE LAB, ET QUI A CHANGÉ SA CONCEPTION.
+# L'explication courante dit « forme shell, donc le shell est PID 1 ». C'est
+# FAUX sur cette image : mesuré le 2026-10-29 sur Alpine, un
+# `ENTRYPOINT /app.sh` donne `PID1=app.sh` et un arrêt propre, parce que
+# busybox optimise la commande unique en un `exec` direct. Un lab bâti sur
+# cette explication aurait comparé deux images au comportement IDENTIQUE.
+#
+# Ce qui produit vraiment le piège, et qui est aussi le cas réel le plus
+# fréquent, c'est un script d'entrée qui lance l'application en ENFANT :
+#
+#     sans exec : PID1=entree.sh  code=137  arrêt en 6 s, pas de SIGTERM reçu
+#     avec exec : PID1=app.sh     code=0    arrêt en 1 s, SIGTERM reçu
+#
+# Un seul mot les sépare, et trois conséquences le montrent.
+- name: Préparer le lab container-signaux-et-pid-1
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    travail: /opt/lab-signaux
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ travail }}"
+        state: directory
+        mode: "0755"
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    # L'application piège SIGTERM et le dit. C'est ce qui rend le défaut
+    # visible : sans ce piège, un arrêt brutal et un arrêt propre se
+    # ressembleraient dans les journaux.
+    - name: Écrire l'application, qui sait recevoir un SIGTERM
+      ansible.builtin.copy:
+        dest: "{{ travail }}/app.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # Ce piège est la seule raison pour laquelle on voit la différence :
+          # une application qui ignore SIGTERM se ferait tuer dans les deux cas.
+          trap 'echo sigterm-recu; exit 0' TERM
+          echo application-demarree
+          while : ; do sleep 1 ; done
+
+    # LE DÉFAUT EST ICI, ET IL TIENT EN UNE LIGNE MANQUANTE. `/app.sh` est
+    # lancé comme ENFANT : le script d'entrée reste PID 1, et c'est lui qui
+    # reçoit SIGTERM. Il ne le transmet pas, l'application ne le voit jamais,
+    # et le moteur finit par tout tuer.
+    - name: Écrire le script d'entrée fautif, celui du scénario
+      ansible.builtin.copy:
+        dest: "{{ travail }}/entree.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # Un vrai script d'entrée prépare quelque chose avant de lancer
+          # l'application : des permissions, une migration, un fichier de
+          # configuration rendu depuis l'environnement.
+          echo preparation-faite
+          /app.sh
+
+    # dsoxlab:tag-nu-volontaire : ce `FROM` reprend le digest de la variable
+    # ci-dessus. Le marqueur est là parce que le détecteur d'épinglage lit le
+    # Dockerfile généré sans savoir que la variable Ansible EST un digest.
+    - name: Écrire le Dockerfile de l'image fautive
+      ansible.builtin.copy:
+        dest: "{{ travail }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          COPY app.sh /app.sh
+          COPY entree.sh /entree.sh
+          ENTRYPOINT ["/entree.sh"]
+
+    - name: Construire l'image fautive
+      ansible.builtin.command:
+        cmd: docker build -q -f {{ travail }}/Dockerfile -t img-fragile:1.0 {{ travail }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f fragile robuste 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer une image corrigée laissée par un passage précédent
+      ansible.builtin.shell:
+        cmd: docker rmi -f img-corrige:1.0 2>/dev/null || true
+      changed_when: false
+
+    - name: Lancer `fragile`, le conteneur dont l'arrêt va mal se passer
+      ansible.builtin.command:
+        cmd: docker run -d --name fragile img-fragile:1.0
+      changed_when: true
+
+    - name: Laisser l'application démarrer avant de rendre la main
+      ansible.builtin.command:
+        cmd: docker logs fragile
+      register: demarrage
+      until: "'application-demarree' in demarrage.stdout"
+      retries: 10
+      delay: 1
+      changed_when: false
+
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker container inspect fragile --format '{{ "{{" }}.State.Status{{ "}}" }}')"
+          = running
+          && test "$(docker exec fragile cat /proc/1/comm)" = entree.sh
+          && ! docker image inspect img-corrige:1.0 > /dev/null 2>&1
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : un arret qui met dix secondes n'est pas un arret propre
+
+          Le conteneur `fragile` tourne. Les sources de son image sont
+          lisibles dans {{ travail }} : app.sh, entree.sh et le Dockerfile.
+
+          L'application SAIT recevoir un SIGTERM : elle ecrit
+          « sigterm-recu » et sort proprement. Pourtant elle ne le fait
+          jamais.
+
+          Quatre choses sont attendues :
+
+            1. ARRETER `fragile`, et constater son code de sortie. Il ne
+               sera pas 0 : c'est le symptome, et le contröle l'exige tel
+               quel. Ne le reparez pas, c'est la piece a conviction.
+
+            2. Construire une image `img-corrige:1.0` dont le PID 1 du
+               conteneur est l'APPLICATION, et non le script d'entree.
+
+            3. Lancer puis arreter un conteneur `robuste` issu de cette
+               image. Son code de sortie doit etre 0.
+
+            4. Ses journaux doivent porter « sigterm-recu », que `fragile`
+               n'a jamais ecrit.
+
+          Un seul mot separe les deux images. Le script d'entree doit
+          continuer a faire sa preparation : ne le videz pas.

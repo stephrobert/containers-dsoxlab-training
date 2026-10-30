@@ -1,0 +1,26 @@
+# Lab reseau-interne. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: reseau-interne                      # REQUIS
+title: "Two isolations that are not alike"            # REQUIS
+level: c1                     # REQUIS
+description: "Obtain both isolations on one machine: a container with no network at all, and a confined network whose members talk to each other by name but never get out."
+skills:                       # REQUIS, non vide
+  - docker
+  - reseau
+  - isolation
+  - confinement
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

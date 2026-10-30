@@ -1,0 +1,24 @@
+# Lab troubleshoot-boucle-de-redemarrage. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: troubleshoot-boucle-de-redemarrage                      # REQUIS
+title: "A restart loop, and two outcomes"   # REQUIS
+level: c1                     # REQUIS
+description: "Diagnose a container the engine keeps relaunching: read what its policy decides, tell it apart from one the engine gave up on, and lift the cause instead of silencing the loop."
+skills:                       # REQUIS, non vide
+  - docker
+  - depannage
+  - cycle-de-vie
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

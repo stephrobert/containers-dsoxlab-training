@@ -1,0 +1,5 @@
+# Surcharge française du lab donnees-volumes-et-montages. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Où les données survivent : les trois types de montage"
+description: "Un conteneur écrit ses données dans sa propre couche. Les faire passer sur un volume nommé avant de le détruire, exposer la configuration de l'hôte en lecture seule, et lui donner un espace de travail qui ne persiste rien."

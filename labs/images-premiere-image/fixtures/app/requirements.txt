@@ -1,7 +1,0 @@
-# Versions épinglées, mesurées le 2026-10-01 sur PyPI.
-#
-# Une dépendance non épinglée fait d'un build une loterie : la même image,
-# reconstruite dans six mois, embarque une autre version de FastAPI, et un lab
-# qui mesure une taille ou un comportement ne mesure plus rien.
-fastapi==0.142.2
-uvicorn[standard]==0.54.0

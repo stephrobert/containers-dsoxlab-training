@@ -1,0 +1,25 @@
+# Lab images-non-root. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-non-root                      # REQUIS
+title: "USER changes the identity, and no right"   # REQUIS
+level: c2                     # REQUIS
+description: "Move an image off root without breaking what it writes: align the owner rather than opening the directory to everyone, and declare the user by a numeric uid that an orchestrator can check."
+skills:                       # REQUIS, non vide
+  - docker
+  - dockerfile
+  - securite
+  - non-root
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

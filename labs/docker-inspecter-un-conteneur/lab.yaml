@@ -1,0 +1,24 @@
+# Lab docker-inspecter-un-conteneur. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: docker-inspecter-un-conteneur                      # REQUIS
+title: "Interrogate a running container"            # REQUIS
+level: c1                     # REQUIS
+description: "Get out of a running container what nothing on the host says: a token from its logs, the address the engine gave it, the port it publishes, and a file it wrote after starting."
+skills:                       # REQUIS, non vide
+  - docker
+  - inspection
+  - depannage
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#les-commandes-indispensables   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

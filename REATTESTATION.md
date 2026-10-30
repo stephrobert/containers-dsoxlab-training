@@ -1,0 +1,127 @@
+# Re-attesting this catalogue's labs
+
+> Written on 2026-10-19, with values **measured on disk** rather than copied.
+> Numbers age: `validation-labs.json` remains the source of truth for verdicts.
+
+## Why this page exists
+
+On 2026-10-19, a re-attestation campaign recorded **twelve false REDs** in one
+catalogue before being stopped, and hung for twenty-three minutes in another.
+Neither cause had anything to do with the labs: a `.venv` whose shebangs still
+named the repository's former path after a rename, and a command-line tool
+waiting on network access the sandbox does not grant.
+
+In both cases the validator **looked like it was measuring the labs when it was
+measuring its own breakdown**, and it wrote that into the record. A false RED
+costs more than a missing verdict: it sends people hunting for a defect in a lab
+that has none.
+
+## What this catalogue requires
+
+- **dsoxlab 0.5.4 or newer** on the `PATH`. That is the engine version the record will carry, and the record states it for ALL labs: see the section on partial replays.
+- The tools pinned by `mise.toml`, so run the command through `mise exec --`. Without it, a missing or differently versioned tool fails labs for reasons unrelated to their subject.
+- **`.vault-pass` at the root**: 1 solution file(s) in this catalogue are ansible-vault encrypted, and the cycle lays them decrypted. The secret is never committed. Here: present.
+
+## The command
+
+```bash
+mise exec -- uv run scripts/valider-labs.py
+```
+
+A single lab, to exercise the harness before committing to all 1:
+
+```bash
+mise exec -- uv run scripts/valider-labs.py --lab <lab-id>
+```
+
+**Starting with one lab is not a matter of principle.** It is what separates an
+environment defect from a lab defect: if the single lab passes, the harness is
+sound; if it fails like the others, the harness is what needs fixing.
+
+## Current state
+
+This document carries **no figures**, and that is deliberate: a value you have
+to remember to copy always ends up lying, and the original version of this file
+announced "1 VALIDE" long after the catalogue carried thirty.
+
+So the state is read where it is measured:
+
+```bash
+python3 -I - <<'PY'
+import json, pathlib
+v = json.loads(pathlib.Path("validation-labs.json").read_text())
+labs = v if isinstance(v, list) else v.get("labs", v)
+items = labs.items() if isinstance(labs, dict) else [(d["lab"], d) for d in labs]
+valides = [n for n, d in items if (d.get("verdict") or "").upper() == "VALIDE"]
+print(f"{len(valides)} attested out of {len(list(items))} entries")
+print("engines:", sorted({d.get("docker") for _, d in items if d.get("docker")}))
+print("dates  :", sorted({d.get("date") for _, d in items if d.get("date")})[-1:])
+PY
+```
+
+Three things to read there, and only the third decides:
+
+- the **number attested**, against the number of labs on disk
+  (`ls -d labs/*/ | wc -l`). The gap is the labs not yet measured;
+- the **engine version** recorded with each verdict. Two different versions in
+  the same file mean the verdicts are not comparable with each other;
+- the **date** of the oldest verdict. That is what says whether a
+  reattestation is due, and no other figure says it in its place.
+
+## The four traps that produce a false verdict
+
+**1. A `.venv` with dead shebangs.** If the repository was renamed, the scripts
+in `.venv/bin/` still point at the old path and no longer execute. The symptom
+is an identical failure on every lab, often on decrypting the solution. Check
+and fix:
+
+```bash
+head -1 .venv/bin/ansible-vault      # the path must exist
+uv venv --clear && uv sync           # recreate it
+```
+
+**2. `uv run --no-sync` on an empty venv.** The flag assumes an already
+populated environment. On a fresh clone it raises `ModuleNotFoundError` before
+looking at a single lab. Run without `--no-sync` the first time.
+
+**3. A tool waiting on network access the sandbox does not grant.** Measured on
+an `octl --version` that hung for twenty-three minutes: only the top-level
+command is exempt, a subprocess is not. If a campaign stops progressing, look at
+its child processes before suspecting a lab:
+
+```bash
+ps -eo pid,etimes,cmd | grep -E 'python.*valider[-]labs'
+ps --ppid <validator-pid> -o pid,etimes,cmd
+```
+
+**4. A partial replay makes the record's header false.** The engine version is
+recorded **once for the whole file**, while verdicts are per lab. Replaying a
+single lab therefore rewrites that header, and the record then claims all its
+labs were attested with the current version. Either replay everything, or
+restore the record:
+
+```bash
+git checkout -- validation-labs.json
+```
+
+## What the record does not say
+
+It does not say **which engine version attested each lab**, only the one from
+the last campaign. This is a known gap, and it shows as soon as a campaign is
+partial.
+
+**Here the record carries no engine version at all**: it has no root key, where six catalogues in the collection record `genere_le`, `dsoxlab` and each tool's version. Until that changes, nothing tells whether its verdicts hold for the current engine.
+
+## Why this catalogue's verdicts are stale
+
+No commit from the 2026-10-17 campaign touched this catalogue's tests. Its verdicts are stale only through what changed since, and a descriptor or documentation change does not by itself justify a replay.
+
+## The record's shape decides what the site can say about it
+
+This catalogue's record uses the **plat** shape, and the site **reads no engine version from it**, and therefore shows an attestation without saying what produced it.
+
+The site's generator reads `genere_le` and `dsoxlab` **only when the `labs`
+key is a dictionary**: a record whose top-level keys are lab identifiers falls
+into another branch, which returns an empty date and tool. Fixing the field
+without fixing the shape would therefore change nothing, which is why both are
+stated together here.

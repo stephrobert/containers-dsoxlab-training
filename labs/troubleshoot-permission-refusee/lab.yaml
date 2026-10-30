@@ -1,0 +1,25 @@
+# Lab troubleshoot-permission-refusee. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: troubleshoot-permission-refusee                      # REQUIS
+title: "Three refused accesses, three causes"            # REQUIS
+level: c1                     # REQUIS
+description: "Tell apart three refused accesses read as one: the mount that forbids, the rights that refuse, and a file mode no mount ever changes. Then repair all three, without going root."
+skills:                       # REQUIS, non vide
+  - docker
+  - depannage
+  - permissions
+  - volumes
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

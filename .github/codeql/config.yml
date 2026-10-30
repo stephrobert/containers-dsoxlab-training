@@ -1,24 +1,54 @@
-# Configuration CodeQL du catalogue Cloud.
+# Configuration CodeQL du catalogue Conteneurisation.
 #
-# Repris du catalogue DevSecOps, sans sa raison principale : ce catalogue ne
-# livre aucun matériau volontairement vulnérable. Ses fixtures sont des
-# gabarits (user-data troué de `???`, plan d'adressage, grille tarifaire,
-# variables d'environnement FICTIVES qui pointent les CLI sur l'émulateur
-# local). Les exclure ne cache donc rien d'exploitable, et évite qu'un faux
-# identifiant d'émulateur, bien formé par construction, devienne une alerte
-# permanente.
+# POURQUOI CE FICHIER EXISTE
 #
-# Restent analysés, et ce sont eux qui peuvent nuire à quelqu'un :
+# Le fichier précédent, repris tel quel du catalogue Cloud, annonçait en
+# en-tête « Configuration CodeQL du catalogue Cloud » et décrivait des fixtures
+# que ce dépôt n'a pas. Il n'était câblé à aucun job, donc il ne pouvait même
+# pas mentir en service : il ne servait à rien. Il est maintenant celui de ce
+# catalogue, et le job `codeql` de `ci.yml` le lit.
 #
-#   .github/workflows/   les workflows du catalogue lui-même
-#   scripts/             l'outillage de validation des labs
-#   labs/**/challenge/   les tests pytest joués sur la machine de l'apprenant
-name: "Catalogue Cloud, hors gabarits des labs"
+# CE QUI EST EXCLU, ET CE QUE CELA NE CACHE PAS
+#
+# Ce dépôt est un catalogue de labs. Certains livrent volontairement un état
+# fautif, c'est leur sujet : un Dockerfile qui tourne en root, un secret en
+# variable d'environnement, une image non épinglée, un conteneur trop
+# privilégié. Une alerte qui ne doit jamais être corrigée n'est plus une
+# alerte : c'est du bruit, et le bruit cache celle qui serait réelle.
+#
+# Mesuré le 2026-10-30 : ce catalogue ne porte AUCUN répertoire `fixtures/`,
+# ses 71 labs étant tous en `runtime: vm`, où l'état de départ est posé par
+# `setup.yaml` sur une machine jetable. L'exclusion de `labs/**/fixtures/**`
+# est donc préventive, pour le jour où un lab `shell` en livrera : elle est
+# écrite maintenant plutôt qu'en réaction à une première alerte permanente.
+#
+# `solution/` est exclu pour une autre raison, mesurable celle-là : ses 29
+# fichiers sont chiffrés par ansible-vault, et CodeQL n'en lirait qu'un pavé
+# hexadécimal. L'exclure évite qu'il rapporte un jour quelque chose sur du
+# texte chiffré.
+#
+# CE QUI RESTE ANALYSÉ, ET C'EST L'ESSENTIEL
+#
+# L'exclusion porte sur le matériau PÉDAGOGIQUE, jamais sur l'outillage du
+# dépôt. Restent donc analysés, et ce sont eux qui peuvent nuire à quelqu'un :
+#
+#   .github/workflows/       les workflows du catalogue lui-même
+#   scripts/                 l'outillage de validation des labs
+#   conftest.py              les primitives Docker que chaque test emploie
+#   labs/**/challenge/       les tests pytest joués contre la machine du lab
+#
+# Un workflow qui joindrait une destination non déclarée, ou un test qui
+# exfiltrerait quelque chose, reste donc vu. C'est le périmètre que
+# `SECURITY.md` déclare « in scope », et il n'a pas changé.
+name: "Catalogue Conteneurisation, hors matériau pédagogique"
 
 paths-ignore:
-  # Les fixtures : le point de départ du lab, copié dans son répertoire de
-  # travail.
+  # Le point de départ d'un lab `shell`, copié dans son répertoire de travail.
+  # Aucun aujourd'hui : exclusion préventive, voir l'en-tête.
   - "labs/**/fixtures/**"
   # Les solutions de référence sont chiffrées (ansible-vault) : CodeQL n'en
   # lirait rien d'exploitable.
   - "solution/**"
+  # Ce que l'apprenant écrit, jamais versionné, mais présent sur sa machine
+  # quand il lance une analyse locale.
+  - "labs/**/challenge/work/**"

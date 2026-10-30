@@ -1,0 +1,26 @@
+# Lab internes-namespaces. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: internes-namespaces                      # REQUIS
+title: "A namespace is a view, not a wall"            # REQUIS
+level: c1                     # REQUIS
+description: "Find on the host the process a container calls PID 1, read the namespaces the kernel gave it, and discover by comparison the one Docker does not isolate: the reason root in a container is a security subject."
+skills:                       # REQUIS, non vide
+  - docker
+  - internes
+  - namespaces
+  - securite
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#namespaces--isoler-ce-que-le-conteneur-voit   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 35m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

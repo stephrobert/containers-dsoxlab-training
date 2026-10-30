@@ -1,0 +1,57 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# LE RÉPERTOIRE PART EN ENTIER : il porte le Dockerfile corrigé, et s'il
+# survivait, les quatre contrôles seraient vrais au passage suivant avant tout
+# travail.
+- name: Défaire le lab images-non-root
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    socle: lab-nonroot:1.0
+    atelier: /opt/lab-nonroot
+  tasks:
+    # LES CONTENEURS D'ESSAI, par leurs noms. Un test interrompu en laisserait
+    # un, et le filtre par image ne suffit pas : l'image peut déjà être partie.
+    - name: Retirer les conteneurs d'essai des contrôles et de la solution
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f dsoxlab-essai-nonroot dsoxlab-essai-solution-nonroot
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les conteneurs dérivés de l'image du lab
+      ansible.builtin.shell:
+        cmd: >
+          docker ps -aq --filter ancestor=appli:nonroot
+          | xargs -r docker rm -f
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les images du lab, celle de l'apprenant et le socle
+      ansible.builtin.shell:
+        cmd: >
+          docker rmi -f appli:nonroot {{ socle }} {{ image_epinglee }}
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer l'atelier entier, Dockerfile corrigé compris, et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

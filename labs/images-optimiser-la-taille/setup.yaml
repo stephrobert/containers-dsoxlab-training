@@ -1,0 +1,200 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un Dockerfile qui installe, puis
+# nettoie dans l'instruction SUIVANTE. Le conteneur qui en sort est juste : le
+# cache n'y est pas visible, les artefacts utiles sont là. Et l'image pèse sept
+# fois ce qu'elle devrait.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, le même travail sous deux écritures :
+#
+#   | écriture | taille | couches | la plus grosse couche |
+#   | nettoyage dans l'instruction SUIVANTE | 52,3 Mo | 5 | 44 Mo |
+#   | nettoyage dans la MÊME instruction | 14,6 Mo | 4 | 6,3 Mo |
+#
+# DANS LES DEUX CAS, le cache est introuvable dans le conteneur et les
+# artefacts utiles sont présents. Le comportement observable est identique, et
+# c'est ce qui rend ce défaut invisible : il ne se voit qu'à la pesée.
+#
+# ET UNE TROISIÈME MESURE, qui a décidé du quatrième contrôle. Aplatir l'image
+# (`docker export | docker import`) donne 14,6 Mo aussi, en UNE couche, et elle
+# ne partage plus aucune couche avec son socle : le dépôt la stocke et la
+# transfère alors en entier, pour chaque variante.
+#
+# AUCUN SEUIL N'EST ÉCRIT NULLE PART. Les contrôles pèsent le socle et les
+# artefacts utiles au moment de la notation, et en dérivent ce qu'ils
+# acceptent.
+- name: Préparer le lab images-optimiser-la-taille
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    socle: lab-taille:1.0
+    atelier: /opt/lab-taille
+    contexte: /opt/lab-taille/appli
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image de départ, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses images
+      ansible.builtin.shell:
+        cmd: docker rmi -f appli:legere {{ socle }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'atelier d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: absent
+
+    - name: Tirer le jeton que l'application imprimera
+      ansible.builtin.set_fact:
+        jeton: "jeton-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=12) }}"
+
+    - name: Déposer les répertoires de l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ atelier }}/socle"
+        - "{{ contexte }}"
+        - "{{ contexte }}/src"
+
+    # `fabriquer` FAIT DEUX CHOSES, et c'est tout le lab : il produit ce qui
+    # sert, et un cache volumineux qui n'a servi qu'à la fabrication. Sans
+    # réseau : la mesure ne dépend d'aucun dépôt distant, et le lab ne
+    # mesurera pas la bande passante du jour.
+    - name: Déposer l'outil de fabrication, qui produit l'utile ET un cache
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/socle/fabriquer"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # Ce que l'application utilisera, et ce qui n'a servi qu'ici. La
+          # seconde part ne doit pas finir dans une image.
+          set -e
+          mkdir -p /opt/app /var/cache/fabrique
+          head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n' > /opt/app/empreinte
+          for n in alpha beta gamma; do
+            dd if=/dev/urandom of="/opt/app/$n.dat" bs=1M count=2 status=none
+            dd if=/dev/urandom of="/var/cache/fabrique/$n.tmp" bs=1M count=12 status=none
+          done
+
+    - name: Déposer le Dockerfile du socle
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/socle/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          COPY fabriquer /usr/local/bin/fabriquer
+          RUN chmod 0755 /usr/local/bin/fabriquer
+
+    - name: Construire le socle, qui porte l'outil de fabrication
+      ansible.builtin.command:
+        cmd: docker build -t {{ socle }} {{ atelier }}/socle
+      changed_when: true
+
+    - name: Déposer le manifeste des artefacts que l'application attend
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/attendus.txt"
+        mode: "0644"
+        content: |
+          alpha.dat
+          beta.dat
+          gamma.dat
+
+    - name: Déposer le code de l'application, qui porte le jeton
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/src/main.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          echo {{ jeton }}
+          echo "empreinte de fabrication : $(cat /opt/app/empreinte)"
+
+    # LE DOCKERFILE DE DÉPART MARCHE, et le conteneur qu'il produit est juste.
+    # Le nettoyage est là, il est simplement une instruction trop tard, et
+    # c'est tout ce qui sépare 52 Mo de 14 Mo.
+    - name: Déposer le Dockerfile de départ, qui nettoie une instruction trop tard
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/Dockerfile"
+        mode: "0644"
+        content: |
+          # CE DOCKERFILE MARCHE, et le conteneur qu il produit est juste : le
+          # cache n y est pas, les artefacts utiles y sont. L image, elle, pese
+          # sept fois ce qu elle devrait.
+          FROM lab-taille:1.0
+          RUN fabriquer
+          RUN rm -rf /var/cache/fabrique
+          COPY src /app/src
+          CMD ["/app/src/main.sh"]
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : une image qui pese sept fois son contenu
+
+          Le contexte est dans {{ contexte }}. Construisez le Dockerfile tel
+          quel, puis pesez l image et comparez-la a ce qu elle contient
+          vraiment.
+
+          Entrez dedans : le cache de fabrication n y est PAS, et les
+          artefacts utiles y sont. Le conteneur est juste. Pesez quand meme
+          chaque couche, et vous verrez ou sont passes les megaoctets.
+
+          Construisez `appli:legere`, qui doit :
+
+            imprimer son jeton et l empreinte de fabrication
+            porter les trois artefacts de {{ contexte }}/attendus.txt
+            peser a peine plus que son socle et ses artefacts
+            DERIVER TOUJOURS du socle lab-taille:1.0
+
+          La derniere contrainte ecarte une fausse bonne idee : aplatir
+          l image donne la bonne taille et lui fait perdre toute couche
+          commune avec son socle. Le depot la stockerait alors en entier,
+          pour chaque variante, et le gain serait rendu au centuple.
+
+          Aucun seuil n est ecrit dans le depot : les controles pesent le
+          socle et les artefacts, et en deduisent ce qu ils acceptent.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Le socle doit exister et l'image de l'apprenant
+    # ne doit pas exister : le setup ne construit pas à sa place.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker image inspect {{ socle }} >/dev/null 2>&1
+          && ! docker image inspect appli:legere >/dev/null 2>&1
+          && grep -q 'RUN rm -rf /var/cache/fabrique' {{ contexte }}/Dockerfile
+      changed_when: false

@@ -1,0 +1,147 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Deux images qui ne diffèrent que par
+# la façon de déclarer ce qu'elles exécutent : l'une n'a qu'un `CMD`, l'autre a
+# un `ENTRYPOINT` et un `CMD`. C'est le seul montage qui permette de faire
+# constater la différence, parce qu'elle ne se voit pas dans l'image : elle se
+# voit dans ce qui arrive quand on passe des arguments à `docker run`.
+#
+# AUCUN CONTENEUR N'EST POSÉ. Les quatre contrôles portent sur quatre
+# conteneurs que l'apprenant produit, et sur ce que leurs journaux montrent.
+# Le setup qui en poserait un ferait la démonstration à sa place.
+#
+# POURQUOI DES IMAGES CONSTRUITES ICI, ET NON TIRÉES. Les deux comportements à
+# comparer dépendent de deux lignes d'un Dockerfile. Aucune image publique ne
+# les porte dans la forme exacte dont ce lab a besoin, et en tirer deux
+# rendrait la démonstration opaque : l'apprenant doit pouvoir LIRE les deux
+# déclarations, qui sont déposées à côté.
+- name: Préparer le lab container-entrypoint-et-cmd
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    travail: /opt/lab-entrypoint
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ travail }}"
+        state: directory
+        mode: "0755"
+
+    # Tirer l'image de base explicitement : BuildKit résout un `FROM` dans son
+    # propre cache sans déposer l'image dans le magasin du démon, et le
+    # `cleanup` n'aurait alors rien à retirer sous ce nom.
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    # dsoxlab:tag-nu-volontaire : ce `FROM` reprend le digest de la variable
+    # ci-dessus, et c'est bien lui qui est écrit dans le fichier. Le marqueur
+    # est là parce que le détecteur lit le Dockerfile généré sans savoir que
+    # `{{ image_epinglee }}` EST un digest.
+    - name: Écrire l'image qui ne déclare qu'un CMD
+      ansible.builtin.copy:
+        dest: "{{ travail }}/Dockerfile.cmd"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          # Un CMD seul : il est REMPLACÉ par ce qu'on passe à `docker run`.
+          CMD ["echo", "defaut-de-limage"]
+
+    # dsoxlab:tag-nu-volontaire : même raison que la tâche précédente.
+    - name: Écrire l'image qui déclare un ENTRYPOINT et un CMD
+      ansible.builtin.copy:
+        dest: "{{ travail }}/Dockerfile.entrypoint"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          # L'ENTRYPOINT n'est PAS remplacé par les arguments de `docker run` :
+          # ils deviennent SES arguments, en prenant la place du CMD.
+          ENTRYPOINT ["echo", "prefixe-entrypoint"]
+          CMD ["defaut-cmd"]
+
+    - name: Construire l'image à CMD seul
+      ansible.builtin.command:
+        cmd: >
+          docker build -q -f {{ travail }}/Dockerfile.cmd
+          -t img-cmd:1.0 {{ travail }}
+      changed_when: true
+
+    - name: Construire l'image à ENTRYPOINT
+      ansible.builtin.command:
+        cmd: >
+          docker build -q -f {{ travail }}/Dockerfile.entrypoint
+          -t img-entrypoint:1.0 {{ travail }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f defaut remplace complete contourne 2>/dev/null || true
+      changed_when: false
+
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker image inspect img-cmd:1.0 img-entrypoint:1.0 > /dev/null
+          && test -z "$(docker ps -aq --filter name=defaut --filter name=remplace
+          --filter name=complete --filter name=contourne)"
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : ENTRYPOINT et CMD ne reagissent pas pareil
+
+          Deux images sont construites sur cette machine, et leurs Dockerfile
+          sont lisibles dans {{ travail }} :
+
+            img-cmd:1.0          declare seulement un CMD
+            img-entrypoint:1.0   declare un ENTRYPOINT et un CMD
+
+          Produisez quatre conteneurs. Chacun doit RESTER (pas de --rm), parce
+          que c'est dans ses journaux qu'on lit ce qui a tourne.
+
+            defaut      depuis img-cmd:1.0, SANS argument.
+                        Journaux attendus : defaut-de-limage
+
+            remplace    depuis img-cmd:1.0, en lui faisant afficher
+                        remplacement-total A LA PLACE du defaut.
+
+            complete    depuis img-entrypoint:1.0, en lui passant
+                        complement-cmd. Les journaux doivent porter le
+                        prefixe de l'entrypoint ET votre argument.
+
+            contourne   depuis img-entrypoint:1.0, en REMPLACANT son
+                        entrypoint, pour afficher sans-prefixe SANS que le
+                        prefixe apparaisse.
+
+          Les quatre comportements se deduisent de deux regles. A vous de les
+          trouver en lisant les Dockerfile et en essayant.

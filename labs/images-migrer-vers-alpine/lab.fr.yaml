@@ -1,0 +1,5 @@
+# Surcharge française du lab images-migrer-vers-alpine. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Changer de socle n'est pas changer une ligne"
+description: "Migrer une application vers un socle neuf fois plus léger : lire un message qui accuse un script qui existe, adapter ce qui dépendait de l'ancien socle, et garder le résultat identique."

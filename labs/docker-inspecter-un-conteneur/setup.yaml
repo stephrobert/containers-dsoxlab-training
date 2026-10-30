@@ -1,0 +1,183 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un seul conteneur en marche, et quatre
+# informations qui ne sont écrites nulle part sur l'hôte. Le lab précédent
+# enseignait les états ; celui-ci enseigne qu'un conteneur en marche est
+# interrogeable, et que chaque question a sa commande.
+#
+# LA DÉCISION QUI TIENT TOUT LE LAB : LE SETUP NE CONNAÎT AUCUNE RÉPONSE.
+# Le jeton de session et la séquence de la trace sont tirés par le CONTENEUR
+# depuis /dev/urandom, le moteur choisit seul l'adresse IP et le port publié
+# (d'où le `-p 0:80`, qui lui laisse prendre un port éphémère). Aucune de ces
+# valeurs ne transite par un fichier du dépôt, par la ligne de commande, ni par
+# ce playbook. Un apprenant ne peut donc pas les trouver dans l'énoncé, ni les
+# recopier d'un passage précédent : elles changent à chaque `run`.
+#
+# C'est ce qui sépare ce lab d'un questionnaire. Les tests recalculent chaque
+# réponse en interrogeant le moteur au moment de la notation, et ils
+# confrontent CE QUE L'APPRENANT AFFIRME à ce que la machine porte réellement.
+#
+# POURQUOI QUATRE SOURCES DISTINCTES, ET SURTOUT DISJOINTES. Une pour chaque
+# commande du sujet : les journaux, l'inspection, la table des ports, et la
+# copie d'un fichier. La trace ne porte PAS le jeton de session, et c'est
+# voulu : si elle le portait, sortir le fichier donnerait la réponse de la
+# première question, et deux contrôles n'en mesureraient plus qu'un.
+- name: Préparer le lab docker-inspecter-un-conteneur
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-inspection:1.0
+    atelier: /opt/lab-inspection
+    # Le processus du conteneur. Il tire lui-même ses deux valeurs : c'est ce
+    # qui garantit qu'elles n'existent que dans le conteneur et dans ce que le
+    # moteur en montre. `exec` en fin de script met `sleep` en PID 1, pour que
+    # le conteneur réponde aux signaux : le sujet d'un autre lab, et une
+    # mauvaise habitude à ne pas enseigner par l'exemple.
+    entree: |
+      set -e
+      jeton=$(od -An -tx1 -N6 /dev/urandom | tr -d ' \n')
+      sequence=$(od -An -tx1 -N4 /dev/urandom | tr -d ' \n')
+      mkdir -p /var/log/greffier
+      printf 'greffier: trace d execution\nsequence=%s\n' "$sequence" \
+        > /var/log/greffier/trace.log
+      echo "greffier: demarrage"
+      echo "greffier: configuration relue"
+      echo "greffier: 3 abonnes charges"
+      echo "greffier: jeton-de-session=$jeton"
+      echo "greffier: pret, en attente"
+      exec sleep infinity
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui le précède dans le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser son conteneur
+      ansible.builtin.shell:
+        cmd: docker rm -f greffier 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer une trace et des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/{{ item }}"
+        state: absent
+      loop:
+        - trace.log
+        - reponses.txt
+
+    # `argv` plutôt qu'une ligne de commande : le script d'entrée porte des
+    # guillemets et des `$`, et aucun shell ne doit les relire au passage.
+    #
+    # `-p 0:80` laisse le MOTEUR choisir le port de l'hôte. C'est délibéré :
+    # un port écrit ici serait une réponse écrite dans le dépôt.
+    - name: Lancer `greffier`, qui tire lui-même ses valeurs
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - -d
+          - --name
+          - greffier
+          - -p
+          - "0:80"
+          - "{{ tag_local }}"
+          - sh
+          - -c
+          - "{{ entree }}"
+      changed_when: true
+
+    - name: Attendre que `greffier` ait écrit son jeton dans ses journaux
+      ansible.builtin.shell:
+        cmd: docker logs greffier 2>&1 | grep -q 'jeton-de-session='
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          jeton=
+          adresse=
+          port=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : interroger un conteneur en marche
+
+          Le conteneur `greffier` tourne. Quatre informations le concernent, et
+          AUCUNE n'est ecrite sur cette machine : il faut les demander au
+          moteur. Elles changent a chaque fois que le lab est rejoue.
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            jeton=<le jeton de session que `greffier` a annonce au demarrage>
+            adresse=<l adresse IP que le moteur a donnee a `greffier`>
+            port=<le port de L HOTE sur lequel le 80 du conteneur est publie>
+
+          Puis sortez du conteneur le fichier qu il a ecrit APRES son
+          demarrage, et deposez-le ici, a l identique :
+
+            /var/log/greffier/trace.log   ->   {{ atelier }}/trace.log
+
+          Le conteneur doit toujours tourner a la fin : on interroge un
+          conteneur vivant, on ne l arrete pas pour le fouiller.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les trois faits dont dépend
+    # l'énoncé : le conteneur tourne, il publie un port, et la trace n'est pas
+    # déjà sur l'hôte.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker container inspect greffier
+          --format '{{ "{{" }}.State.Status{{ "}}" }}' | grep -qx running
+          && docker port greffier 80/tcp | grep -q ':'
+          && test ! -e {{ atelier }}/trace.log
+      changed_when: false

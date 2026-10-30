@@ -13,17 +13,28 @@
 # fait le lab. L'exemplarité est due aux `solution/`, et c'est là que le
 # contrôle porte.
 #
-# ## CodeQL n'est PAS ici, et ce n'est pas un oubli
+# ## CodeQL est ici depuis que ce dépôt est PUBLIC
 #
-# Ce dépôt est PRIVÉ. Mesuré sur le catalogue Terraform le 2026-09-25 : sur un
-# dépôt privé de compte personnel, le code scanning n'est pas disponible sans
-# Advanced Security, et le téléversement échoue sur
+# Il en était absent, et pour une raison qui tenait : sur un dépôt privé de
+# compte personnel, le code scanning n'est pas disponible sans Advanced
+# Security, et le téléversement échoue sur
 #
 #     Resource not accessible by integration
 #
 # avec un workflow identique mot pour mot à celui d'un dépôt public où il
 # passe. Un job rouge pour une raison extérieure au code masque les échecs
-# réels. CodeQL s'ajoutera le jour où ce dépôt deviendra public.
+# réels. Mais la condition a disparu : mesuré le 2026-10-30,
+# `gh repo view --json visibility` rend PUBLIC sur ce dépôt comme sur ses onze
+# frères, dont le catalogue DevSecOps où le job tourne. L'argument ne tient
+# donc plus, et le job est ajouté.
+#
+# ## Les trois analyseurs de la chaîne elle-même
+#
+# `zizmor`, `actionlint` et `poutine` ne lisent pas le catalogue : ils lisent
+# `.github/workflows/`, c'est-à-dire la seule moitié de ce dépôt qui s'exécute
+# avec un jeton. Ils sont repris des catalogues frères, où ils sont la porte
+# rapide, et ils ne dépendent d'aucun autre job : un workflow fautif se dit en
+# vingt secondes, sans attendre que les labs se jouent.
 #
 # ## Durcissement
 #
@@ -47,6 +58,115 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Porte rapide sur la chaîne elle-même : analyse statique des workflows.
+  zizmor:
+    name: Zizmor (analyse statique des workflows)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Zizmor
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          # Dependabot met à jour le SHA de l'ACTION, jamais cet input, qui
+          # épingle le BINAIRE : il est donc le seul de la chaîne à vieillir en
+          # silence. La version retenue est celle du catalogue DevSecOps, où
+          # elle a été mesurée : la 1.26.1 refuse de charger un workflow qui
+          # appelle `uses: $/...`, la forme « self-repository » publiée par
+          # GitHub en juillet 2026, et échoue sur « malformed uses ref » sans
+          # auditer quoi que ce soit.
+          #
+          # Et 1.30.0, pas plus récent : l'action embarque sa propre table de
+          # versions connues, avec le digest de chaque image, et répond
+          # « Unknown version » pour tout ce qui est sorti après SA release.
+          #
+          # Mesuré ici le 2026-10-30 avec zizmor 1.30.0 sur les cinq workflows
+          # du dépôt : « No findings to report ».
+          version: "1.30.0"
+          advanced-security: false
+          # Les workflows DU CATALOGUE. Ce dépôt n'en livre pas dans ses labs,
+          # mais le dire explicitement garde le périmètre stable le jour où un
+          # lab en portera un, volontairement fautif, comme sujet d'exercice.
+          inputs: .github/workflows
+
+  # Syntaxe des workflows. actionlint est le seul analyseur qui refuse une
+  # portée de permission inexistante (par exemple le tentant mais inconnu
+  # `administration: read`) et qui passe shellcheck sur chaque bloc `run:`.
+  # Installé depuis l'archive de release épinglée, empreinte SHA-256 vérifiée
+  # avant usage : aucun script distant tubé dans un shell, et aucune action
+  # tierce de plus dans le périmètre de confiance pour un simple lint.
+  actionlint:
+    name: Actionlint (syntaxe des workflows)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Installer actionlint (binaire de release vérifié)
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          base="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}"
+          asset="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "${workdir}/${asset}" "${base}/${asset}"
+          curl -fsSL -o "${workdir}/checksums.txt" "${base}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"
+          (cd "${workdir}" && grep " ${asset}$" checksums.txt | sha256sum -c -)
+          tar -xzf "${workdir}/${asset}" -C "${workdir}" actionlint
+          sudo install -m 0755 "${workdir}/actionlint" /usr/local/bin/actionlint
+          actionlint --version
+
+      - name: Actionlint
+        run: actionlint -color
+
+  # Chaînes d'exploitation CI/CD : poutine modélise les déclencheurs, les
+  # permissions et les flux de données pour rendre des scénarios d'attaque
+  # complets (checkout de code non fiable puis exécution, injection,
+  # permissions par défaut trop larges). Il complète zizmor plutôt qu'il ne le
+  # répète. Sa configuration vit dans `.poutine.yml`, qui nomme une par une les
+  # actions tierces acceptées.
+  poutine:
+    name: Poutine (chaînes d'exploitation CI/CD)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Poutine
+        uses: boostsecurityio/poutine-action@e240ebd3eff8b2db5a8e5f6b28f58739d7db2247 # v1.1.4
+
   # Porte rapide : les jobs lourds n'ont pas à tourner si le lint échoue.
   lint:
     name: Lint et contrat du catalogue
@@ -192,6 +312,27 @@ jobs:
           version: 2026.9.5
           cache: true
 
+      # Le hook `trufflehog` tourne avec `--no-update` : il refuse d'aller
+      # chercher sa propre version, donc elle doit être posée ici, et choisie.
+      # L'archive de release est épinglée et son empreinte SHA-256 vérifiée
+      # contre les sommes publiées avant usage, plutôt qu'un script distant tubé
+      # dans un shell (Plumber ISSUE-411). 3.97.5 est la version mesurée en
+      # local le 2026-10-30, pour que le hook juge la même chose des deux côtés.
+      - name: Installer trufflehog (binaire de release vérifié)
+        env:
+          TRUFFLEHOG_VERSION: "3.97.5"
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          base="https://github.com/trufflesecurity/trufflehog/releases/download/v${TRUFFLEHOG_VERSION}"
+          asset="trufflehog_${TRUFFLEHOG_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "${workdir}/${asset}" "${base}/${asset}"
+          curl -fsSL -o "${workdir}/checksums.txt" "${base}/trufflehog_${TRUFFLEHOG_VERSION}_checksums.txt"
+          (cd "${workdir}" && grep " ${asset}$" checksums.txt | sha256sum -c -)
+          tar -xzf "${workdir}/${asset}" -C "${workdir}" trufflehog
+          sudo install -m 0755 "${workdir}/trufflehog" /usr/local/bin/trufflehog
+          trufflehog --version
+
       - name: Installer les dépendances du catalogue
         run: uv sync --frozen
 
@@ -285,3 +426,50 @@ jobs:
       - name: Ce que la campagne a changé, s'il y a lieu
         if: always()
         run: git --no-pager diff --stat validation-labs.json
+
+  # Analyse statique du Python du dépôt (tests des labs, conftest, outillage) ET
+  # de ses workflows. DEUX langages, et le second n'est pas un ornement : les
+  # workflows sont la moitié de ce dépôt qui s'exécute avec un jeton, et
+  # n'analyser que le Python la laissait sans surveillance.
+  #
+  # `security-extended` plutôt que le jeu de requêtes par défaut : le défaut
+  # vise le zéro bruit sur un dépôt d'application, ce qui n'est pas le
+  # compromis utile ici. C'est déjà le choix du catalogue DevSecOps.
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    needs: zizmor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, actions]
+    steps:
+      - name: Durcir le runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialiser CodeQL
+        uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          languages: ${{ matrix.language }}
+          # Ni le Python ni les workflows ne se compilent : il n'y a aucun build
+          # à observer, et le dire épargne à CodeQL la recherche d'une commande
+          # de construction qui n'existe pas.
+          build-mode: none
+          queries: security-extended
+          # Le périmètre est écrit dans ce fichier, qui dit aussi ce qu'il
+          # exclut et pourquoi.
+          config-file: ./.github/codeql/config.yml
+
+      - name: Analyser
+        uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3

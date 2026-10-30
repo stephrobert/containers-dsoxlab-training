@@ -1,0 +1,190 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Trois conteneurs mal publiés, un par
+# posture à corriger. Publier un port est le geste le plus banal de Docker, et
+# c'est aussi celui qui expose un service sans qu'on l'ait décidé : `-p 8080:80`
+# publie sur TOUTES les interfaces, parce que l'adresse de publication est
+# optionnelle et que son défaut est le plus ouvert.
+#
+# POURQUOI UNE IMAGE PLUTÔT QU'UNE COMMANDE. Changer la publication d'un
+# conteneur exige de le RECRÉER : `-p` ne se modifie pas à chaud, et c'est une
+# leçon du lab. L'apprenant doit donc pouvoir relancer l'écouteur sans le
+# réécrire, d'où l'image qui le porte en `CMD`. Un lab qui l'aurait passé en
+# ligne de commande aurait obligé l'apprenant à deviner une commande qu'il n'a
+# jamais vue.
+#
+# LE JETON EST TIRÉ AU DÉMARRAGE par le conteneur, et il change donc à chaque
+# recréation. C'est voulu : les contrôles lisent la RÉPONSE, jamais la seule
+# connexion, parce que le proxy de Docker accepte avant que quoi que ce soit
+# écoute. Mesuré sur docker.lab le 2026-10-30, sur un `-p 127.0.0.1:18099:1234`
+# dont le conteneur n'écoutait nulle part : la connexion aboutissait.
+#
+# L'ADRESSE ROUTABLE N'EST PAS ÉCRITE EN DUR. Elle est déduite de la route par
+# défaut, et déposée dans l'énoncé. Un lab qui porterait `10.10.120.11` serait
+# faux sur une machine adressée autrement.
+- name: Préparer le lab reseau-publication-de-ports
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-publication:1.0
+    atelier: /opt/lab-publication
+    port_vitrine: 18080
+    port_annexe: 18081
+    port_interne: 18082
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui le précède dans le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Relever l'adresse routable de la machine, sans la coder en dur
+      ansible.builtin.shell:
+        cmd: >
+          ip -o -4 route get 1.1.1.1
+          | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}'
+      register: routable
+      changed_when: false
+      failed_when: routable.stdout | trim | length == 0
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f vitrine annexe interne 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de construction
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    # L'écouteur tire son jeton AU DÉMARRAGE : il change donc à chaque
+    # recréation du conteneur, ce que ce lab provoque trois fois. La boucle
+    # relance `nc` après chaque connexion, sans quoi un seul client serait
+    # servi.
+    - name: Écrire l'écouteur que l'image portera
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/ecouteur.sh"
+        mode: "0755"
+        content: |
+          jeton=$(od -An -tx1 -N6 /dev/urandom | tr -d ' \n')
+          while true; do
+            echo "jeton=$jeton" | nc -l -p 80 || true
+          done
+
+    - name: Écrire l'image de service du lab
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          COPY ecouteur.sh /usr/local/bin/ecouteur.sh
+          CMD ["sh", "/usr/local/bin/ecouteur.sh"]
+
+    - name: Construire l'image de service, pour que l'apprenant puisse recréer
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    # LES TROIS POSTURES FAUTIVES. Aucune n'est un accident : chacune est
+    # l'erreur qu'on commet par défaut, et chacune se corrige autrement.
+    - name: Lancer `vitrine`, publiée sur TOUTES les interfaces par mégarde
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name vitrine
+          -p {{ port_vitrine }}:80 {{ tag_local }}
+      changed_when: true
+
+    - name: Lancer `annexe`, qui ne publie rien alors qu'elle devrait
+      ansible.builtin.command:
+        cmd: docker run -d --name annexe {{ tag_local }}
+      changed_when: true
+
+    - name: Lancer `interne`, publiée alors qu'elle ne devrait pas l'être
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name interne
+          -p {{ port_interne }}:80 {{ tag_local }}
+      changed_when: true
+
+    - name: Attendre que les trois écoutent réellement
+      ansible.builtin.shell:
+        cmd: >
+          docker exec vitrine sh -c 'nc -w 2 127.0.0.1 80' | grep -q 'jeton='
+          && docker exec annexe sh -c 'nc -w 2 127.0.0.1 80' | grep -q 'jeton='
+          && docker exec interne sh -c 'nc -w 2 127.0.0.1 80' | grep -q 'jeton='
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : publier un port, et seulement ou il faut
+
+          Trois conteneurs tournent, tous batis sur l image
+          `{{ tag_local }}`, qui ECOUTE sur son port 80 et repond un jeton.
+          Les trois sont mal publies, chacun a sa facon.
+
+          L adresse routable de cette machine est {{ routable.stdout | trim }}.
+
+            vitrine   publiee sur TOUTES les interfaces. Elle ne doit l etre
+                      QUE sur 127.0.0.1, port {{ port_vitrine }} de l hote.
+            annexe    ne publie RIEN. Elle doit l etre uniquement sur
+                      {{ routable.stdout | trim }}, port {{ port_annexe }}.
+            interne   publiee sur le port {{ port_interne }} de l hote. Elle
+                      ne doit publier AUCUN port, tout en restant joignable
+                      par les autres conteneurs.
+
+          Gardez les noms : les controles les cherchent nommement.
+
+          Une chose qu il faut savoir avant de commencer : la publication d un
+          conteneur ne se modifie PAS a chaud. Il faut le recreer. C est pour
+          cela que l image porte son ecouteur : `docker run -d --name <nom>
+          <options de publication> {{ tag_local }}` suffit, sans commande.
+
+          Le jeton change a chaque recreation, et c est normal : les controles
+          lisent la reponse, pas le jeton d hier.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les trois fautes dont dépend
+    # l'énoncé : `vitrine` publiée sur toutes les interfaces, `annexe` qui ne
+    # publie rien, `interne` qui publie.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker port vitrine 80/tcp | grep -q '0.0.0.0:{{ port_vitrine }}'
+          && ! docker port annexe 80/tcp >/dev/null 2>&1
+          && docker port interne 80/tcp | grep -q ':{{ port_interne }}'
+      changed_when: false

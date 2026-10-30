@@ -13,7 +13,11 @@ body:
     attributes:
       label: Lab concerné
       description: L'identifiant rendu par `dsoxlab list-labs`.
-      placeholder: reseau-prive-scaleway
+      # Un identifiant de CE catalogue, lu dans `labs/`. L'exemple précédent,
+      # `reseau-prive-scaleway`, venait du catalogue Cloud : un contributeur qui
+      # le recopiait déposait une issue nommant un lab que `dsoxlab list-labs`
+      # ne rend pas ici.
+      placeholder: docker-premier-conteneur
     validations:
       required: true
   - type: textarea

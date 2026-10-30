@@ -1,139 +1,89 @@
-# Catalogue containers-dsoxlab-training, décrit par le contrat v1 de dsoxlab.
-#
-# `repo.id` sert de clé pour l'état local : le changer déplace l'historique des
-# scores et le répertoire d'état de l'apprenant.
-#
-# ## Organisé par COMPÉTENCE, pas par fonctionnalité
-#
-# Les sections ci-dessous ne suivent pas le manuel de Docker, elles suivent ce
-# qu'un apprenant doit savoir démontrer. « Construire des images » est une
-# compétence ; « les instructions du Dockerfile » serait un chapitre de
-# référence, et le blog le tient déjà.
-#
-# L'ordre compte : il est celui dans lequel les compétences se tiennent l'une
-# l'autre. On ne distribue pas une image qu'on ne sait pas construire, et on ne
-# durcit pas un conteneur qu'on ne sait pas exécuter.
-#
-# ## Les labs non encore écrits ne figurent PAS ici
-#
-# Une section ne déclare que les labs qui existent : `validate-structure`
-# refuse un lab déclaré sans `lab.yaml`, et il a raison — un parcours qui
-# promet un lab absent se voit à l'usage, pas à la relecture. Le backlog
-# complet, 89 labs, vit dans `ROADMAP.md` avec son ordre d'écriture.
 schema_version: 1
-
 repo:
   id: containers-dsoxlab-training
   category: containers
-  title: "Containers, from the Dockerfile to orchestration"
+  title: Containers, from the Dockerfile to orchestration
   blog_url: https://www.stephane-robert.info/docs/conteneurs/
   issues_url: https://github.com/stephrobert/containers-dsoxlab-training/issues
-  description: |
-    Verifiable labs for the blog's containerisation course. Every lab is
+  description: 'Verifiable labs for the blog''s containerisation course. Every lab is
+
     graded on the real state of the engine: an image that was built, its
-    size, the user that runs it, a container's mounts, what the application
+
+    size, the user that runs it, a container''s mounts, what the application
+
     answers. The blog teaches, this catalogue proves.
 
+
     One and the same FastAPI application runs through the whole path and
+
     becomes progressively more correct. The learner does not need to know
+
     how to program: the code is provided, and the work is on the image, the
+
     runtime, networking, storage, distribution and hardening.
 
-# `learning.portal_url` reste vide, et c'est une décision en attente, pas un
-# oubli. Le blog porte bien une page de parcours à cocher
-# (`moteurs-conteneurs/docker/parcours/`, HTTP 200), mais le contrat décrit ce
-# champ comme une URL de REMISE d'une preuve d'apprentissage. Les deux se
-# ressemblent sans se confondre, et inscrire l'une à la place de l'autre ferait
-# annoncer à dsoxlab quelque chose que le site ne fait pas. Voir COVERAGE.md.
-
-# Aucun bloc `infra:` pour l'instant : les labs des vagues 2 et 3 sont tous en
-# `runtime: shell` et se jouent sur le poste de l'apprenant, avec son moteur
-# Docker. C'est un choix, et il a une raison nommée dans le brief : personne ne
-# doit provisionner une machine pour jouer le premier lab.
-#
-# Les 18 labs `vm` des vagues 4 et 6 — démon, rootless, seccomp, AppArmor,
-# pare-feu, registry TLS, contexts distants, Swarm — l'exigeront, et c'est
-# `infra.bootstrap` de la 0.3.0 qui portera leur socle : joué une fois après
-# `provision`, empreinté, rejoué seulement s'il change.
-
+    '
+infra:
+  provider:
+  - kvm
+  network: lab-containers
+  cidr: 10.10.120.0/24
+  hosts:
+  - name: docker.lab
+    distro: debian13
+    role: debian-family
+    ram_mb: 2048
+    vcpu: 2
+    disk_gb: 20
+  providers:
+    kvm:
+      libvirt_uri: qemu:///system
+      bridge_name: virbr-cont
 sections:
-  # ── c1 : avant de construire, comprendre ce qu'on manipule ───────────────
-  - id: c1-comprendre
-    title: "Understand and handle"
-    description: >-
-      An image and a container are not the same thing, and the lifecycle
-      explains half of the failures. Five short labs, no build.
-    labs: []
-
-  # ── c2 : la compétence que l'ancien dépôt couvrait, mesurée cette fois ───
-  - id: c2-construire
-    title: "Build images"
-    description: >-
-      From a first Dockerfile to a non-root multi-stage image, each step
-      measured against the previous one.
-    labs:
-      - images-premiere-image
-
-  # ── c3 : absent de l'ancien dépôt, pour 2 505 lignes de guides ───────────
-  - id: c3-distribuer
-    title: "Distribute images"
-    description: >-
-      Push, find an image again by its digest, publish to a private registry,
-      and cross an air gap.
-    labs: []
-
-  - id: c4-executer
-    title: "Run and constrain"
-    description: >-
-      What the container is given, what it reports as it dies, and what it is
-      denied.
-    labs: []
-
-  - id: c5-persister
-    title: "Persist and connect"
-    description: >-
-      What outlives the container, what disappears with it, and how two
-      services talk to each other.
-    labs: []
-
-  - id: c6-composer
-    title: "Docker Compose"
-    description: >-
-      An application made of several services, described in one file and
-      diagnosed when it fails to come up.
-    labs: []
-
-  - id: c7-exploiter
-    title: "Operate and troubleshoot"
-    description: >-
-      Real incidents, short ones, where the symptom does not name the cause.
-    labs: []
-
-  - id: c8-securiser
-    title: "Secure"
-    description: >-
-      A container that works is not a container that is safe. Capabilities,
-      seccomp, rootless, and the trap of the Docker socket.
-    labs: []
-
-  - id: c9-sous-le-capot
-    title: "Understand what is underneath"
-    description: >-
-      Namespaces, cgroups and the chain that goes from the CLI to the process,
-      observed rather than recited.
-    labs: []
-
-  - id: c10-capstone
-    title: "Docker and Compose capstone"
-    description: >-
-      A complete chain, eight injected failures, and no topic announced.
-    labs: []
-
-  # ── Swarm : parcours avancé, clairement séparé. Kubernetes n'en est pas le
-  # prolongement dans ce dépôt : il a son propre catalogue.
-  - id: sw-swarm
-    title: "Docker Swarm, advanced path"
-    description: >-
-      A distributed orchestrator: Raft consensus, quorum, overlay networks,
-      distributed secrets, and control state to protect.
-    labs: []
+- id: conteneurs-utilisation
+  title: Use containers
+  description: 'An image and a container are not the same thing, and the lifecycle explains half of the
+    failures. Running, inspecting, publishing a port, keeping data: no build yet.'
+  labs:
+  - docker-verifier-son-moteur
+  - docker-premier-conteneur
+  - docker-cycle-de-vie
+  - container-entrypoint-et-cmd
+  - container-signaux-et-pid-1
+  - docker-inspecter-un-conteneur
+  - docker-anatomie-dune-image
+  - reseau-bridge-par-defaut
+  - reseau-bridge-dedie
+  - reseau-publication-de-ports
+  - reseau-interne
+  - reseau-diagnostic-dns
+  - donnees-volumes-et-montages
+  - donnees-permissions-uid-gid
+- id: conteneurs-isolation
+  title: Measure isolation, and put a container back in service
+  description: Namespaces, cgroups and the chain that goes from the CLI to the process, observed rather
+    than recited. Then short incidents where the symptom does not name the cause.
+  labs:
+  - internes-namespaces
+  - internes-cgroups-v2
+  - internes-stockage-des-images
+  - internes-chaine-dexecution
+  - container-limite-cpu
+  - container-ulimits-et-shm
+  - troubleshoot-exit-127
+  - troubleshoot-conflit-de-port
+  - troubleshoot-permission-refusee
+  - troubleshoot-boucle-de-redemarrage
+- id: images-construction
+  title: Build images
+  description: From a first Dockerfile to a non-root multi-stage image, each step measured against the
+    previous one.
+  labs:
+  - images-identifier-image
+  - images-ordre-des-couches
+  - images-contexte-de-build
+  - images-optimiser-la-taille
+  - images-migrer-vers-alpine
+  - images-build-multi-etapes
+  - images-non-root
+  - images-healthcheck

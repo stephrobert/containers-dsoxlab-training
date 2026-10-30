@@ -1,0 +1,5 @@
+# Surcharge française du lab container-ulimits-et-shm. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "La mémoire partagée et les descripteurs"
+description: "Mesurer deux défauts qu'on ne regarde jamais, les régler tous les deux à la création d'un conteneur, et constater que la mémoire partagée n'est pas un espace à part : elle compte dans la mémoire du cgroup."

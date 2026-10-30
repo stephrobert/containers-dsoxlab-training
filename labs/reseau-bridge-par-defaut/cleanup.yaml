@@ -1,0 +1,42 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# CE QU'IL DOIT IMPÉRATIVEMENT RETIRER : les deux conteneurs. Le jeton vit dans
+# le processus de `arriere` et le fichier de réponse de l'apprenant vit dans
+# `avant` : retirer les conteneurs emporte les deux d'un coup, et le prochain
+# passage tire un jeton neuf.
+#
+# CE QU'IL NE TOUCHE PAS : le réseau par défaut. Il n'a pas été créé par ce
+# lab, il appartient au moteur, et le supprimer casserait tout le reste.
+- name: Défaire le lab reseau-bridge-par-defaut
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-reseau:1.0
+    atelier: /opt/lab-reseau
+  tasks:
+    - name: Retirer les deux conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f avant arriere 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail, les réponses et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

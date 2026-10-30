@@ -1,0 +1,181 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Trois conteneurs, TOUS sur le réseau
+# par défaut. Le lab précédent faisait constater que ce réseau ne donne aucune
+# résolution de noms ; celui-ci fait corriger la situation, et mesure les DEUX
+# effets d'un réseau dédié : le DNS entre ses membres, et l'isolation de ceux
+# qui n'en sont pas.
+#
+# POURQUOI UN TROISIÈME CONTENEUR. `tiers` est le témoin de l'isolation, et il
+# est indispensable : sans lui, le lab prouverait que le DNS marche sans jamais
+# prouver que quoi que ce soit est isolé. Il reste sur le réseau par défaut, et
+# l'apprenant n'a pas à y toucher.
+#
+# L'ÉTAT DE DÉPART EST JOIGNABLE, ET C'EST LE POINT DÉLICAT. Au départ, `tiers`
+# joint `arriere` : les trois sont sur le même réseau. Le contrôle d'isolation
+# est donc FAUX avant tout travail, ce que `valider-labs.py` exige. Un setup qui
+# aurait déjà séparé les conteneurs rendrait ce contrôle vrai sans travail, et
+# ce ne serait plus un test mais une hypothèse du setup.
+#
+# POURQUOI `nc` ET PAS `ping`. ICMP dépend des capabilities du conteneur et de
+# réglages du noyau de l'hôte : un lab réseau qui échoue pour cette raison
+# enseigne la mauvaise leçon. Une connexion TCP prouve la même joignabilité.
+- name: Préparer le lab reseau-bridge-dedie
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-reseau-dedie:1.0
+    reseau_demande: atelier
+    sous_reseau_demande: 172.28.5.0/24
+    port_ecoute: 8080
+    # L'écouteur tire son jeton lui-même et ne le répond QUE sur le réseau. La
+    # boucle relance `nc` après chaque connexion : un seul `nc -l` ne sert
+    # qu'un client, et le lab doit pouvoir être essayé plusieurs fois.
+    entree_arriere: |
+      jeton=$(od -An -tx1 -N6 /dev/urandom | tr -d ' \n')
+      while true; do
+        echo "jeton=$jeton" | nc -l -p 8080 || true
+      done
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui le précède dans le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f avant arriere tiers 2>/dev/null || true
+      changed_when: false
+
+    # LE RÉSEAU DEMANDÉ EST RETIRÉ, et c'est le geste le plus important de ce
+    # nettoyage : s'il survivait à un passage précédent, trois contrôles sur
+    # quatre seraient vrais avant tout travail.
+    - name: Retirer le réseau que l'apprenant doit créer lui-même
+      ansible.builtin.shell:
+        cmd: docker network rm {{ reseau_demande }} 2>/dev/null || true
+      changed_when: false
+
+    # AUCUNE OPTION `--network` : les trois tombent sur le réseau par défaut,
+    # exactement comme quand on n'y pense pas.
+    - name: Lancer `arriere`, qui écoute et tire son jeton
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - -d
+          - --name
+          - arriere
+          - "{{ tag_local }}"
+          - sh
+          - -c
+          - "{{ entree_arriere }}"
+      changed_when: true
+
+    - name: Lancer `avant`, qui devra joindre `arriere` par son nom
+      ansible.builtin.command:
+        cmd: docker run -d --name avant {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Lancer `tiers`, le témoin de l'isolation
+      ansible.builtin.command:
+        cmd: docker run -d --name tiers {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Relever l'adresse de `arriere`, pour pouvoir l'attendre
+      ansible.builtin.command:
+        cmd: >
+          docker container inspect arriere
+          --format {{ '{{' }}.NetworkSettings.IPAddress{{ '}}' }}
+      register: adresse_arriere
+      changed_when: false
+      failed_when: adresse_arriere.stdout | trim | length == 0
+
+    - name: Attendre que `arriere` écoute réellement
+      ansible.builtin.shell:
+        cmd: >
+          nc -w 2 {{ adresse_arriere.stdout | trim }} {{ port_ecoute }}
+          | grep -q 'jeton='
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : un reseau a soi
+
+          Trois conteneurs tournent, TOUS sur le reseau par defaut :
+
+            arriere   il ECOUTE sur le port {{ port_ecoute }} et repond un jeton
+            avant     il doit pouvoir joindre `arriere` PAR SON NOM
+            tiers     le temoin : il ne doit PLUS pouvoir joindre `arriere`
+
+          Quatre choses sont attendues :
+
+            1. un reseau nomme `{{ reseau_demande }}` existe, avec le
+               sous-reseau {{ sous_reseau_demande }}.
+            2. `avant` et `arriere` y sont attaches, et ils ne sont PLUS sur
+               le reseau par defaut.
+            3. depuis `avant`, le NOM `arriere` se resout et rend son adresse
+               sur `{{ reseau_demande }}`.
+            4. `tiers`, laisse sur le reseau par defaut, ne joint plus
+               `arriere`.
+
+          Ne touchez pas a `tiers` : c est le temoin. Le detruire ou le
+          deplacer ferait passer le quatrieme controle sans rien prouver, et
+          les autres controles verifient qu il est toujours la.
+
+          Attacher un conteneur a un reseau ne le retire pas de l autre : un
+          conteneur peut etre sur DEUX reseaux a la fois, et c est le piege de
+          ce lab.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les faits dont dépend l'énoncé :
+    # les trois conteneurs tournent, le réseau demandé n'existe pas encore, et
+    # `tiers` joint bien `arriere`, sans quoi le contrôle d'isolation serait
+    # vrai avant tout travail.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker container inspect avant arriere tiers
+          --format {{ '{{' }}.State.Status{{ '}}' }} | sort -u | grep -qx running
+          && ! docker network inspect {{ reseau_demande }} >/dev/null 2>&1
+          && docker exec tiers nc -w 3 {{ adresse_arriere.stdout | trim }} {{ port_ecoute }} | grep -q 'jeton='
+      changed_when: false

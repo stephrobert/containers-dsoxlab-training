@@ -1,0 +1,25 @@
+# Lab donnees-volumes-et-montages. Les champs marqués REQUIS sont exigés par le validator :
+# sans eux, le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: donnees-volumes-et-montages                      # REQUIS
+title: "Where data survives: the three kinds of mount"            # REQUIS
+level: c1                     # REQUIS
+description: "A container writes its data into its own layer. Migrate it onto a named volume before destroying it, expose the host's configuration read-only, and give it a working space that persists nothing."
+skills:                       # REQUIS, non vide
+  - docker
+  - volumes
+  - donnees
+  - persistance
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 40m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

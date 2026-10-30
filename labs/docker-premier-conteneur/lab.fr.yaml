@@ -1,0 +1,5 @@
+# Surcharge française du lab docker-premier-conteneur. Elle ne porte QUE
+# `title` et `description` : tout autre champ y est ignoré en silence, parce que
+# le contrat ne se traduit pas.
+title: "Lancer, arrêter, supprimer : trois verbes qui ne se recouvrent pas"
+description: "Le cycle de vie d'un conteneur en trois gestes : en lancer un et le garder vivant, en arrêter un autre sans le supprimer, et supprimer le troisième. Un conteneur arrêté existe encore."

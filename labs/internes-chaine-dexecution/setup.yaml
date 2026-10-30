@@ -1,0 +1,148 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un conteneur qui dort, et DEUX
+# empreintes relevées avant que l'apprenant ne touche à rien : le PID du
+# processus du conteneur, et le PID du démon. Sans elles, le quatrième contrôle
+# serait impossible : il faut savoir ce qui était là avant pour prouver ce qui a
+# survécu.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et c'est le lab entier :
+#   - la chaîne est `sleep` ← `containerd-shim-runc-v2` ← **PID 1** ;
+#   - le shim n'est donc PAS enfant du démon : son parent est le gestionnaire de
+#     services de la machine ;
+#   - le démon et containerd sont deux services DISTINCTS, de PID distincts ;
+#   - le runtime employé est `runc`, déclaré par le moteur et par le conteneur ;
+#   - le client parle par `/var/run/docker.sock`, un socket root:docker.
+#
+# UNE CONCEPTION CORRIGÉE PAR LA MESURE, et elle vaut d'être écrite. La
+# première version de ce lab faisait redémarrer le démon pour constater que les
+# conteneurs y survivent. Mesuré le 2026-10-30 : c'est FAUX par défaut. Sans
+# `live-restore`, le démon arrête ses conteneurs en partant et les relance, avec
+# un PID neuf et un `StartedAt` neuf. L'idée reçue voulait que le détachement du
+# shim suffise ; il rend la survie POSSIBLE, il ne la produit pas.
+#
+# Le quatrième contrôle a donc changé de geste : il fait lancer un SECOND
+# conteneur et constater que chacun a son propre shim, tous détachés du même
+# parent. C'est la même leçon sur la chaîne, et elle ne demande pas de toucher
+# au démon, ce qui est une qualité : redémarrer un service plusieurs fois dans
+# un cycle de validation finit par déclencher la limite de systemd, et le lab
+# échouerait alors pour une raison étrangère à son sujet.
+- name: Préparer le lab internes-chaine-dexecution
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-chaine:1.0
+    atelier: /opt/lab-chaine
+    marqueur: 876543
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f maillon maillon-bis 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    - name: Lancer `maillon`, dont la commande est un marqueur reconnaissable
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name maillon {{ tag_local }}
+          sh -c "sleep {{ marqueur }}"
+      changed_when: true
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          shim=
+          parent_du_shim=
+          runtime=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : qui lance vraiment un conteneur
+
+          Le conteneur `maillon` tourne, et son processus execute
+          `sleep {{ marqueur }}`.
+
+          Quand vous tapez `docker run`, quatre programmes au moins entrent en
+          jeu, et le processus de votre conteneur n est l enfant d aucun de ceux
+          qu on croit. Ce lab fait remonter la chaine.
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            shim=<le PID du processus intermediaire qui porte CE conteneur>
+            parent_du_shim=<le PID du PARENT de ce processus intermediaire>
+            runtime=<le nom du runtime que le moteur emploie>
+
+          La deuxieme reponse surprend, et c est le but : regardez-la deux fois
+          avant de conclure que vous vous etes trompe.
+
+          Puis, pour verifier que cet intermediaire est bien PAR CONTENEUR
+          et non partage :
+
+            LANCEZ UN SECOND CONTENEUR nomme `maillon-bis`, et constatez qu il
+            a son PROPRE intermediaire, de PID different, mais le MEME parent.
+
+          Les PID changent a chaque demarrage : il n y a rien a recopier d un
+          passage precedent.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les deux faits dont dépend
+    # l'énoncé : `maillon` tourne avec son marqueur, et `maillon-bis` n'existe
+    # pas encore.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker exec maillon sh -c 'ps -o args' | grep -q '{{ marqueur }}'
+          && ! docker container inspect maillon-bis >/dev/null 2>&1
+      changed_when: false

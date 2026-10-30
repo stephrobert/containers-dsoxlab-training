@@ -1,0 +1,5 @@
+# Surcharge française du lab reseau-publication-de-ports. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Publier un port, et seulement où il faut"
+description: "Corriger trois conteneurs mal publiés, un par posture : celui qui ne doit répondre que sur le loopback, celui qui ne doit l'être que sur l'adresse routable, et celui qui ne doit rien publier tout en servant encore les autres."

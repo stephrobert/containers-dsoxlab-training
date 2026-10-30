@@ -1,0 +1,31 @@
+# Challenge reseau-diagnostic-dns. Les champs marqués REQUIS sont exigés par le validator :
+# sans eux, le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+#
+# `lab_type: challenge` et non `lab` : c'est ce qui autorise
+# `exam_passing_score`, et ce qui dit à l'apprenant que cette épreuve ÉVALUE.
+# Rien n'y est réexpliqué : les labs réseau du parcours l'ont enseigné.
+id: reseau-diagnostic-dns                      # REQUIS
+title: "The shop cannot find its catalogue"            # REQUIS
+level: c1                     # REQUIS
+description: "An application no longer reaches its database by name, and an audit reports the database is exposed. Three independent faults, one diagnosis, and nothing is explained to you."
+skills:                       # REQUIS, non vide
+  - docker
+  - reseau
+  - dns
+  - diagnostic
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker   # REQUIS, http(s)
+lab_type: challenge
+exam_passing_score: 75
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

@@ -1,0 +1,5 @@
+# Surcharge française du lab container-limite-cpu. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Brider un processeur, et le prouver"
+description: "Lire le quota qu'un cgroup déclare, constater qu'une limite de temps ne change rien à ce que le conteneur croit avoir, employer l'autre mécanisme qui le change, et prouver par le compteur d'étranglements que la limite a mordu."

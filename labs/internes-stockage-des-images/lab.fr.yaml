@@ -1,0 +1,5 @@
+# Surcharge française du lab internes-stockage-des-images. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Où atterrissent vraiment les fichiers d'un conteneur"
+description: "Trouver le pilote de stockage du moteur et la couche d'écriture d'un conteneur, puis constater qu'un fichier écrit dedans se lit sur le disque de l'hôte et y occupe de la place."

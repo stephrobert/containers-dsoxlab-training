@@ -1,0 +1,25 @@
+# Lab container-signaux-et-pid-1. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: container-signaux-et-pid-1                      # REQUIS
+title: "Who is PID 1 decides whether your container stops or gets killed"            # REQUIS
+level: c1                     # REQUIS
+description: "Diagnose a container that takes the full timeout to die then exits 137, find that the signal never reaches the application, and fix the image without removing its entry script."
+skills:                       # REQUIS, non vide
+  - docker
+  - signaux
+  - pid-1
+  - diagnostic
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

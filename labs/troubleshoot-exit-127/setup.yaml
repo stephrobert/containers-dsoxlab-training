@@ -1,0 +1,173 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Trois conteneurs arrêtés, trois causes
+# différentes, et trois codes différents. Un lab de dépannage ne s'enseigne pas
+# avec un symptôme : il s'enseigne avec une GRILLE, et une grille demande des
+# cas voisins qu'on puisse comparer.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et ces valeurs sont le lab :
+#   - commande introuvable      → code 127, journal VIDE, statut `created`
+#   - fichier non exécutable     → code 126
+#   - commande qui échoue        → son propre code, ici 3
+#
+# LA DISTINCTION QUI VAUT LE LAB ENTIER : quand la commande est introuvable, le
+# journal est VIDE et le statut reste `created`. Le conteneur n'a jamais
+# démarré, et le diagnostic est dans `.State.Error` de l'inspection, que
+# personne ne regarde :
+#
+#   « unable to start container process: exec: "…": executable file not found
+#     in $PATH »
+#
+# En revanche, si un shell enveloppe la commande, le journal PARLE, parce que le
+# shell a démarré, lui. Mesuré : `sh: /tmp/inexistant: not found`. Le même code
+# 127, deux situations opposées, et le journal est ce qui les sépare.
+#
+# AUCUN CODE N'EST ÉCRIT DANS L'ÉNONCÉ : l'apprenant les lit.
+- name: Préparer le lab troubleshoot-exit-127
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-exit:1.0
+    atelier: /opt/lab-exit
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f panne-a panne-b panne-c repare 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    # LES TROIS PANNES. Chacune échoue, donc chaque `docker run` rend un code
+    # non nul : le `failed_when: false` est ce qui permet au setup de continuer,
+    # et il est délibéré, pas une négligence.
+    - name: Poser la première panne, une commande qui n'existe pas
+      ansible.builtin.command:
+        cmd: >
+          docker run --name panne-a {{ tag_local }}
+          outil-de-sauvegarde
+      changed_when: true
+      failed_when: false
+
+    - name: Poser la deuxième panne, un fichier qui n'est pas exécutable
+      ansible.builtin.command:
+        cmd: docker run --name panne-b {{ tag_local }} /etc/hostname
+      changed_when: true
+      failed_when: false
+
+    - name: Poser la troisième panne, une commande qui s'exécute et échoue
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - --name
+          - panne-c
+          - "{{ tag_local }}"
+          - sh
+          - -c
+          - echo "sauvegarde interrompue" >&2; exit 3
+      changed_when: true
+      failed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          code_a=
+          code_b=
+          statut_a=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : trois pannes, trois codes, une grille
+
+          Trois conteneurs sont arretes. Les trois ont echoue, et pour trois
+          raisons differentes. Deux de leurs codes de sortie se ressemblent
+          assez pour qu on les confonde, et le troisieme n a rien a voir.
+
+            panne-a   une commande qui n existe pas
+            panne-b   un fichier qui existe mais n est pas executable
+            panne-c   une commande qui s execute et echoue
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            code_a=<le code de sortie de panne-a>
+            code_b=<le code de sortie de panne-b>
+            statut_a=<le STATUT de panne-a, tel que le moteur le declare>
+
+          La troisieme question est la plus utile des trois. Regardez-la bien :
+          le statut de `panne-a` n est pas celui que vous attendez d un
+          conteneur qui s est arrete, et cela dit quelque chose d important sur
+          ce qui s est passe.
+
+          Regardez aussi les JOURNAUX des trois. L un d eux ne dit rien du tout,
+          et son diagnostic est ailleurs : dans l inspection du conteneur, un
+          champ que personne ne lit jamais.
+
+          Enfin, reparez : lancez un conteneur nomme `repare`, sur la meme
+          image, qui TOURNE. Vous aurez compris que la panne n etait pas dans
+          l image.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les faits dont dépend l'énoncé :
+    # les trois pannes sont en place avec des codes DIFFÉRENTS, et `repare`
+    # n'existe pas encore.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          a=$(docker container inspect panne-a --format '{{ "{{" }}.State.ExitCode{{ "}}" }}')
+          && b=$(docker container inspect panne-b --format '{{ "{{" }}.State.ExitCode{{ "}}" }}')
+          && c=$(docker container inspect panne-c --format '{{ "{{" }}.State.ExitCode{{ "}}" }}')
+          && test "$a" -ne 0 && test "$b" -ne 0 && test "$c" -ne 0
+          && test "$a" != "$b" && test "$b" != "$c"
+          && test -z "$(docker ps -aq --filter name=^repare$)"
+      changed_when: false

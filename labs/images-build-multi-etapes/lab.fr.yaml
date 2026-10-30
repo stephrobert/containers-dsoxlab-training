@@ -1,0 +1,5 @@
+# Surcharge française du lab images-build-multi-etapes. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Ce qui vient du socle ne se retire pas"
+description: "Séparer la fabrication de l'exécution : découvrir pourquoi un outillage venu du socle ne se supprime pas, construire l'image finale sur un autre socle, et ne faire traverser que le produit."

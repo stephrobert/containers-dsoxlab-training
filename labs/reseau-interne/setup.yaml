@@ -1,0 +1,206 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Deux isolations à obtenir, qu'on
+# confond tout le temps parce qu'on les appelle toutes les deux « isoler » :
+#   - `--network none` : AUCUN réseau. Le conteneur n'a pas d'interface hors
+#     loopback, il ne parle à personne et personne ne lui parle.
+#   - un réseau `--internal` : les membres se parlent ENTRE EUX, par leur nom,
+#     et ne sortent pas.
+# La première convient à un traitement qui n'a besoin de rien. La seconde à une
+# base de données que seule son application doit joindre. Les prendre l'une
+# pour l'autre donne soit un service inutilisable, soit un service exposé.
+#
+# LE TÉMOIN `dehors` TIENT LE RÔLE DE « HORS DU RÉSEAU ». Il est publié sur
+# l'adresse routable de la machine, et c'est lui qu'on essaie de joindre pour
+# savoir si un conteneur sort. Mesurer la sortie contre un service local plutôt
+# que contre Internet est une décision : un lab qui dépendrait d'un accès
+# sortant échouerait sur une machine isolée, et son message parlerait
+# d'isolation réussie alors qu'il n'y a pas de réseau du tout.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30. Réseau par défaut : 1 interface hors
+# loopback, joint `dehors`. `--network none` : 0 interface, ne joint rien.
+# Réseau interne : `.Internal` vaut `true`, les membres se joignent par leur
+# nom, ne joignent pas `dehors`, et n'ont AUCUNE route par défaut.
+#
+# L'ADRESSE ROUTABLE N'EST PAS ÉCRITE EN DUR : elle est déduite de la route par
+# défaut, et déposée dans l'énoncé.
+- name: Préparer le lab reseau-interne
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-isolation:1.0
+    atelier: /opt/lab-isolation
+    reseau_demande: confine
+    sous_reseau_demande: 172.29.9.0/24
+    port_dehors: 18090
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui le précède dans le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Relever l'adresse routable de la machine, sans la coder en dur
+      ansible.builtin.shell:
+        cmd: >
+          ip -o -4 route get 1.1.1.1
+          | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}'
+      register: routable
+      changed_when: false
+      failed_when: routable.stdout | trim | length == 0
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f dehors coffre atelier-a atelier-b 2>/dev/null || true
+      changed_when: false
+
+    # LE RÉSEAU DEMANDÉ EST RETIRÉ : s'il survivait à un passage précédent, deux
+    # contrôles sur quatre seraient vrais avant tout travail.
+    - name: Retirer le réseau que l'apprenant doit créer lui-même
+      ansible.builtin.shell:
+        cmd: docker network rm {{ reseau_demande }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de construction
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    # L'écouteur est porté par l'image, parce que ce lab fait RECRÉER les
+    # conteneurs : le réseau d'un conteneur ne se choisit qu'à sa création.
+    # L'apprenant ne doit pas avoir à réécrire une commande qu'il n'a jamais
+    # vue.
+    - name: Écrire l'écouteur que l'image portera
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/ecouteur.sh"
+        mode: "0755"
+        content: |
+          jeton=$(od -An -tx1 -N6 /dev/urandom | tr -d ' \n')
+          while true; do
+            echo "jeton=$jeton" | nc -l -p 80 || true
+          done
+
+    - name: Écrire l'image de service du lab
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          COPY ecouteur.sh /usr/local/bin/ecouteur.sh
+          CMD ["sh", "/usr/local/bin/ecouteur.sh"]
+
+    - name: Construire l'image de service, pour que l'apprenant puisse recréer
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    - name: Lancer `dehors`, le témoin de ce qui est hors du réseau
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name dehors
+          -p {{ routable.stdout | trim }}:{{ port_dehors }}:80 {{ tag_local }}
+      changed_when: true
+
+    # LES TROIS CONTENEURS À ISOLER, tous sur le réseau par défaut : ils
+    # sortent donc tous, ce qui rend les quatre contrôles faux au départ.
+    - name: Lancer `coffre`, qui ne devrait avoir aucun réseau
+      ansible.builtin.command:
+        cmd: docker run -d --name coffre {{ tag_local }}
+      changed_when: true
+
+    - name: Lancer `atelier-a`, qui écoute et devra être confiné
+      ansible.builtin.command:
+        cmd: docker run -d --name atelier-a {{ tag_local }}
+      changed_when: true
+
+    - name: Lancer `atelier-b`, qui devra joindre `atelier-a` sans sortir
+      ansible.builtin.command:
+        cmd: docker run -d --name atelier-b {{ tag_local }}
+      changed_when: true
+
+    - name: Attendre que le témoin réponde sur l'adresse routable
+      ansible.builtin.shell:
+        cmd: >
+          nc -w 3 {{ routable.stdout | trim }} {{ port_dehors }}
+          | grep -q 'jeton='
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : deux isolations, qui ne se ressemblent pas
+
+          Quatre conteneurs tournent, tous batis sur `{{ tag_local }}`, qui
+          ECOUTE sur son port 80 et repond un jeton. Tous sont sur le reseau
+          par defaut, donc tous sortent.
+
+            dehors      LE TEMOIN. Publie sur
+                        {{ routable.stdout | trim }}:{{ port_dehors }}, il
+                        tient le role de tout ce qui est HORS du reseau des
+                        conteneurs. N Y TOUCHEZ PAS.
+            coffre      ne doit avoir AUCUN reseau : pas d interface, pas de
+                        voisin, rien.
+            atelier-a   doit etre CONFINE avec atelier-b
+            atelier-b   doit joindre atelier-a PAR SON NOM, et ne pas sortir
+
+          Quatre choses sont attendues :
+
+            1. `coffre` n a aucune interface reseau hors loopback.
+            2. `coffre` ne joint pas `dehors`.
+            3. un reseau nomme `{{ reseau_demande }}` existe, declare INTERNE,
+               avec le sous-reseau {{ sous_reseau_demande }}.
+            4. `atelier-a` et `atelier-b` y sont, ils se joignent PAR LEUR NOM,
+               et aucun des deux ne joint `dehors`.
+
+          Gardez les noms : les controles les cherchent nommement.
+
+          Deux choses a savoir. Le reseau d un conteneur ne se choisit qu a sa
+          CREATION pour `--network` : il faut detruire et recreer. Et un
+          conteneur peut etre sur DEUX reseaux a la fois : etre sur le reseau
+          confine ne suffit pas, il faut aussi avoir quitte l autre.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les faits dont dépend l'énoncé :
+    # le réseau demandé n'existe pas, et `coffre` sort bien, sans quoi les deux
+    # premiers contrôles seraient vrais avant tout travail.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          ! docker network inspect {{ reseau_demande }} >/dev/null 2>&1
+          && docker exec coffre nc -w 3 {{ routable.stdout | trim }} {{ port_dehors }} | grep -q 'jeton='
+          && docker exec atelier-b nc -w 3 {{ routable.stdout | trim }} {{ port_dehors }} | grep -q 'jeton='
+      changed_when: false

@@ -34,7 +34,29 @@ dive = "0.13.1"
 trivy = "0.74.0"
 
 # L'outillage Python du catalogue : ses vérificateurs et ses tests.
-uv = "0.12.18"
+uv = "0.12.21"
+
+# L'interpréteur, épinglé comme les autres outils. Il ne l'était pas, et c'était
+# le seul de la liste à venir de la machine : `pyproject.toml` déclare
+# `requires-python = ">=3.11"`, ce qui autorise tout, et deux postes pouvaient
+# donc juger le même catalogue avec deux interpréteurs. Les messages de pytest
+# et le tri des dictionnaires n'en dépendent pas, mais une tournure refusée par
+# 3.11 et acceptée par 3.14 se découvrirait alors en CI et non en local, ce qui
+# est l'inverse de ce qu'on veut. Version alignée sur le catalogue DevSecOps.
+python = "3.14.8"
 
 # Validation du schéma de `dependabot.yml`, comme dans les catalogues frères.
 "pipx:check-jsonschema" = "0.38.2"
+
+# ## trufflehog n'est PAS ici, et ce n'est pas un oubli
+#
+# Le hook `trufflehog` tourne avec `--no-update`, donc la version employée est
+# celle qui se trouve dans le PATH, et elle doit être choisie une seule fois. La
+# CI l'installe depuis l'archive de release épinglée dont elle vérifie
+# l'empreinte SHA-256 (`.github/workflows/ci.yml`, job `pre-commit`). La pose
+# ici en plus mettrait deux installateurs en concurrence pour le même binaire,
+# et « quelle version a réellement jugé ce commit ? » n'aurait plus de réponse.
+#
+# En local, une fois :
+#
+#     mise use -g trufflehog@3.97.5

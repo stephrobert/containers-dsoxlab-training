@@ -9,12 +9,23 @@ ssh/id_ed25519
 # appartient, et le catalogue les recrée à chaque `run`.
 labs/**/challenge/work/
 
-# Caches Python du catalogue et de ses tests.
+# Caches Python du catalogue et de ses tests. `.mypy_cache`, `.coverage` et
+# `htmlcov` ne sont produits par aucun contrôle d'aujourd'hui : ils sont listés
+# parce qu'un `pytest --cov` ou un `mypy` lancé à la main en dépose, et qu'un
+# artefact non ignoré finit dans un `git add` distrait.
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 .venv/
+
+# Index des versions d'outils qu'un rejeu de solutions écrit. C'est un artefact
+# daté, pas une source : il se régénère, et le versionner ferait croire qu'une
+# vérification vaut encore alors qu'elle a été faite ailleurs.
+solution/verified-with.json
 
 # Les FIXTURES, elles, sont versionnées, y compris quand leur extension
 # ressemble à un artefact. Mesuré sur le catalogue Terraform le 2026-09-25 :
@@ -28,4 +39,8 @@ guides.json
 
 # Le mot de passe qui déchiffre la solution du formateur. Jamais commité :
 # le commiter annulerait le chiffrement, puisqu'il voyage avec ce qu'il ouvre.
+# La forme `.txt` est listée aussi : c'est le nom qu'un éditeur ou un
+# glisser-déposer donne au même fichier, et une ligne manquante suffit à le
+# rendre visible dans `git status`, donc ajoutable.
 .vault-pass
+.vault-pass.txt

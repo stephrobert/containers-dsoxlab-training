@@ -1,0 +1,5 @@
+# Surcharge française du lab reseau-bridge-dedie. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Un réseau à soi : nommer et isoler"
+description: "Créer un réseau dédié avec un plan d'adressage choisi, y déplacer deux conteneurs, et mesurer ses deux effets : leurs noms se résolvent, et un conteneur laissé derrière ne les joint plus."

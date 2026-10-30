@@ -1,0 +1,178 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Deux conteneurs identiques à une chose
+# près : l'un porte une limite mémoire, l'autre non. C'est la comparaison qui
+# enseigne, comme pour les namespaces : une valeur seule ne dit rien, deux
+# valeurs côte à côte disent le mécanisme.
+#
+# LE LAB QUI PRÉCÈDE MONTRAIT CE QUE LE CONTENEUR VOIT ; celui-ci montre ce
+# qu'il peut CONSOMMER. Les deux moitiés de l'isolation, et elles n'ont rien à
+# voir : un namespace restreint une vue, un cgroup compte et plafonne.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et ces valeurs sont le lab :
+#   - la machine est en cgroup v2 unifié (`cgroup2fs`), pilote `systemd` ;
+#   - le cgroup d'un conteneur vit en
+#     `/sys/fs/cgroup/system.slice/docker-<identifiant complet>.scope` ;
+#   - `--memory 256m` donne `memory.max` = 268435456, soit la valeur EN OCTETS ;
+#   - un conteneur SANS limite porte `memory.max` = `max`, et non 0 ni un
+#     grand nombre. C'est la troisième question du lab, et elle compte : on
+#     cherche spontanément un nombre, et il n'y en a pas.
+#   - le conteneur voit sa propre limite dans son `/sys/fs/cgroup/memory.max`,
+#     ce qui est la façon dont une application bien élevée se règle elle-même.
+#
+# AUCUNE VALEUR N'EST ÉCRITE DANS L'ÉNONCÉ. Le chemin dépend de l'identifiant
+# du conteneur, qui change à chaque création : il n'y a rien à recopier d'un
+# passage précédent.
+- name: Préparer le lab internes-cgroups-v2
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-cgroups:1.0
+    atelier: /opt/lab-cgroups
+    memoire_posee: 256m
+    memoire_a_poser: 128m
+    pids_a_poser: 64
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui ouvre le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    # SANS CETTE VÉRIFICATION, le lab serait injouable sans qu'on sache
+    # pourquoi : sur une machine en cgroup v1, les chemins et les noms de
+    # fichiers diffèrent, et les quatre contrôles échoueraient en accusant
+    # l'apprenant.
+    - name: Vérifier que la machine est bien en cgroup v2 unifié
+      ansible.builtin.shell:
+        cmd: test "$(stat -fc %T /sys/fs/cgroup)" = "cgroup2fs"
+      changed_when: false
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f mesure libre bride 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    - name: Lancer `mesure`, qui porte une limite mémoire
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name mesure --memory {{ memoire_posee }}
+          {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Lancer `libre`, le même sans aucune limite
+      ansible.builtin.command:
+        cmd: docker run -d --name libre {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Attendre que les deux conteneurs aient un cgroup
+      ansible.builtin.shell:
+        cmd: >
+          test -r "/sys/fs/cgroup/system.slice/docker-$(docker container inspect
+          mesure --format '{{ "{{" }}.Id{{ "}}" }}').scope/memory.max"
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          chemin=
+          memoire_max=
+          sans_limite=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : ce qu un conteneur peut consommer
+
+          Deux conteneurs tournent, identiques a une chose pres :
+
+            mesure   lance avec une limite memoire de {{ memoire_posee }}
+            libre    lance sans aucune limite
+
+          Le lab precedent montrait ce qu un conteneur VOIT. Celui-ci montre ce
+          qu il peut CONSOMMER, et c est un mecanisme completement different :
+          les cgroups comptent et plafonnent, la ou les namespaces restreignent
+          une vue.
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            chemin=<le chemin ABSOLU du cgroup de `mesure`, sur l hote>
+            memoire_max=<la limite memoire que ce cgroup declare, telle quelle>
+            sans_limite=<ce que le MEME fichier contient pour `libre`>
+
+          La troisieme question n est pas une formalite : on cherche
+          spontanement un nombre, et la reponse n en est pas un.
+
+          Puis lancez un conteneur nomme `bride`, avec DEUX limites a la fois :
+
+            {{ memoire_a_poser }} de memoire, et {{ pids_a_poser }} processus
+            au maximum
+
+          Les deux doivent se lire dans son cgroup.
+
+          Le chemin depend de l identifiant du conteneur, qui change a chaque
+          creation : il n y a rien a recopier d un passage precedent.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les trois faits dont dépend
+    # l'énoncé : `mesure` porte bien sa limite, `libre` n'en a aucune, et
+    # `bride` n'existe pas encore.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          test "$(cat /sys/fs/cgroup/system.slice/docker-$(docker container inspect mesure --format '{{ "{{" }}.Id{{ "}}" }}').scope/memory.max)" != "max"
+          && test "$(cat /sys/fs/cgroup/system.slice/docker-$(docker container inspect libre --format '{{ "{{" }}.Id{{ "}}" }}').scope/memory.max)" = "max"
+          && ! docker container inspect bride >/dev/null 2>&1
+      changed_when: false

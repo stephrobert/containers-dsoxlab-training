@@ -1,0 +1,186 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Deux conteneurs sur le réseau PAR
+# DÉFAUT, l'un qui écoute et l'autre qui doit le joindre. C'est le réseau que
+# tout le monde utilise sans le choisir, et celui dont les limites ne se
+# découvrent qu'en s'y cognant.
+#
+# LA LEÇON FONDATRICE, MESURÉE AVANT D'ÊTRE ÉCRITE. Sur le réseau par défaut,
+# deux conteneurs se joignent par ADRESSE mais pas par NOM : il n'y a aucune
+# résolution entre eux. Relevé sur docker.lab le 2026-10-30, `nc` rendant
+# « bad address 'arriere' » et `nslookup` expirant sans serveur. C'est ce qui
+# justifie le lab suivant, qui crée un réseau dédié et retrouve le DNS.
+#
+# POURQUOI LE JETON N'EST PAS DANS LES JOURNAUX. Une première version le
+# faisait annoncer par `arriere` sur sa sortie standard. `docker logs` le
+# donnait alors sans qu'aucun paquet ne traverse le réseau, et le lab se
+# résolvait sans toucher à son sujet. Il ne vit donc QUE dans la réponse TCP.
+#
+# POURQUOI `nc` ET PAS `ping`. ICMP dépend des capabilities du conteneur et de
+# réglages du noyau de l'hôte : un lab réseau qui échoue pour cette raison
+# enseigne la mauvaise leçon. Une connexion TCP prouve la même joignabilité et
+# ne dépend de rien d'autre.
+- name: Préparer le lab reseau-bridge-par-defaut
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-reseau:1.0
+    atelier: /opt/lab-reseau
+    port_ecoute: 8080
+    # L'écouteur tire son jeton lui-même et ne le répond QUE sur le réseau.
+    # La boucle relance `nc` après chaque connexion : un seul `nc -l` ne sert
+    # qu'un client, et le lab doit pouvoir être essayé plusieurs fois.
+    entree_arriere: |
+      jeton=$(od -An -tx1 -N6 /dev/urandom | tr -d ' \n')
+      while true; do
+        echo "jeton=$jeton" | nc -l -p 8080 || true
+      done
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui le précède dans le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f avant arriere 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    # AUCUNE OPTION `--network` : c'est le sujet. Les deux conteneurs tombent
+    # sur le réseau par défaut, exactement comme quand on n'y pense pas.
+    - name: Lancer `arriere`, qui écoute et tire son jeton
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - -d
+          - --name
+          - arriere
+          - "{{ tag_local }}"
+          - sh
+          - -c
+          - "{{ entree_arriere }}"
+      changed_when: true
+
+    - name: Lancer `avant`, qui devra le joindre
+      ansible.builtin.command:
+        cmd: docker run -d --name avant {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Relever l'adresse de `arriere`, pour pouvoir l'attendre
+      ansible.builtin.command:
+        cmd: >
+          docker container inspect arriere
+          --format {{ '{{' }}.NetworkSettings.IPAddress{{ '}}' }}
+      register: adresse_arriere
+      changed_when: false
+      failed_when: adresse_arriere.stdout | trim | length == 0
+
+    - name: Attendre que `arriere` écoute réellement
+      ansible.builtin.shell:
+        cmd: >
+          nc -w 2 {{ adresse_arriere.stdout | trim }} {{ port_ecoute }}
+          | grep -q 'jeton='
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          adresse=
+          passerelle=
+          interface=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : le reseau par defaut, et ce qu il ne fait pas
+
+          Deux conteneurs tournent. Aucun n a recu d option reseau : ils sont
+          donc sur le reseau PAR DEFAUT, celui qu on utilise sans le choisir.
+
+            arriere   il ECOUTE sur le port {{ port_ecoute }} et repond un jeton
+            avant     il ne fait rien, c est votre poste d observation
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            adresse=<l adresse IP de arriere>
+            passerelle=<la passerelle du reseau par defaut>
+            interface=<le nom de l interface de L HOTE qui porte cette passerelle>
+
+          Puis, DEPUIS LE CONTENEUR `avant`, joignez `arriere` et deposez le
+          jeton qu il repond dans un fichier, A L INTERIEUR de `avant` :
+
+            /jeton.txt
+
+          Le jeton n est nulle part ailleurs : ni dans les journaux de
+          `arriere`, ni dans aucun fichier. Il ne s obtient qu en ouvrant une
+          connexion.
+
+          Un avertissement qui vous fera gagner du temps : sur ce reseau, le
+          NOM d un conteneur ne se resout pas. Cherchez pourquoi, c est la
+          lecon du lab.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les trois faits dont dépend
+    # l'énoncé : les deux conteneurs tournent, et `avant` ne porte pas déjà le
+    # jeton d'un passage précédent.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker container inspect avant arriere
+          --format {{ '{{' }}.State.Status{{ '}}' }} | sort -u | grep -qx running
+          && ! docker exec avant test -e /jeton.txt
+      changed_when: false

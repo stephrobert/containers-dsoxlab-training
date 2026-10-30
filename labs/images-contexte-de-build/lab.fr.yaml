@@ -1,0 +1,5 @@
+# Surcharge française du lab images-contexte-de-build. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Un fichier qui existe, et qu'on ne trouve pas"
+description: "Distinguer ce que contient un contexte de construction de ce que porte le disque : lire un message qui accuse un fichier qui existe, choisir le contexte, désigner le Dockerfile, et tenir un secret hors de l'image."

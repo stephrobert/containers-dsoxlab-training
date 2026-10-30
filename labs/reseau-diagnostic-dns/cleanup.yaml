@@ -1,0 +1,63 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que l'épreuve se rejoue à l'identique.
+#
+# CE CLEANUP DOIT NETTOYER PLUS LARGE QUE CE QUE LE SETUP A POSÉ. Une épreuve
+# de diagnostic laisse derrière elle ce que l'apprenant a fabriqué en
+# cherchant : un réseau de plus, un conteneur de rattrapage. Les deux réseaux
+# du setup sont nommés, mais le réseau qu'un apprenant aurait créé lui-même ne
+# peut pas l'être, d'où le `network prune` final, qui retire les réseaux sans
+# aucun membre.
+#
+# `network prune` NE TOUCHE PAS les réseaux du moteur (`bridge`, `host`,
+# `none`) ni ceux qui portent encore un conteneur : il ne peut donc pas casser
+# un autre lab du catalogue, qui retire ses propres conteneurs dans son propre
+# cleanup.
+#
+# L'ORDRE COMPTE DEUX FOIS : un réseau dont des conteneurs sont encore membres
+# ne se supprime pas, et une image dont des conteneurs dérivent non plus.
+- name: Défaire le challenge reseau-diagnostic-dns
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-diagnostic:1.0
+    atelier: /opt/lab-diagnostic
+    reseau_boutique: front
+    reseau_catalogue: arriere-plan
+  tasks:
+    - name: Retirer les deux conteneurs, AVANT les réseaux et l'image
+      ansible.builtin.shell:
+        cmd: docker rm -f boutique catalogue 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les deux réseaux du challenge
+      ansible.builtin.shell:
+        cmd: >
+          docker network rm {{ reseau_boutique }} {{ reseau_catalogue }}
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les réseaux sans membre qu'un diagnostic a pu laisser
+      ansible.builtin.shell:
+        cmd: docker network prune -f || true
+      changed_when: false
+
+    - name: Retirer l'image de service, puis l'image de base par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines et le cache de construction
+      ansible.builtin.shell:
+        cmd: docker image prune -f && docker builder prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de construction et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

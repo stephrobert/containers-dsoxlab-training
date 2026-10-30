@@ -1,0 +1,24 @@
+# Lab images-build-multi-etapes. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-build-multi-etapes                      # REQUIS
+title: "What comes from the base cannot be removed"   # REQUIS
+level: c2                     # REQUIS
+description: "Separate fabrication from execution: find out why a tooling coming from the base cannot be deleted, build the final image on another base, and let only the product cross over."
+skills:                       # REQUIS, non vide
+  - docker
+  - dockerfile
+  - build-multi-etapes
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

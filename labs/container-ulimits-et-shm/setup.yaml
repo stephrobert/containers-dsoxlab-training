@@ -1,0 +1,158 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI : presque rien. L'apprenant doit lancer
+# lui-même les conteneurs, parce que les deux réglages du lab ne se posent qu'à
+# la création et qu'il n'y a rien à observer sur un conteneur déjà réglé. Le
+# setup pose donc l'image et le formulaire, et s'arrête là.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et ces valeurs sont le lab :
+#   - `/dev/shm` fait 64 Mo par défaut, et c'est un tmpfs ;
+#   - `ulimit -n` vaut **1073741816** par défaut, ce qui surprend par son
+#     énormité : la limite de descripteurs n'est pas le problème des conteneurs
+#     modernes, c'est son RÉGLAGE À LA BAISSE qui en crée un ;
+#   - `--shm-size 64m` donne `.HostConfig.ShmSize` = 67108864 ;
+#   - `--ulimit nofile=256:256` donne `ulimit -n` = 256 dans le conteneur, et
+#     `.HostConfig.Ulimits` le déclare ;
+#   - LA LEÇON MAJEURE : le tmpfs de `/dev/shm` compte dans `memory.current` du
+#     cgroup. 64 Mo écrits dedans font monter la mémoire du conteneur de 64 Mo.
+#     Une limite mémoire doit donc tenir compte de la taille de `/dev/shm`, sans
+#     quoi le conteneur se fait tuer pour une mémoire qu'il croyait « à part ».
+#
+# LES DEUX MÉCANISMES NE SONT PAS DE LA MÊME FAMILLE, et c'est le sujet. Les
+# cgroups plafonnent depuis l'extérieur ; les ulimits sont un mécanisme POSIX,
+# antérieur, que le processus porte lui-même. Les chercher au même endroit est
+# l'erreur que ce lab lève.
+- name: Préparer le lab container-ulimits-et-shm
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-ulimits:1.0
+    atelier: /opt/lab-ulimits
+    shm_demande_mo: 256
+    nofile_demande: 1024
+    a_ecrire_mo: 128
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Vérifier que la machine est bien en cgroup v2 unifié
+      ansible.builtin.shell:
+        cmd: test "$(stat -fc %T /sys/fs/cgroup)" = "cgroup2fs"
+      changed_when: false
+
+    # SANS CETTE VÉRIFICATION, le quatrième contrôle serait injouable : il
+    # demande d'écrire en mémoire, et la machine doit pouvoir le supporter en
+    # plus de ce qu'elle porte déjà.
+    - name: Vérifier que la machine a de la mémoire libre pour l'épreuve
+      ansible.builtin.shell:
+        cmd: >
+          test "$(awk '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo)"
+          -gt {{ a_ecrire_mo * 3 }}
+      changed_when: false
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser son conteneur
+      ansible.builtin.shell:
+        cmd: docker rm -f etroit 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    - name: Déposer le formulaire de réponses, avec ses deux clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          shm_defaut_mo=
+          nofile_defaut=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : la memoire partagee et les descripteurs
+
+          Deux reglages qu on ne regarde jamais, jusqu au jour ou ils cassent
+          quelque chose. Aucun conteneur ne tourne : vous les lancez vous-meme,
+          parce que les deux ne se posent qu a la CREATION.
+
+          L image `{{ tag_local }}` est prete.
+
+          Renseignez les deux lignes de {{ atelier }}/reponses.txt, en lancant
+          un conteneur SANS aucune option de limitation et en l interrogeant :
+
+            shm_defaut_mo=<la taille de /dev/shm par defaut, EN MEGAOCTETS,
+                           sans unite>
+            nofile_defaut=<la limite de descripteurs de fichiers par defaut,
+                           telle que le conteneur la declare>
+
+          La deuxieme reponse surprend par sa taille. Ce n est pas une erreur de
+          lecture.
+
+          Puis lancez un conteneur nomme `etroit` avec DEUX reglages :
+
+            /dev/shm de {{ shm_demande_mo }} Mo
+            et une limite de {{ nofile_demande }} descripteurs de fichiers
+
+          Enfin, ecrivez {{ a_ecrire_mo }} Mo dans son /dev/shm, et constatez ce
+          que cela fait a la MEMOIRE de son cgroup. C est la lecon du lab :
+          /dev/shm n est pas un espace a part.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur le seul fait dont dépend
+    # l'énoncé : `etroit` n'existe pas encore.
+    #
+    # LA NÉGATION N'EST PAS ÉCRITE `! docker …`, et c'est une faute évitée de
+    # peu : en YAML, un `!` en tête de scalaire est un indicateur de TAG, et le
+    # parseur l'avale. Mesuré le 2026-10-30 : la commande devenait
+    # `docker container inspect etroit …`, c'est-à-dire l'inverse exact du
+    # contrôle voulu, et le setup aurait exigé que le conteneur existe DÉJÀ.
+    # Le `test` explicite ne se prête pas à cette confusion.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          test -z "$(docker ps -aq --filter name=^etroit$)"
+      changed_when: false

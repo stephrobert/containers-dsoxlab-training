@@ -1,0 +1,136 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Le contrat `conteneurs-11` demande de
+# prouver qu'on identifie « exactement l'image exécutée et sa plateforme », et
+# il exige un CAS NÉGATIF représentatif. On construit donc le piège sur la
+# machine : deux images différentes qui portent, l'une après l'autre, le MÊME
+# tag local. Un apprenant qui se fie au tag ne verra rien ; le digest, lui,
+# change.
+#
+# Tout se fait HORS LIGNE à partir d'une image déjà présente, pour que le lab
+# se rejoue à l'identique et sans registre externe : c'est une règle du dépôt,
+# et c'est aussi ce qui rend le test reproductible.
+- name: Préparer le lab images-identifier-image
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer le moteur de conteneurs et de quoi lire une image
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - skopeo
+        state: present
+        update_cache: true
+
+    - name: Démarrer le démon Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser l'apprenant à parler au démon sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: /opt/lab-images
+        state: directory
+        mode: "0755"
+
+    # TIRER L'IMAGE DE BASE EXPLICITEMENT, et non la laisser venir par le
+    # `FROM` des constructions qui suivent.
+    #
+    # Mesuré le 2026-10-28 : la solution de référence échouait sur
+    # « No such image: debian:13 » alors que l'image construite, elle,
+    # s'inspectait sans peine. C'est le comportement de BuildKit, le
+    # constructeur par défaut : un `FROM debian:13` résout l'image dans SON
+    # cache de construction, sans créer d'entrée dans le magasin que
+    # `docker image inspect` interroge.
+    #
+    # La mission demande le digest de `debian:13` « telle qu'elle est sur
+    # cette machine » : il faut donc qu'elle y soit vraiment.
+    #
+    # dsoxlab:tag-nu-volontaire : épingler ce tirage écrirait dans le setup la
+    # réponse exacte que le test demande à la ligne `base=`. Le lab ne
+    # mesurerait plus rien, il se corrigerait lui-même.
+    - name: Tirer l'image de base, que BuildKit ne dépose pas dans le magasin
+      ansible.builtin.command:
+        cmd: docker pull debian:13
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Vérifier que l'image de base est bien dans le magasin
+      ansible.builtin.command:
+        cmd: docker image inspect debian:13 --format '{{ "{{" }}.Id{{ "}}" }}'
+      changed_when: false
+
+    # Deux Dockerfile qui ne diffèrent que par une ligne. Construits l'un après
+    # l'autre sous le même tag, ils fabriquent la situation à diagnostiquer :
+    # le tag `inventaire:1.0` désignera la SECONDE, et plus rien ne le dira.
+    # dsoxlab:tag-nu-volontaire : ce `FROM` doit désigner la MÊME image que le
+    # tirage ci-dessus, dont le digest est la réponse attendue. L'épingler ici
+    # la donnerait, et le sujet du lab est justement qu'un tag ne garantit rien.
+    - name: Écrire la première version de l'image
+      ansible.builtin.copy:
+        dest: /opt/lab-images/Dockerfile.v1
+        mode: "0644"
+        content: |
+          FROM debian:13
+          LABEL org.opencontainers.image.version="1.0"
+          RUN echo "inventaire 1.0" > /etc/inventaire.txt
+          CMD ["cat", "/etc/inventaire.txt"]
+
+    # dsoxlab:tag-nu-volontaire : même raison que la tâche précédente. Les deux
+    # versions partent du même socle, et c'est ce qui rend les deux images
+    # indiscernables par leur tag tout en ayant deux digests.
+    - name: Écrire la version substituée, sous le même tag
+      ansible.builtin.copy:
+        dest: /opt/lab-images/Dockerfile.v2
+        mode: "0644"
+        content: |
+          FROM debian:13
+          LABEL org.opencontainers.image.version="1.0"
+          RUN echo "inventaire 1.0 (modifiee)" > /etc/inventaire.txt
+          RUN echo "porte derobee" > /etc/surprise.txt
+          CMD ["cat", "/etc/inventaire.txt"]
+
+    - name: Construire la première version et noter son digest
+      ansible.builtin.shell:
+        cmd: >
+          docker build -q -f /opt/lab-images/Dockerfile.v1 -t inventaire:1.0 /opt/lab-images
+          > /opt/lab-images/digest-v1.txt
+        creates: /opt/lab-images/digest-v1.txt
+
+    - name: Construire la seconde version SOUS LE MÊME TAG
+      ansible.builtin.shell:
+        cmd: >
+          docker build -q -f /opt/lab-images/Dockerfile.v2 -t inventaire:1.0 /opt/lab-images
+          > /opt/lab-images/digest-v2.txt
+        creates: /opt/lab-images/digest-v2.txt
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/lab-images/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : dire quelle image tourne vraiment
+
+          Le tag `inventaire:1.0` est présent sur cette machine. Il a été
+          construit deux fois, et la seconde construction a remplacé la
+          première sans que le tag change.
+
+          Produisez dans /opt/lab-images/reponse.txt :
+
+            digest=<le digest de l'image que le tag designe AUJOURD HUI>
+            base=<le digest de l'image de base debian:13 telle qu elle est ici>
+            plateforme=<os/architecture de l image inventaire:1.0>
+
+          Une ligne par entrée, sans espace autour du signe egal.
+
+          Le digest d'une image locale se lit dans ses metadonnees, pas dans
+          son tag. `skopeo` sait lire une image sans la lancer.

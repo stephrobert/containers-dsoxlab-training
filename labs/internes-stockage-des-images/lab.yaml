@@ -1,0 +1,25 @@
+# Lab internes-stockage-des-images. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: internes-stockage-des-images                      # REQUIS
+title: "Where a container's files really land"            # REQUIS
+level: c1                     # REQUIS
+description: "Find the engine's storage driver and a container's write layer, then see that a file written inside it reads from the host's disk and takes up room there."
+skills:                       # REQUIS, non vide
+  - docker
+  - internes
+  - stockage
+  - overlay
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 35m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

@@ -1,0 +1,168 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un conteneur qui dort, et c'est tout.
+# Le sujet n'est pas ce qu'il fait, c'est où le moteur range ce qu'il écrit.
+# Les deux labs précédents montraient ce qu'un conteneur voit et ce qu'il peut
+# consommer ; celui-ci montre où ses fichiers atterrissent VRAIMENT.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et ces faits sont le lab :
+#   - pilote `overlay2`, racine du moteur `/var/lib/docker` ;
+#   - l'inspection d'un conteneur donne quatre chemins, et celui qui compte est
+#     `UpperDir` : la couche d'écriture, un répertoire RÉEL du disque de l'hôte ;
+#   - un fichier écrit dans le conteneur s'y lit immédiatement, sans export ni
+#     commande particulière ;
+#   - cette couche ne contient QUE les différences : après une seule écriture,
+#     elle ne portait que ce fichier ;
+#   - `docker ps -s` distingue la taille propre du conteneur de sa taille
+#     virtuelle, image comprise.
+#
+# UN PIÈGE ÉVITÉ À L'ÉCRITURE DU LAB, et il vaut d'être noté. Pour démontrer le
+# copy-up, la première idée était de faire modifier `/etc/hostname`. Mesuré :
+# la modification n'apparaît pas dans la couche d'écriture, parce que ce fichier
+# est un montage que Docker pose depuis le répertoire du conteneur, et non un
+# fichier de l'image. Le lab ne s'appuie donc pas dessus.
+#
+# AUCUNE VALEUR N'EST ÉCRITE DANS L'ÉNONCÉ : le chemin de la couche dépend d'un
+# identifiant tiré à chaque création.
+- name: Préparer le lab internes-stockage-des-images
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-stockage:1.0
+    atelier: /opt/lab-stockage
+    marque_attendue: ceci-a-ete-ecrit-dans-le-conteneur
+    megaoctets_a_ecrire: 5
+  tasks:
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    # Ce lab suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui ouvre le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    # SANS CETTE VÉRIFICATION, le lab serait injouable sans qu'on sache
+    # pourquoi : un moteur réglé sur un autre pilote ne porte pas `UpperDir`,
+    # et deux contrôles échoueraient en accusant l'apprenant.
+    - name: Vérifier que le moteur emploie bien le pilote attendu
+      ansible.builtin.shell:
+        cmd: test "$(docker info --format '{{ "{{" }}.Driver{{ "}}" }}')" = "overlay2"
+      changed_when: false
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser son conteneur
+      ansible.builtin.shell:
+        cmd: docker rm -f entrepot 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    # LE CONTENEUR EST VIERGE : aucune écriture dedans, pour que sa couche
+    # d'écriture soit vide et que les deux gestes de l'apprenant s'y voient.
+    - name: Lancer `entrepot`, qui n'a encore rien écrit
+      ansible.builtin.command:
+        cmd: docker run -d --name entrepot {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Attendre que le moteur lui attribue une couche d'écriture
+      ansible.builtin.shell:
+        cmd: >
+          test -n "$(docker container inspect entrepot
+          --format '{{ "{{" }}.GraphDriver.Data.UpperDir{{ "}}" }}')"
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses deux clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          pilote=
+          ecriture=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : ou atterrissent vraiment les fichiers d un conteneur
+
+          Le conteneur `entrepot` tourne, et il n a encore rien ecrit.
+
+          Les deux labs precedents montraient ce qu un conteneur VOIT et ce
+          qu il peut CONSOMMER. Celui-ci montre ou ses fichiers ATTERRISSENT :
+          sur le disque de l hote, dans un repertoire ordinaire, que vous
+          pouvez ouvrir.
+
+          Renseignez les deux lignes de {{ atelier }}/reponses.txt :
+
+            pilote=<le pilote de stockage que le moteur emploie>
+            ecriture=<le chemin ABSOLU de la couche d ECRITURE de `entrepot`,
+                      sur l hote>
+
+          Puis, DEPUIS LE CONTENEUR, faites deux choses :
+
+            1. ecrivez dans /trace-ecriture.txt la ligne
+               {{ marque_attendue }}
+            2. creez un fichier /charge.bin de {{ megaoctets_a_ecrire }} Mo
+
+          Les deux doivent se retrouver sur le DISQUE DE L HOTE, dans la couche
+          d ecriture. C est le sujet du lab : ce qu un conteneur ecrit n est pas
+          nulle part, c est sur votre disque, et cela se mesure.
+
+          Le chemin de la couche depend d un identifiant tire a chaque
+          creation : il n y a rien a recopier d un passage precedent.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur le fait dont dépend l'énoncé : la
+    # couche d'écriture du conteneur est vide.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          couche=$(docker container inspect entrepot
+          --format '{{ "{{" }}.GraphDriver.Data.UpperDir{{ "}}" }}')
+          && test -d "$couche"
+          && test -z "$(ls -A "$couche")"
+      changed_when: false

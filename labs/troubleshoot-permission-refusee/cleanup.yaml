@@ -1,0 +1,44 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# LE RÉPERTOIRE DOIT PARTIR EN ENTIER, et c'est le geste décisif. Les trois
+# pannes vivent dans ses droits et dans le mode d'un fichier : s'il survivait
+# réparé, les trois contrôles de réparation seraient vrais au passage suivant
+# avant tout travail.
+#
+# Le recréer coûte moins cher que de remettre chaque droit en place, et surtout
+# cela ne peut pas en oublier un.
+- name: Défaire le lab troubleshoot-permission-refusee
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-permission:1.0
+    atelier: /opt/lab-permission
+  tasks:
+    - name: Retirer les quatre conteneurs du lab
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f perm-a perm-b perm-c temoin-sans-bit
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire entier, droits et modes compris, et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

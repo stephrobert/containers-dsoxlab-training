@@ -1,0 +1,26 @@
+# Lab reseau-publication-de-ports. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: reseau-publication-de-ports                      # REQUIS
+title: "Publishing a port, and only where it belongs"            # REQUIS
+level: c1                     # REQUIS
+description: "Correct three badly published containers, one per posture: one that must only answer on the loopback, one only on the routable address, and one that must publish nothing while still serving the others."
+skills:                       # REQUIS, non vide
+  - docker
+  - reseau
+  - publication
+  - exposition
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#bonnes-pratiques-réseau   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

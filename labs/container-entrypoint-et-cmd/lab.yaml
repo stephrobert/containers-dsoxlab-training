@@ -1,0 +1,25 @@
+# Lab container-entrypoint-et-cmd. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: container-entrypoint-et-cmd                      # REQUIS
+title: "ENTRYPOINT and CMD: which one do your arguments replace?"            # REQUIS
+level: c1                     # REQUIS
+description: "See for yourself the four behaviours ENTRYPOINT and CMD produce against docker run arguments: the default, the full replacement, the completion, and the override."
+skills:                       # REQUIS, non vide
+  - docker
+  - dockerfile
+  - entrypoint
+  - cmd
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#le-cycle-de-vie-dun-conteneur   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

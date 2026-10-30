@@ -1,0 +1,56 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# LE CACHE DE CONSTRUCTION DOIT PARTIR AVEC LE RESTE, et c'est le geste propre
+# à ce lab. Les couches d'un passage précédent survivent aux images qui en
+# dérivaient : sans leur retrait, la construction du passage suivant serait
+# servie par un cache dont l'apprenant n'a pas écrit une ligne, et le lab
+# mesurerait un travail qui n'a pas eu lieu.
+#
+# LE RÉPERTOIRE PART EN ENTIER : il porte le Dockerfile réordonné, et s'il
+# survivait, le lab serait déjà résolu au passage suivant.
+- name: Défaire le lab images-ordre-des-couches
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    socle: lab-couches:1.0
+    atelier: /opt/lab-couches
+  tasks:
+    - name: Retirer les conteneurs d'essai du lab
+      ansible.builtin.shell:
+        cmd: >
+          docker ps -aq --filter ancestor=appli:ordonnee
+          | xargs -r docker rm -f
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les images du lab, celle de l'apprenant et le socle
+      ansible.builtin.shell:
+        cmd: >
+          docker rmi -f appli:ordonnee {{ socle }} {{ image_epinglee }}
+          2>/dev/null || true
+      changed_when: false
+
+    # LE CACHE, et c'est ce qui manque à un `docker image prune`. Les couches
+    # intermédiaires d'une construction ne sont pas des images : elles vivent
+    # dans le cache du constructeur, et seul `builder prune` les retire.
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer l'atelier entier, Dockerfile réordonné compris, et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

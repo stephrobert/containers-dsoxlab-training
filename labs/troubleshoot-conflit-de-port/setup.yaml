@@ -1,0 +1,234 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Deux conflits de port qui se
+# ressemblent et qui n'ont pas la même cause : l'un par un autre conteneur,
+# l'autre par un processus ordinaire de la machine. Le second est celui qui fait
+# perdre du temps, parce que les outils Docker n'en montrent RIEN.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et ces deux messages sont le lab :
+#
+#   port pris par un conteneur :
+#     « Bind for 0.0.0.0:18200 failed: port is already allocated. »
+#
+#   port pris par un processus de l'hôte :
+#     « Error starting userland proxy: listen tcp4 … »
+#
+# LES DEUX DIFFÈRENT, et c'est la clé du diagnostic. Le premier vient du moteur,
+# qui sait qu'il a déjà réservé ce port : le coupable est donc à lui, et
+# `docker ps` le montre. Le second vient du système, qui refuse l'écoute : le
+# coupable est hors de Docker, et `docker ps` est AVEUGLE. Mesuré : il ne rend
+# rien du tout, là où `ss` nomme le processus en une ligne.
+#
+# UN TROISIÈME FAIT, QUI SURPREND : le conteneur refusé est CRÉÉ quand même. Son
+# statut reste `created`, et il occupe donc son nom. C'est pourquoi un second
+# essai échoue sur « name already in use » et fait croire à une autre panne.
+#
+# ET UN QUATRIÈME, QUI N'EST PAS UN CONFLIT : deux conteneurs peuvent publier le
+# même port DE CONTENEUR sur deux ports d'hôte différents. C'est le port de
+# l'hôte qui est unique, pas celui du conteneur.
+- name: Préparer le lab troubleshoot-conflit-de-port
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-conflit:1.0
+    atelier: /opt/lab-conflit
+    port_conteneur: 18200
+    port_hote: 18201
+  tasks:
+    - name: Installer le moteur de conteneurs et les outils de diagnostic réseau
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - iproute2
+          - netcat-openbsd
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f occupant intrus-a intrus-b temoin-refuse
+          2>/dev/null || true
+      changed_when: false
+
+    # LE MOTIF PORTE UNE LETTRE ENTRE CROCHETS, et ce n'est pas une coquette-
+    # rie. Mesuré le 2026-10-30 : `pkill -f "nc -l -k -p 18201"` rend `rc: -15`,
+    # parce que la ligne de commande du shell qui porte le pkill CONTIENT le
+    # motif cherché. Le shell se tue lui-même avant d'avoir pu rendre 0, et
+    # `|| true` n'y change rien puisqu'il n'est jamais atteint.
+    #
+    # `n[c]` correspond à `nc`, et la ligne du pkill contient `n[c]`, que ce
+    # motif ne reconnaît pas. Le pkill ne se voit donc plus. C'est la parade
+    # classique du monde de `ps | grep`.
+    - name: Retirer un écouteur de l'hôte laissé par un passage précédent
+      ansible.builtin.shell:
+        cmd: pkill -f "n[c] -l -k -p {{ port_hote }}" 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    # PREMIER COUPABLE : un conteneur, que `docker ps` montrera.
+    - name: Lancer `occupant`, qui prend le premier port
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name occupant -p {{ port_conteneur }}:80
+          {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    # SECOND COUPABLE : un processus de l'hôte, que `docker ps` ne montrera PAS.
+    # `setsid` le détache de la session d'Ansible, sans quoi il mourrait avec
+    # elle et le lab serait posé sans son second conflit.
+    - name: Faire écouter un processus de l'hôte sur le second port
+      ansible.builtin.shell:
+        cmd: >
+          setsid nohup nc -l -k -p {{ port_hote }} >/dev/null 2>&1 < /dev/null &
+      changed_when: true
+
+    - name: Attendre que les deux ports soient bien occupés
+      ansible.builtin.shell:
+        cmd: >
+          ss -ltn | grep -q ':{{ port_conteneur }}'
+          && ss -ltn | grep -q ':{{ port_hote }}'
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    # LES DEUX ÉCHECS, POSÉS : les conteneurs sont créés et ne démarrent pas.
+    # `failed_when: false` est délibéré, les deux commandes échouent par
+    # construction.
+    - name: Poser le premier échec, sur le port tenu par un conteneur
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name intrus-a -p {{ port_conteneur }}:80
+          {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+      failed_when: false
+
+    - name: Poser le second échec, sur le port tenu par un processus de l'hôte
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name intrus-b -p {{ port_hote }}:80
+          {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+      failed_when: false
+
+    # LE TÉMOIN, et il règle une faute de conception rencontrée deux fois sur ce
+    # lab : une valeur de diagnostic ne peut pas se lire sur un objet que la
+    # réparation modifie. `temoin-refuse` échoue comme les autres, et l'énoncé
+    # demande expressément de NE PAS le réparer : le statut se lit sur lui, et
+    # il reste donc vrai du début à la fin de la notation.
+    - name: Poser un troisième échec, qui restera en l'état comme témoin
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name temoin-refuse -p {{ port_conteneur }}:80
+          {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+      failed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses trois clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          statut_intrus=
+          coupable_a=
+          coupable_b=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : deux conflits de port, deux causes
+
+          Deux conteneurs ont refuse de demarrer, chacun sur un port deja pris.
+          Les deux symptomes se ressemblent, et les deux causes n ont rien a
+          voir.
+
+            intrus-a        voulait le port {{ port_conteneur }} de l hote
+            intrus-b        voulait le port {{ port_hote }} de l hote
+            temoin-refuse   voulait le port {{ port_conteneur }} lui aussi, et
+                            vous NE LE REPAREREZ PAS : il reste en l etat, pour
+                            que son statut soit lisible jusqu au bout
+
+          Comparez les DEUX messages d erreur que le moteur a rendus. Ils ne
+          disent pas la meme chose, et c est toute la cle du diagnostic : l un
+          vient du moteur, qui sait ce qu il a deja reserve, l autre vient du
+          systeme, qui refuse l ecoute.
+
+          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+
+            statut_intrus=<le STATUT de temoin-refuse, tel que le moteur
+                           le declare>
+            coupable_a=<le NOM du conteneur qui occupe le port {{ port_conteneur }}>
+            coupable_b=<le NOM DU PROGRAMME qui occupe le port {{ port_hote }}>
+
+          Pour la troisieme, ne cherchez pas du cote de Docker : il ne montre
+          rien, et c est precisement ce qui fait perdre du temps. Un outil
+          systeme le nomme en une ligne.
+
+          La premiere question explique aussi pourquoi un second essai echoue
+          sur un message tout different, qui parle de nom deja pris.
+
+          Enfin, reparez. Les DEUX conteneurs doivent TOURNER, et publier
+          leur port 80 sur un port de l hote AUTRE que celui qui etait pris.
+
+          Et les deux coupables doivent etre TOUJOURS LA : le conteneur qui
+          tourne, et le programme de l hote qui ecoute. Rien ne disait qu ils
+          etaient inutiles. On ne coupe pas un service qui tourne pour en
+          demarrer un autre : c est le nouveau venu qu on deplace.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les faits dont dépend l'énoncé :
+    # les deux intrus existent sans tourner, et les deux ports sont bien pris.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker container inspect intrus-a --format '{{ "{{" }}.State.Running{{ "}}" }}')" = "false"
+          && test "$(docker container inspect intrus-b --format '{{ "{{" }}.State.Running{{ "}}" }}')" = "false"
+          && test "$(docker container inspect temoin-refuse --format '{{ "{{" }}.State.Running{{ "}}" }}')" = "false"
+          && ss -ltn | grep -q ':{{ port_conteneur }}'
+          && ss -ltn | grep -q ':{{ port_hote }}'
+      changed_when: false

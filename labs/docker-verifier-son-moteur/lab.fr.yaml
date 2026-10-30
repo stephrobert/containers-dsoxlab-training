@@ -1,0 +1,5 @@
+# Surcharge française du lab docker-verifier-son-moteur. Elle ne porte QUE
+# `title` et `description` : tout autre champ y est ignoré en silence, parce que
+# le contrat ne se traduit pas.
+title: "Le moteur fonctionne-t-il vraiment ? Quatre réponses, pas une"
+description: "Vérifier qu'un moteur de conteneurs est réellement utilisable : service démarré, activé au boot, joignable sans sudo, et capable d'exécuter un conteneur."

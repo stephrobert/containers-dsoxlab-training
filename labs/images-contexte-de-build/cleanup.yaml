@@ -1,0 +1,67 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# LE DÉPÔT PART EN ENTIER, et c'est le geste décisif : il porte le Dockerfile
+# corrigé, le script de construction et, le cas échéant, une copie du fichier
+# partagé. S'il survivait, trois contrôles sur quatre seraient vrais au passage
+# suivant, avant tout travail.
+#
+# LE CACHE DE CONSTRUCTION PART AUSSI. Les couches intermédiaires d'une
+# construction ne sont pas des images : elles vivent dans le cache du
+# constructeur, et un `docker image prune` ne les touche pas. Les contrôles de
+# ce lab reconstruisent, et un cache survivant servirait une image dont le
+# contexte n'est plus celui qu'on mesure.
+- name: Défaire le lab images-contexte-de-build
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    atelier: /opt/lab-contexte
+  tasks:
+    # LES CONTENEURS D'ESSAI DES CONTRÔLES, par leurs noms. Un test interrompu
+    # en laisserait un, et le lab doit se rejouer à l'identique quoi qu'il
+    # arrive. Le filtre par image ne suffit pas : l'image peut déjà être
+    # partie.
+    - name: Retirer les conteneurs d'essai des contrôles et de la solution
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f dsoxlab-essai-contexte dsoxlab-essai-solution
+          dsoxlab-essai-solution-grep dsoxlab-essai-solution-sh
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les conteneurs d'essai du lab
+      ansible.builtin.shell:
+        cmd: >
+          docker ps -aq --filter ancestor=appli:contexte
+          | xargs -r docker rm -f
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les images du lab, celle de l'apprenant et le socle
+      ansible.builtin.shell:
+        cmd: >
+          docker rmi -f appli:contexte appli:essai-setup
+          lab-contexte:1.0 {{ image_epinglee }}
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le dépôt entier, script et Dockerfile corrigé compris, et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md
