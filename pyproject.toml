@@ -26,9 +26,15 @@ target-version = "py311"
 # Attention, l'exclusion ne suffit pas : elle est IGNORÉE pour tout fichier
 # passé en argument, et pre-commit passe justement les fichiers en argument.
 # Le hook doit porter `--force-exclude`.
+# `labs/**/` et non `labs/*/` : le glob à une étoile ne couvre qu'un seul
+# niveau. Les labs sont rangés à plat aujourd'hui (`labs/<lab>/fixtures`), donc
+# les deux formes se valent, et c'est précisément ce qui rend l'écart dangereux :
+# le jour où un lab descend d'un cran, l'exclusion cesse de s'appliquer sans que
+# rien ne le dise, et `ruff --fix` trie les imports d'un fichier livré, c'est-à-
+# dire modifie le sujet de l'exercice. Forme alignée sur le catalogue DevSecOps.
 exclude = [
-    "labs/*/fixtures",
-    "labs/*/challenge/work",
+    "labs/**/fixtures",
+    "labs/**/challenge/work",
 ]
 
 [tool.ruff.lint]
