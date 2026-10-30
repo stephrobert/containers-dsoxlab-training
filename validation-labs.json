@@ -712,6 +712,61 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "images-healthcheck": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_le_conteneur_atteint_l_etat_sain",
+    "test_le_conteneur_passe_malade_quand_le_service_se_tait",
+    "test_le_conteneur_revient_sain_quand_le_service_repart",
+    "test_les_bornes_declarees_sont_coherentes"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 120,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 554 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "images-healthcheck",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-images-healthcheck.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_le_conteneur_atteint_l_etat_sain",
+    "test_le_conteneur_passe_malade_quand_le_service_se_tait",
+    "test_le_conteneur_revient_sain_quand_le_service_repart",
+    "test_les_bornes_declarees_sont_coherentes"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "images-identifier-image": {
   "apres": {
    "echecs": [],
