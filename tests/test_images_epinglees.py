@@ -97,6 +97,98 @@ RE_CONSOMMATION = re.compile(
 RE_SANS_TAG = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 
 
+#: Les deux formes par lesquelles un setup FABRIQUE un tag sur la machine :
+#: `docker build -t <tag>` et `docker tag <reference> <tag>`. Un tag fabriqué
+#: ici n'a pas de digest propre, et un `FROM` qui le désigne ne tire rien d'un
+#: registre.
+#:
+#: C'est le même raisonnement que celui qui exclut `build` et `tag` du périmètre
+#: de consommation, poussé d'un cran : il ne suffisait pas de ne pas accuser la
+#: ligne qui fabrique, il faut aussi ne pas accuser celle qui s'en sert. Mesuré
+#: le 2026-10-30 : six setups construisaient un socle d'atelier puis déposaient
+#: un Dockerfile qui en partait, et le détecteur réclamait un digest pour une
+#: image qui n'existait pas encore.
+#: La référence SOURCE d'un `docker tag` peut être une expression Jinja, qui
+#: porte des espaces : `docker tag {{ image_epinglee }} {{ socle }}`. Un `\S+`
+#: ne la couvre pas, et trois setups du dépôt l'écrivent ainsi. Mesuré le
+#: 2026-10-30, leur fabrication passait inaperçue et le `FROM` correspondant
+#: était refusé.
+RE_FABRICATION = re.compile(
+    r"""(?:
+          docker\s+build\s+(?:[^\n]*?\s)?-t\s+
+        | docker\s+tag\s+(?:\{\{[^}]*\}\}|\S+)\s+
+        )
+        (?P<tag>
+            \{\{\s*[\w.]+\s*\}\}
+          | [a-z0-9][a-z0-9._/-]*(?::[\w.-]+)?
+        )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+#: Une expression Jinja réduite à un nom de variable, telle qu'elle apparaît en
+#: cible d'un `docker tag` ou d'un `-t`. Le point couvre `item.nom`, la forme
+#: qu'une boucle donne à ses valeurs.
+RE_JINJA = re.compile(r"^\{\{\s*([\w.]+)\s*\}\}$")
+
+
+def _tags_fabriques(source: str) -> set[str]:
+    """Les tags que CE fichier construit ou étiquette lui-même.
+
+    UNE CIBLE PEUT ÊTRE UNE VARIABLE, et elle l'est presque toujours : un setup
+    écrit `-t {{ socle }}` et déclare `socle: lab-x:1.0` plus haut, ou pose ses
+    tags dans une boucle dont les valeurs portent une clé `nom`. On résout donc
+    la cible par les littéraux du fichier.
+
+    LA RÉSOLUTION EST VOLONTAIREMENT ÉTROITE : seules les valeurs qui ont la
+    forme d'un tag (`nom:version`, sans digest) sont retenues. Une variable qui
+    porterait un digest est déjà épinglée et ne concerne pas ce contrôle ; une
+    variable qui porterait autre chose n'est pas un tag.
+    """
+    # UNE CLÉ PEUT PORTER PLUSIEURS VALEURS, et c'est le cas dès qu'une boucle
+    # nomme plusieurs socles : la clé `nom` apparaît une fois par élément. Un
+    # dictionnaire ne garderait que la dernière, et le détecteur accuserait
+    # l'autre socle du même fichier. Mesuré le 2026-10-30 sur le setup qui
+    # nomme un socle lourd et un socle léger dans la même boucle.
+    variables: dict[str, list[str]] = {}
+    for cle, valeur in RE_VARIABLE.findall(source):
+        variables.setdefault(cle, []).append(valeur)
+
+    tags = set()
+    for brut in RE_FABRICATION.findall(source):
+        jinja = RE_JINJA.match(brut)
+        if not jinja:
+            tags.add(brut)
+            continue
+        nom = jinja.group(1)
+        # `item.nom` dans une boucle : la clé seule suffit à retrouver les
+        # valeurs déclarées dans la liste.
+        court = nom.rsplit(".", 1)[-1]
+        for cle, valeurs in variables.items():
+            if cle in (nom, court):
+                tags.update(valeurs)
+    return tags
+
+
+#: Une variable Ansible dont la valeur est un tag littéral, sur une seule ligne.
+#: Les valeurs repliées (`>-`) portent des digests et sont déjà épinglées, donc
+#: elles ne concernent pas ce contrôle.
+#: Les deux formes sous lesquelles un tag littéral est déclaré : en bloc
+#: (`socle: lab-x:1.0`) et EN LIGNE dans une liste de boucle
+#: (`- { digest: ..., nom: "lab-x:1.0" }`). La seconde manquait au premier jet,
+#: et le setup qui pose ses deux socles par une boucle restait refusé.
+#:
+#: Les valeurs repliées (`>-`) portent des digests et sont déjà épinglées, donc
+#: elles ne concernent pas ce contrôle.
+RE_VARIABLE = re.compile(
+    r"""([a-z_][a-z0-9_]*)\s*:\s*
+        ["']?(?P<tag>[a-z0-9][a-z0-9._/-]*:[\w.-]+)["']?
+        (?=\s*[,}\n])
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
 def _fichiers_joues() -> list[Path]:
     return sorted(
         chemin
@@ -170,7 +262,8 @@ def _references_nues(source: str) -> list[tuple[int, str]]:
         if MARQUEUR in _bloc_de_la_tache(lignes, no):
             continue
         fautives.append((no, ref))
-    return fautives
+    fabriques = _tags_fabriques(source)
+    return [(no, ref) for no, ref in fautives if ref not in fabriques]
 
 
 def test_il_y_a_des_setups_a_mesurer() -> None:
@@ -272,6 +365,94 @@ def test_le_detecteur_reconnait_ce_qu_il_doit_reconnaitre() -> None:
     assert [r for _, r in deborde] == ["alpine:3.20"], (
         "le marqueur franchit la ligne vide et exempte la tâche suivante.\n"
         f"  vus : {deborde}"
+    )
+
+
+def test_un_socle_fabrique_sur_place_n_est_pas_accuse() -> None:
+    """Les quatre formes sous lesquelles un setup fabrique son propre socle.
+
+    MESURÉ LE 2026-10-30 : six setups construisent un socle local puis déposent
+    un Dockerfile qui en part. Le détecteur réclamait un digest pour une image
+    qui n'existe que sur la machine, et dont le digest n'existe pas avant la
+    construction. C'est le même raisonnement qui exclut déjà `docker build -t`
+    et `docker tag` du périmètre de consommation, poussé d'un cran : il ne
+    suffit pas de ne pas accuser la ligne qui fabrique, il faut aussi ne pas
+    accuser celle qui s'en sert.
+
+    LES TROIS DERNIÈRES FORMES ONT CHACUNE COÛTÉ UN JET. La cible d'un
+    `docker tag` est presque toujours une variable ; la référence source peut
+    être une expression Jinja, que `\\S+` ne couvre pas ; et une boucle déclare
+    plusieurs valeurs sous la MÊME clé, qu'un dictionnaire réduisait à la
+    dernière, de sorte que le détecteur accusait le premier socle d'un lab dont
+    le second passait.
+
+    ET LE DERNIER CAS EST LE PLUS IMPORTANT : un `FROM` dont le tag n'est
+    fabriqué nulle part doit toujours être refusé. Sans lui, cette correction
+    aurait pu désarmer le contrôle entier sans que rien ne le dise.
+    """
+    sur_place = _references_nues(
+        "    - name: Construire le socle\n"
+        "      ansible.builtin.command:\n"
+        "        cmd: docker build -t lab-atelier:1.0 /opt/x/socle\n"
+        "\n"
+        "    - name: Deposer le Dockerfile\n"
+        "      ansible.builtin.copy:\n"
+        "        content: |\n"
+        "          FROM lab-atelier:1.0\n"
+    )
+    assert sur_place == [], (
+        "un socle construit par le setup lui-même est accusé.\n"
+        f"  vus : {sur_place}"
+    )
+
+    par_variable = _references_nues(
+        "  vars:\n"
+        "    socle: lab-taille:1.0\n"
+        "  tasks:\n"
+        "    - name: Construire le socle\n"
+        "      ansible.builtin.command:\n"
+        "        cmd: docker build -t {{ socle }} /opt/x/socle\n"
+        "\n"
+        "    - name: Deposer le Dockerfile\n"
+        "      ansible.builtin.copy:\n"
+        "        content: |\n"
+        "          FROM lab-taille:1.0\n"
+    )
+    assert par_variable == [], (
+        "un socle fabriqué via une variable est accusé.\n"
+        f"  vus : {par_variable}"
+    )
+
+    par_boucle = _references_nues(
+        "  tasks:\n"
+        "    - name: Nommer les deux socles\n"
+        "      ansible.builtin.command:\n"
+        "        cmd: docker tag {{ item.digest }} {{ item.nom }}\n"
+        "      loop:\n"
+        '        - { digest: "{{ a }}", nom: "lab-socle-lourd:1.0" }\n'
+        '        - { digest: "{{ b }}", nom: "lab-socle-leger:1.0" }\n'
+        "\n"
+        "    - name: Deposer le Dockerfile\n"
+        "      ansible.builtin.copy:\n"
+        "        content: |\n"
+        "          FROM lab-socle-lourd:1.0\n"
+    )
+    assert par_boucle == [], (
+        "le premier socle d'une boucle est accusé : une clé répétée ne doit "
+        "pas être réduite à sa dernière valeur.\n"
+        f"  vus : {par_boucle}"
+    )
+
+    jamais_fabrique = _references_nues(
+        "    - name: Deposer le Dockerfile\n"
+        "      ansible.builtin.copy:\n"
+        "        content: |\n"
+        "          FROM debian:13\n"
+    )
+    assert [r for _, r in jamais_fabrique] == ["debian:13"], (
+        "un tag flottant venu d'un registre n'est plus refusé : la "
+        "reconnaissance des socles locaux a désarmé le contrôle.\n"
+        f"  vus : {jamais_fabrique}"
     )
 
 
