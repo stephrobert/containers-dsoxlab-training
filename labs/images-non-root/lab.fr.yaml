@@ -1,5 +1,5 @@
 # Surcharge française du lab images-non-root. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "USER change l'identité, et aucun droit"
+description: "Sortir une image de root sans casser ce qu'elle écrit : aligner le propriétaire plutôt qu'ouvrir le répertoire à tous, et déclarer l'utilisateur par un uid numérique qu'un orchestrateur peut vérifier."

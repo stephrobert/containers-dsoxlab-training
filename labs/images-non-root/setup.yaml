@@ -1,10 +1,166 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Une image qui tourne en root, et dont
+# le passage en non-root casse l'application. C'est le piège, et il est
+# systématique : `USER` change l'identité d'exécution, il ne change aucun droit
+# sur les fichiers déjà déposés.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, la même application sous trois écritures :
+#
+#   | écriture | uid | écriture dans /donnees |
+#   | sans `USER` | 0 | ok |
+#   | `USER` seul | 10001 | REFUSÉE, « Permission denied » |
+#   | `USER` + propriétaire aligné | 10001 | ok |
+#
+# ET DEUX MESURES QUI CONTREDISENT CE QU'ON CROIT :
+#
+#   `docker run --user 0:0` SUR L'IMAGE NON-ROOT rend uid=0. Le `USER` du
+#   Dockerfile est donc une valeur par défaut, pas une garantie : qui lance
+#   décide.
+#
+#   UN NON-ROOT ÉCOUTE SUR LE PORT 80 dans un conteneur, mesuré. On lit souvent
+#   qu'il faut être root pour les ports sous 1024 ; le moteur accorde la
+#   capacité correspondante par défaut, et l'argument tombe.
 - name: Préparer le lab images-non-root
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    socle: lab-nonroot:1.0
+    atelier: /opt/lab-nonroot
+    contexte: /opt/lab-nonroot/appli
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image de départ, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer le socle, pour que le Dockerfile le désigne par un nom
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ socle }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser son image
+      ansible.builtin.shell:
+        cmd: docker rmi -f appli:nonroot 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'atelier d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: absent
+
+    - name: Tirer le jeton que l'application imprimera
+      ansible.builtin.set_fact:
+        jeton: "jeton-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=12) }}"
+
+    - name: Déposer les répertoires de l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ contexte }}"
+
+    # L'APPLICATION ÉCRIT, et c'est ce qui rend le lab mesurable : une image qui
+    # ne fait que lire passerait en non-root sans que rien ne casse, et le piège
+    # resterait invisible.
+    - name: Déposer le code de l'application, qui écrit et dit sous quelle identité
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/lancer.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # Il DIT son identite et il ECRIT : les deux sont mesures, et la
+          # seconde est ce que `USER` seul casse.
+          set -e
+          echo {{ jeton }}
+          echo "uid=$(id -u) gid=$(id -g)"
+          horodatage=$(date +%s)
+          echo "$horodatage" >> /donnees/journal.txt
+          echo "lignes=$(wc -l < /donnees/journal.txt | tr -d ' ')"
+
+    - name: Déposer le Dockerfile de départ, qui tourne en root
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/Dockerfile"
+        mode: "0644"
+        content: |
+          # CETTE IMAGE MARCHE, et elle tourne en root. Ajouter un `USER`
+          # suffira a changer l identite ; il ne changera AUCUN droit sur ce
+          # qui a deja ete deposse, et l application cessera d ecrire.
+          FROM lab-nonroot:1.0
+          RUN mkdir -p /donnees
+          COPY lancer.sh /usr/local/bin/lancer
+          CMD ["/usr/local/bin/lancer"]
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : une application qui tourne en root pour ecrire un journal
+
+          Le contexte est dans {{ contexte }}. Construisez le Dockerfile tel
+          quel : l application tourne, elle ecrit son journal, et elle est
+          root.
+
+          Ajoutez maintenant un `USER` et reconstruisez. L identite change, et
+          l application CESSE D ECRIRE. Lisez le message : il parle de
+          permission refusee, et c est normal : `USER` ne change aucun droit
+          sur ce qui a deja ete depose.
+
+          Construisez `appli:nonroot`, qui doit :
+
+            imprimer son jeton, tourner sous un uid NON NUL par defaut, et
+              ECRIRE son journal
+            avoir un repertoire de donnees qui APPARTIENT a cet utilisateur,
+              et qui n est PAS ouvert a tout le monde
+            declarer son utilisateur par un UID NUMERIQUE
+
+          Le dernier point n est pas une coquetterie. Un `USER` par nom se
+          resout dans le `/etc/passwd` de l image ; un orchestrateur qui
+          refuse les conteneurs root ne lit pas ce fichier et ne peut donc pas
+          prouver que ce nom n est pas root. Un uid numerique se verifie sans
+          rien ouvrir.
+
+          Et un `chmod 777` est refuse expressement : il ferait ecrire
+          l application en ouvrant le repertoire a tout le monde, ce qui est
+          le contraire du but.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker image inspect {{ socle }} >/dev/null 2>&1
+          && ! docker image inspect appli:nonroot >/dev/null 2>&1
+          && ! grep -q '^USER ' {{ contexte }}/Dockerfile
+      changed_when: false
