@@ -1,10 +1,43 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# RETIRER LE CONTENEUR SUFFIT, et c'est la démonstration du lab : son /dev/shm
+# est de la mémoire, et cette mémoire part avec lui. Aucun fichier ne subsiste
+# sur le disque, contrairement à un volume, et c'est exactement ce que le
+# quatrième contrôle a fait constater.
+#
+# `etroit` EST RETIRÉ ALORS QUE LE SETUP NE LE CRÉE PAS : c'est l'apprenant qui
+# le lance, et le laisser derrière rendrait deux contrôles vrais au passage
+# suivant avant tout travail.
 - name: Défaire le lab container-ulimits-et-shm
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-ulimits:1.0
+    atelier: /opt/lab-ulimits
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer le conteneur, et avec lui sa mémoire partagée
+      ansible.builtin.shell:
+        cmd: docker rm -f etroit 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer le tag local, puis l'image par son digest
+      ansible.builtin.shell:
+        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail, les réponses et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /opt/MISSION.md

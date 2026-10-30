@@ -1,10 +1,168 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un conteneur bridé à la moitié d'un
+# CPU, au repos. Au repos, parce que le quatrième contrôle demande à l'apprenant
+# de le mettre sous charge : une limite qu'on n'a jamais vue mordre est une
+# limite qu'on croit sur parole.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30, et ces valeurs sont le lab :
+#   - la machine offre 2 CPU ;
+#   - `--cpus 0.5` donne `cpu.max` = `50000 100000`, soit 50 ms de temps par
+#     tranche de 100 ms, et `NanoCpus` = 500000000 ;
+#   - un conteneur sans limite porte `cpu.max` = `max 100000` ;
+#   - LE PIÈGE DU SUJET : `nproc` dans le conteneur bridé rend **2**, c'est-à-
+#     dire tous les CPU de la machine. Une limite de TEMPS n'est pas une
+#     restriction de VUE, et une application qui dimensionne ses fils d'exécution
+#     sur `nproc` en lance donc deux fois trop ;
+#   - `--cpuset-cpus 0`, lui, est un mécanisme DIFFÉRENT : `cpuset.cpus` vaut
+#     `0`, `cpu.max` reste `max`, et `nproc` rend **1**. Celui-là change la vue ;
+#   - sous deux boucles infinies, le moteur mesure 48,97 % et le cgroup compte
+#     `nr_throttled 85` : la limite mord, et elle se prouve.
+#
+# AUCUNE VALEUR N'EST ÉCRITE DANS L'ÉNONCÉ : l'apprenant les lit.
 - name: Préparer le lab container-limite-cpu
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    tag_local: lab-cpu:1.0
+    atelier: /opt/lab-cpu
+    part_de_cpu: 0.5
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Vérifier que la machine est bien en cgroup v2 unifié
+      ansible.builtin.shell:
+        cmd: test "$(stat -fc %T /sys/fs/cgroup)" = "cgroup2fs"
+      changed_when: false
+
+    # SANS CETTE VÉRIFICATION, le lab serait injouable sur une machine à un
+    # seul CPU : épingler sur un CPU n'y changerait aucune vue, et le troisième
+    # contrôle serait vrai avant tout travail.
+    - name: Vérifier que la machine offre au moins deux CPU
+      ansible.builtin.shell:
+        cmd: test "$(nproc)" -ge 2
+      changed_when: false
+
+    - name: Tirer l'image du lab, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer l'image, pour qu'elle soit utilisable de mémoire
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ tag_local }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+      ansible.builtin.shell:
+        cmd: docker rm -f brideur epingle 2>/dev/null || true
+      changed_when: false
+
+    - name: Déposer le répertoire de travail de la mission
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer des réponses laissées par un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/reponses.txt"
+        state: absent
+
+    # AU REPOS : aucune charge, pour que le compteur d'étranglements soit à zéro
+    # et que le travail de l'apprenant s'y voie.
+    - name: Lancer `brideur`, bridé et au repos
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name brideur --cpus {{ part_de_cpu }}
+          {{ tag_local }} sh -c "sleep infinity"
+      changed_when: true
+
+    - name: Attendre que le cgroup porte la limite
+      ansible.builtin.shell:
+        cmd: >
+          test -r "/sys/fs/cgroup/system.slice/docker-$(docker container inspect
+          brideur --format '{{ "{{" }}.Id{{ "}}" }}').scope/cpu.max"
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Déposer le formulaire de réponses, avec ses deux clés et rien d'autre
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/reponses.txt"
+        mode: "0644"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          quota=
+          cpu_vus=
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : brider un processeur, et le prouver
+
+          Le conteneur `brideur` tourne, bride a {{ part_de_cpu }} CPU, et il
+          ne fait rien pour l instant.
+
+          Renseignez les deux lignes de {{ atelier }}/reponses.txt :
+
+            quota=<ce que le cgroup de `brideur` declare comme limite de temps
+                   processeur, TEL QUEL>
+            cpu_vus=<le nombre de CPU que `brideur` VOIT, de l interieur>
+
+          La deuxieme reponse est celle qui compte, et elle surprend. Comparez-la
+          au nombre de CPU de la machine avant de conclure que vous vous etes
+          trompe.
+
+          Puis deux gestes :
+
+            1. lancez un conteneur nomme `epingle` qui, lui, ne voit QU UN SEUL
+               CPU. Ce n est pas la meme option, et ce n est pas le meme
+               mecanisme.
+            2. mettez `brideur` sous charge, assez pour que le noyau doive
+               l ETRANGLER. Son cgroup compte les etranglements : tant que le
+               compteur est a zero, la limite n a jamais mordu.
+
+          Une limite qu on n a jamais vue mordre est une limite qu on croit sur
+          parole.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé. Elle porte sur les trois faits dont dépend
+    # l'énoncé : `brideur` porte bien sa limite, il n'a jamais été étranglé, et
+    # `epingle` n'existe pas encore.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          cg=/sys/fs/cgroup/system.slice/docker-$(docker container inspect brideur --format '{{ "{{" }}.Id{{ "}}" }}').scope
+          && test "$(cat $cg/cpu.max)" != "max 100000"
+          && test "$(awk '/nr_throttled/ {print $2}' $cg/cpu.stat)" -eq 0
+          && ! docker container inspect epingle >/dev/null 2>&1
+      changed_when: false

@@ -1,16 +1,19 @@
 # Lab container-ulimits-et-shm. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: container-ulimits-et-shm                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Shared memory and descriptors"            # REQUIS
 level: c1                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Measure two defaults nobody ever looks at, set them both at a container's creation, and see that shared memory is not a separate space: it counts in the cgroup's memory."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - cgroups
+  - ulimits
+  - memoire
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise   # REQUIS, http(s)
 lab_type: lab
-estimated_time: 30m
+estimated_time: 35m
 runtime:
   type: vm
   targets:                    # REQUIS pour vm, non vide
