@@ -1,10 +1,180 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un service qui peut devenir MUET sans
+# que son processus meure, et une image qui ne déclare aucune sonde. C'est la
+# panne que la supervision par processus ne voit jamais, et elle est la plus
+# fréquente des deux.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30 :
+#
+#   | situation | ce que le moteur déclare |
+#   | aucune sonde | AUCUN état de santé : le champ n'existe pas |
+#   | sonde sur la fraîcheur du pouls, service sain | `healthy` en 2 s |
+#   | le même, service muet et processus vivant | `unhealthy` en 8 s |
+#   | le même, service rétabli | retour à `healthy` en 2 s |
+#   | sonde sur le PROCESSUS, service muet | **`healthy`**, pouls rance |
+#
+# ET UNE MESURE QUI SURPREND TOUJOURS : un conteneur `unhealthy` RESTE EN
+# MARCHE. Le moteur ne l'arrête pas, ne le relance pas, ne prévient personne.
+# Une sonde informe ; elle ne répare rien, et elle ne décide de rien sans un
+# orchestrateur pour la lire.
+#
+# LE SERVICE EST UN POULS, et non un port : la mesure ne dépend d'aucun réseau,
+# d'aucun client HTTP et d'aucun temps de connexion. Un premier jet servait sur
+# un port avec `nc`, et la sonde n'atteignait jamais `healthy` pour des raisons
+# de synchronisation qui n'avaient rien à voir avec le sujet.
 - name: Préparer le lab images-healthcheck
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    socle: lab-sante:1.0
+    atelier: /opt/lab-sante
+    contexte: /opt/lab-sante/appli
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image de départ, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Nommer le socle, pour que le Dockerfile le désigne par un nom
+      ansible.builtin.command:
+        cmd: docker tag {{ image_epinglee }} {{ socle }}
+      changed_when: true
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser son image
+      ansible.builtin.shell:
+        cmd: >
+          docker rm -f service-surveille 2>/dev/null || true;
+          docker rmi -f appli:surveillee 2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'atelier d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: absent
+
+    - name: Tirer le jeton que le service imprimera à son démarrage
+      ansible.builtin.set_fact:
+        jeton: "jeton-{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=12) }}"
+
+    - name: Déposer les répertoires de l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ contexte }}"
+
+    # LE SERVICE PEUT DEVENIR MUET SANS MOURIR, et c'est toute la situation : il
+    # cesse de rafraîchir son pouls, et son processus continue de tourner. Une
+    # supervision qui regarde le processus ne verra jamais rien.
+    - name: Déposer le service, qui bat un pouls tant qu'il travaille
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/servir.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # LE POULS EST LA PREUVE DE TRAVAIL : il se rafraichit chaque
+          # seconde. Si /tmp/muet apparait, le service cesse de travailler et
+          # son processus CONTINUE de tourner. C'est la panne que la
+          # supervision par processus ne voit pas.
+          echo {{ jeton }}
+          mkdir -p /var/run
+          while true; do
+            [ -f /tmp/muet ] || date +%s > /var/run/pouls
+            sleep 1
+          done
+
+    # LE DOCKERFILE DE DÉPART NE DÉCLARE AUCUNE SONDE, et le moteur ne peut donc
+    # rien dire de ce service : le champ de santé n'existe même pas dans son
+    # inspection.
+    - name: Déposer le Dockerfile de départ, sans aucune sonde
+      ansible.builtin.copy:
+        dest: "{{ contexte }}/Dockerfile"
+        mode: "0644"
+        content: |
+          # AUCUNE SONDE. Le moteur ne sait donc rien de ce service : son
+          # inspection ne porte meme pas de champ de sante. Un conteneur « up »
+          # ne veut rien dire d'autre que « son processus existe ».
+          FROM lab-sante:1.0
+          COPY servir.sh /usr/local/bin/servir
+          CMD ["/usr/local/bin/servir"]
+
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Mission : un conteneur « up » qui ne travaille plus
+
+          Le contexte est dans {{ contexte }}. Le service y bat un POULS :
+          il ecrit l heure dans /var/run/pouls chaque seconde, tant qu il
+          travaille.
+
+          Construisez le Dockerfile tel quel sous le nom `appli:surveillee`,
+          lancez-le sous le nom `service-surveille`, et inspectez-le. Il n a
+          AUCUN etat de sante : le champ n existe pas.
+
+          Rendez maintenant le service muet, sans tuer son processus :
+
+            docker exec service-surveille touch /tmp/muet
+
+          Le conteneur est toujours « up ». Son pouls est rance. Personne ne
+          le sait.
+
+          Ajoutez au Dockerfile une sonde qui distingue les deux, reconstruisez
+          et relancez. Le conteneur `service-surveille` doit :
+
+            atteindre l etat SAIN quand le service travaille
+            passer MALADE quand le pouls devient rance, le processus vivant
+            REVENIR a SAIN quand le service repart
+            declarer des bornes coherentes : un delai d attente inferieur a
+              l intervalle, au moins deux tentatives, et une periode de
+              demarrage
+
+          UNE SONDE QUI REGARDE LE PROCESSUS NE MARCHE PAS ICI, et c est
+          mesure : elle declare le service sain alors que son pouls est rance.
+          Le processus ne meurt jamais.
+
+          A savoir aussi : un conteneur malade RESTE EN MARCHE. Le moteur ne
+          l arrete pas et ne le relance pas. Une sonde informe, elle ne repare
+          rien.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker image inspect {{ socle }} >/dev/null 2>&1
+          && ! docker image inspect appli:surveillee >/dev/null 2>&1
+          && ! grep -qi 'healthcheck' {{ contexte }}/Dockerfile
+      changed_when: false

@@ -1,13 +1,15 @@
 # Lab images-healthcheck. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-healthcheck                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "'Up' says nothing about the service"   # REQUIS
 level: c2                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Probe the work rather than the process: write a health check that sees a service going quiet without dying, that reports its recovery, and whose bounds do not stack up."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - dockerfile
+  - supervision
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
