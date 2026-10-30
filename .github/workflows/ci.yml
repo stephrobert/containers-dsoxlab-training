@@ -56,7 +56,7 @@ jobs:
       contents: read
     steps:
       - name: Durcir le runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
 
@@ -66,7 +66,7 @@ jobs:
           persist-credentials: false
 
       - name: Installer uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
 
       - name: Installer les dépendances du catalogue
         run: uv sync --frozen
@@ -100,7 +100,7 @@ jobs:
       contents: read
     steps:
       - name: Durcir le runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           # Le job lit les pages du blog : une politique bloquante demanderait
           # de lister son hôte et son CDN.
@@ -112,7 +112,7 @@ jobs:
           persist-credentials: false
 
       - name: Installer uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
 
       - name: Installer les dépendances du catalogue
         run: uv sync --frozen
@@ -133,7 +133,7 @@ jobs:
       contents: read
     steps:
       - name: Durcir le runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
 
@@ -172,7 +172,7 @@ jobs:
       contents: read
     steps:
       - name: Durcir le runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
 
@@ -183,7 +183,7 @@ jobs:
           fetch-depth: 0 # les hooks qui parcourent l'historique
 
       - name: Installer uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
 
       # mise pose hadolint, dive et trivy aux versions que `mise.toml` épingle.
       - name: Installer les outils épinglés
@@ -214,7 +214,7 @@ jobs:
       contents: read
     steps:
       - name: Durcir le runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           # Docker tire ses images de base et pip ses paquets : une politique
           # bloquante demanderait de lister le registre, PyPI et leurs CDN.
@@ -228,7 +228,7 @@ jobs:
           persist-credentials: false
 
       - name: Installer uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
 
       - name: Installer les dépendances du catalogue
         run: uv sync --frozen
