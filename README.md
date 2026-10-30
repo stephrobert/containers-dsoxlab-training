@@ -232,87 +232,23 @@ consensus and its control state to protect.
 | `container-ulimits-et-shm` | Shared memory and descriptors | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise) |
 | `troubleshoot-exit-127` | Three failures, three codes, one grid | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#décoder-les-exit-codes) |
 | `troubleshoot-conflit-de-port` | Two port conflicts, two causes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#checklist-de-debug-réseau) |
-| `troubleshoot-permission-refusee` | À remplir | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
-| `troubleshoot-boucle-de-redemarrage` | À remplir | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement) |
+| `troubleshoot-permission-refusee` | Three refused accesses, three causes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
+| `troubleshoot-boucle-de-redemarrage` | A restart loop, and two outcomes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement) |
 
 ### Build images
 
 | Lab (id) | Title | Level | Certif | Runtime | Companion guide |
 |---|---|---|---|---|---|
 | `images-identifier-image` | Image identity: the tag lies, the digest does not | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
-| `images-ordre-des-couches` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-1--maximiser-le-cache-avec-lordre-des-instructions) |
-| `images-contexte-de-build` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-2--utiliser-dockerignore) |
-| `images-optimiser-la-taille` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/) |
-| `images-migrer-vers-alpine` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base) |
-| `images-build-multi-etapes` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères) |
-| `images-non-root` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root) |
-| `images-healthcheck` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck) |
-| `buildkit-cache-monte` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#cache-avancé) |
-| `buildkit-secret-de-build` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build) |
+| `images-ordre-des-couches` | The same Dockerfile, and a cache that finally serves | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-1--maximiser-le-cache-avec-lordre-des-instructions) |
+| `images-contexte-de-build` | A file that exists, and cannot be found | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-2--utiliser-dockerignore) |
+| `images-optimiser-la-taille` | What a layer keeps | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/) |
+| `images-migrer-vers-alpine` | Changing base is not changing a line | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base) |
+| `images-build-multi-etapes` | What comes from the base cannot be removed | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères) |
+| `images-non-root` | USER changes the identity, and no right | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root) |
+| `images-healthcheck` | 'Up' says nothing about the service | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck) |
 
-### Distribute images
-
-| Lab (id) | Title | Level | Certif | Runtime | Companion guide |
-|---|---|---|---|---|---|
-| `registry-tag-push-pull` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/#docker-push--envoyer-une-image-vers-la-registry) |
-| `registry-tag-contre-digest` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/#tags-vs-digests--la-distinction-critique) |
-| `images-epingler-par-digest` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/#tags-vs-digests--la-distinction-critique) |
-| `registry-locale-tls` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/distribution/#configurer-tls) |
-| `registry-authentification` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/distribution/#configurer-lauthentification) |
-| `registry-air-gap` | À remplir | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/outils/skopeo/#environnements-air-gap-déconnectés) |
-
-### Describe an application with Compose
-
-| Lab (id) | Title | Level | Certif | Runtime | Companion guide |
-|---|---|---|---|---|---|
-| `compose-premiere-stack` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#votre-premier-composeyaml) |
-| `compose-resolution-des-variables` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
-| `compose-isolation-reseau` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#concepts-clés) |
-| `compose-persistance` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#concepts-clés) |
-| `compose-tache-de-migration` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
-| `compose-secrets` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
-| `compose-sante-et-dependances` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
-| `compose-ressources` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
-| `compose-plusieurs-environnements` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
-
-### Operate a Compose application
-
-| Lab (id) | Title | Level | Certif | Runtime | Companion guide |
-|---|---|---|---|---|---|
-| `donnees-postgres-sauvegarde` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker) |
-| `compose-capstone` | À remplir | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
-
-### Administer and harden a Docker host
-
-| Lab (id) | Title | Level | Certif | Runtime | Companion guide |
-|---|---|---|---|---|---|
-| `docker-configurer-le-demon` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/) |
-| `docker-contexte-ssh` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe) |
-| `docker-rotation-des-journaux` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#logging-drivers) |
-| `securite-groupe-docker` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker) |
-| `securite-socket-lecture-seule` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas) |
-| `securite-socket-proxy` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/) |
-| `securite-rootless` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#rootless-mode) |
-| `securite-capabilities` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#capabilities--fragmenter-les-privilèges-root) |
-| `securite-no-new-privileges` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
-| `securite-seccomp` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#profils-seccomp) |
-| `securite-apparmor` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#apparmor-et-selinux) |
-| `container-systeme-en-lecture-seule` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
-| `container-limite-de-processus` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
-| `secrets-au-runtime` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes) |
-| `container-memoire-et-oom` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#diagnostic-approfondi--le-cas-oom-kill) |
-| `troubleshoot-disque-plein` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#optimisations-production) |
-| `donnees-volume-orphelin` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#bonnes-pratiques-de-gestion-des-volumes) |
-
-### Industrialise the delivery chain
-
-| Lab (id) | Title | Level | Certif | Runtime | Companion guide |
-|---|---|---|---|---|---|
-| `compose-dans-une-ci` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#commandes-essentielles) |
-| `image-scan-de-vulnerabilites` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/quay-io/#publier-une-image-sur-quayio) |
-| `capstone-chaine-complete` | À remplir | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/-) |
-
-_71 labs, table generated by `scripts/gen_catalog.py`._
+_32 labs, table generated by `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Where this catalogue stands

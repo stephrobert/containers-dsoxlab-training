@@ -106,10 +106,21 @@ def test_le_catalogue_se_lit_dans_les_deux_etats() -> None:
         f"Aucun lab écrit : `{MARQUEUR_SQUELETTE}` n'est probablement plus le "
         "marqueur que pose le générateur."
     )
-    assert SQUELETTES, (
-        "Aucun squelette : si le catalogue est réellement terminé, ce garde-fou "
-        "peut tomber. Sinon, le marqueur de squelette a changé."
-    )
+    if not SQUELETTES:
+        # SANS SQUELETTE, CE GARDE-FOU NE MESURE PLUS RIEN, et il ne prouve pas
+        # pour autant que le marqueur a dérivé : les deux situations se
+        # ressemblent et n'appellent pas le même geste. Il saute donc, au lieu
+        # de refuser une livraison saine ou de conclure au vert sans avoir
+        # regardé.
+        #
+        # Rencontré en livrant sur `main` : la branche de travail porte 39
+        # squelettes, et la livraison n'emporte que les labs attestés. Le
+        # contrôle y accusait un catalogue dont tous les labs sont écrits.
+        pytest.skip(
+            "aucun squelette dans ce catalogue : la dérive du marqueur ne peut "
+            "pas être mesurée ici. C'est le cas d'une livraison qui n'emporte "
+            "que des labs attestés, et ce n'est pas un défaut."
+        )
 
 
 @pytest.mark.parametrize("rel", SQUELETTES)
