@@ -547,6 +547,116 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "internes-cgroups-v2": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_la_reponse_dit_ce_qu_un_conteneur_sans_limite_porte",
+    "test_la_reponse_nomme_la_limite_memoire_du_cgroup",
+    "test_la_reponse_nomme_le_cgroup_du_conteneur",
+    "test_le_conteneur_bride_porte_les_deux_plafonds"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 49,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 553 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "internes-cgroups-v2",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-internes-cgroups-v2.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_la_reponse_dit_ce_qu_un_conteneur_sans_limite_porte",
+    "test_la_reponse_nomme_la_limite_memoire_du_cgroup",
+    "test_la_reponse_nomme_le_cgroup_du_conteneur",
+    "test_le_conteneur_bride_porte_les_deux_plafonds"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "internes-namespaces": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_la_reponse_nomme_le_namespace_partage_avec_l_hote",
+    "test_la_reponse_nomme_le_namespace_pid_du_conteneur",
+    "test_la_reponse_nomme_le_pid_du_processus_sur_l_hote",
+    "test_un_conteneur_voit_les_processus_de_l_hote"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-10-30",
+  "docker": "29.1.3",
+  "duree_s": 53,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 553 image(s), 7 conteneur(s), 381 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "id": "internes-namespaces",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-internes-namespaces.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_la_reponse_nomme_le_namespace_partage_avec_l_hote",
+    "test_la_reponse_nomme_le_namespace_pid_du_conteneur",
+    "test_la_reponse_nomme_le_pid_du_processus_sur_l_hote",
+    "test_un_conteneur_voit_les_processus_de_l_hote"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "reseau-bridge-dedie": {
   "apres": {
    "echecs": [],
