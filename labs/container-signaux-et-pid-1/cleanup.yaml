@@ -1,10 +1,62 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# CE FICHIER ÉTAIT RESTÉ LE SQUELETTE « À remplir », et le lab a pourtant été
+# attesté VALIDE le 2026-10-29. Ce n'est pas une anomalie du cycle de
+# validation : il exige un score nul après `clean` puis `run`, et le `run`
+# repart d'une table rase parce que le setup commence par retirer ce qu'un
+# passage précédent a laissé. Le cycle passait donc, et le cleanup ne nettoyait
+# rien.
+#
+# COMMENT LE DÉFAUT S'EST VU : un conteneur `fragile` arrêté traînait sur
+# docker.lab, créé le 2026-10-29, trouvé en cherchant la cause d'autre chose.
+# Un cleanup vide ne casse pas le lab qui le porte, il encombre la machine et
+# fait hériter les labs suivants d'un état qu'ils n'ont pas posé.
+#
+# CE QU'IL Y A À RETIRER, relevé dans le setup et dans les tests :
+#   - `fragile`, le conteneur fautif que le setup lance ;
+#   - `robuste` et `img-corrige:1.0`, que l'APPRENANT produit, et qui doivent
+#     donc partir aussi, sans quoi deux contrôles seraient vrais au passage
+#     suivant avant tout travail ;
+#   - `img-fragile:1.0`, l'image que le setup construit ;
+#   - le conteneur de sonde, nommé par le dépôt, qu'un essai a pu laisser ;
+#   - le répertoire de travail et l'énoncé.
+#
+# L'ORDRE COMPTE : une image dont des conteneurs dérivent ne se supprime pas.
 - name: Défaire le lab container-signaux-et-pid-1
   hosts: lab_target
   become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    travail: /opt/lab-signaux
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les conteneurs, AVANT les images dont ils dérivent
+      ansible.builtin.shell:
+        cmd: >
+          docker ps -a --format '{{ "{{" }}.Names{{ "}}" }}'
+          | grep -E '^(fragile|robuste|.*sonde-pid1.*)$'
+          | xargs -r docker rm -f
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer l'image du setup et celle que l'apprenant construit
+      ansible.builtin.shell:
+        cmd: >
+          docker rmi -f img-fragile:1.0 img-corrige:1.0 {{ image_epinglee }}
+          2>/dev/null || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines et le cache de construction
+      ansible.builtin.shell:
+        cmd: docker image prune -f && docker builder prune -f || true
+      changed_when: false
+
+    - name: Retirer le répertoire de travail et l'énoncé
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ travail }}"
+        - /opt/MISSION.md
