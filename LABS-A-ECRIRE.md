@@ -10,14 +10,48 @@ décrit le **geste d'écriture**.
 
 ## Ce qui est déjà fait, et qu'il ne faut pas refaire
 
+Reprise du **2026-11-01** sur `chantier/labs-restants` : les 71 labs du
+catalogue sont désormais rédigés ; aucun `lab.yaml` ne porte plus de
+`a-remplir`. Les sept derniers couvrent la configuration du démon, les
+contextes SSH, les journaux, les privilèges du groupe Docker, rootless et les
+deux modèles d'accès au socket. La solution PostgreSQL manquante a aussi été
+ajoutée.
+
+Les sept labs terminés en dernier rendent 0 avant, 100 après, puis 0 après
+`clean` et `run`, sans écart dans la photographie du moteur. Les solutions sont
+chiffrées ; les consignes, indices et catalogues sont bilingues. Le contrôle
+`uv run --no-sync pytest tests -q` passe (2866 réussis, 146 ignorés) et
+`dsoxlab validate-structure` valide le catalogue. Le registre final compte **71 attestations valides sur 71 labs** dans
+`validation-labs.json` ; le compteur se vérifie avec la commande ci-dessous.
+
+Le validateur photographie désormais le Docker de la cible SSH des labs VM,
+pas celui du poste. Il relève aussi les identifiants des images orphelines
+et refuse un nettoyage qui supprime un objet préexistant. Les dix-sept labs de
+cette reprise ont été rejoués avec cette mesure corrigée : 3 images de base,
+0 conteneur et 0 volume dans la VM avant comme après. Les attestations
+antérieures des autres labs ne constituent pas une preuve de ce nettoyage VM.
+
+Les deux registres TLS utilisent l'adresse réseau de la VM, pas la boucle
+locale que Docker traite implicitement comme insecure. Les tests retirent
+temporairement la CA et mesurent un vrai refus X.509 avant de la restaurer.
+Le banc air-gap a aussi été éprouvé avec une couche réellement retirée et
+une somme SHA-256 recalculée : 0/2 malgré un cache Docker chaud.
+Compose v2 est fourni par le paquet Debian `docker-compose`. L'image Alpine
+épinglée ne contient pas l'applet HTTP ; `busybox-extras` est installé dans les
+images de la première stack. La recréation forcée des deux services a été mesurée.
+Les autres labs Compose mesurent la priorité du shell, les refus réseau par IP,
+la persistance de nouvelles écritures, les migrations SQLite idempotentes,
+les secrets fichiers après rotation, la disponibilité distincte de la sonde de vie,
+les limites cgroup effectives et l'isolation de deux environnements.
+
 | Fait | État |
 |---|---|
-| Squelettes créés par `dsoxlab new lab … --runtime vm` | **70**, plus `images-identifier-image` déjà écrit |
+| Labs du backlog initial | **70**, plus `images-identifier-image` déjà écrit ; les 71 sont maintenant rédigés |
 | Rangement dans les neuf sections de `meta.yml` | fait, `validate-structure` rend « Tous les labs sont valides » |
 | `level` (`c1` à `c4`), `doc_url` ancré, `lab_type` | **pré-remplis** depuis le backlog, dans `lab.yaml` et `lab.fr.yaml` |
 | Hôte des cibles | aligné sur `docker.lab`, le seul hôte que `meta.yml` déclare |
-| Labs **écrits et attestés** | se mesure, voir la commande ci-dessous. Aucun chiffre n'est écrit ici : celui qui y figurait est resté faux une demi-journée |
-| Sections **terminées** | `conteneurs-utilisation` (14 sur 14) et `conteneurs-isolation` (10 sur 10) |
+| Labs **écrits et attestés** | le nombre d'attestations valides se mesure, voir la commande ci-dessous |
+| Sections **terminées** | les huit sections du tronc commun ; `swarm-hors-tronc` reste volontairement vide |
 
 Le compte des labs attestés ne s'écrit pas de mémoire, il se mesure :
 
@@ -39,7 +73,10 @@ Deux pièges déjà payés sur ce catalogue, pour qu'ils ne reviennent pas :
 - l'entrée d'une section s'écrit **sans** le préfixe `labs/`. Avec lui, le
   validateur cherche `labs/labs/<id>` et refuse le catalogue entier.
 
-## Ce qui reste à écrire, lab par lab
+## Contrat à respecter pour tout nouveau lab
+
+Il ne reste aucun squelette dans le catalogue. Cette liste décrit le contrat
+pour un futur ajout ; elle n'est pas un inventaire de travaux ouverts.
 
 Dans `labs/<id>/` :
 
@@ -49,8 +86,7 @@ Dans `labs/<id>/` :
     cleanup.yaml               ce qui défait le setup
     challenge/tests/           les assertions qui notent
 
-Les champs encore marqués « À remplir » ou `a-remplir` sont exactement ceux qui
-restent. `skills` et `distros` sont REQUIS et non vides : un lab sans eux est
+`skills` et `distros` sont requis et non vides : un futur lab sans eux est
 refusé, ou disparaît du catalogue sans un mot.
 
 ## Les règles qui décident si un lab est bon

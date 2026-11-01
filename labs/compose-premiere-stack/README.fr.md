@@ -1,9 +1,16 @@
-# compose-premiere-stack
+# Une application à deux services reproductible
 
-**Public :** l'apprenant.
+Le setup installe le paquet Compose v2 de Debian et construit deux petits
+services depuis Alpine épinglée avec `busybox-extras`, car l'image de base
+ne contient pas l'applet serveur HTTP. Aucun conteneur applicatif ni déclaration
+Compose n'existe au départ.
 
-À remplir : ce que ce lab apprend, en une phrase.
+Trois contrôles mesurent le projet démarré et la frontière des ports, la
+communication API vers web par découverte de services et la recréation depuis
+la déclaration. Les conteneurs doivent porter les labels de projet et service
+Compose ; la recréation exige de nouveaux identifiants pour les deux conteneurs,
+pas seulement un fichier de configuration.
 
-## Ce que vous saurez faire
-
-- À remplir.
+L'essai de contenu vivant restaure la release de l'API. Le nettoyage ne retire
+que les conteneurs, réseaux et volumes étiquetés du projet, puis les images
+étiquetées du lab. Il ne purge pas globalement et ne touche pas aux autres projets.

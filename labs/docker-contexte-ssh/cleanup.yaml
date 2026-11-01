@@ -1,10 +1,62 @@
 ---
-# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
-# posé, pour que le lab se rejoue à l'identique.
-- name: Défaire le lab docker-contexte-ssh
+- name: Clean lab docker-contexte-ssh
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Check whether setup created the learner context
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-docker-contexte-ssh/context-owned
+      register: context_created_marker
+    - name: Remove only the lab-created learner context
+      become_user: "{{ ansible_user | default('ansible') }}"
+      ansible.builtin.command: docker context rm --force dsoxlab-maintenance
+      when: context_created_marker.stat.exists
+      failed_when: false
+    - name: Remove the dedicated SSH alias block only
+      ansible.builtin.blockinfile:
+        path: "/home/{{ ansible_user | default('ansible') }}/.ssh/config"
+        marker: "# {mark} DSOXLAB docker-contexte-ssh"
+        state: absent
+      failed_when: false
+    - name: Check whether setup created the dedicated context account
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-docker-contexte-ssh/account-created
+      register: context_account_marker
+    - name: End only sessions belonging to the dedicated lab account
+      ansible.builtin.command: loginctl terminate-user dsoxlab-context
+      changed_when: false
+      failed_when: false
+      when: context_account_marker.stat.exists
+    - name: Remove only the dedicated context account created by setup
+      ansible.builtin.user:
+        name: dsoxlab-context
+        state: absent
+        remove: true
+      when: context_account_marker.stat.exists
+    - name: Remove only the exercise SSH keypair
+      ansible.builtin.file:
+        path: /opt/dsoxlab-docker-contexte-ssh/id_ed25519{{ item }}
+        state: absent
+      loop: ['', '.pub']
+    - name: Remove only containers carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker ps -aq --filter label=dsoxlab.lab=docker-contexte-ssh)"
+        if [ -n "$ids" ]; then docker rm -f $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove only volumes carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker volume ls -q --filter label=dsoxlab.lab=docker-contexte-ssh)"
+        if [ -n "$ids" ]; then docker volume rm $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove the unique work directory created for this lab
+      ansible.builtin.file:
+        path: /opt/dsoxlab-docker-contexte-ssh
+        state: absent

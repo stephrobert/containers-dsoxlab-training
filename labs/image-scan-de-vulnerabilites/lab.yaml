@@ -1,22 +1,19 @@
-# Lab image-scan-de-vulnerabilites. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: image-scan-de-vulnerabilites                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c4                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/quay-io/#publier-une-image-sur-quayio   # REQUIS, http(s)
+id: image-scan-de-vulnerabilites
+title: "Gate an image using dated, real offline vulnerability scans"
+level: c4
+description: "Scan genuine archived Debian libraries, preserve findings tied to image and database, and enforce a reproducible CVE policy."
+skills: [image-scanning, vulnerability-policy, evidence, supply-chain]
+distros: [debian13]
+doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/quay-io/#publier-une-image-sur-quayio
 lab_type: lab
-estimated_time: 30m
+estimated_time: 45m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true
+  security: true
   persistence_after_reboot: false

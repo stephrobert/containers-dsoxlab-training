@@ -5,6 +5,25 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les objets Docker propres au lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for container in dsoxlab-air-gap-registry dsoxlab-air-gap-consumer; do
+            if docker container inspect "$container" >/dev/null 2>&1; then
+              docker rm -f "$container"
+            fi
+          done
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=registry-air-gap)
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+
+    - name: Retirer les fichiers propres au lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-air-gap
+        - /root/.lab-air-gap.json
+        - /opt/MISSION.md

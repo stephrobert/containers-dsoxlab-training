@@ -1,5 +1,5 @@
 # Surcharge française du lab compose-plusieurs-environnements. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Déployer des projets Compose de développement et production isolés"
+description: "Fusionner des surcharges sur une base commune et exploiter deux déploiements sans mélanger données ni ressources."

@@ -1,21 +1,21 @@
-# Lab container-limite-de-processus. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: container-limite-de-processus                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c4                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime   # REQUIS, http(s)
+id: container-limite-de-processus
+title: "Bound the container process count"
+level: c4
+description: "Apply a 16-task cgroup ceiling and observe rejection of a finite, short-lived process burst."
+skills:
+  - docker
+  - pids-limit
+  - resource-limits
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime
 lab_type: lab
 estimated_time: 30m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true

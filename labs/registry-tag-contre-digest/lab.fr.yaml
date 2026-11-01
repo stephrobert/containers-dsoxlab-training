@@ -1,5 +1,5 @@
 # Surcharge française du lab registry-tag-contre-digest. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Retrouver la release d'origine après déplacement de son tag"
+description: "Distinguer un tag mutable d'un digest d'image, retrouver la release d'origine dans le registre et l'exécuter avec sa référence immuable."

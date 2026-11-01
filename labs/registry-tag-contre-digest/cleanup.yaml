@@ -5,6 +5,40 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer seulement les conteneurs et tags du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for container in dsoxlab-digest-app dsoxlab-digest-registry; do
+            if docker container inspect "$container" >/dev/null 2>&1; then
+              docker rm -f "$container"
+            fi
+          done
+          if test -f /root/.lab-registry-digest.json; then
+            reference=$(python3 -c 'import json; print(json.load(open("/root/.lab-registry-digest.json"))["reference"])')
+            if docker image inspect "$reference" >/dev/null 2>&1; then
+              docker image rm -f "$reference"
+            fi
+            images=$(python3 -c 'import json; state=json.load(open("/root/.lab-registry-digest.json")); print(state["image"], state.get("replacement", ""))')
+            for image in $images; do
+              if docker image inspect "$image" >/dev/null 2>&1; then
+                docker image rm -f "$image"
+              fi
+            done
+          fi
+          if docker image inspect 127.0.0.1:15002/catalogue/appli:stable >/dev/null 2>&1; then
+            docker image rm -f 127.0.0.1:15002/catalogue/appli:stable
+          fi
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=registry-tag-contre-digest)
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+
+    - name: Retirer le contexte, le registre et la mission
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-registry-digest
+        - /root/.lab-registry-digest.json
+        - /opt/MISSION.md

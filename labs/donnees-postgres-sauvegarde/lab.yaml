@@ -1,21 +1,21 @@
-# Lab donnees-postgres-sauvegarde. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: donnees-postgres-sauvegarde                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c3                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker   # REQUIS, http(s)
+id: donnees-postgres-sauvegarde
+title: "Back up and restore PostgreSQL data"
+level: c3
+description: "Create a consistent PostgreSQL custom-format backup, restore it into an isolated database, and verify restored rows against the live source."
+skills:
+  - postgresql
+  - database-backup
+  - data-restore
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker
 lab_type: challenge
-estimated_time: 30m
+estimated_time: 40m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true

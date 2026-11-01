@@ -1,10 +1,7 @@
 # Scenario
 
-TO FILL IN: the situation, as the learner would meet it.
-
-A scenario says **where we are and what is wrong**, not the steps to take:
-finding those is the learner's work.
+A second Docker engine is prepared for dsoxlab-rootless. The rootful system daemon must remain untouched.
 
 ## Mission
 
-TO FILL IN.
+The dedicated service is active and its daemon reports rootless mode.

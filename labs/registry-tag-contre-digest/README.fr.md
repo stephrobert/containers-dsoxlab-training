@@ -1,9 +1,16 @@
-# registry-tag-contre-digest
+# Un tag se déplace, son ancien digest reste adressable
 
-**Public :** l'apprenant.
+Le setup publie deux produits aléatoires sous le même tag et lance le second.
+Il conserve le digest du manifeste original dans un bon de livraison.
 
-À remplir : ce que ce lab apprend, en une phrase.
+Trois contrôles prouvent que l'image d'origine est en service, que sa référence
+de démarrage est immuable et que le manifeste reste lisible dans le registre.
+Chaque contrôle exige d'abord le retour du produit d'origine : aucune note
+ne récompense l'état de départ.
 
-## Ce que vous saurez faire
+Le registre est propre au lab et n'écoute qu'en boucle locale. Le nettoyage
+retire ses conteneurs, ses références et son stockage, sans purge globale.
 
-- À remplir.
+Cycle mesuré sur `docker.lab` le 2026-11-01 : 0/3 avant, 3/3 après,
+0/3 après `clean` et `run`, puis moteur rendu intact. Le contrôle du registre
+vérifie aussi que `stable` pointe toujours vers le produit de remplacement.

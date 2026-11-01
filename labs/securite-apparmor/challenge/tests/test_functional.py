@@ -1,21 +1,33 @@
-"""Tests fonctionnels du lab securite-apparmor — SQUELETTE, à écrire.
+"""Check an enforcing, uniquely named profile and its path-specific denial."""
 
-Ce fichier échoue volontairement. Il ne s'agit pas d'une erreur : tant que les
-tests ne sont pas écrits, `dsoxlab check` doit rendre un échec plutôt qu'un
-succès qui ne prouve rien.
+import json
 
-Ce qu'un test de lab vérifie, c'est **l'état du système**, jamais qu'une
-commande a été tapée : un apprenant qui atteint le bon état par un autre chemin
-a réussi. Quand le sujet le justifie, vérifiez aussi que l'état survit à un
-redémarrage.
-"""
+import pytest
 
-from __future__ import annotations
+from conftest import lab_host, message
 
 
-def test_a_ecrire() -> None:
-    """Remplacez-moi par ce que le lab doit prouver."""
-    raise AssertionError(
-        "Les tests de ce lab restent à écrire. Vérifiez l'état du système "
-        "produit par la mission, pas les commandes tapées pour y arriver."
+@pytest.fixture
+def host():
+    return lab_host("docker.lab")
+
+
+def test_profile_denies_only_the_private_read(host):
+    found = host.run(
+        "docker ps -q --filter label=com.docker.compose.project=dsoxlab-securite-apparmor "
+        "--filter label=com.docker.compose.service=worker"
     )
+    ids = found.stdout.split()
+    assert found.rc == 0 and len(ids) == 1, message(fr="Un service actif requis", en="One running service required")
+    cid = ids[0]
+    info = json.loads(host.run("docker inspect %s", cid).stdout)[0]
+    assert info["Config"]["Labels"].get("dsoxlab.lab") == "securite-apparmor", message(fr="Conserver le label", en="Preserve the label")
+    assert info["AppArmorProfile"] == "dsoxlab-securite-apparmor", message(fr="Attacher le profil dédié", en="Attach the dedicated profile")
+    active = host.run("docker exec %s cat /proc/1/attr/current", cid)
+    assert active.rc == 0 and active.stdout.strip() == "dsoxlab-securite-apparmor (enforce)", message(fr="Un profil en complain ne suffit pas", en="A complain profile is insufficient")
+    public = host.run("docker exec %s cat /lab/public.txt", cid)
+    assert public.rc == 0 and public.stdout == "public", message(fr="La lecture publique doit fonctionner", en="Public read must work")
+    mode = host.run("docker exec %s stat -c %%a /lab/private.txt", cid)
+    assert mode.rc == 0 and mode.stdout.strip() == "444", message(fr="Ne pas remplacer AppArmor par chmod", en="Do not substitute chmod for AppArmor")
+    private = host.run("docker exec %s cat /lab/private.txt", cid)
+    assert private.rc != 0 and "Permission denied" in private.stderr, message(fr="La lecture privée doit être refusée", en="Private read must be denied")

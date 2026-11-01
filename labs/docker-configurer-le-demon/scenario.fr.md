@@ -1,10 +1,7 @@
 # Scénario
 
-À remplir : la situation, telle que l'apprenant la rencontrerait.
-
-Un scénario dit **où on est et ce qui ne va pas**, pas la marche à suivre :
-c'est le travail de l'apprenant de la trouver.
+Les nouveaux conteneurs n’ont aucune limite de rétention. Conservez le pilote json-file par défaut, plafonnez les fichiers à 1 Mio et gardez deux fichiers. Les autres réglages du démon doivent être préservés.
 
 ## Mission
 
-À remplir.
+Les nouveaux conteneurs utilisent les valeurs demandées ; le nettoyage restaure la configuration initiale du démon.

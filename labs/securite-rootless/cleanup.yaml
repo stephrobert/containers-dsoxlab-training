@@ -1,10 +1,78 @@
 ---
-# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
-# posé, pour que le lab se rejoue à l'identique.
-- name: Défaire le lab securite-rootless
+- name: Clean lab securite-rootless
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Check whether setup owns the rootless service
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-securite-rootless/service-owned
+      register: rootless_service_marker
+    - name: Stop the dedicated rootless daemon only
+      ansible.builtin.systemd_service:
+        name: dsoxlab-rootless.service
+        state: stopped
+        enabled: false
+        daemon_reload: true
+      failed_when: false
+      when: rootless_service_marker.stat.exists
+    - name: Remove the dedicated rootless service unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/dsoxlab-rootless.service
+        state: absent
+      when: rootless_service_marker.stat.exists
+    - name: Reload systemd after removing the rootless unit
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      when: rootless_service_marker.stat.exists
+    - name: Check whether setup created the rootless account
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-securite-rootless/account-created
+      register: rootless_account_marker
+    - name: Read the dedicated rootless UID before deleting its runtime path
+      ansible.builtin.command: id -u dsoxlab-rootless
+      register: rootless_uid_before_delete
+      changed_when: false
+      failed_when: false
+      when: rootless_account_marker.stat.exists
+    - name: Remove only the dedicated rootless runtime directory
+      ansible.builtin.file:
+        path: "/run/user/{{ rootless_uid_before_delete.stdout }}"
+        state: absent
+      when: rootless_account_marker.stat.exists and rootless_uid_before_delete.stdout is defined and rootless_uid_before_delete.stdout | length > 0
+    - name: Remove only the dedicated rootless account and its home
+      ansible.builtin.user:
+        name: dsoxlab-rootless
+        state: absent
+        remove: true
+      when: rootless_account_marker.stat.exists
+    - name: Remove only the subordinate ID ranges owned by this lab account
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: "^dsoxlab-rootless:"
+        state: absent
+      loop:
+        - /etc/subuid
+        - /etc/subgid
+      when: rootless_account_marker.stat.exists
+    - name: Remove only containers carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker ps -aq --filter label=dsoxlab.lab=securite-rootless)"
+        if [ -n "$ids" ]; then docker rm -f $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove only volumes carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker volume ls -q --filter label=dsoxlab.lab=securite-rootless)"
+        if [ -n "$ids" ]; then docker volume rm $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove the unique work directory created for this lab
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-rootless
+        state: absent

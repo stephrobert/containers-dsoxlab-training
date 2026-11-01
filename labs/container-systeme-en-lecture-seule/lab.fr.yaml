@@ -1,5 +1,2 @@
-# Surcharge française du lab container-systeme-en-lecture-seule. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Utiliser une racine de conteneur en lecture seule"
+description: "Protéger la racine tout en gardant le worker opérationnel grâce à un tmpfs runtime modifiable de 4 Mio."

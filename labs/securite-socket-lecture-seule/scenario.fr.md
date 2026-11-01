@@ -1,10 +1,7 @@
 # Scénario
 
-À remplir : la situation, telle que l'apprenant la rencontrerait.
-
-Un scénario dit **où on est et ce qui ne va pas**, pas la marche à suivre :
-c'est le travail de l'apprenant de la trouver.
+Un conteneur applicatif monte /var/run/docker.sock en lecture seule. L’équipe suppose que :ro bloque les appels API modifiants, ce qui n’est pas sûr.
 
 ## Mission
 
-À remplir.
+Le conteneur applicatif marqué ne monte pas la socket Docker de l’hôte.

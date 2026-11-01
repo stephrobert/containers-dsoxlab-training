@@ -1,21 +1,21 @@
-# Lab securite-groupe-docker. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: securite-groupe-docker                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c4                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker   # REQUIS, http(s)
+id: securite-groupe-docker
+title: "Remove an unnecessary Docker grant"
+level: c4
+description: "Remove only docker-group membership from the synthetic audit account."
+skills:
+  - docker
+  - linux-groups
+  - least-privilege
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker
 lab_type: lab
 estimated_time: 30m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true

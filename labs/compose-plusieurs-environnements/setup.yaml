@@ -5,6 +5,71 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer Docker et Compose
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose, curl]
+        state: present
+        update_cache: true
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Créer le contexte
+      ansible.builtin.file:
+        path: /opt/lab-compose-env/image
+        state: directory
+        mode: "0755"
+    - name: Déposer le serveur d'identité
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-env/image/start.sh
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+          mkdir -p /www /data
+          printf '%s\n' "$APP_ENV" > /www/environment.txt
+          test -f /data/value.txt || printf '%s\n' "$APP_ENV" > /data/value.txt
+          exec busybox-extras httpd -f -p 8080 -h /www
+    - name: Déposer le Dockerfile
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-env/image/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="compose-plusieurs-environnements"
+          RUN apk add --no-cache busybox-extras
+          COPY start.sh /usr/local/bin/start.sh
+          CMD ["/usr/local/bin/start.sh"]
+    - name: Construire l'image
+      ansible.builtin.command:
+        cmd: docker build -t dsoxlab-compose-env:app /opt/lab-compose-env/image
+      changed_when: true
+    - name: Déposer la base commune
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-env/compose.yaml
+        mode: "0644"
+        content: |
+          services:
+            app:
+              image: dsoxlab-compose-env:app
+              environment:
+                APP_ENV: unset
+              mem_limit: 32m
+              volumes: [data:/data]
+          volumes:
+            data: {}
+    - name: Garder l'empreinte de la base
+      ansible.builtin.shell:
+        cmd: cd /opt/lab-compose-env && sha256sum compose.yaml > /root/.lab-compose-env.sha256
+      changed_when: true
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

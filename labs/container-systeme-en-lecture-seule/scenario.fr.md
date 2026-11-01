@@ -1,10 +1,12 @@
-# Scénario
+# Un worker qui ne doit pas réécrire son système
 
-À remplir : la situation, telle que l'apprenant la rencontrerait.
+Le worker actualise `/run/heartbeat` chaque seconde. Toute sa racine est
+modifiable alors qu'il a seulement besoin d'un espace runtime.
 
-Un scénario dit **où on est et ce qui ne va pas**, pas la marche à suivre :
-c'est le travail de l'apprenant de la trouver.
+Dans `/opt/dsoxlab-container-systeme-en-lecture-seule`, rendez la racine
+en lecture seule sans arrêter ce heartbeat. Donnez à `/run` un tmpfs modifiable
+de 4 Mio avec noexec et nosuid. Conservez le projet
+`dsoxlab-container-systeme-en-lecture-seule` et son label.
 
-## Mission
-
-À remplir.
+Ne modifiez pas les montages hôtes, le démon ni les chemins hôtes. Le contrôle
+effectue seulement de petites écritures jetables dans ce conteneur.

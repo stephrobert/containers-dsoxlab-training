@@ -1,21 +1,21 @@
-# Lab docker-configurer-le-demon. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: docker-configurer-le-demon                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c4                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/   # REQUIS, http(s)
+id: docker-configurer-le-demon
+title: "Configure persistent Docker log defaults"
+level: c4
+description: "Merge bounded json-file log defaults into the daemon configuration."
+skills:
+  - docker
+  - daemon.json
+  - logging
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/
 lab_type: lab
 estimated_time: 30m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true

@@ -1,0 +1,17 @@
+hints:
+  - id: 1
+    cost: 10
+    text_en: QSBjb25maWd1cmVkIGZpbHRlciBtdXN0IGFsc28gcmVqZWN0IHRoZSBpbnRlbmRlZCBzeXNjYWxsLg==
+    text_fr: VW4gZmlsdHJlIGNvbmZpZ3Vyw6kgZG9pdCBhdXNzaSByZWZ1c2VyIGxlIHN5c2NhbGwgdm91bHUu
+  - id: 2
+    cost: 15
+    text_en: VGhlIHN0YXJ0ZXIgaXMgdW5jb25maW5lZDsgdGFyZ2V0IG9ubHkgdGhlIHJlc2VydmVkIGdldHBnaWQgYXJndW1lbnQu
+    text_fr: TGUgc3RhcnRlciBlc3QgdW5jb25maW5lZCA7IGNpYmxleiBzZXVsZW1lbnQgbOKAmWFyZ3VtZW50IGdldHBnaWQgcsOpc2VydsOpLg==
+  - id: 3
+    cost: 20
+    text_en: RGVueSBnZXRwZ2lkIHdpdGggRVJSTk8gMSBvbmx5IHdoZW4gYXJndW1lbnQgMCBlcXVhbHMgMjE0NzQ4MzY0NzsgYXR0YWNoIHRoZSBKU09OLg==
+    text_fr: UmVmdXNleiBnZXRwZ2lkIGF2ZWMgRVJSTk8gMSBzZXVsZW1lbnQgc2kgbOKAmWFyZ3VtZW50IDAgdmF1dCAyMTQ3NDgzNjQ3IDsgYXR0YWNoZXogbGUgSlNPTi4=
+  - id: 4
+    cost: 25
+    text_en: UnVuIHN5c2NhbGwtcHJvYmUgYW5kIGluc3BlY3QgU2VjY29tcCBpbiAvcHJvYy8xL3N0YXR1cyBhZnRlciByZWNyZWF0aW9uLg==
+    text_fr: TGFuY2V6IHN5c2NhbGwtcHJvYmUgZXQgaW5zcGVjdGV6IFNlY2NvbXAgZGFucyAvcHJvYy8xL3N0YXR1cyBhcHLDqHMgcmVjcsOpYXRpb24u

@@ -5,6 +5,32 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les objets Docker de ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for container in dsoxlab-tls-registry dsoxlab-tls-consumer; do
+            if docker container inspect "$container" >/dev/null 2>&1; then
+              docker rm -f "$container"
+            fi
+          done
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=registry-locale-tls)
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+
+    - name: Retirer la résolution de nom propre au lab
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} dsoxlab-registry-tls"
+        state: absent
+
+    - name: Retirer seulement les fichiers propres au lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-registry-tls
+        - /root/.lab-registry-tls.json
+        - /etc/docker/certs.d/registry-tls.lab.test:15443
+        - /opt/MISSION.md

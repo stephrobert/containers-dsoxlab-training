@@ -1,21 +1,21 @@
-# Lab docker-contexte-ssh. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: docker-contexte-ssh                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c4                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe   # REQUIS, http(s)
+id: docker-contexte-ssh
+title: "Create an SSH Docker context"
+level: c4
+description: "Create and use a named context for the prepared loopback SSH daemon."
+skills:
+  - docker
+  - context
+  - ssh
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe
 lab_type: lab
 estimated_time: 30m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true

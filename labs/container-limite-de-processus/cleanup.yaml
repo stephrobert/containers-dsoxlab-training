@@ -1,10 +1,23 @@
 ---
-# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
-# posé, pour que le lab se rejoue à l'identique.
-- name: Défaire le lab container-limite-de-processus
+- name: Remove only the process-limit exercise
   hosts: lab_target
   become: true
+  vars:
+    lab: container-limite-de-processus
+    work: /opt/dsoxlab-container-limite-de-processus
+    image: alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Remove jointly labelled containers and the newly pulled image only
+      ansible.builtin.shell: |
+        set -eu
+        for id in $(docker ps -aq --filter label=dsoxlab.lab={{ lab }} --filter label=com.docker.compose.project=dsoxlab-{{ lab }}); do docker rm -f "$id" >/dev/null; done
+        if test -e "{{ work }}" || test -L "{{ work }}"; then
+          test -d "{{ work }}" && test ! -L "{{ work }}"
+          test "$(cat "{{ work }}/.owner")" = "{{ lab }}"
+          if test -e "{{ work }}/.image-owned"; then docker image rm "{{ image }}" >/dev/null 2>&1 || true; fi
+        fi
+      changed_when: true
+    - name: Remove the owned workspace
+      ansible.builtin.file:
+        path: "{{ work }}"
+        state: absent

@@ -1,10 +1,14 @@
-# Scénario
+# Un syscall inoffensif comme frontière mesurable
 
-À remplir : la situation, telle que l'apprenant la rencontrerait.
+La politique de démonstration doit refuser `getpgid(2147483647)` avec EPERM
+tout en autorisant `getpgid(0)` et `getpid`. Le PID réservé cible seulement
+la sonde inoffensive, pas l'initialisation du runtime. Sans filtre, interroger
+ce PID inexistant renvoie ESRCH, pas EPERM.
+La sonde C fournie effectue seulement ces appels en lecture et affiche leur verdict.
 
-Un scénario dit **où on est et ce qui ne va pas**, pas la marche à suivre :
-c'est le travail de l'apprenant de la trouver.
+Dans `/opt/dsoxlab-securite-seccomp`, attachez un filtre seccomp explicite à
+`worker` dans le projet `dsoxlab-securite-seccomp`. Le JSON fourni autorise
+actuellement tout et le starter utilise explicitement `unconfined`.
 
-## Mission
-
-À remplir.
+C'est une leçon contrôlée sur les syscalls, pas un profil de production.
+Ne changez jamais les valeurs par défaut du démon et n'utilisez pas privileged.

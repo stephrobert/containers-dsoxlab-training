@@ -1,13 +1,15 @@
 # Lab buildkit-secret-de-build. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: buildkit-secret-de-build                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Fetch a private dependency without shipping the build secret"
 level: c2                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Authenticate a build against a private repository, keep credentials out of image history and layers, and reject missing or incorrect secrets."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - buildkit
+  - build-secrets
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build   # REQUIS, http(s)
 lab_type: challenge
 estimated_time: 30m

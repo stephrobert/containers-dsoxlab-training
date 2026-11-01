@@ -1,10 +1,12 @@
-# Scenario
+# A non-root process can still acquire privileges
 
-TO FILL IN: the situation, as the learner would meet it.
+The worker starts as UID 1000, but its tiny `identity` executable is owned by
+root with mode 4755. It only prints real and effective UIDs; it does not start a
+shell or modify files. Without a privilege barrier, executing it gains EUID 0.
 
-A scenario says **where we are and what is wrong**, not the steps to take:
-finding those is the learner's work.
+In `/opt/dsoxlab-securite-no-new-privileges`, keep that executable intact but
+prevent elevation in the running service. Keep project
+`dsoxlab-securite-no-new-privileges` and its lab label. The kernel flag and a
+real execution must agree.
 
-## Mission
-
-TO FILL IN.
+Do not modify host binaries, setuid policy or daemon configuration.

@@ -119,10 +119,45 @@ def docker(args: list[str], timeout: int = 60) -> list[str]:
 def photographier(lab: Path, journal) -> dict:
     """L'état du moteur et du répertoire de travail, avant et après.
 
-    Les images sont relevées par leur `repository:tag` et non par leur
-    identifiant : une image reconstruite à l'identique change d'identifiant si
-    une couche change, ce qui ferait croire à un écart là où il n'y en a pas.
+    Les labs VM interrogent leur cible SSH, jamais le Docker du poste.
+    Leurs images incluent l'identifiant pour distinguer les couches orphelines
+    qui portent toutes le même nom `<none>:<none>`.
     """
+    runtime = (lire_yaml(lab / "lab.yaml") or {}).get("runtime", {})
+    if runtime.get("type") == "vm":
+        targets = runtime.get("targets") or []
+        selected = next(
+            (target for target in targets if target.get("name") == runtime.get("default")),
+            targets[0] if targets else {},
+        )
+        host = os.environ.get("DSOXLAB_TARGET_HOST") or selected.get("host")
+        if not host:
+            raise Echec(f"{lab.name} : aucune cible VM à photographier")
+        snapshot = commande(
+            [python_dsoxlab(), "-c", _PHOTO_VM, host], journal, 120,
+        )
+        if snapshot.returncode != 0:
+            raise Echec(
+                f"photographie de {host} impossible : "
+                f"{snapshot.stderr.strip()[-600:]}"
+            )
+        try:
+            etat = json.loads(snapshot.stdout)
+        except json.JSONDecodeError as exc:
+            raise Echec(f"photographie de {host} illisible") from exc
+        required = ("images", "conteneurs", "volumes", "reseaux")
+        if (
+            not isinstance(etat, dict)
+            or any(not isinstance(etat.get(key), list) for key in required)
+            or any(not isinstance(name, str) for key in required for name in etat[key])
+            or not isinstance(etat.get("docker"), str)
+            or not isinstance(etat.get("store"), str)
+        ):
+            raise Echec(f"photographie de {host} incomplète")
+        etat["workdir_present"] = workdir(lab).is_dir()
+        etat["host"] = host
+        journal.write(f"\n# photographie de la VM {host}\n")
+        return etat
     etat = {
         "images": sorted(docker(["image", "ls", "--format", "{{.Repository}}:{{.Tag}}"])),
         "conteneurs": sorted(docker(["ps", "-a", "--format", "{{.Names}}"])),
@@ -139,12 +174,37 @@ def photographier(lab: Path, journal) -> dict:
     return etat
 
 
+_PHOTO_VM = """
+import json
+import sys
+from conftest import lab_host
+host = lab_host(sys.argv[1])
+def read(args):
+    result = host.run("docker " + args)
+    if result.rc != 0:
+        raise RuntimeError(result.stderr or result.stdout)
+    return sorted(line.strip() for line in result.stdout.splitlines() if line.strip())
+state = {
+    "images": read("image ls --no-trunc --format '{{.Repository}}:{{.Tag}}|{{.ID}}'"),
+    "conteneurs": read("ps -a --format '{{.Names}}'"),
+    "volumes": read("volume ls --format '{{.Name}}'"),
+    "reseaux": read("network ls --format '{{.Name}}'"),
+    "docker": read("version --format '{{.Server.Version}}'")[0],
+    "store": "containerd" if any("containerd.snapshotter" in line
+        for line in read("info --format '{{.DriverStatus}}'")) else "classic",
+}
+print(json.dumps(state))
+"""
+
+
 def ecarts(avant: dict, apres: dict) -> list[str]:
     """Ce que le lab a laissé derrière lui, nommé objet par objet."""
     trouves = []
     for categorie in ("images", "conteneurs", "volumes", "reseaux"):
         restes = sorted(set(apres[categorie]) - set(avant[categorie]))
         trouves += [f"{categorie[:-1]} laissé : {nom}" for nom in restes]
+        supprimes = sorted(set(avant[categorie]) - set(apres[categorie]))
+        trouves += [f"{categorie[:-1]} préexistant supprimé : {nom}" for nom in supprimes]
     if apres["workdir_present"]:
         trouves.append("le répertoire de travail existe encore après `clean`")
     return trouves
@@ -280,10 +340,6 @@ def valider(lab: Path, rejeu: bool = True) -> dict:
     resultat: dict = {
         "id": ident,
         "date": datetime.now(UTC).strftime("%Y-%m-%d"),
-        "docker": (docker(["version", "--format", "{{.Server.Version}}"]) or ["inconnue"])[0],
-        "store": "containerd" if any(
-            "containerd.snapshotter" in s for s in docker(["info", "--format", "{{.DriverStatus}}"])
-        ) else "classic",
     }
 
     def dire(message: str) -> None:
@@ -299,6 +355,16 @@ def valider(lab: Path, rejeu: bool = True) -> dict:
     with journal_path.open("w", encoding="utf-8") as journal:
         try:
             avant = photographier(lab, journal)
+            if "docker" in avant:
+                resultat["docker"] = avant["docker"]
+                resultat["store"] = avant["store"]
+                resultat["host"] = avant["host"]
+            else:
+                resultat["docker"] = (docker(["version", "--format", "{{.Server.Version}}"]) or ["inconnue"])[0]
+                resultat["store"] = "containerd" if any(
+                    "containerd.snapshotter" in line
+                    for line in docker(["info", "--format", "{{.DriverStatus}}"])
+                ) else "classic"
             if avant["workdir_present"]:
                 raise Echec(
                     "le répertoire de travail existe déjà : lancez "
@@ -323,7 +389,9 @@ def valider(lab: Path, rejeu: bool = True) -> dict:
             dire(f"après la solution : {resultat['apres']['passed']}/{resultat['apres']['total']}")
 
             if rejeu:
-                dsoxlab(["clean", ident, "--yes"], journal, 300)
+                res = dsoxlab(["clean", ident, "--yes"], journal, 300)
+                if res.returncode != 0:
+                    raise Echec(f"le premier dsoxlab clean a échoué (rc={res.returncode})")
                 res = dsoxlab(["run", ident], journal, 300)
                 if res.returncode != 0:
                     raise Echec(

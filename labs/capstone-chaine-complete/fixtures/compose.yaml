@@ -1,0 +1,28 @@
+services:
+  api:
+    image: ${API_IMAGE}
+    labels:
+      dsoxlab.lab: capstone-chaine-complete
+    ports:
+      - "127.0.0.1:18088:8080"
+    environment:
+      DB_HOST: db
+    depends_on:
+      - db
+  db:
+    image: postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    labels:
+      dsoxlab.lab: capstone-chaine-complete
+    environment:
+      POSTGRES_USER: delivery
+      POSTGRES_DB: delivery
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+secrets:
+  db_password:
+    file: ./db-password
+networks:
+  default:
+    labels:
+      dsoxlab.lab: capstone-chaine-complete

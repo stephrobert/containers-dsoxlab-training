@@ -1,13 +1,14 @@
 # Lab compose-resolution-des-variables. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: compose-resolution-des-variables                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Resolve Compose variables without mixing environments"
 level: c3                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Separate deployment interpolation from container environment and prove shell precedence by recreating a service."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - compose-interpolation
+  - container-environment
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m

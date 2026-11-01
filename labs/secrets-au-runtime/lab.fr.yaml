@@ -1,5 +1,2 @@
-# Surcharge française du lab secrets-au-runtime. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Garder un jeton runtime hors de l'environnement"
+description: "Fournir un jeton pédagogique aléatoire privé et vérifier sa consommation sans fuite dans l'environnement, les logs ni l'image."

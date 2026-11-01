@@ -1,5 +1,2 @@
-# Surcharge française du lab securite-socket-lecture-seule. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Remove direct Docker socket access"
+description: "Remove the host socket mount; read-only on a Unix socket does not create a read-only API."

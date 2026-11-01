@@ -1,10 +1,13 @@
-# Scenario
+# A service with too many privileges
 
-TO FILL IN: the situation, as the learner would meet it.
+A small worker was deployed with Docker's default root capabilities. Its only
+required privilege is binding a privileged port. Ownership changes are not part
+of its job.
 
-A scenario says **where we are and what is wrong**, not the steps to take:
-finding those is the learner's work.
+In `/opt/dsoxlab-securite-capabilities`, reduce the running `worker` to exactly
+NET_BIND_SERVICE. Keep the project `dsoxlab-securite-capabilities`, its lab label
+and `/proof`. The checker observes both Docker's configuration and PID 1's
+effective capability mask, then attempts a harmless ownership change.
 
-## Mission
-
-TO FILL IN.
+Only this disposable project is in scope. Do not change the daemon, use
+privileged mode or touch another container.

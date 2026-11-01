@@ -1,21 +1,41 @@
-"""Tests fonctionnels du lab container-limite-de-processus — SQUELETTE, à écrire.
+"""A finite 24-process burst, only after checking the effective 16-task cap."""
 
-Ce fichier échoue volontairement. Il ne s'agit pas d'une erreur : tant que les
-tests ne sont pas écrits, `dsoxlab check` doit rendre un échec plutôt qu'un
-succès qui ne prouve rien.
+import json
 
-Ce qu'un test de lab vérifie, c'est **l'état du système**, jamais qu'une
-commande a été tapée : un apprenant qui atteint le bon état par un autre chemin
-a réussi. Quand le sujet le justifie, vérifiez aussi que l'état survit à un
-redémarrage.
-"""
+import pytest
 
-from __future__ import annotations
+from conftest import lab_host, message
 
 
-def test_a_ecrire() -> None:
-    """Remplacez-moi par ce que le lab doit prouver."""
-    raise AssertionError(
-        "Les tests de ce lab restent à écrire. Vérifiez l'état du système "
-        "produit par la mission, pas les commandes tapées pour y arriver."
+@pytest.fixture
+def host():
+    return lab_host("docker.lab")
+
+
+def test_process_cap_really_rejects_a_finite_burst(host):
+    found = host.run(
+        "docker ps -q --filter label=com.docker.compose.project=dsoxlab-container-limite-de-processus "
+        "--filter label=com.docker.compose.service=worker"
     )
+    ids = found.stdout.split()
+    assert found.rc == 0 and len(ids) == 1, message(fr="Un service actif requis", en="One running service required")
+    cid = ids[0]
+    info = json.loads(host.run("docker inspect %s", cid).stdout)[0]
+    config = info["HostConfig"]
+    assert info["Config"]["Labels"].get("dsoxlab.lab") == "container-limite-de-processus", message(fr="Conserver le label", en="Preserve the label")
+    assert config["PidsLimit"] == 16 and 0 < config["Memory"] <= 67108864, message(fr="Plafonner à 16 tâches et 64 Mio maximum", en="Cap at 16 tasks and at most 64 MiB")
+    maximum = host.run("docker exec %s cat /sys/fs/cgroup/pids.max", cid)
+    assert maximum.rc == 0 and maximum.stdout.strip() == "16", message(fr="Le cgroup doit porter la limite", en="Cgroup must carry the limit")
+    before = host.run("docker exec %s cat /sys/fs/cgroup/pids.events", cid)
+    assert before.rc == 0, message(fr="Lire les événements avant la sonde", en="Read events before the probe")
+    count = int(dict(line.split() for line in before.stdout.splitlines())["max"])
+    host.run(
+        "timeout 8 docker exec %s sh -c "
+        "'for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24; do sleep 2 & done; wait'",
+        cid,
+    )
+    host.run("sleep 3")
+    after = host.run("docker exec %s cat /sys/fs/cgroup/pids.events", cid)
+    assert after.rc == 0 and int(dict(line.split() for line in after.stdout.splitlines())["max"]) > count, message(fr="Le noyau doit refuser au moins une création", en="Kernel must reject at least one creation")
+    state = json.loads(host.run("docker inspect %s", cid).stdout)[0]["State"]
+    assert state["Running"] and not state["OOMKilled"], message(fr="Le service doit survivre sans OOM", en="Service must survive without OOM")

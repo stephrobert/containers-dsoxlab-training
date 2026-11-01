@@ -1,21 +1,21 @@
-# Lab donnees-volume-orphelin. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: donnees-volume-orphelin                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c4                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#bonnes-pratiques-de-gestion-des-volumes   # REQUIS, http(s)
-lab_type: challenge
+id: donnees-volume-orphelin
+title: "Recover retained orphan data and remove only disposable data"
+level: c4
+description: "Reconnect a retained original volume read-only and delete only the uniquely labelled expendable lab orphan."
+skills:
+  - docker
+  - volumes
+  - resource-cleanup
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#bonnes-pratiques-de-gestion-des-volumes
+lab_type: lab
 estimated_time: 30m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true

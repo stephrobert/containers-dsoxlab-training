@@ -1,10 +1,139 @@
 ---
-# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
-# le scénario décrit.
-- name: Préparer le lab docker-contexte-ssh
+- name: Prepare lab docker-contexte-ssh
   hosts: lab_target
   become: true
+  vars:
+    pinned_image: alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    lab_user: "{{ ansible_user | default('ansible') }}"
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Install Docker and the small test runtime
+      ansible.builtin.apt:
+        name: [docker.io, python3, openssh-client, openssh-server]
+        state: present
+        update_cache: true
+    - name: Ensure Docker is available for this host lab
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+    - name: Refuse to overwrite lab-labelled containers or volumes
+      ansible.builtin.shell: |
+        set -eu
+        test -z "$(docker ps -aq --filter label=dsoxlab.lab=docker-contexte-ssh)"
+        test -z "$(docker volume ls -q --filter label=dsoxlab.lab=docker-contexte-ssh)"
+      args:
+        executable: /bin/sh
+      changed_when: false
+    - name: Refuse to overwrite a previous lab work directory
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-docker-contexte-ssh
+      register: workdir_state
+    - name: Require a clean lab work directory
+      ansible.builtin.assert:
+        that: not workdir_state.stat.exists
+        fail_msg: "/opt/dsoxlab-docker-contexte-ssh already exists; cleanup must restore the previous run first."
+    - name: Create the unique lab work directory
+      ansible.builtin.file:
+        path: /opt/dsoxlab-docker-contexte-ssh
+        state: directory
+        owner: root
+        group: "{{ lab_user }}"
+        mode: "0750"
+    - name: Check whether the pinned image is already present
+      ansible.builtin.command: docker image inspect "{{ pinned_image }}"
+      register: image_state
+      changed_when: false
+      failed_when: false
+    - name: Pull the pinned disposable image only when absent
+      ansible.builtin.command: docker pull "{{ pinned_image }}"
+      when: image_state.rc != 0
+    - name: Refuse to overwrite an existing exercise account
+      ansible.builtin.command: getent passwd dsoxlab-context
+      register: context_account
+      changed_when: false
+      failed_when: context_account.rc == 0
+    - name: Refuse to overwrite the learner context
+      become_user: "{{ lab_user }}"
+      ansible.builtin.command: docker context inspect dsoxlab-maintenance
+      register: context_existing
+      changed_when: false
+      failed_when: context_existing.rc == 0
+    - name: Mark the context name as reserved for this lab
+      ansible.builtin.file:
+        path: /opt/dsoxlab-docker-contexte-ssh/context-owned
+        state: touch
+        mode: "0600"
+    - name: Create the dedicated SSH Docker account
+      ansible.builtin.user:
+        name: dsoxlab-context
+        comment: "dsoxlab docker context exercise"
+        home: /var/lib/dsoxlab-context
+        create_home: true
+        shell: /bin/sh
+        groups: docker
+        append: true
+        state: present
+    - name: Mark the account as lab-owned
+      ansible.builtin.file:
+        path: /opt/dsoxlab-docker-contexte-ssh/account-created
+        state: touch
+        mode: "0600"
+    - name: Create a dedicated SSH key without touching learner keys
+      ansible.builtin.command: ssh-keygen -q -t ed25519 -N "" -f /opt/dsoxlab-docker-contexte-ssh/id_ed25519
+      args:
+        creates: /opt/dsoxlab-docker-contexte-ssh/id_ed25519
+    - name: Restrict the dedicated private key to the learner
+      ansible.builtin.file:
+        path: /opt/dsoxlab-docker-contexte-ssh/id_ed25519
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0600"
+    - name: Read the dedicated public key
+      ansible.builtin.command: cat /opt/dsoxlab-docker-contexte-ssh/id_ed25519.pub
+      register: context_public_key
+      changed_when: false
+    - name: Install only the dedicated key for the loopback account
+      ansible.posix.authorized_key:
+        user: dsoxlab-context
+        key: "{{ context_public_key.stdout }}"
+        state: present
+    - name: Ensure the existing SSH service remains available
+      ansible.builtin.systemd_service:
+        name: ssh
+        state: started
+    - name: Ensure the learner SSH configuration directory exists
+      ansible.builtin.file:
+        path: "/home/{{ lab_user }}/.ssh"
+        state: directory
+        owner: "{{ lab_user }}"
+        group: "{{ lab_user }}"
+        mode: "0700"
+    - name: Add an isolated SSH host alias for this exercise
+      ansible.builtin.blockinfile:
+        path: "/home/{{ lab_user }}/.ssh/config"
+        create: true
+        owner: "{{ lab_user }}"
+        group: "{{ lab_user }}"
+        mode: "0600"
+        marker: "# {mark} DSOXLAB docker-contexte-ssh"
+        block: |
+          Host dsoxlab-ssh-target
+            HostName 127.0.0.1
+            User dsoxlab-context
+            IdentityFile /opt/dsoxlab-docker-contexte-ssh/id_ed25519
+            IdentitiesOnly yes
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+    - name: Read the learner's current Docker context
+      become_user: "{{ lab_user }}"
+      ansible.builtin.command: docker context show
+      register: default_context
+      changed_when: false
+    - name: Save the learner and default-context expectations
+      ansible.builtin.copy:
+        dest: /opt/dsoxlab-docker-contexte-ssh/state.json
+        mode: "0644"
+        content: "{{ {'learner': lab_user, 'default_context': default_context.stdout | trim} | to_json }}\n"
+    - name: Install this lab's bilingual mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/dsoxlab-docker-contexte-ssh/MISSION.md
+        mode: "0644"

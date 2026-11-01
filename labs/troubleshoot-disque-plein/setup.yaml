@@ -1,10 +1,75 @@
 ---
-# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
-# le scénario décrit.
-- name: Préparer le lab troubleshoot-disque-plein
+- name: Simulate ENOSPC only inside a hard-capped container filesystem
   hosts: lab_target
   become: true
+  vars:
+    lab: troubleshoot-disque-plein
+    work: /opt/dsoxlab-troubleshoot-disque-plein
+    image: alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Require the existing engine and sufficient memory for the 16 MiB sandbox
+      ansible.builtin.shell: |
+        set -eu
+        docker info >/dev/null
+        docker compose version >/dev/null 2>&1 || docker-compose version >/dev/null
+        test "$(awk '/MemAvailable/ {print $2}' /proc/meminfo)" -gt 131072
+        test ! -e "{{ work }}"
+        test ! -L "{{ work }}"
+        test -z "$(docker ps -aq --filter label=com.docker.compose.project=dsoxlab-{{ lab }})"
+      changed_when: false
+    - name: Create the learner-owned workspace
+      ansible.builtin.file:
+        path: "{{ work }}"
+        state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0750"
+    - name: Record image ownership
+      ansible.builtin.shell: |
+        set -eu
+        printf '%s\n' '{{ lab }}' > "{{ work }}/.owner"
+        if ! docker image inspect "{{ image }}" >/dev/null 2>&1; then
+          touch "{{ work }}/.image-owned"
+          docker pull "{{ image }}" >/dev/null
+        fi
+      changed_when: true
+    - name: Install the finite ENOSPC project
+      ansible.builtin.copy:
+        src: assets/
+        dest: "{{ work }}/"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: preserve
+    - name: Start the hard-capped sandbox
+      ansible.builtin.shell: |
+        set -eu
+        cd "{{ work }}"
+        if docker compose version >/dev/null 2>&1; then docker compose -p dsoxlab-{{ lab }} up -d; else docker-compose -p dsoxlab-{{ lab }} up -d; fi
+      changed_when: true
+    - name: Wait for the bounded initial fill to finish
+      ansible.builtin.shell: |
+        id="$(docker ps -q --filter label=com.docker.compose.project=dsoxlab-{{ lab }} --filter label=com.docker.compose.service=worker)"
+        test -n "$id"
+        docker exec "$id" test -e /run/fill-complete
+      register: filled
+      until: filled.rc == 0
+      retries: 10
+      delay: 1
+      changed_when: false
+    - name: Record the initial container identity and prove ENOSPC before work
+      ansible.builtin.shell: |
+        set -eu
+        id="$(docker ps -q --filter label=com.docker.compose.project=dsoxlab-{{ lab }} --filter label=com.docker.compose.service=worker)"
+        docker inspect -f '{% raw %}{{.Id}}{% endraw %}' "$id" > "{{ work }}/.starter-id"
+        chmod 444 "{{ work }}/.starter-id"
+        test "$(docker exec "$id" stat -f -c %T /sandbox)" = tmpfs
+        test "$(docker exec "$id" df -Pk /sandbox | awk 'END {print $2}')" = 16384
+        if docker exec "$id" dd if=/dev/zero of=/sandbox/.setup-probe bs=4096 count=1 2>/dev/null; then
+          docker exec "$id" rm -f /sandbox/.setup-probe
+          exit 1
+        fi
+        docker exec "$id" rm -f /sandbox/.setup-probe
+      changed_when: true
+    - name: Install the mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: "{{ work }}/MISSION.md"
+        mode: "0644"

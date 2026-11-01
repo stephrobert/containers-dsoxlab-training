@@ -1,9 +1,7 @@
-# compose-tache-de-migration
+# One-shot migration with a real SQLite database
 
-**Audience:** the learner.
-
-TO FILL IN: what this lab teaches, in one sentence.
-
-## What you will be able to do
-
-- TO FILL IN.
+Three checks measure completed migration and dependency gating, idempotent reruns
+with fresh data, and cold-start/failure behavior in separate disposable projects.
+Failed gating requires app to remain created, not start then crash.
+Trial volumes are removed; the learner database is preserved until lab cleanup.
+SQLite is installed when building the pinned Alpine fixture image.

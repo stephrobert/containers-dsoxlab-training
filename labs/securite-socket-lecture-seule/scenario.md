@@ -1,10 +1,7 @@
 # Scenario
 
-TO FILL IN: the situation, as the learner would meet it.
-
-A scenario says **where we are and what is wrong**, not the steps to take:
-finding those is the learner's work.
+An application container mounts /var/run/docker.sock as read-only. The team assumes :ro prevents mutating API calls, which is not a safe assumption.
 
 ## Mission
 
-TO FILL IN.
+The labelled application container has no mount of the host Docker socket.

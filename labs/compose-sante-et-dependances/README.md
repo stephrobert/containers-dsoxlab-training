@@ -1,9 +1,6 @@
-# compose-sante-et-dependances
+# Readiness differs from liveness
 
-**Audience:** the learner.
-
-TO FILL IN: what this lab teaches, in one sentence.
-
-## What you will be able to do
-
-- TO FILL IN.
+Three checks measure healthy startup, loss of readiness with liveness preserved,
+and isolated slow/blocked cold starts. App has no retries or restart policy to hide
+a premature start. Trials restore readiness and remove their own projects.
+Cleanup removes project-labeled resources and lab-labeled images only.

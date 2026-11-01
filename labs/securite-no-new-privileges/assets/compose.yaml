@@ -1,0 +1,10 @@
+services:
+  worker:
+    image: dsoxlab-securite-no-new-privileges-probe:1
+    labels:
+      dsoxlab.lab: securite-no-new-privileges
+    network_mode: none
+    mem_limit: 64m
+    memswap_limit: 64m
+    pids_limit: 32
+    cpus: 0.25

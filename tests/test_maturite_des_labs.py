@@ -53,6 +53,10 @@ donc rien ne l'a jamais jouée.
 
 from __future__ import annotations
 
+import io
+import json
+import runpy
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -93,6 +97,103 @@ def a_une_solution(rel: str) -> bool:
 TOUS = tous_les_labs()
 SQUELETTES = [rel for rel in TOUS if est_un_squelette(rel)]
 ECRITS = [rel for rel in TOUS if not est_un_squelette(rel)]
+
+
+@pytest.fixture
+def validateur(monkeypatch):
+    monkeypatch.syspath_prepend(str(RACINE / "scripts"))
+    return runpy.run_path(str(RACINE / "scripts/valider-labs.py"))
+
+
+def test_la_photographie_vm_interroge_la_cible_pas_le_poste(validateur, tmp_path, monkeypatch):
+    lab = tmp_path / "lab"
+    lab.mkdir()
+    (lab / "lab.yaml").write_text(
+        "runtime:\n  type: vm\n  default: second\n  targets:\n"
+        "    - {name: first, host: first.lab}\n"
+        "    - {name: second, host: second.lab}\n"
+    )
+    monkeypatch.delenv("DSOXLAB_TARGET_HOST", raising=False)
+    state = {
+        "images": ["image:tag|sha256:abc"], "conteneurs": [], "volumes": [],
+        "reseaux": ["bridge"], "docker": "26.1.5", "store": "classic",
+    }
+    called = []
+
+    def command(args, journal, timeout):
+        called.append(args)
+        return subprocess.CompletedProcess(args, 0, json.dumps(state), "")
+
+    def local_docker(_args):
+        pytest.fail("Une photographie VM ne doit pas interroger le Docker du poste.")
+
+    globals_ = validateur["photographier"].__globals__
+    monkeypatch.setitem(globals_, "commande", command)
+    monkeypatch.setitem(globals_, "docker", local_docker)
+    photo = validateur["photographier"](lab, io.StringIO())
+    assert called[0][-1] == "second.lab"
+    assert photo["images"] == state["images"]
+    assert photo["docker"] == "26.1.5"
+
+
+@pytest.mark.parametrize("code,output", [
+    (1, ""), (0, "not json"), (0, "{}"),
+    (0, '{"images":[null],"conteneurs":[],"volumes":[],"reseaux":[],"docker":"26","store":"classic"}'),
+])
+def test_une_photographie_vm_impossible_ne_devient_pas_un_etat_vide(
+    validateur, tmp_path, monkeypatch, code, output,
+):
+    (tmp_path / "lab.yaml").write_text(
+        "runtime:\n  type: vm\n  targets:\n    - {name: cible, host: docker.lab}\n"
+    )
+    monkeypatch.setitem(
+        validateur["photographier"].__globals__, "commande",
+        lambda args, journal, timeout: subprocess.CompletedProcess(args, code, output, "SSH failed"),
+    )
+    with pytest.raises(validateur["Echec"], match="photographie"):
+        validateur["photographier"](tmp_path, io.StringIO())
+
+
+def test_la_photographie_distingue_les_images_orphelines(validateur):
+    baseline = {
+        "images": ["<none>:<none>|sha256:old"], "conteneurs": [],
+        "volumes": [], "reseaux": [], "workdir_present": False,
+    }
+    after = dict(baseline, images=baseline["images"] + ["<none>:<none>|sha256:new"])
+    assert validateur["ecarts"](baseline, after) == [
+        "image laissé : <none>:<none>|sha256:new",
+    ]
+
+
+def test_un_nettoyage_ne_peut_pas_supprimer_les_objets_preexistants(validateur):
+    baseline = {
+        "images": [], "conteneurs": [], "volumes": ["travail-apprenant"],
+        "reseaux": [], "workdir_present": False,
+    }
+    after = dict(baseline, volumes=[])
+    assert validateur["ecarts"](baseline, after) == [
+        "volume préexistant supprimé : travail-apprenant",
+    ]
+
+
+def test_la_photographie_shell_reste_locale(validateur, tmp_path, monkeypatch):
+    (tmp_path / "lab.yaml").write_text("runtime:\n  type: shell\n")
+    called = []
+
+    def docker(args):
+        called.append(args)
+        return []
+
+    def remote(*_args):
+        pytest.fail("Une photographie shell ne doit pas lancer un relevé SSH.")
+
+    globals_ = validateur["photographier"].__globals__
+    monkeypatch.setitem(globals_, "docker", docker)
+    monkeypatch.setitem(globals_, "commande", remote)
+    photo = validateur["photographier"](tmp_path, io.StringIO())
+    assert len(called) == 4
+    assert photo["images"] == []
+    assert "host" not in photo
 
 
 def test_le_catalogue_se_lit_dans_les_deux_etats() -> None:

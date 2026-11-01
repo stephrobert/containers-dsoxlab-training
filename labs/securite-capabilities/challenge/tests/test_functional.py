@@ -1,21 +1,34 @@
-"""Tests fonctionnels du lab securite-capabilities — SQUELETTE, à écrire.
+"""A single scored proof: declared and effective capabilities must agree."""
 
-Ce fichier échoue volontairement. Il ne s'agit pas d'une erreur : tant que les
-tests ne sont pas écrits, `dsoxlab check` doit rendre un échec plutôt qu'un
-succès qui ne prouve rien.
+import json
 
-Ce qu'un test de lab vérifie, c'est **l'état du système**, jamais qu'une
-commande a été tapée : un apprenant qui atteint le bon état par un autre chemin
-a réussi. Quand le sujet le justifie, vérifiez aussi que l'état survit à un
-redémarrage.
-"""
+import pytest
 
-from __future__ import annotations
+from conftest import lab_host, message
+
+PROJECT = "dsoxlab-securite-capabilities"
+
+@pytest.fixture
+def host():
+    return lab_host("docker.lab")
 
 
-def test_a_ecrire() -> None:
-    """Remplacez-moi par ce que le lab doit prouver."""
-    raise AssertionError(
-        "Les tests de ce lab restent à écrire. Vérifiez l'état du système "
-        "produit par la mission, pas les commandes tapées pour y arriver."
+def test_only_bind_service_remains(host):
+    found = host.run(
+        "docker ps -q --filter label=com.docker.compose.project=%s "
+        "--filter label=com.docker.compose.service=worker", PROJECT,
     )
+    ids = found.stdout.split()
+    assert found.rc == 0 and len(ids) == 1, message(fr="Un service actif requis", en="One running service required")
+    cid = ids[0]
+    info = json.loads(host.run("docker inspect %s", cid).stdout)[0]
+    config = info["HostConfig"]
+    assert info["Config"]["Labels"].get("dsoxlab.lab") == "securite-capabilities", message(fr="Conserver le label", en="Preserve the label")
+    assert config["CapDrop"] == ["ALL"] and config["CapAdd"] == ["NET_BIND_SERVICE"], message(fr="Retirer ALL et ne garder que NET_BIND_SERVICE", en="Drop ALL and retain only NET_BIND_SERVICE")
+    status = host.run("docker exec %s cat /proc/1/status", cid)
+    effective = next(line.split()[1] for line in status.stdout.splitlines() if line.startswith("CapEff:"))
+    assert status.rc == 0 and int(effective, 16) == 1 << 10, message(fr="Le masque effectif doit valoir 0x400", en="Effective mask must be 0x400")
+    denied = host.run("docker exec %s chown 123:123 /proof", cid)
+    assert denied.rc != 0, message(fr="CHOWN doit réellement être refusé", en="CHOWN must actually be denied")
+    owner = host.run("docker exec %s stat -c %%u /proof", cid)
+    assert owner.rc == 0 and owner.stdout.strip() == "0", message(fr="La sonde ne doit pas changer le propriétaire", en="Probe must not change the owner")

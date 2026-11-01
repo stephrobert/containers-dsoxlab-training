@@ -1,10 +1,7 @@
 # Scenario
 
-TO FILL IN: the situation, as the learner would meet it.
-
-A scenario says **where we are and what is wrong**, not the steps to take:
-finding those is the learner's work.
+A temporary audit account no longer needs its root-equivalent Docker group grant. Keep the dedicated account and do not alter your own access.
 
 ## Mission
 
-TO FILL IN.
+dsoxlab-auditor remains present but is no longer a member of docker.

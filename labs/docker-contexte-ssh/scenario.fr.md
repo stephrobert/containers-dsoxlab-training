@@ -1,10 +1,7 @@
 # Scénario
 
-À remplir : la situation, telle que l'apprenant la rencontrerait.
-
-Un scénario dit **où on est et ce qui ne va pas**, pas la marche à suivre :
-c'est le travail de l'apprenant de la trouver.
+L’exploitation a besoin d’un contexte nommé pour le moteur de préproduction. Une identité SSH dédiée et un compte limité à la boucle locale sont prêts. Ne changez pas le contexte par défaut.
 
 ## Mission
 
-À remplir.
+Le contexte nommé joint le démon du lab par SSH ; le contexte par défaut reste sélectionné.

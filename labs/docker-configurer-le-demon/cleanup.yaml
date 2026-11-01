@@ -1,10 +1,51 @@
 ---
-# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
-# posé, pour que le lab se rejoue à l'identique.
-- name: Défaire le lab docker-configurer-le-demon
+- name: Clean lab docker-configurer-le-demon
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Read the saved daemon configuration presence marker
+      ansible.builtin.slurp:
+        src: /opt/dsoxlab-docker-configurer-le-demon/config-presence
+      register: daemon_presence
+      failed_when: false
+    - name: Restore the original daemon.json when it existed
+      ansible.builtin.copy:
+        src: /opt/dsoxlab-docker-configurer-le-demon/daemon.json.before
+        dest: /etc/docker/daemon.json
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0644"
+      when: daemon_presence.content is defined and (daemon_presence.content | b64decode | trim) == 'present'
+    - name: Remove daemon.json only when it was absent before the lab
+      ansible.builtin.file:
+        path: /etc/docker/daemon.json
+        state: absent
+      when: daemon_presence.content is defined and (daemon_presence.content | b64decode | trim) == 'absent'
+    - name: Restart Docker after restoring its original configuration
+      ansible.builtin.systemd_service:
+        name: docker
+        state: restarted
+      when: daemon_presence.content is defined
+    - name: Remove only containers carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker ps -aq --filter label=dsoxlab.lab=docker-configurer-le-demon)"
+        if [ -n "$ids" ]; then docker rm -f $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove only volumes carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker volume ls -q --filter label=dsoxlab.lab=docker-configurer-le-demon)"
+        if [ -n "$ids" ]; then docker volume rm $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove the unique work directory created for this lab
+      ansible.builtin.file:
+        path: /opt/dsoxlab-docker-configurer-le-demon
+        state: absent

@@ -1,13 +1,15 @@
 # Lab images-epingler-par-digest. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-epingler-par-digest                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Keep a rebuild on its approved base when a tag moves"
 level: c2                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Pin a build to its approved registry manifest, rebuild after a source change, and prove that replacing the base tag does not change the delivered base."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - dockerfile
+  - image-digest
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/#tags-vs-digests--la-distinction-critique   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m

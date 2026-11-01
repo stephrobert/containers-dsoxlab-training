@@ -1,5 +1,5 @@
 # Surcharge française du lab compose-secrets. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Accorder un secret Compose uniquement à son consommateur"
+description: "Monter un secret fichier en lecture seule pour un service, sans fuite dans les métadonnées ni accès par un autre service."

@@ -1,9 +1,9 @@
-# donnees-postgres-sauvegarde
+# PostgreSQL backup and restore
 
-**Audience:** the learner.
+The functional check verifies a real PostgreSQL custom-format dump by
+restoring it into an isolated scratch database and comparing actual rows with
+the source and requested restore database. The test removes its own scratch
+database even when a check fails.
 
-TO FILL IN: what this lab teaches, in one sentence.
-
-## What you will be able to do
-
-- TO FILL IN.
+Cleanup drops only databases carrying this run's random ownership marker and
+removes the lab's own backup directory.

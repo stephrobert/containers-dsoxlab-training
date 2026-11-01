@@ -1,13 +1,15 @@
 # Lab buildkit-cache-monte. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: buildkit-cache-monte                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Reuse dependencies when the build step runs again"
 level: c2                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Keep a dependency cache outside image layers, reuse it when the source changes, and retain a working cold build."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - buildkit
+  - cache-mount
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#cache-avancé   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m

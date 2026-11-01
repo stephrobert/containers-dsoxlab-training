@@ -5,6 +5,102 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer Docker et Compose v2
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose, curl]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Vérifier que le plugin Compose répond
+      ansible.builtin.command:
+        cmd: docker compose version
+      changed_when: false
+
+    - name: Repartir sans ancienne déclaration
+      ansible.builtin.file:
+        path: /opt/lab-compose-first
+        state: absent
+
+    - name: Créer les contextes des deux services
+      ansible.builtin.file:
+        path: "/opt/lab-compose-first/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [web/cgi-bin, api]
+
+    - name: Tirer Alpine épinglée
+      ansible.builtin.command:
+        cmd: docker pull alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+      register: pulled
+      changed_when: "'Downloaded newer image' in pulled.stdout"
+
+    - name: Tirer la release de l'application
+      ansible.builtin.set_fact:
+        release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters']) }}"
+
+    - name: Déposer le contenu du service API
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-first/api/release.txt
+        content: "{{ release }}\n"
+        mode: "0644"
+
+    - name: Déposer le relais HTTP qui utilise le DNS du service API
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-first/web/cgi-bin/release
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          printf 'Content-Type: text/plain\r\n\r\n'
+          wget -qO- http://api:8080/release.txt
+
+    - name: Déposer le Dockerfile API
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-first/api/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="compose-premiere-stack"
+          RUN apk add --no-cache busybox-extras
+          COPY release.txt /www/release.txt
+          CMD ["busybox-extras", "httpd", "-f", "-p", "8080", "-h", "/www"]
+
+    - name: Déposer le Dockerfile web
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-first/web/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="compose-premiere-stack"
+          RUN apk add --no-cache busybox-extras
+          COPY cgi-bin /www/cgi-bin
+          CMD ["busybox-extras", "httpd", "-f", "-p", "8080", "-h", "/www"]
+
+    - name: Construire les deux images sans lancer de conteneur
+      ansible.builtin.command:
+        cmd: docker build -t dsoxlab-compose-first:{{ item }} /opt/lab-compose-first/{{ item }}
+      loop: [api, web]
+      changed_when: true
+
+    - name: Garder la release attendue
+      ansible.builtin.copy:
+        dest: /root/.lab-compose-first.json
+        content: "{{ {'release': release} | to_json }}"
+        mode: "0600"
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

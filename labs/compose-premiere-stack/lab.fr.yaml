@@ -1,5 +1,5 @@
 # Surcharge française du lab compose-premiere-stack. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Démarrer et recréer une application Compose à deux services"
+description: "Décrire deux services avec Compose, les relier par le DNS des services et recréer l'application depuis sa déclaration."

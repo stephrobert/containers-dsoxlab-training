@@ -5,6 +5,153 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer Docker, Buildx et le client de registre
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx, skopeo]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Retirer le registre d'un passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if docker container inspect dsoxlab-pin-registry >/dev/null 2>&1; then
+            docker rm -f dsoxlab-pin-registry
+          fi
+      changed_when: false
+
+    - name: Retirer l'ancien atelier
+      ansible.builtin.file:
+        path: /opt/lab-image-pin
+        state: absent
+
+    - name: Créer les contextes et le stockage
+      ansible.builtin.file:
+        path: "/opt/lab-image-pin/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [base, appli, registry]
+
+    - name: Tirer les identités de socle
+      ansible.builtin.set_fact:
+        approved: "approved-{{ lookup('ansible.builtin.password', '/dev/null', length=20, chars=['ascii_letters']) }}"
+        replacement: "replacement-{{ lookup('ansible.builtin.password', '/dev/null', length=20, chars=['ascii_letters']) }}"
+        source: "source-{{ lookup('ansible.builtin.password', '/dev/null', length=20, chars=['ascii_letters']) }}"
+
+    - name: Déposer le Dockerfile du socle
+      ansible.builtin.copy:
+        dest: /opt/lab-image-pin/base/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="images-epingler-par-digest"
+          COPY base.txt /base.txt
+
+    - name: Tirer le registre épinglé
+      ansible.builtin.command:
+        cmd: docker pull registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      register: registry_pull
+      changed_when: "'Downloaded newer image' in registry_pull.stdout"
+
+    - name: Démarrer le registre propre au lab
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name dsoxlab-pin-registry -p 127.0.0.1:15004:5000
+          -v /opt/lab-image-pin/registry:/var/lib/registry
+          registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      changed_when: true
+
+    - name: Attendre le registre
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 15004
+        timeout: 20
+
+    - name: Poser le socle approuvé
+      ansible.builtin.copy:
+        dest: /opt/lab-image-pin/base/base.txt
+        content: "{{ approved }}\n"
+        mode: "0644"
+
+    - name: Construire et publier le socle approuvé
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker build -t 127.0.0.1:15004/socle:approved /opt/lab-image-pin/base
+          docker push 127.0.0.1:15004/socle:approved
+      changed_when: true
+
+    - name: Relever le manifeste approuvé
+      ansible.builtin.command:
+        cmd: skopeo inspect --tls-verify=false docker://127.0.0.1:15004/socle:approved
+      register: approved_manifest
+      changed_when: false
+
+    - name: Conserver le bon du socle pour l'apprenant
+      ansible.builtin.copy:
+        dest: /opt/lab-image-pin/approbation.json
+        content: "{{ {'reference': '127.0.0.1:15004/socle@' ~ (approved_manifest.stdout | from_json).Digest, 'base': approved} | to_json }}"
+        mode: "0644"
+
+    - name: Relever les couches approuvées
+      ansible.builtin.command:
+        cmd: docker image inspect 127.0.0.1:15004/socle:approved --format '{% raw %}{{json .RootFS.Layers}}{% endraw %}'
+      register: approved_layers
+      changed_when: false
+
+    - name: Garder le relevé du banc
+      ansible.builtin.copy:
+        dest: /root/.lab-image-pin.json
+        content: "{{ {'reference': '127.0.0.1:15004/socle@' ~ (approved_manifest.stdout | from_json).Digest, 'layers': approved_layers.stdout | from_json, 'base': approved, 'source': source} | to_json }}"
+        mode: "0600"
+
+    - name: Préparer le socle de remplacement
+      ansible.builtin.copy:
+        dest: /opt/lab-image-pin/base/base.txt
+        content: "{{ replacement }}\n"
+        mode: "0644"
+
+    - name: Construire et publier le remplacement
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker build -t 127.0.0.1:15004/socle:replacement /opt/lab-image-pin/base
+          docker push 127.0.0.1:15004/socle:replacement
+          skopeo copy --src-tls-verify=false --dest-tls-verify=false \
+            docker://127.0.0.1:15004/socle:replacement docker://127.0.0.1:15004/socle:stable
+      changed_when: true
+
+    - name: Déposer la source de l'application
+      ansible.builtin.copy:
+        dest: /opt/lab-image-pin/appli/source.txt
+        content: "{{ source }}\n"
+        mode: "0644"
+
+    # dsoxlab:tag-nu-volontaire : le FROM flottant est le défaut à corriger.
+    - name: Déposer le Dockerfile non épinglé de l'application
+      ansible.builtin.copy:
+        dest: /opt/lab-image-pin/appli/Dockerfile
+        mode: "0644"
+        content: |
+          FROM 127.0.0.1:15004/socle:stable
+          LABEL dsoxlab.lab="images-epingler-par-digest"
+          COPY source.txt /source.txt
+          CMD ["sh", "-c", "cat /base.txt /source.txt"]
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

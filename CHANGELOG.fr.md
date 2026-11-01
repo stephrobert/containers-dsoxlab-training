@@ -13,6 +13,48 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ---
 
+## [Unreleased]
+
+### Ajouté
+
+- Neuf labs complétés sur `chantier/labs-restants` : `buildkit-cache-monte`,
+  `buildkit-secret-de-build`, `registry-tag-push-pull`,
+  `registry-tag-contre-digest`, `images-epingler-par-digest`,
+  `registry-locale-tls`, `registry-authentification`, `registry-air-gap`
+  et `compose-premiere-stack`, avec énoncés et indices bilingues,
+  solutions de référence chiffrées et attestations runtime.
+- La confiance des registres est mesurée par de vrais refus après retrait de
+  la CA. Les contrôles air-gap refusent des couches absentes malgré un cache
+  Docker chaud et une somme recalculée. Compose recrée ses deux services.
+- Huit autres labs Compose couvrent résolution des variables, isolation réseau,
+  persistance, migration ponctuelle, secrets, dépendances de santé, budgets
+  de ressources et environnements multiples. Chacun porte des textes bilingues,
+  une solution chiffrée et un cycle VM mesuré 0 → 100 → 0.
+  Les essais vérifient l'isolation par IP, les nouvelles écritures persistantes,
+  les refus de démarrage après tâche échouée ou disponibilité absente, la rotation
+  du jeton, les cgroups effectifs et la recréation indépendante des environnements.
+- Sept derniers labs d'administration et de sécurité couvrent les valeurs par
+  défaut du démon Docker, les contextes SSH, la rotation des journaux par
+  conteneur, le retrait du privilège du groupe Docker, le mode rootless, les
+  montages de socket dangereux et un proxy d'API à privilèges minimaux. Chacun
+  comporte des consignes bilingues, une solution chiffrée et une attestation VM
+  avec nettoyage vérifié.
+- Le lab de sauvegarde PostgreSQL a désormais une solution de référence chiffrée
+  et des tests qui restaurent indépendamment une sauvegarde personnalisée puis
+  comparent les lignes réelles.
+- Les 71 labs du catalogue ont maintenant un verdict `VALIDE` dans
+  `validation-labs.json` ; le capstone final et la nouvelle révision du proxy
+  de socket ont réussi leur cycle VM.
+
+### Corrigé
+
+- La validation des labs VM photographie désormais Docker par SSH sur la
+  cible réelle, identifiants des images orphelines compris, et non sur le
+  poste. Le nettoyage refuse aussi la suppression d'objets préexistants.
+  Les nouveaux labs retirent leurs images intermédiaires étiquetées sans
+  purge globale. Les attestations antérieures doivent être rejouées avant
+  de revendiquer cette garantie renforcée.
+
 ## [0.2.3] - 2026-10-23
 
 ### Ajouté

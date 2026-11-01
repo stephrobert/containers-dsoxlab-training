@@ -5,6 +5,63 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer Docker et Buildx
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Créer le contexte
+      ansible.builtin.file:
+        path: "/opt/lab-buildkit-cache/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: ["", source, depot]
+
+    - name: Poser la source et la dépendance du dépôt local
+      ansible.builtin.copy:
+        dest: "/opt/lab-buildkit-cache/{{ item.path }}"
+        content: "{{ item.content }}\n"
+        mode: "0644"
+      loop:
+        - path: source/version.txt
+          content: "source-{{ lookup('ansible.builtin.password', '/dev/null', length=16, chars=['ascii_letters']) }}"
+        - path: depot/dependency.txt
+          content: "dependency-{{ lookup('ansible.builtin.password', '/dev/null', length=16, chars=['ascii_letters']) }}"
+
+    - name: Déposer l'outil de fabrication
+      ansible.builtin.copy:
+        src: fixtures/fabriquer.sh
+        dest: /opt/lab-buildkit-cache/fabriquer.sh
+        mode: "0755"
+
+    - name: Déposer le Dockerfile sans cache monté
+      ansible.builtin.copy:
+        dest: /opt/lab-buildkit-cache/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="buildkit-cache-monte"
+          COPY fabriquer.sh /usr/local/bin/fabriquer
+          COPY depot /depot
+          COPY source /source
+          RUN sh /usr/local/bin/fabriquer
+          CMD ["cat", "/produit/receipt.txt"]
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

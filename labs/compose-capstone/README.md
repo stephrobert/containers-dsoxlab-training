@@ -1,9 +1,9 @@
-# compose-capstone
+# Compose capstone
 
-**Audience:** the learner.
+This lab checks a complete two-service stack: a successful one-shot writer,
+shared named data, service ordering, a read-only web mount, health, and a
+loopback-only endpoint. The functional check recreates only web and confirms
+the release data remains available.
 
-TO FILL IN: what this lab teaches, in one sentence.
-
-## What you will be able to do
-
-- TO FILL IN.
+Run the normal lab cleanup before replaying it. Cleanup removes only containers,
+networks, volumes and the image carrying this lab's labels.

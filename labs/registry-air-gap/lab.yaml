@@ -1,13 +1,16 @@
 # Lab registry-air-gap. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: registry-air-gap                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Deliver a complete image without its source registry"
 level: c2                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Package a published image with an integrity checksum and prove offline recovery without relying on Docker's local cache."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - skopeo
+  - registry
+  - air-gap
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/outils/skopeo/#environnements-air-gap-déconnectés   # REQUIS, http(s)
 lab_type: challenge
 estimated_time: 30m

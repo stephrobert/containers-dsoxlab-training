@@ -1,10 +1,133 @@
 ---
-# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
-# le scénario décrit.
-- name: Préparer le lab securite-rootless
+- name: Prepare lab securite-rootless
   hosts: lab_target
   become: true
+  vars:
+    pinned_image: alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Install Docker and rootless runtime prerequisites
+      ansible.builtin.apt:
+        name: [docker.io, python3, uidmap, rootlesskit, slirp4netns, dbus-user-session, fuse-overlayfs]
+        state: present
+        update_cache: true
+    - name: Ensure Docker is available for this host lab
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+    - name: Refuse to overwrite lab-labelled containers or volumes
+      ansible.builtin.shell: |
+        set -eu
+        test -z "$(docker ps -aq --filter label=dsoxlab.lab=securite-rootless)"
+        test -z "$(docker volume ls -q --filter label=dsoxlab.lab=securite-rootless)"
+      args:
+        executable: /bin/sh
+      changed_when: false
+    - name: Refuse to overwrite a previous lab work directory
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-securite-rootless
+      register: workdir_state
+    - name: Require a clean lab work directory
+      ansible.builtin.assert:
+        that: not workdir_state.stat.exists
+        fail_msg: "/opt/dsoxlab-securite-rootless already exists; cleanup must restore the previous run first."
+    - name: Create the unique lab work directory
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-rootless
+        state: directory
+        mode: "0750"
+    - name: Refuse to overwrite an existing rootless service
+      ansible.builtin.stat:
+        path: /etc/systemd/system/dsoxlab-rootless.service
+      register: rootless_service_unit
+    - name: Require an unused rootless service name
+      ansible.builtin.assert:
+        that: not rootless_service_unit.stat.exists
+        fail_msg: "The dedicated rootless service already exists; cleanup must restore the previous run first."
+    - name: Refuse to reuse the dedicated rootless account
+      ansible.builtin.command: getent passwd dsoxlab-rootless
+      register: rootless_account
+      changed_when: false
+      failed_when: rootless_account.rc == 0
+    - name: Mark the dedicated account as lab-owned before creating it
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-rootless/account-created
+        state: touch
+        mode: "0600"
+    - name: Create the unprivileged daemon account
+      ansible.builtin.user:
+        name: dsoxlab-rootless
+        comment: "dsoxlab lab account securite-rootless"
+        home: /var/lib/dsoxlab-rootless
+        create_home: true
+        shell: /bin/bash
+        system: true
+        state: present
+    - name: Allocate a non-overlapping subordinate id range
+      ansible.builtin.shell: |
+        set -eu
+        if awk -F: '($2 <= 265535 && $3 >= 200000) { found=1 } END { exit !found }' /etc/subuid /etc/subgid; then
+          echo 'The lab subordinate-id range is already allocated.' >&2
+          exit 1
+        fi
+        usermod --add-subuids 200000-265535 --add-subgids 200000-265535 dsoxlab-rootless
+      args:
+        executable: /bin/sh
+      changed_when: true
+    - name: Read the dedicated daemon UID
+      ansible.builtin.command: id -u dsoxlab-rootless
+      register: rootless_uid
+      changed_when: false
+    - name: Verify the packaged rootless launcher exists
+      ansible.builtin.stat:
+        path: /usr/share/docker.io/contrib/dockerd-rootless.sh
+      register: rootless_launcher
+    - name: Require the packaged rootless launcher
+      ansible.builtin.assert:
+        that: rootless_launcher.stat.exists
+        fail_msg: "The installed Docker package has no dockerd-rootless.sh."
+    - name: Prepare the dedicated runtime directory
+      ansible.builtin.file:
+        path: "/run/user/{{ rootless_uid.stdout }}"
+        state: directory
+        owner: dsoxlab-rootless
+        group: dsoxlab-rootless
+        mode: "0700"
+    - name: Save the dedicated rootless socket path
+      ansible.builtin.copy:
+        dest: /opt/dsoxlab-securite-rootless/state.json
+        mode: "0644"
+        content: "{{ {'socket': '/run/user/' ~ rootless_uid.stdout ~ '/docker.sock'} | to_json }}\n"
+    - name: Install a dedicated system service for rootless dockerd
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/dsoxlab-rootless.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=DSOXLAB rootless Docker daemon
+          After=network.target
+          [Service]
+          Type=simple
+          User=dsoxlab-rootless
+          Group=dsoxlab-rootless
+          Environment=HOME=/var/lib/dsoxlab-rootless
+          Environment=XDG_RUNTIME_DIR=/run/user/{{ rootless_uid.stdout }}
+          ExecStart=/usr/share/docker.io/contrib/dockerd-rootless.sh --experimental --host=unix:///run/user/{{ rootless_uid.stdout }}/docker.sock
+          Delegate=yes
+          KillMode=mixed
+          Restart=on-failure
+          RestartSec=2
+          [Install]
+          WantedBy=multi-user.target
+    - name: Mark the dedicated service as lab-owned
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-rootless/service-owned
+        state: touch
+        mode: "0600"
+    - name: Reload systemd without starting the learner's daemon
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+    - name: Install this lab's bilingual mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/dsoxlab-securite-rootless/MISSION.md
+        mode: "0644"

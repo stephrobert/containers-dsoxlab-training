@@ -1,0 +1,9 @@
+#include <tunables/global>
+profile dsoxlab-securite-apparmor flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+  file,
+  network,
+  capability,
+  signal,
+  deny /lab/private.txt r,
+}

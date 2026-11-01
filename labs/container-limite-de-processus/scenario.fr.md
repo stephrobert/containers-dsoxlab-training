@@ -1,10 +1,13 @@
-# Scénario
+# Contenir la création de processus
 
-À remplir : la situation, telle que l'apprenant la rencontrerait.
+Le worker démarre avec un plafond sûr de 32 tâches, mais son budget opérationnel
+est de 16. Le plafond doit être une limite de cgroup, pas seulement un ulimit
+de shell.
 
-Un scénario dit **où on est et ce qui ne va pas**, pas la marche à suivre :
-c'est le travail de l'apprenant de la trouver.
+Dans `/opt/dsoxlab-container-limite-de-processus`, appliquez le budget de
+16 tâches à `worker` dans le projet `dsoxlab-container-limite-de-processus`.
+Gardez le service actif et les garde-fous mémoire et CPU.
 
-## Mission
-
-À remplir.
+Le contrôle lance au plus 24 enfants sleep de courte durée, uniquement après
+vérification du plafond effectif. Ce n'est pas une fork bomb. Ni récursion,
+ni boucle de fork non bornée, ni limite de processus globale sur l'hôte.

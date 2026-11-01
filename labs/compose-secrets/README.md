@@ -1,9 +1,7 @@
-# compose-secrets
+# Service-scoped file secrets
 
-**Audience:** the learner.
-
-TO FILL IN: what this lab teaches, in one sentence.
-
-## What you will be able to do
-
-- TO FILL IN.
+Three checks measure the Compose grant, actual read-only mount and observer
+denial, metadata/log leakage and consumption after rotation. Tokens are random
+pedagogical values, never external credentials. Tests restore the file and consumer.
+The supplied image contains no token; cleanup removes only this project's resources.
+Standalone file secrets do not claim encrypted storage or protection from host root.

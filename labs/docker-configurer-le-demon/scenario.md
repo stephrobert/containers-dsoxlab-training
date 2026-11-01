@@ -1,10 +1,7 @@
 # Scenario
 
-TO FILL IN: the situation, as the learner would meet it.
-
-A scenario says **where we are and what is wrong**, not the steps to take:
-finding those is the learner's work.
+New containers have no log retention limit. Set the default driver to json-file, cap files at 1 MiB and retain two files. Existing daemon settings may not be discarded.
 
 ## Mission
 
-TO FILL IN.
+Newly created containers use the requested defaults; cleanup restores the original daemon configuration.

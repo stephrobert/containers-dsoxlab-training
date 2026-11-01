@@ -1,21 +1,21 @@
-# Lab troubleshoot-disque-plein. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: troubleshoot-disque-plein                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c4                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#optimisations-production   # REQUIS, http(s)
-lab_type: challenge
+id: troubleshoot-disque-plein
+title: "Recover space in a bounded ENOSPC sandbox"
+level: c4
+description: "Diagnose and reclaim space in a hard-capped 16 MiB container filesystem without exhausting a host partition."
+skills:
+  - docker
+  - disk-usage
+  - volume-cleanup
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#optimisations-production
+lab_type: lab
 estimated_time: 30m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true

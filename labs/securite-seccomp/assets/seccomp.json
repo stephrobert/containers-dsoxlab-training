@@ -1,0 +1,10 @@
+{
+  "defaultAction": "SCMP_ACT_ALLOW",
+  "syscalls": [
+    {
+      "names": ["getpgid"],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [{"index": 0, "value": 2147483647, "op": "SCMP_CMP_EQ"}]
+    }
+  ]
+}

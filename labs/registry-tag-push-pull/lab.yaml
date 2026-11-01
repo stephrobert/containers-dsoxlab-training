@@ -1,13 +1,15 @@
 # Lab registry-tag-push-pull. Les champs marqués REQUIS sont exigés par le validator : sans eux,
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: registry-tag-push-pull                      # REQUIS
-title: "À remplir"            # REQUIS
+title: "Publish an image that another client can really pull"
 level: c2                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+description: "Tag and publish a local release in a registry, then recover the exact image through an independent client rather than trusting the publisher's local cache."
 skills:                       # REQUIS, non vide
-  - a-remplir
+  - docker
+  - registry
+  - image-distribution
 distros:                      # REQUIS, non vide
-  - any
+  - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/#docker-push--envoyer-une-image-vers-la-registry   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m

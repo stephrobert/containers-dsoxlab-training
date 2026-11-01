@@ -1,5 +1,5 @@
 # Surcharge française du lab registry-authentification. Elle ne porte QUE `title` et
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Protéger un registre TLS par authentification"
+description: "Exiger des identifiants pour un registre privé et prouver le push et le pull Docker authentifiés sous TLS vérifié."

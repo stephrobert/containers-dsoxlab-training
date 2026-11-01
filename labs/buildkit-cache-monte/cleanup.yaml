@@ -5,6 +5,36 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer seulement les constructeurs du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for builder in dsoxlab-cache-work dsoxlab-cache-test; do
+            if docker buildx inspect "$builder" >/dev/null 2>&1; then
+              docker buildx rm -f "$builder"
+            fi
+          done
+      changed_when: false
+
+    - name: Retirer seulement les images du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for image in dsoxlab-cache:finale dsoxlab-cache:test; do
+            if docker image inspect "$image" >/dev/null 2>&1; then
+              docker image rm -f "$image"
+            fi
+          done
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=buildkit-cache-monte)
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+
+    - name: Retirer le contexte et la mission
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-buildkit-cache
+        - /opt/MISSION.md

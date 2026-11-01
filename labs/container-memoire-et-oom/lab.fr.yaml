@@ -1,5 +1,2 @@
-# Surcharge française du lab container-memoire-et-oom. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Fixer un plafond mémoire et contenir un OOM"
+description: "Appliquer 32 Mio sans swap et prouver qu'une sonde exec bornée subit un OOM local au conteneur."

@@ -1,10 +1,7 @@
 # Scénario
 
-À remplir : la situation, telle que l'apprenant la rencontrerait.
-
-Un scénario dit **où on est et ce qui ne va pas**, pas la marche à suivre :
-c'est le travail de l'apprenant de la trouver.
+Un conteneur de démonstration émet un flux borné mais autorise un journal trop volumineux. Ne modifiez pas les valeurs globales ; seul ce service est concerné.
 
 ## Mission
 
-À remplir.
+Le service utilise des journaux json-file plafonnés à 1 Kio et trois fichiers conservés.

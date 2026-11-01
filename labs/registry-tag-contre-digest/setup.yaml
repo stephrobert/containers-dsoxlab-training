@@ -5,6 +5,157 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer les outils de distribution
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx, skopeo]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Retirer les conteneurs d'un passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for container in dsoxlab-digest-registry dsoxlab-digest-app; do
+            if docker container inspect "$container" >/dev/null 2>&1; then
+              docker rm -f "$container"
+            fi
+          done
+      changed_when: false
+
+    - name: Retirer les fichiers d'un passage précédent
+      ansible.builtin.file:
+        path: /opt/lab-registry-digest
+        state: absent
+
+    - name: Créer le contexte et le stockage du registre
+      ansible.builtin.file:
+        path: "/opt/lab-registry-digest/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [appli, registry]
+
+    - name: Tirer deux produits distincts
+      ansible.builtin.set_fact:
+        original: "original-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters', 'digits']) }}"
+        replacement: "replacement-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters', 'digits']) }}"
+
+    - name: Déposer le Dockerfile
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-digest/appli/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="registry-tag-contre-digest"
+          COPY release.txt /release.txt
+          CMD ["sh", "-c", "while :; do sleep 3600; done"]
+
+    - name: Tirer le registre épinglé
+      ansible.builtin.command:
+        cmd: docker pull registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      register: registry_pull
+      changed_when: "'Downloaded newer image' in registry_pull.stdout"
+
+    - name: Démarrer le registre du lab
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name dsoxlab-digest-registry -p 127.0.0.1:15002:5000
+          -v /opt/lab-registry-digest/registry:/var/lib/registry
+          registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      changed_when: true
+
+    - name: Attendre le registre
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 15002
+        timeout: 20
+
+    - name: Déposer la release d'origine
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-digest/appli/release.txt
+        content: "{{ original }}\n"
+        mode: "0644"
+
+    - name: Construire la release d'origine
+      ansible.builtin.command:
+        cmd: docker build -t 127.0.0.1:15002/catalogue/appli:stable /opt/lab-registry-digest/appli
+      changed_when: true
+
+    - name: Publier la release d'origine
+      ansible.builtin.command:
+        cmd: docker push 127.0.0.1:15002/catalogue/appli:stable
+      changed_when: true
+
+    - name: Relever son identité de configuration
+      ansible.builtin.command:
+        cmd: docker image inspect 127.0.0.1:15002/catalogue/appli:stable --format '{% raw %}{{.Id}}{% endraw %}'
+      register: original_image
+      changed_when: false
+
+    - name: Relever son digest de manifeste
+      ansible.builtin.command:
+        cmd: skopeo inspect --tls-verify=false docker://127.0.0.1:15002/catalogue/appli:stable
+      register: original_manifest
+      changed_when: false
+
+    - name: Conserver le bon de livraison pour l'apprenant
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-digest/livraison.json
+        content: "{{ {'reference': '127.0.0.1:15002/catalogue/appli@' ~ (original_manifest.stdout | from_json).Digest, 'release': original} | to_json }}"
+        mode: "0644"
+
+    - name: Garder la référence du banc
+      ansible.builtin.copy:
+        dest: /root/.lab-registry-digest.json
+        content: "{{ {'image': original_image.stdout | trim, 'reference': '127.0.0.1:15002/catalogue/appli@' ~ (original_manifest.stdout | from_json).Digest, 'release': original} | to_json }}"
+        mode: "0600"
+
+    - name: Remplacer le produit dans le contexte
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-digest/appli/release.txt
+        content: "{{ replacement }}\n"
+        mode: "0644"
+
+    - name: Reconstruire sous le même tag
+      ansible.builtin.command:
+        cmd: docker build -t 127.0.0.1:15002/catalogue/appli:stable /opt/lab-registry-digest/appli
+      changed_when: true
+
+    - name: Déplacer le tag vers la nouvelle release
+      ansible.builtin.command:
+        cmd: docker push 127.0.0.1:15002/catalogue/appli:stable
+      changed_when: true
+
+    - name: Relever l'identité de remplacement pour le nettoyage
+      ansible.builtin.command:
+        cmd: docker image inspect 127.0.0.1:15002/catalogue/appli:stable --format '{% raw %}{{.Id}}{% endraw %}'
+      register: replacement_image
+      changed_when: false
+
+    - name: Compléter le relevé du banc avec les deux images
+      ansible.builtin.copy:
+        dest: /root/.lab-registry-digest.json
+        content: "{{ {'image': original_image.stdout | trim, 'replacement': replacement_image.stdout | trim, 'reference': '127.0.0.1:15002/catalogue/appli@' ~ (original_manifest.stdout | from_json).Digest, 'release': original} | to_json }}"
+        mode: "0600"
+
+    - name: Exécuter le mauvais produit par le tag déplacé
+      ansible.builtin.command:
+        cmd: docker run -d --name dsoxlab-digest-app --network none 127.0.0.1:15002/catalogue/appli:stable
+      changed_when: true
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

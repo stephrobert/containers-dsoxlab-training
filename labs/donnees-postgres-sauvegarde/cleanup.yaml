@@ -1,10 +1,26 @@
 ---
-# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
-# posé, pour que le lab se rejoue à l'identique.
 - name: Défaire le lab donnees-postgres-sauvegarde
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Supprimer uniquement les bases portant le marqueur aléatoire du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          state=/opt/lab-postgres-sauvegarde/state.env
+          if [ ! -r "$state" ]; then exit 0; fi
+          . "$state"
+          for db in "$RESTORED_DB" "$SOURCE_DB"; do
+            comment=$(runuser -u postgres -- psql -X -A -t -d postgres -c "SELECT COALESCE(shobj_description(oid, 'pg_database'), '') FROM pg_database WHERE datname = '$db';")
+            if [ "$comment" = "$OWNERSHIP" ]; then
+              runuser -u postgres -- dropdb "$db"
+            fi
+          done
+      changed_when: false
+    - name: Retirer le contexte, la sauvegarde et la mission
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-postgres-sauvegarde
+        - /opt/MISSION.md

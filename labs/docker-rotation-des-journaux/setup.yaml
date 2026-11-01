@@ -1,10 +1,56 @@
 ---
-# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
-# le scénario décrit.
-- name: Préparer le lab docker-rotation-des-journaux
+- name: Prepare lab docker-rotation-des-journaux
   hosts: lab_target
   become: true
+  vars:
+    pinned_image: alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Install Docker and the small test runtime
+      ansible.builtin.apt:
+        name: [docker.io, python3]
+        state: present
+        update_cache: true
+    - name: Ensure Docker is available for this host lab
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+    - name: Refuse to overwrite lab-labelled containers or volumes
+      ansible.builtin.shell: |
+        set -eu
+        test -z "$(docker ps -aq --filter label=dsoxlab.lab=docker-rotation-des-journaux)"
+        test -z "$(docker volume ls -q --filter label=dsoxlab.lab=docker-rotation-des-journaux)"
+      args:
+        executable: /bin/sh
+      changed_when: false
+    - name: Refuse to overwrite a previous lab work directory
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-docker-rotation-des-journaux
+      register: workdir_state
+    - name: Require a clean lab work directory
+      ansible.builtin.assert:
+        that: not workdir_state.stat.exists
+        fail_msg: "/opt/dsoxlab-docker-rotation-des-journaux already exists; cleanup must restore the previous run first."
+    - name: Create the unique lab work directory
+      ansible.builtin.file:
+        path: /opt/dsoxlab-docker-rotation-des-journaux
+        state: directory
+        mode: "0750"
+    - name: Check whether the pinned image is already present
+      ansible.builtin.command: docker image inspect "{{ pinned_image }}"
+      register: image_state
+      changed_when: false
+      failed_when: false
+    - name: Pull the pinned disposable image only when absent
+      ansible.builtin.command: docker pull "{{ pinned_image }}"
+      when: image_state.rc != 0
+    - name: Create a labelled container with intentionally loose per-container log retention
+      ansible.builtin.command: >-
+        docker run --detach --name dsoxlab-log-rotation
+        --label dsoxlab.lab=docker-rotation-des-journaux
+        --log-driver=json-file --log-opt max-size=20m --log-opt max-file=5
+        {{ pinned_image }} sh -c 'i=0; while [ "$i" -lt 100 ]; do printf "%0100d\n" "$i"; i=$((i+1)); done; while :; do sleep 3600; done'
+    - name: Install this lab's bilingual mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/dsoxlab-docker-rotation-des-journaux/MISSION.md
+        mode: "0644"

@@ -1,5 +1,2 @@
-# Surcharge française du lab securite-capabilities. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
-title: "À remplir"
-description: "À remplir : ce que l'apprenant saura faire à la fin."
+title: "Retirer toutes les capabilities sauf une"
+description: "Recréer le service sans capabilities sauf NET_BIND_SERVICE et vérifier son masque effectif."

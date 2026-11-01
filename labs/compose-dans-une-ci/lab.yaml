@@ -1,21 +1,17 @@
-# Lab compose-dans-une-ci. Les champs marqués REQUIS sont exigés par le validator : sans eux,
-# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
-id: compose-dans-une-ci                      # REQUIS
-title: "À remplir"            # REQUIS
-level: c4                     # REQUIS
-description: "À remplir : ce que l'apprenant saura faire à la fin."
-skills:                       # REQUIS, non vide
-  - a-remplir
-distros:                      # REQUIS, non vide
-  - any
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#commandes-essentielles   # REQUIS, http(s)
+id: compose-dans-une-ci
+title: "Run Compose as a reproducible local CI job"
+level: c4
+description: "Build changed source, wait for readiness, propagate real integration-test failures and always remove the isolated stack."
+skills: [compose, ci, integration-testing, lifecycle]
+distros: [debian13]
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#commandes-essentielles
 lab_type: challenge
-estimated_time: 30m
+estimated_time: 45m
 runtime:
   type: vm
-  targets:                    # REQUIS pour vm, non vide
+  targets:
     - name: cible
-      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      host: docker.lab
   default: cible
 validation:
   functional: true

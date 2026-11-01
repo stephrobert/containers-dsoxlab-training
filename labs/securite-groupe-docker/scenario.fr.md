@@ -1,10 +1,7 @@
 # Scénario
 
-À remplir : la situation, telle que l'apprenant la rencontrerait.
-
-Un scénario dit **où on est et ce qui ne va pas**, pas la marche à suivre :
-c'est le travail de l'apprenant de la trouver.
+Un compte d’audit temporaire n’a plus besoin de son accès au groupe Docker, équivalent à root. Conservez le compte dédié et ne modifiez pas vos propres accès.
 
 ## Mission
 
-À remplir.
+dsoxlab-auditor existe toujours mais n’appartient plus au groupe docker.

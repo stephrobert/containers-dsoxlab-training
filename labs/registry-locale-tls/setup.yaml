@@ -5,6 +5,154 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer les outils
+      ansible.builtin.apt:
+        name: [docker.io, openssl, curl]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Déclarer le nom local du registre
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} dsoxlab-registry-tls"
+        block: "{{ ansible_default_ipv4.address }} registry-tls.lab.test"
+
+    - name: Retirer le registre d'un passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if docker container inspect dsoxlab-tls-registry >/dev/null 2>&1; then
+            docker rm -f dsoxlab-tls-registry
+          fi
+      changed_when: false
+
+    - name: Repartir sans ancien contexte ni ancienne confiance Docker
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-registry-tls
+        - /etc/docker/certs.d/registry-tls.lab.test:15443
+
+    - name: Créer les répertoires du lab
+      ansible.builtin.file:
+        path: "/opt/lab-registry-tls/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [certs, data, appli]
+
+    - name: Générer une autorité et un certificat avec SAN
+      ansible.builtin.shell:
+        chdir: /opt/lab-registry-tls/certs
+        cmd: |
+          set -eu
+          umask 077
+          openssl req -x509 -newkey rsa:2048 -nodes -days 2 \
+            -keyout ca.key -out ca.crt -subj '/CN=dsoxlab registry TLS CA' \
+            -addext 'basicConstraints=critical,CA:TRUE' \
+            -addext 'keyUsage=critical,keyCertSign,cRLSign'
+          openssl req -newkey rsa:2048 -nodes -keyout server.key \
+            -out server.csr -subj '/CN=registry-tls.lab.test'
+          printf '%s\n' 'subjectAltName=DNS:registry-tls.lab.test' \
+            'extendedKeyUsage=serverAuth' 'basicConstraints=critical,CA:FALSE' > extensions.cnf
+          openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
+            -CAcreateserial -out server.crt -days 2 -extfile extensions.cnf
+          chmod 644 ca.crt server.crt
+      changed_when: true
+
+    - name: Déposer la configuration HTTP initiale
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-tls/config.yml
+        mode: "0644"
+        content: |
+          version: 0.1
+          storage:
+            filesystem:
+              rootdirectory: /var/lib/registry
+          http:
+            addr: :5000
+
+    - name: Tirer les deux images épinglées
+      ansible.builtin.command:
+        cmd: docker pull {{ item }}
+      loop:
+        - registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+        - alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+      register: pulls
+      changed_when: "'Downloaded newer image' in pulls.stdout"
+
+    - name: Démarrer le registre HTTP avec ses fichiers de configuration montés
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name dsoxlab-tls-registry -p 15443:5000
+          -v /opt/lab-registry-tls/config.yml:/etc/docker/registry/config.yml:ro
+          -v /opt/lab-registry-tls/certs:/certs:ro
+          -v /opt/lab-registry-tls/data:/var/lib/registry
+          registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      changed_when: true
+
+    - name: Attendre le registre HTTP
+      ansible.builtin.uri:
+        url: http://127.0.0.1:15443/v2/
+      register: ready
+      until: ready.status == 200
+      retries: 15
+      delay: 1
+
+    - name: Tirer le produit du registre
+      ansible.builtin.set_fact:
+        release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters']) }}"
+
+    - name: Déposer le produit à tirer
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-tls/appli/release.txt
+        content: "{{ release }}\n"
+        mode: "0644"
+
+    - name: Déposer son Dockerfile
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-tls/appli/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="registry-locale-tls"
+          COPY release.txt /release.txt
+          CMD ["cat", "/release.txt"]
+
+    - name: Construire et publier le produit sur la boucle locale
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker build -t 127.0.0.1:15443/catalogue/appli:1.0 /opt/lab-registry-tls/appli
+          docker push 127.0.0.1:15443/catalogue/appli:1.0
+      changed_when: true
+
+    - name: Relever l'image du produit
+      ansible.builtin.command:
+        cmd: docker image inspect 127.0.0.1:15443/catalogue/appli:1.0 --format '{% raw %}{{.Id}}{% endraw %}'
+      register: image
+      changed_when: false
+
+    - name: Garder le relevé privé du banc
+      ansible.builtin.copy:
+        dest: /root/.lab-registry-tls.json
+        content: "{{ {'image': image.stdout | trim, 'release': release} | to_json }}"
+        mode: "0600"
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

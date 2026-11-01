@@ -1,9 +1,5 @@
-# compose-ressources
+# Measure the effective cgroup controls
 
-**Audience:** the learner.
-
-TO FILL IN: what this lab teaches, in one sentence.
-
-## What you will be able to do
-
-- TO FILL IN.
+Three checks inspect effective memory/process/CPU limits, run a bounded CPU trial
+and recreate the worker to reject manual-only limits. Setup explicitly requires
+cgroup v2; unsupported hosts fail rather than skip. No OOM or fork exhaustion is induced.

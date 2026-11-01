@@ -1,10 +1,7 @@
 # Scenario
 
-TO FILL IN: the situation, as the learner would meet it.
-
-A scenario says **where we are and what is wrong**, not the steps to take:
-finding those is the learner's work.
+A local monitoring client reaches Docker through a proxy bound to 127.0.0.1. Its starter policy allows every method and path; monitoring needs only health and version reads.
 
 ## Mission
 
-TO FILL IN.
+GET /_ping and GET /version succeed; other paths and mutating methods are denied.

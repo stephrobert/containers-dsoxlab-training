@@ -5,6 +5,97 @@
   hosts: lab_target
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Installer Docker et Compose v2
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer Alpine épinglée
+      ansible.builtin.command:
+        cmd: docker pull alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+      register: pulled
+      changed_when: "'Downloaded newer image' in pulled.stdout"
+
+    - name: Créer le dossier de travail
+      ansible.builtin.file:
+        path: /opt/lab-compose-vars
+        state: directory
+        mode: "0755"
+
+    - name: Tirer les valeurs pédagogiques
+      ansible.builtin.set_fact:
+        release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters']) }}"
+        runtime_only: "runtime-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters']) }}"
+
+    - name: Déposer le fichier d'interpolation explicite
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-vars/deploy.env
+        mode: "0644"
+        content: |
+          IMAGE_REF=alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          APP_RELEASE={{ release }}
+
+    - name: Déposer les valeurs destinées au conteneur
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-vars/runtime.env
+        mode: "0644"
+        content: |
+          APP_MODE=staging
+          RUNTIME_ONLY={{ runtime_only }}
+
+    - name: Déposer un environnement implicite trompeur
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-vars/.env
+        mode: "0644"
+        content: |
+          IMAGE_REF=alpine:do-not-pull
+          APP_RELEASE=wrong-implicit-release
+
+    - name: Déposer la déclaration à réparer
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-vars/compose.yaml
+        mode: "0644"
+        content: |
+          services:
+            app:
+              image: ${IMAGE_REF}
+              env_file: runtime.env
+              environment:
+                APP_RELEASE: wrong-hardcoded-release
+              command:
+                - sh
+                - -c
+                - 'printf "%s\n" "${APP_MODE}:${APP_RELEASE}:${RUNTIME_ONLY}" > /tmp/report; exec sleep infinity'
+
+    - name: Conserver les valeurs et empreintes des fichiers fournis
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cd /opt/lab-compose-vars
+          sha256sum deploy.env runtime.env .env > /root/.lab-compose-vars.sha256
+      changed_when: true
+
+    - name: Conserver les valeurs attendues
+      ansible.builtin.copy:
+        dest: /root/.lab-compose-vars.json
+        mode: "0600"
+        content: "{{ {'release': release, 'runtime_only': runtime_only} | to_json }}"
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"
