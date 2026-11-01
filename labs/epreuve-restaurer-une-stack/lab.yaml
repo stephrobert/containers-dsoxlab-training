@@ -1,0 +1,32 @@
+# Lab epreuve-restaurer-une-stack. Metadonnees posees le 2026-11-01 d'apres l'audit du plan de
+# formation : scenario, setup et tests restent a ecrire APRES mesure sur la
+# machine (regle B). Voir LABS-A-ECRIRE-AUDIT.md a la racine du catalogue.
+id: epreuve-restaurer-une-stack
+title: Restore a stack on another host, data included
+level: c3
+description: 'A business request crosses the front end, the API and the database. A fault is injected
+  without being announced: restore the service AND the witness record on a distinct host, without
+  removing the data network isolation.'
+skills:
+- docker
+- compose
+- sauvegarde
+- restauration
+- isolation
+distros:
+- debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/3-exploiter-et-restaurer-une-stack/
+lab_type: capstone
+estimated_time: 60m
+runtime:
+  type: vm
+  targets:
+  - name: cible
+    host: docker.lab
+    roles:
+      client: docker-client.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false
+exam_passing_score: 75

@@ -1,0 +1,29 @@
+# Lab compose-retour-arriere. Metadonnees posees le 2026-11-01 d'apres l'audit du plan de
+# formation : scenario, setup et tests restent a ecrire APRES mesure sur la
+# machine (regle B). Voir LABS-A-ECRIRE-AUDIT.md a la racine du catalogue.
+id: compose-retour-arriere
+title: Roll back a release, and refuse the one that would lose data
+level: c3
+description: 'Deploy a release by its digest, roll back without losing the record written meanwhile,
+  then establish that a second rollback is impossible: the schema migration is irreversible, and
+  the previous release can no longer read it.'
+skills:
+- docker
+- compose
+- retour-arriere
+- migration
+- digest
+distros:
+- debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/mettre-a-jour-et-revenir-en-arriere/
+lab_type: lab
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:
+  - name: cible
+    host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

@@ -1,0 +1,31 @@
+# Lab epreuve-livrer-une-image. Metadonnees posees le 2026-11-01 d'apres l'audit du plan de
+# formation : scenario, setup et tests restent a ecrire APRES mesure sur la
+# machine (regle B). Voir LABS-A-ECRIRE-AUDIT.md a la racine du catalogue.
+id: epreuve-livrer-une-image
+title: Deliver an image a bare client can actually run
+level: c2
+description: Build, publish and pull an image by digest from a bare second host with read-only
+  credentials, prove it answers there, and prove the build secret survived in no layer.
+skills:
+- docker
+- registre
+- digest
+- secrets-de-build
+- acl
+distros:
+- debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/2-livrer-une-image-utilisable-ailleurs/
+lab_type: challenge
+estimated_time: 60m
+runtime:
+  type: vm
+  targets:
+  - name: cible
+    host: docker.lab
+    roles:
+      client: docker-client.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false
+exam_passing_score: 75

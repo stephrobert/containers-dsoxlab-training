@@ -1,0 +1,6 @@
+# Surcharge francaise : `title` et `description` SEULEMENT, tout autre champ y est
+# ignore par le parseur.
+title: Restaurer une stack sur un autre hôte, données comprises
+description: 'Une requête métier traverse le frontal, l''API et la base. Une panne est injectée
+  sans être annoncée : rétablir le service ET la donnée témoin sur un hôte distinct, sans retirer
+  l''isolation du réseau de données.'

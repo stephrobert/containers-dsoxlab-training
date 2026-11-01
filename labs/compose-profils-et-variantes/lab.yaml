@@ -1,0 +1,29 @@
+# Lab compose-profils-et-variantes. Metadonnees posees le 2026-11-01 d'apres l'audit du plan de
+# formation : scenario, setup et tests restent a ecrire APRES mesure sur la
+# machine (regle B). Voir LABS-A-ECRIRE-AUDIT.md a la racine du catalogue.
+id: compose-profils-et-variantes
+title: Two variants from one base, and no dev mount left in deployment
+level: c3
+description: Derive from one base file a development variant that mounts sources, and a deployment
+  variant that carries none, checked on the effective configuration rather than on the input file.
+  An optional service starts only under its profile.
+skills:
+- docker
+- compose
+- profils
+- environnements
+- configuration
+distros:
+- debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/variantes-de-deploiement/
+lab_type: lab
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:
+  - name: cible
+    host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false
