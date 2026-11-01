@@ -2023,10 +2023,10 @@
   },
   "date": "2026-11-01",
   "docker": "26.1.5+dfsg1",
-  "duree_s": 36,
+  "duree_s": 40,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/1",
    "après la solution : 1/1",
    "après clean et run : 0/1",
@@ -2035,6 +2035,12 @@
   "host": "docker.lab",
   "id": "donnees-volume-orphelin",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-donnees-volume-orphelin.log",
+  "moteurs": {
+   "docker.lab": {
+    "docker": "26.1.5+dfsg1",
+    "store": "classic"
+   }
+  },
   "raisons": [],
   "rejeu": {
    "echecs": [
@@ -2130,10 +2136,10 @@
   },
   "date": "2026-11-01",
   "docker": "26.1.5+dfsg1",
-  "duree_s": 40,
+  "duree_s": 77,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -2142,6 +2148,12 @@
   "host": "docker.lab",
   "id": "image-scan-de-vulnerabilites",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-image-scan-de-vulnerabilites.log",
+  "moteurs": {
+   "docker.lab": {
+    "docker": "26.1.5+dfsg1",
+    "store": "classic"
+   }
+  },
   "raisons": [],
   "rejeu": {
    "echecs": [
@@ -3733,10 +3745,10 @@
   },
   "date": "2026-11-01",
   "docker": "26.1.5+dfsg1",
-  "duree_s": 34,
+  "duree_s": 39,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/1",
    "après la solution : 1/1",
    "après clean et run : 0/1",
@@ -3745,6 +3757,12 @@
   "host": "docker.lab",
   "id": "secrets-au-runtime",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-secrets-au-runtime.log",
+  "moteurs": {
+   "docker.lab": {
+    "docker": "26.1.5+dfsg1",
+    "store": "classic"
+   }
+  },
   "raisons": [],
   "rejeu": {
    "echecs": [
@@ -4312,10 +4330,10 @@
   },
   "date": "2026-11-01",
   "docker": "26.1.5+dfsg1",
-  "duree_s": 26,
+  "duree_s": 30,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/1",
    "après la solution : 1/1",
    "après clean et run : 0/1",
@@ -4324,6 +4342,12 @@
   "host": "docker.lab",
   "id": "troubleshoot-disque-plein",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-troubleshoot-disque-plein.log",
+  "moteurs": {
+   "docker.lab": {
+    "docker": "26.1.5+dfsg1",
+    "store": "classic"
+   }
+  },
   "raisons": [],
   "rejeu": {
    "echecs": [
