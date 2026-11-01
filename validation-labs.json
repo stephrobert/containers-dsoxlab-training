@@ -1,4 +1,760 @@
 {
+ "buildkit-cache-monte": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_cache_is_not_shipped",
+    "test_cold_build_and_product",
+    "test_dependency_reused_when_source_changes"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 76,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "buildkit-cache-monte",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-buildkit-cache-monte.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_cache_is_not_shipped",
+    "test_cold_build_and_product",
+    "test_dependency_reused_when_source_changes"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "buildkit-secret-de-build": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_product_and_secret_absent_from_image"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 66,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "buildkit-secret-de-build",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-buildkit-secret-de-build.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_product_and_secret_absent_from_image"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "capstone-chaine-complete": {
+  "apres": {
+   "echecs": [],
+   "passed": 7,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 7
+  },
+  "avant": {
+   "echecs": [
+    "test_buildkit_multistage_secret_receipt_and_runtime_minimisation",
+    "test_data_survives_database_and_api_container_replacement",
+    "test_eight_real_incidents_recover_without_data_loss",
+    "test_network_isolation_and_postgresql_real_write",
+    "test_registry_manifest_digest_pull_and_deployed_identity",
+    "test_runtime_nonroot_secret_limits_and_health_dependency",
+    "test_sbom_matches_real_installed_packages_and_source"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 7
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 498,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/7",
+   "après la solution : 7/7",
+   "après clean et run : 0/7",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "capstone-chaine-complete",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-capstone-chaine-complete.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_buildkit_multistage_secret_receipt_and_runtime_minimisation",
+    "test_data_survives_database_and_api_container_replacement",
+    "test_eight_real_incidents_recover_without_data_loss",
+    "test_network_isolation_and_postgresql_real_write",
+    "test_registry_manifest_digest_pull_and_deployed_identity",
+    "test_runtime_nonroot_secret_limits_and_health_dependency",
+    "test_sbom_matches_real_installed_packages_and_source"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 7
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-capstone": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_ordered_stack_serves_shared_data_after_web_recreation"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 59,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-capstone",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-capstone.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_ordered_stack_serves_shared_data_after_web_recreation"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-dans-une-ci": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_failed_test_fails_ci_and_still_cleans",
+    "test_fresh_source_is_rebuilt_on_each_invocation",
+    "test_success_builds_waits_tests_and_cleans"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 152,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-dans-une-ci",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-dans-une-ci.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_failed_test_fails_ci_and_still_cleans",
+    "test_fresh_source_is_rebuilt_on_each_invocation",
+    "test_success_builds_waits_tests_and_cleans"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-isolation-reseau": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_direct_access_is_denied_before_and_after_recreation",
+    "test_frontend_relays_changed_data_through_api",
+    "test_network_membership_internal_boundary_and_port_publication"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 100,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-isolation-reseau",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-isolation-reseau.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_direct_access_is_denied_before_and_after_recreation",
+    "test_frontend_relays_changed_data_through_api",
+    "test_network_membership_internal_boundary_and_port_publication"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-persistance": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_fresh_data_survives_container_replacement[down-up]",
+    "test_fresh_data_survives_container_replacement[recreate]",
+    "test_named_volume_contains_the_initial_application_data"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 87,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-persistance",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-persistance.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_fresh_data_survives_container_replacement[down-up]",
+    "test_fresh_data_survives_container_replacement[recreate]",
+    "test_named_volume_contains_the_initial_application_data"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-plusieurs-environnements": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other[dev]",
+    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other[prod]",
+    "test_two_merged_deployments_have_distinct_effective_configuration"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 105,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-plusieurs-environnements",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-plusieurs-environnements.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other[dev]",
+    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other[prod]",
+    "test_two_merged_deployments_have_distinct_effective_configuration"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-premiere-stack": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_the_declaration_recreates_both_services_without_manual_steps",
+    "test_two_compose_services_share_a_network_and_only_web_is_published",
+    "test_web_relays_live_api_content_through_service_discovery"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 63,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-premiere-stack",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-premiere-stack.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_the_declaration_recreates_both_services_without_manual_steps",
+    "test_two_compose_services_share_a_network_and_only_web_is_published",
+    "test_web_relays_live_api_content_through_service_discovery"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-resolution-des-variables": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_explicit_deployment_file_resolves_the_image_and_release",
+    "test_runtime_environment_and_startup_expansion",
+    "test_shell_release_wins_and_recreation_restores_the_baseline"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 84,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-resolution-des-variables",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-resolution-des-variables.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_explicit_deployment_file_resolves_the_image_and_release",
+    "test_runtime_environment_and_startup_expansion",
+    "test_shell_release_wins_and_recreation_restores_the_baseline"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-ressources": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_half_cpu_budget_actually_throttles_a_bounded_workload",
+    "test_memory_and_process_budgets_are_effective",
+    "test_recreation_keeps_all_effective_budgets"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 62,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-ressources",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-ressources.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_half_cpu_budget_actually_throttles_a_bounded_workload",
+    "test_memory_and_process_budgets_are_effective",
+    "test_recreation_keeps_all_effective_budgets"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-sante-et-dependances": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_backend_health_and_successful_readiness_dependency",
+    "test_slow_and_never_ready_backends_gate_fresh_application_startup",
+    "test_unready_backend_becomes_unhealthy_while_http_stays_alive"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 161,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-sante-et-dependances",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-sante-et-dependances.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_backend_health_and_successful_readiness_dependency",
+    "test_slow_and_never_ready_backends_gate_fresh_application_startup",
+    "test_unready_backend_becomes_unhealthy_while_http_stays_alive"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-secrets": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_compose_grants_the_file_secret_only_to_app",
+    "test_recreation_consumes_a_rotated_secret_then_restores_it",
+    "test_secret_is_consumed_without_metadata_or_log_leaks"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 82,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-secrets",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-secrets.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_compose_grants_the_file_secret_only_to_app",
+    "test_recreation_consumes_a_rotated_secret_then_restores_it",
+    "test_secret_is_consumed_without_metadata_or_log_leaks"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "compose-tache-de-migration": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_cold_start_and_failed_migration_gate_on_isolated_volumes",
+    "test_one_shot_migration_and_successful_dependency",
+    "test_rerunning_the_migration_preserves_new_application_records"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 208,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-tache-de-migration",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-tache-de-migration.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_cold_start_and_failed_migration_gate_on_isolated_volumes",
+    "test_one_shot_migration_and_successful_dependency",
+    "test_rerunning_the_migration_preserves_new_application_records"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
  "container-entrypoint-et-cmd": {
   "apres": {
    "echecs": [],
@@ -109,6 +865,106 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "container-limite-de-processus": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_process_cap_really_rejects_a_finite_burst"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 43,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "container-limite-de-processus",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-container-limite-de-processus.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_process_cap_really_rejects_a_finite_burst"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "container-memoire-et-oom": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_memory_cgroup_contains_a_real_oom"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 33,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "container-memoire-et-oom",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-container-memoire-et-oom.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_memory_cgroup_contains_a_real_oom"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
  "container-signaux-et-pid-1": {
   "apres": {
    "echecs": [],
@@ -162,6 +1018,56 @@
    "total": 4
   },
   "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "container-systeme-en-lecture-seule": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_read_only_root_with_bounded_runtime_storage"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 35,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "container-systeme-en-lecture-seule",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-container-systeme-en-lecture-seule.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_read_only_root_with_bounded_runtime_storage"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
   "verdict": "VALIDE"
  },
  "container-ulimits-et-shm": {
@@ -272,6 +1178,106 @@
    "total": 4
   },
   "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "docker-configurer-le-demon": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_new_containers_use_bounded_json_file_logs"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 30,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "docker-configurer-le-demon",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-docker-configurer-le-demon.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_new_containers_use_bounded_json_file_logs"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "docker-contexte-ssh": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_named_context_uses_ssh_without_changing_the_default"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 36,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "docker-contexte-ssh",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-docker-contexte-ssh.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_named_context_uses_ssh_without_changing_the_default"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
   "verdict": "VALIDE"
  },
  "docker-cycle-de-vie": {
@@ -437,6 +1443,56 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "docker-rotation-des-journaux": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_service_container_has_bounded_json_file_logs"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 22,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "docker-rotation-des-journaux",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-docker-rotation-des-journaux.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_service_container_has_bounded_json_file_logs"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
  "docker-verifier-son-moteur": {
   "apres": {
    "echecs": [],
@@ -547,6 +1603,106 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "donnees-postgres-sauvegarde": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_custom_dump_restores_the_seeded_rows"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 30,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "donnees-postgres-sauvegarde",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-donnees-postgres-sauvegarde.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_custom_dump_restores_the_seeded_rows"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "donnees-volume-orphelin": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_retained_volume_reconnected_without_data_loss"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 36,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "donnees-volume-orphelin",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-donnees-volume-orphelin.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_retained_volume_reconnected_without_data_loss"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
  "donnees-volumes-et-montages": {
   "apres": {
    "echecs": [],
@@ -600,6 +1756,60 @@
    "total": 4
   },
   "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "image-scan-de-vulnerabilites": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_candidate_is_corrected_genuine_library_and_report_is_true",
+    "test_gate_rejects_legacy_and_accepts_fixed_from_fresh_scans",
+    "test_legacy_evidence_matches_real_scanner_findings"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 40,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "image-scan-de-vulnerabilites",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-image-scan-de-vulnerabilites.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_candidate_is_corrected_genuine_library_and_report_is_true",
+    "test_gate_rejects_legacy_and_accepts_fixed_from_fresh_scans",
+    "test_legacy_evidence_matches_real_scanner_findings"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
   "verdict": "VALIDE"
  },
  "images-build-multi-etapes": {
@@ -710,6 +1920,56 @@
    "total": 4
   },
   "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "images-epingler-par-digest": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_approved_base_and_source_are_delivered"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 53,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "images-epingler-par-digest",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-images-epingler-par-digest.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_approved_base_and_source_are_delivered"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
   "verdict": "VALIDE"
  },
  "images-healthcheck": {
@@ -1262,6 +2522,272 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "registry-air-gap": {
+  "apres": {
+   "echecs": [],
+   "passed": 2,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 2
+  },
+  "avant": {
+   "echecs": [
+    "test_delivery_is_complete_and_has_a_matching_checksum",
+    "test_delivery_recovers_and_runs_with_the_source_registry_stopped"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 2
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 47,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/2",
+   "après la solution : 2/2",
+   "après clean et run : 0/2",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "registry-air-gap",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-registry-air-gap.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_delivery_is_complete_and_has_a_matching_checksum",
+    "test_delivery_recovers_and_runs_with_the_source_registry_stopped"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 2
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "registry-authentification": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_anonymous_and_wrong_credentials_are_rejected",
+    "test_saved_docker_login_pulls_the_actual_product",
+    "test_saved_login_can_publish_and_retrieve_a_new_product"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 55,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "registry-authentification",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-registry-authentification.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_anonymous_and_wrong_credentials_are_rejected",
+    "test_saved_docker_login_pulls_the_actual_product",
+    "test_saved_login_can_publish_and_retrieve_a_new_product"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "registry-locale-tls": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_docker_trusts_the_ca_and_pulls_the_expected_product",
+    "test_tls_is_served_without_a_plaintext_fallback",
+    "test_wrong_hostname_is_rejected_and_no_insecure_exception_is_added"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 44,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "registry-locale-tls",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-registry-locale-tls.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_docker_trusts_the_ca_and_pulls_the_expected_product",
+    "test_tls_is_served_without_a_plaintext_fallback",
+    "test_wrong_hostname_is_rejected_and_no_insecure_exception_is_added"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "registry-tag-contre-digest": {
+  "apres": {
+   "echecs": [],
+   "passed": 3,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 3
+  },
+  "avant": {
+   "echecs": [
+    "test_original_manifest_remains_available_independently",
+    "test_original_product_is_in_service",
+    "test_runtime_reference_is_immutable"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 41,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "registry-tag-contre-digest",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-registry-tag-contre-digest.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_original_manifest_remains_available_independently",
+    "test_original_product_is_in_service",
+    "test_runtime_reference_is_immutable"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 3
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "registry-tag-push-pull": {
+  "apres": {
+   "echecs": [],
+   "passed": 2,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 2
+  },
+  "avant": {
+   "echecs": [
+    "test_an_independent_client_can_recover_and_run_it",
+    "test_registry_serves_the_exact_release"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 2
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 36,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/2",
+   "après la solution : 2/2",
+   "après clean et run : 0/2",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "registry-tag-push-pull",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-registry-tag-push-pull.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_an_independent_client_can_recover_and_run_it",
+    "test_registry_serves_the_exact_release"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 2
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
  "reseau-bridge-dedie": {
   "apres": {
    "echecs": [],
@@ -1537,6 +3063,456 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "secrets-au-runtime": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_runtime_secret_is_read_only_used_and_not_leaked"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 34,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "secrets-au-runtime",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-secrets-au-runtime.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_runtime_secret_is_read_only_used_and_not_leaked"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "securite-apparmor": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_profile_denies_only_the_private_read"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 34,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "securite-apparmor",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-apparmor.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_profile_denies_only_the_private_read"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "securite-capabilities": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_only_bind_service_remains"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 32,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "securite-capabilities",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-capabilities.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_only_bind_service_remains"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "securite-groupe-docker": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_auditor_exists_without_docker_group_membership"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 24,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "securite-groupe-docker",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-groupe-docker.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_auditor_exists_without_docker_group_membership"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "securite-no-new-privileges": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_setuid_cannot_elevate"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 46,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "securite-no-new-privileges",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-no-new-privileges.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_setuid_cannot_elevate"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "securite-rootless": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_dedicated_daemon_is_active_and_rootless"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 38,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "securite-rootless",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-rootless.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_dedicated_daemon_is_active_and_rootless"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "securite-seccomp": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_only_reserved_getpgid_argument_is_filtered"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 36,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "securite-seccomp",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-seccomp.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_only_reserved_getpgid_argument_is_filtered"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "securite-socket-lecture-seule": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_application_container_has_no_host_docker_socket_mount"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 22,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "securite-socket-lecture-seule",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-socket-lecture-seule.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_application_container_has_no_host_docker_socket_mount"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
+ "securite-socket-proxy": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_proxy_allows_only_health_and_version_reads"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 31,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "securite-socket-proxy",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-socket-proxy.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_proxy_allows_only_health_and_version_reads"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
+  "verdict": "VALIDE"
+ },
  "troubleshoot-boucle-de-redemarrage": {
   "apres": {
    "echecs": [],
@@ -1645,6 +3621,56 @@
    "total": 4
   },
   "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "troubleshoot-disque-plein": {
+  "apres": {
+   "echecs": [],
+   "passed": 1,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 1
+  },
+  "avant": {
+   "echecs": [
+    "test_space_reclaimed_without_destroying_retained_data"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "date": "2026-11-01",
+  "docker": "26.1.5+dfsg1",
+  "duree_s": 26,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/1",
+   "après la solution : 1/1",
+   "après clean et run : 0/1",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "troubleshoot-disque-plein",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-troubleshoot-disque-plein.log",
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_space_reclaimed_without_destroying_retained_data"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 1
+  },
+  "store": "classic",
   "verdict": "VALIDE"
  },
  "troubleshoot-exit-127": {
