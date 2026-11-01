@@ -11,7 +11,7 @@ skills:                       # REQUIS, non vide
   - volumes
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/droits-sur-un-volume/
 lab_type: lab
 estimated_time: 30m
 runtime:

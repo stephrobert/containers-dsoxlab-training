@@ -11,7 +11,7 @@ skills:                       # REQUIS, non vide
   - non-root
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/utilisateur-et-permissions/
 lab_type: lab
 estimated_time: 30m
 runtime:

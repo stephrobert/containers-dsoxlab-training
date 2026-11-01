@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - depannage
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#les-commandes-indispensables   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/inspecter-un-conteneur/
 lab_type: lab
 estimated_time: 30m
 runtime:
