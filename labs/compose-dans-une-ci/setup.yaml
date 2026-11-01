@@ -54,7 +54,7 @@
       changed_when: false
     - name: Seed pinned runtime before offline CI
       ansible.builtin.command:
-        cmd: docker pull python:3.13.8-alpine3.22@sha256:3a77fbbb5bc88c0f63cc2692a13b011547f25ee93536e991544c452801856226
+        cmd: docker pull python:3.14.10-alpine3.24@sha256:eb2c62658b8d51bff0acc408504b76521d02030de56a8a3c1e830083e89b89d2
       changed_when: true
     - name: Copy mission
       ansible.builtin.copy:

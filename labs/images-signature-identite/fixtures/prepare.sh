@@ -7,7 +7,7 @@ if docker image inspect dsoxlab-images-signature-identite:release >/dev/null 2>&
 fi
 mkdir keys trust product bench
 docker image ls -aq > bench/baseline-images
-base='alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f'
+base='alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a'
 if docker image inspect "$base" >/dev/null 2>&1; then touch bench/base-existed; fi
 openssl req -x509 -newkey rsa:2048 -nodes -days 2 \
   -keyout keys/ca.key -out trust/ca.crt -subj '/CN=dsoxlab image signing CA' \

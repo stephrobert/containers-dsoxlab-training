@@ -26,7 +26,7 @@ You can create a dedicated builder named `dsoxlab-cache-work`:
 
 ```bash
 docker buildx create --name dsoxlab-cache-work --driver docker-container \
-  --driver-opt image=moby/buildkit@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea
+  --driver-opt image=moby/buildkit@sha256:99368f3e46177c6405b9740e4461d91cee004128daeecca78d4ceac50ec1da5c
 docker buildx build --builder dsoxlab-cache-work --load \
   -t dsoxlab-cache:finale /opt/lab-buildkit-cache
 docker run --rm dsoxlab-cache:finale

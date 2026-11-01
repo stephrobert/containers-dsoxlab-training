@@ -7,7 +7,7 @@ décide pas qui peut utiliser le registre.
 
 `/opt/lab-registry-auth` contient :
 
-- `config.yml`, monté dans `/etc/docker/registry/config.yml` ;
+- `config.yml`, monté dans `/etc/distribution/config.yml` ;
 - `auth/`, monté dans `/auth`, initialement vide ;
 - `certs/`, monté dans `/certs`, avec l'identité TLS fournie ;
 - `data/`, le stockage existant des images ;

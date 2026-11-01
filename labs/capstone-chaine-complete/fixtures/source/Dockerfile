@@ -1,4 +1,4 @@
-FROM python:3.13.8-slim-bookworm@sha256:61169c2bdb8e6bb44a8dfad33f569d324d52f079fded9a204b322a6fb9c9f799
+FROM python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
 LABEL dsoxlab.lab="capstone-chaine-complete"
 WORKDIR /app
 COPY . .

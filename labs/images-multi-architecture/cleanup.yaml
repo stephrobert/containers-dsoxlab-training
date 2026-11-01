@@ -13,7 +13,7 @@
           images=$(docker image ls -aq --filter label=dsoxlab.lab=images-multi-architecture)
           if test -n "$images"; then docker image rm -f $images; fi
           if test -d /opt/lab-multiarch && ! test -f /opt/lab-multiarch/registry-preexisting; then
-            image='registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373'
+            image='registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3'
             if docker image inspect "$image" >/dev/null 2>&1; then docker image rm "$image"; fi
           fi
       changed_when: false
