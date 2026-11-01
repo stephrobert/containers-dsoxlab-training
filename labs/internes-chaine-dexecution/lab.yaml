@@ -3,7 +3,7 @@
 id: internes-chaine-dexecution                      # REQUIS
 title: "Who really starts a container"            # REQUIS
 level: c1                     # REQUIS
-description: "Walk the chain between the daemon and a container's process, discover that its parent is none of the ones you expect, then restart the daemon and see the container survive it."
+description: "Walk the chain between the daemon and a container's process, discover that its parent is none of the ones you expect, then restart the daemon and see that the container does not survive it without a restart policy."
 skills:                       # REQUIS, non vide
   - docker
   - internes

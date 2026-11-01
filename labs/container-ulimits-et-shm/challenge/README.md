@@ -36,7 +36,7 @@ another era.
 Start it with:
 
 ```text
-a /dev/shm of 256 Mo, and a limit of 1024 file descriptors
+a /dev/shm of 256 Mo, and a limit of 256 file descriptors
 ```
 
 Both are verified **inside** the container, and that is deliberate: it is the

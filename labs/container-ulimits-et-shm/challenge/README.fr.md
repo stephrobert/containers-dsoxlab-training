@@ -36,7 +36,7 @@ reconnaître un réglage hérité d'un autre temps.
 Lancez-le avec :
 
 ```text
-/dev/shm de 256 Mo, et une limite de 1024 descripteurs de fichiers
+/dev/shm de 256 Mo, et une limite de 256 descripteurs de fichiers
 ```
 
 Les deux sont vérifiés **dans** le conteneur, et c'est délibéré : c'est le seul

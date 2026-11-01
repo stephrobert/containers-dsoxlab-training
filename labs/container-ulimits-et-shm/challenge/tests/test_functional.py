@@ -12,7 +12,7 @@ MESURÉ SUR docker.lab LE 2026-10-30 :
 | `/dev/shm` par défaut | 64 Mo, et c'est un tmpfs |
 | `ulimit -n` par défaut | **1073741816** |
 | `--shm-size 64m` | `.HostConfig.ShmSize` = 67108864 |
-| `--ulimit nofile=256:256` | `ulimit -n` = 256 dans le conteneur |
+| `--ulimit nofile=256:256` | `ulimit -n` = 256 dans le conteneur, sous le defaut mesure de 1024 |
 
 LA DEUXIÈME LIGNE SURPREND, et c'est pour cela qu'elle est demandée : la limite
 de descripteurs n'est pas le problème des conteneurs modernes, c'est son
@@ -45,7 +45,7 @@ TAG = "lab-ulimits:1.0"
 ATELIER = "/opt/lab-ulimits"
 REPONSES = f"{ATELIER}/reponses.txt"
 SHM_DEMANDE_MO = 256
-NOFILE_DEMANDE = 1024
+NOFILE_DEMANDE = 256
 A_ECRIRE_MO = 128
 
 # L'hôte du `meta.yml`, et le même que `runtime.targets[].host` du lab.yaml.
