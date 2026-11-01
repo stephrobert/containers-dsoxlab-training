@@ -8,8 +8,8 @@ consommer ; celui-ci montre où ses fichiers atterrissent.
 MESURÉ SUR docker.lab LE 2026-10-30, et ces faits sont le lab :
 
 | Fait | Valeur |
-| pilote de stockage | `overlay2`, racine `/var/lib/docker` |
-| couche d'écriture d'un conteneur | `GraphDriver.Data.UpperDir` |
+| pilote de stockage | `overlayfs` sur une installation neuve de 29, `overlay2` apres une mise a niveau ; racine `/var/lib/docker` |
+| couche d'écriture d'un conteneur | `GraphDriver.Data.UpperDir` en overlay2, `/var/lib/docker/rootfs/overlayfs/<id>` en containerd |
 | fichier écrit dans le conteneur | lisible immédiatement à ce chemin, depuis l'hôte |
 | contenu de la couche après une écriture | ce fichier SEUL, rien d'autre |
 
@@ -71,31 +71,65 @@ def host():
 
 @pytest.fixture(scope="module")
 def pilote(host) -> str:
-    """Le pilote de stockage du moteur, et le préalable de tout le fichier.
+    """Le pilote de stockage du moteur, tel qu'il est, et non tel qu'on l'attend.
 
-    Un moteur réglé autrement ne porte pas `UpperDir` : les contrôles
-    échoueraient en parlant de couches alors que la cause serait le pilote.
+    DEUX MAGASINS, ET LE DEFAUT A CHANGE. Mesuré le 2026-11-01 sur deux VM
+    reprovisionnées à neuf : une installation neuve de docker-ce 29.9.2 emploie
+    le magasin containerd et rend `overlayfs` ; une machine mise à niveau depuis
+    une version antérieure garde ses graph drivers et rend `overlay2`. Les deux
+    sont légitimes, et l'apprenant obtient le premier.
+
+    Ce lab mesurait l'ancien et SKIPPAIT sur le nouveau, donc chez tout apprenant
+    qui installe Docker aujourd'hui. Il accepte désormais les deux : seuls les
+    chemins diffèrent, pas la leçon.
     """
     res = host.run("docker info --format %s", "{{.Driver}}")
     nom = res.stdout.strip()
-    if nom != "overlay2":
+    if nom not in ("overlay2", "overlayfs"):
         pytest.skip(message(
-            en=f"the engine uses the `{nom}` driver and not `overlay2`: this "
-               "lab measures overlay2 paths, which another driver does not have",
-            fr=f"le moteur emploie le pilote `{nom}` et non `overlay2` : ce lab "
-               "mesure des chemins propres à overlay2, qu'un autre pilote n'a "
-               "pas",
+            en=f"the engine uses the `{nom}` driver, which this lab does not "
+               "know how to locate: it measures the write layer of overlay2 "
+               "(graph driver) and of overlayfs (containerd snapshotter)",
+            fr=f"le moteur emploie le pilote `{nom}`, que ce lab ne sait pas "
+               "situer : il mesure la couche d'écriture d'overlay2 (graph "
+               "driver) et celle d'overlayfs (snapshotter containerd)",
         ))
     return nom
 
 
 @pytest.fixture(scope="module")
 def couche(host, pilote) -> str:
-    """Le chemin de la couche d'écriture du conteneur, demandé au moteur."""
-    res = host.run(
-        "docker container inspect %s --format %s",
-        CONTENEUR, "{{.GraphDriver.Data.UpperDir}}",
-    )
+    """Le chemin de la couche d'écriture, là où le magasin présent la met.
+
+    Avec un graph driver (`overlay2`), l'inspection le donne dans
+    `GraphDriver.Data.UpperDir`.
+
+    Avec le snapshotter containerd (`overlayfs`), défaut d'une installation neuve
+    de Docker 29, `GraphDriver` vaut `null` et le moteur ne dit pas la couche.
+    Elle est l'`upperdir` du montage overlay du conteneur, sous
+    `/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/<n>/fs`,
+    et c'est le noyau qui la rend. Mesuré le 2026-11-01 sur une VM neuve : ce
+    répertoire porte le seul fichier écrit, là où le point de montage
+    `/var/lib/docker/rootfs/overlayfs/<id>` porte les 18 entrées du rootfs
+    complet. Confondre les deux ferait échouer la pesée, qui est la quatrième
+    mesure du lab.
+    """
+    if pilote == "overlay2":
+        res = host.run(
+            "docker container inspect %s --format %s",
+            CONTENEUR, "{{.GraphDriver.Data.UpperDir}}",
+        )
+    else:
+        # En magasin containerd, le moteur ne dit pas la couche : `GraphDriver`
+        # vaut `null`. Elle est l'`upperdir` du montage overlay du conteneur, que
+        # le noyau rend. Le point de montage, lui, est la vue FUSIONNEE : s'y
+        # fier donnerait le rootfs entier et non les differences.
+        res = host.run(
+            "findmnt -no OPTIONS /var/lib/docker/rootfs/overlayfs/"
+            "$(docker container inspect %s --format %s)"
+            " | tr , '\n' | sed -n %s",
+            CONTENEUR, "{{.Id}}", "s/^upperdir=//p",
+        )
     chemin = res.stdout.strip()
     if res.rc != 0 or not chemin:
         pytest.fail(message(
