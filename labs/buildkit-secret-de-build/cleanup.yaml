@@ -37,6 +37,21 @@
           fi
       changed_when: false
 
+    - name: Retirer l'image du constructeur, qu'aucun conteneur n'utilise plus
+      # `docker buildx rm` retire le conteneur du constructeur, jamais son
+      # image : elle reste sur l'hote (249 Mo), et le cycle de validation la
+      # compte comme laissee. Le filtre `ancestor` protege un constructeur
+      # d'un autre lab qui tournerait sur la meme machine.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          utilisee=$(docker ps -aq --filter ancestor=moby/buildkit)
+          if test -n "$utilisee"; then exit 0; fi
+          images=$(docker image ls -q --filter reference='moby/buildkit')
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+
     - name: Retirer seulement les fichiers du lab
       ansible.builtin.file:
         path: "{{ item }}"
