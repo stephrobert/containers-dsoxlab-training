@@ -8,7 +8,10 @@ Implémentez un `ci.sh` POSIX exécutable. Son contrat d'environnement :
 `PROJECT` (projet Compose unique), `SOURCE_DIR` (contexte absolu),
 `ARTIFACT_DIR` (répertoire de rapports existant), `EXPECTED_VALUE`, `TEST_FAIL`
 (0 normalement, 1 force un vrai échec du test). Gardez le fichier Compose et
-le test fournis sans remplacer leur logique. Exemple manuel :
+le test fournis sans remplacer leur logique. La source fournie est un vrai
+dépôt Git commité. Déduisez et exportez `SOURCE_COMMIT` depuis son HEAD et
+refusez explicitement toute modification non commitée avant build/publication.
+Exemple manuel :
 
 ```sh
 cd /opt/lab-compose-ci
@@ -20,7 +23,13 @@ EXPECTED_VALUE=release-one TEST_FAIL=0 ./ci.sh
 Chaque exécution construit la source indiquée, démarre seulement l'API,
 attend sa santé, exécute le conteneur de tests, conserve `result.json`, retourne
 le statut du test et retire conteneurs, réseaux et volumes de ce projet même
-en échec. Modifier `value.txt` doit changer la livraison testée à l'exécution
+en échec. Seulement après succès, publiez `release.tar` et `image.json` dans
+`ARTIFACT_DIR`. Ce dernier porte `source_commit`, l'`image_id` réel et le
+`sha256` de l'archive. La révision OCI de l'image correspond au commit réel ;
+les données internes Git restent hors de l'image. Un test échoué ou une source
+non commitée ne publie aucune archive acceptée. Cette publication locale
+n'est pas une certification d'un fournisseur CI ou registre public.
+Modifier et commiter `value.txt` doit changer la livraison testée à l'exécution
 suivante. Aucun port hôte, prune global ni suppression des images de base.
 Conservez les labels de propriété.
 

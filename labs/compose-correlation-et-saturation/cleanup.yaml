@@ -1,0 +1,20 @@
+---
+- name: Remove only owned correlation laboratory resources
+  hosts: lab_target
+  become: true
+  vars:
+    work: /opt/dsoxlab-compose-correlation-et-saturation
+  tasks:
+    - name: Check the ownership record
+      ansible.builtin.stat:
+        path: "{{ work }}/.ownership.json"
+      register: ownership
+    - name: Remove owned Docker objects without global pruning
+      ansible.builtin.command:
+        cmd: python3 {{ work }}/lifecycle.py cleanup
+      when: ownership.stat.exists
+    - name: Remove only the recorded work directory
+      ansible.builtin.file:
+        path: "{{ work }}"
+        state: absent
+      when: ownership.stat.exists

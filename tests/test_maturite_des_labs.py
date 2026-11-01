@@ -57,9 +57,12 @@ import io
 import json
 import runpy
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+from conftest import lab_target_roles
 
 RACINE = Path(__file__).resolve().parent.parent
 LABS = RACINE / "labs"
@@ -163,6 +166,144 @@ def test_la_photographie_distingue_les_images_orphelines(validateur):
     assert validateur["ecarts"](baseline, after) == [
         "image laissé : <none>:<none>|sha256:new",
     ]
+
+
+def test_la_photographie_couvre_les_roles_pas_les_cibles_alternatives(
+    validateur, tmp_path, monkeypatch,
+):
+    (tmp_path / "lab.yaml").write_text(
+        "runtime:\n  type: vm\n  default: principal\n  targets:\n"
+        "    - name: principal\n      host: docker.lab\n"
+        "      roles: {client: docker-client.lab, restore: docker-client.lab}\n"
+        "    - {name: autre_distribution, host: autre.lab}\n"
+    )
+    monkeypatch.delenv("DSOXLAB_TARGET_HOST", raising=False)
+    state = {
+        "images": [], "conteneurs": [], "volumes": [], "reseaux": [],
+        "docker": "26.1.5", "store": "classic",
+    }
+    called = []
+
+    def command(args, journal, timeout):
+        called.append(args[-1])
+        return subprocess.CompletedProcess(args, 0, json.dumps(state), "")
+
+    monkeypatch.setitem(validateur["photographier"].__globals__, "commande", command)
+    photo = validateur["photographier"](tmp_path, io.StringIO())
+    assert called == ["docker.lab", "docker-client.lab"]
+    assert set(photo["autres_hotes"]) == {"docker-client.lab"}
+
+
+def test_un_objet_laisse_sur_le_client_rend_le_lab_rouge(validateur):
+    state = {
+        "images": [], "conteneurs": [], "volumes": [], "reseaux": [],
+        "workdir_present": False,
+    }
+    before = dict(state, autres_hotes={"docker-client.lab": dict(state)})
+    after = dict(state, autres_hotes={
+        "docker-client.lab": dict(state, volumes=["dsoxlab-restauration-data"]),
+    })
+    assert validateur["ecarts"](before, after) == [
+        "docker-client.lab : volume laissé : dsoxlab-restauration-data",
+    ]
+
+
+def test_une_photographie_client_absente_rend_le_lab_rouge(validateur):
+    state = {
+        "images": [], "conteneurs": [], "volumes": [], "reseaux": [],
+        "workdir_present": False,
+    }
+    before = dict(state, autres_hotes={"docker-client.lab": dict(state)})
+    assert validateur["ecarts"](before, state) == [
+        "docker-client.lab : photographie manquante avant ou après",
+    ]
+
+
+def test_la_solution_vm_rejoue_les_roles_de_la_cible(tmp_path, monkeypatch):
+    (tmp_path / "lab.yaml").write_text(
+        "runtime:\n  default: source\n  targets:\n"
+        "    - {name: source, host: docker.lab, roles: {restore: docker-client.lab}}\n"
+        "    - {name: alternative, host: autre.lab, roles: {restore: autre-client.lab}}\n"
+    )
+    monkeypatch.delenv("DSOXLAB_TARGET", raising=False)
+    assert lab_target_roles(tmp_path, "docker.lab") == {"restore": "docker-client.lab"}
+    assert lab_target_roles(tmp_path, "autre.lab") == {"restore": "autre-client.lab"}
+    with pytest.raises(RuntimeError, match="non déclarée"):
+        lab_target_roles(tmp_path, "inconnu.lab")
+
+
+def resultat_mesure(passed, total=1):
+    return {
+        "passed": passed, "total": total, "recorded": True, "skipped": 0,
+        "status": "passed" if passed == total else "failed", "echecs": [],
+    }
+
+
+@pytest.mark.parametrize("second_score,expected", [(1, "VALIDE"), (0, "ROUGE")])
+def test_le_double_passage_exige_un_second_succes(
+    validateur, tmp_path, monkeypatch, second_score, expected,
+):
+    globals_ = validateur["valider"].__globals__
+    monkeypatch.setenv("HOME", str(tmp_path))
+    scores = iter([0, 1, 0, second_score])
+    solutions = []
+    state = {
+        "images": [], "conteneurs": [], "volumes": [], "reseaux": [],
+        "workdir_present": False, "docker": "26", "store": "classic", "host": "docker.lab",
+    }
+    monkeypatch.setitem(globals_, "CACHE", tmp_path)
+    monkeypatch.setitem(globals_, "photographier", lambda *_: state)
+    monkeypatch.setitem(globals_, "dsoxlab", lambda *_: subprocess.CompletedProcess([], 0, "", ""))
+    monkeypatch.setitem(globals_, "check", lambda *_: resultat_mesure(next(scores)))
+    monkeypatch.setitem(globals_, "poser_solution", lambda *_: solutions.append(True))
+    result = validateur["valider"](tmp_path / "lab", double_passage=True)
+    assert len(solutions) == 2
+    assert result["protocole"] == "double-passage"
+    assert result["apres_rejeu"]["passed"] == second_score
+    assert result["verdict"] == expected
+
+
+def test_un_second_passage_absent_ne_devient_pas_une_preuve(validateur):
+    result = {
+        "avant": resultat_mesure(0), "apres": resultat_mesure(1),
+        "rejeu": resultat_mesure(0), "protocole": "double-passage", "ecarts": [],
+    }
+    assert validateur["verdict"](result, True) == "ROUGE"
+    with pytest.raises(ValueError, match="exige le rejeu"):
+        validateur["valider"](Path("unused"), rejeu=False, double_passage=True)
+
+
+def test_un_second_passage_sans_mesure_reste_a_remesurer(validateur):
+    result = {
+        "avant": resultat_mesure(0), "apres": resultat_mesure(1),
+        "rejeu": resultat_mesure(0), "protocole": "double-passage", "ecarts": [],
+        "apres_rejeu": {"passed": 0, "total": 0, "recorded": True, "status": "not_measured"},
+    }
+    assert validateur["verdict"](result, True) == "SKIP"
+
+
+def test_la_relecture_cli_respecte_le_lab_selectionne(validateur, tmp_path, monkeypatch):
+    labs = tmp_path / "labs"
+    for name in ("selected", "unmeasured"):
+        folder = labs / name
+        folder.mkdir(parents=True)
+        (folder / "lab.yaml").write_text(f"id: {name}\n")
+    results = tmp_path / "validation.json"
+    results.write_text(json.dumps({
+        "selected": {
+            "verdict": "VALIDE", "protocole": "double-passage",
+            "apres_rejeu": resultat_mesure(1),
+        },
+    }))
+    globals_ = validateur["main"].__globals__
+    monkeypatch.setitem(globals_, "LABS", labs)
+    monkeypatch.setitem(globals_, "RESULTATS", results)
+    monkeypatch.setattr(sys, "argv", [
+        "valider-labs.py", "--check", "--lab", "selected", "--double-passage",
+    ])
+    assert validateur["main"]() == 0
+    monkeypatch.setattr(sys, "argv", ["valider-labs.py", "--check"])
+    assert validateur["main"]() == 1
 
 
 def test_un_nettoyage_ne_peut_pas_supprimer_les_objets_preexistants(validateur):

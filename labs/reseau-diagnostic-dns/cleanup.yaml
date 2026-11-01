@@ -1,63 +1,47 @@
 ---
-# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
-# posé, pour que l'épreuve se rejoue à l'identique.
-#
-# CE CLEANUP DOIT NETTOYER PLUS LARGE QUE CE QUE LE SETUP A POSÉ. Une épreuve
-# de diagnostic laisse derrière elle ce que l'apprenant a fabriqué en
-# cherchant : un réseau de plus, un conteneur de rattrapage. Les deux réseaux
-# du setup sont nommés, mais le réseau qu'un apprenant aurait créé lui-même ne
-# peut pas l'être, d'où le `network prune` final, qui retire les réseaux sans
-# aucun membre.
-#
-# `network prune` NE TOUCHE PAS les réseaux du moteur (`bridge`, `host`,
-# `none`) ni ceux qui portent encore un conteneur : il ne peut donc pas casser
-# un autre lab du catalogue, qui retire ses propres conteneurs dans son propre
-# cleanup.
-#
-# L'ORDRE COMPTE DEUX FOIS : un réseau dont des conteneurs sont encore membres
-# ne se supprime pas, et une image dont des conteneurs dérivent non plus.
-- name: Défaire le challenge reseau-diagnostic-dns
+- name: Retirer seulement les ressources de l'épreuve réseau et données
   hosts: lab_target
   become: true
-  vars:
-    image_epinglee: >-
-      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
-    tag_local: lab-diagnostic:1.0
-    atelier: /opt/lab-diagnostic
-    reseau_boutique: front
-    reseau_catalogue: arriere-plan
   tasks:
-    - name: Retirer les deux conteneurs, AVANT les réseaux et l'image
+    - name: Retirer les objets identifiés, sans prune ni suppression étrangère
       ansible.builtin.shell:
-        cmd: docker rm -f boutique catalogue 2>/dev/null || true
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          if test -n "$ids"; then docker rm -f $ids; fi
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          if test -n "$ids"; then docker network rm $ids; fi
+          ids=$(docker volume ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          if test -n "$ids"; then docker volume rm $ids; fi
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          if test -n "$ids"; then docker image rm $ids; fi
       changed_when: false
-
-    - name: Retirer les deux réseaux du challenge
+    - name: Examiner le marqueur de cache préparé
+      ansible.builtin.stat:
+        path: /root/.lab-diagnostic-state.json
+      register: diagnostic_state
+    - name: Retirer seulement la base introduite, si aucun autre usage ne la retient
       ansible.builtin.shell:
-        cmd: >
-          docker network rm {{ reseau_boutique }} {{ reseau_catalogue }}
-          2>/dev/null || true
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          state = json.loads(Path("/root/.lab-diagnostic-state.json").read_text())
+          reference = "alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f"
+          found = subprocess.run(["docker", "image", "inspect", reference], capture_output=True, text=True)
+          if found.returncode == 0:
+              image_id = json.loads(found.stdout)[0]["Id"]
+              if image_id not in state["images"]:
+                  subprocess.run(["docker", "image", "rm", reference], check=True)
+          elif found.returncode != 1 or "No such image" not in found.stderr:
+              raise SystemExit(found.stderr)
+          else:
+              print("Diagnostic base is already absent")
+          PY
+      when: diagnostic_state.stat.exists
       changed_when: false
-
-    - name: Retirer les réseaux sans membre qu'un diagnostic a pu laisser
-      ansible.builtin.shell:
-        cmd: docker network prune -f || true
-      changed_when: false
-
-    - name: Retirer l'image de service, puis l'image de base par son digest
-      ansible.builtin.shell:
-        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
-      changed_when: false
-
-    - name: Retirer les couches orphelines et le cache de construction
-      ansible.builtin.shell:
-        cmd: docker image prune -f && docker builder prune -f || true
-      changed_when: false
-
-    - name: Retirer le répertoire de construction et l'énoncé
+    - name: Retirer seulement les fichiers préparés
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      loop:
-        - "{{ atelier }}"
-        - /opt/MISSION.md
+      loop: [/opt/lab-diagnostic, /root/.lab-diagnostic-state.json, /opt/MISSION.md]

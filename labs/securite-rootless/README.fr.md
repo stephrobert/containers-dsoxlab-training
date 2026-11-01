@@ -2,11 +2,15 @@
 
 **Public :** apprenants.
 
-Start only the dedicated unprivileged daemon and verify its rootless identity.
+Qualifier le démon non privilégié, son réseau et ses données persistantes.
 
 ## Ce que vous allez pratiquer
 
-Le service dédié est actif et son démon signale le mode rootless.
+Le service dédié est actif et son propriétaire réel est non privilégié. Le
+service HTTP rootless répond, son réseau refuse le pair extérieur et ses
+données survivent à une recréation. L'émulation d'UID et le stockage d'images
+distinct doivent être expliqués sans confondre root dans le conteneur et root
+sur la VM.
 
 ## Limites de sécurité
 

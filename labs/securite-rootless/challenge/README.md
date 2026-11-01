@@ -1,3 +1,8 @@
 # Functional contract: securite-rootless
 
-Tests inspect effective state on the remote `docker.lab` host. They reject the prepared starter state and pass only when the mission is satisfied. Test-created resources are bounded and carry this lab’s unique label.
+Tests inspect the real rootless daemon and the UID of its systemd process on
+`docker.lab`. A workload in its separate image store must expose HTTP only on
+nonprivileged loopback, allow a network peer, refuse a networkless peer and
+preserve fresh volume data across two recreations. Trial objects have unique
+bounded names and are removed, including after partial allocation failure.
+The prepared starter state earns no points.

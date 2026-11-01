@@ -23,4 +23,4 @@
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      loop: [/opt/lab-compose-secret, /root/.lab-compose-secret.sha256, /opt/MISSION.md]
+      loop: [/opt/lab-compose-secret, /root/.lab-compose-secret.sha256, /root/.lab-compose-secret-image, /opt/MISSION.md]

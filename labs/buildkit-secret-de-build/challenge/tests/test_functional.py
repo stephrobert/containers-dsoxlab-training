@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import secrets
 from pathlib import Path
@@ -106,7 +107,12 @@ def trials(host):
         )
         product = host.run("docker run --rm %s", TRIAL_IMAGE) if good.rc == 0 else None
         report = _inspect(host, TRIAL_IMAGE, f"{temporary}/token") if good.rc == 0 else None
-        host.run("printf '%%s' %s > %s/wrong", secrets.token_hex(16), temporary)
+        wrong_token = secrets.token_hex(16)
+        written_wrong = host.run("printf '%%s' %s > %s/wrong", wrong_token, temporary)
+        assert written_wrong.rc == 0, message(
+            en="Write the unauthorized trial credential.",
+            fr="Écrivez l'identifiant d'essai non autorisé.",
+        )
         wrong = host.run(
             command, BUILDER, f"DEPOT_URL={url}",
             f"id=depot,src={temporary}/wrong", TRIAL_IMAGE, temporary,
@@ -116,6 +122,15 @@ def trials(host):
             "--build-arg %s -t %s %s/context",
             BUILDER, f"DEPOT_URL={url}", TRIAL_IMAGE, temporary,
         )
+        if report is not None:
+            logs = "".join(result.stdout + result.stderr for result in [good, wrong, absent])
+            variants = [
+                variant for secret in [token, wrong_token]
+                for variant in [
+                    secret, base64.b64encode(secret.encode()).decode(), secret.encode().hex(),
+                ]
+            ]
+            report["logs_clean"] = not any(variant in logs for variant in variants)
         yield good, product, report, artifact, wrong, absent
     finally:
         restored = host.run("printf '%%s' %s | sudo tee %s >/dev/null", original, STATE)
@@ -148,9 +163,9 @@ def test_fresh_identity_rebuilds_without_leaks(trials):
         en="The rebuilt image does not serve the newly issued private product.",
         fr="L'image reconstruite ne rend pas le nouveau produit privé.",
     )
-    assert report is not None and report["clean"], message(
-        en="The newly supplied secret leaks into the rebuilt image.",
-        fr="Le nouveau secret fuit dans l'image reconstruite.",
+    assert report is not None and report["clean"] and report["logs_clean"], message(
+        en="The fresh credentials must not leak into the rebuilt image or captured build logs, including base64/hex forms.",
+        fr="Les identifiants ne fuient ni dans l'image reconstruite ni les logs capturés, y compris en base64/hex.",
     )
 
 

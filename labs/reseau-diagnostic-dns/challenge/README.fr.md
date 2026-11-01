@@ -13,7 +13,7 @@ Les deux tournent, les deux répondent quand on les interroge de l'intérieur, e
 l'application ne joint rien. L'audit signale par ailleurs que la base est
 joignable depuis l'extérieur.
 
-## Les quatre contrôles
+## Les cinq contrôles
 
 **1. Depuis `boutique`, le nom `base` se résout**, vers une adresse que
 `catalogue` porte réellement.
@@ -36,14 +36,21 @@ l'extérieur : son application l'atteint par le réseau des conteneurs.
 L'exploitation doit continuer à désigner le conteneur par son nom réel. C'est
 une exigence, pas un détail : l'application a son nom à elle, l'exploitation
 garde le sien.
+**5. Le remplacement réel conserve la donnée métier nouvelle.**
+
+Gardez l'image fournie et `dsoxlab-diagnostic-data` sur `/data`.
+Installez `/opt/lab-diagnostic/recreate.sh` : le nouveau conteneur sert la
+valeur nouvelle de `/data/jeton` via le chemin corrigé, sans exposition.
+Tout réseau ajouté porte `dsoxlab.lab=reseau-diagnostic-dns` ; aucun prune global.
 
 ## C'est une épreuve
 
 **Rien ne vous sera réexpliqué.** Les cinq labs réseau du parcours ont enseigné
 ce qu'il faut savoir. Celle-ci mesure.
 
-Quatre contrôles de poids égal, **75 points pour réussir**. Les messages des
+Cinq contrôles de poids égal, **75 points pour réussir**. Les messages des
 contrôles nomment le symptôme, jamais le geste : faire le lien est le travail.
+Le seuil numérique n'annule pas la conservation critique des données du parcours.
 
 Quatre indices existent, du plus vague au plus explicite, et ils coûtent des
 points. Le dernier nomme les fautes qui laissent croire au succès.

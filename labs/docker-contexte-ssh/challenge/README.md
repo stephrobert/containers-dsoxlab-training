@@ -1,3 +1,7 @@
 # Functional contract: docker-contexte-ssh
 
-Tests inspect effective state on the remote `docker.lab` host. They reject the prepared starter state and pass only when the mission is satisfied. Test-created resources are bounded and carry this lab’s unique label.
+The Docker client on `docker.lab` must use a named SSH context reaching the real
+engine on `docker-client.lab`. Tests compare engine IDs, preserve the selected
+default context and require refusal of a readable but unauthorized SSH key.
+They reject the prepared starter state. Only dedicated lab identities and
+workspaces are changed.

@@ -47,7 +47,32 @@ def test_named_context_uses_ssh_without_changing_the_default(host):
         fr="Conservez le contexte Docker par défaut.",
     )
     remote_info = run_as_learner(
-        "docker", "--context", "dsoxlab-maintenance", "info", "--format", "{{.Name}}"
+        "docker", "--context", "dsoxlab-maintenance", "info", "--format", "{{.ID}}"
+    )
+    target = lab_host("docker-client.lab").run("docker info --format '{{.ID}}'")
+    local = host.run("docker info --format '{{.ID}}'")
+    assert target.rc == local.rc == 0 and (
+        remote_info.stdout.strip() == target.stdout.strip() != local.stdout.strip()
+    ), message(
+        en="The context must contact the real second-VM engine, not a loopback alias to the source.",
+        fr="Le contexte doit joindre le vrai moteur de la seconde VM, pas un alias loopback de la source.",
+    )
+    denied_command = shlex.join([
+        "ssh", "-F", "/dev/null", "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes",
+        "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+        "-o", "ConnectTimeout=5", "-i", "/opt/dsoxlab-docker-contexte-ssh/unauthorized",
+        f"dsoxlab-context@{state['remote_ip']}", "docker", "info", "--format", "{{.ID}}",
+    ])
+    # Testinfra treats an outer SSH exit 255 as a transport failure.
+    unauthorized = run_as_learner(
+        "sh", "-c", denied_command
+        + '; status=$?; printf "\\nssh_exit=%s\\n" "$status"; test "$status" -eq 255',
+    )
+    assert unauthorized.rc == 0 and "Permission denied" in unauthorized.stderr and (
+        unauthorized.stdout.strip() == "ssh_exit=255"
+    ), message(
+        en="The reachable remote SSH service must reject the separate unauthorized identity.",
+        fr="Le service SSH distant joignable doit refuser l'identité distincte non autorisée.",
     )
     assert remote_info.rc == 0 and remote_info.stdout.strip(), message(
         en=f"The SSH context cannot reach its Docker daemon: {remote_info.stderr[-500:]}",

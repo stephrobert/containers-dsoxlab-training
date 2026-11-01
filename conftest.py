@@ -784,6 +784,25 @@ def _read_lab_runtime(lab_root: Path) -> tuple[str, str | None]:
     return str(runtime.get("type", "shell")), host
 
 
+def lab_target_roles(lab_root: Path, host_name: str) -> dict[str, str]:
+    runtime = yaml.safe_load((lab_root / "lab.yaml").read_text(encoding="utf-8"))["runtime"]
+    candidates = [t for t in runtime.get("targets", []) if t.get("host") == host_name]
+    if not candidates:
+        if runtime.get("host") == host_name:
+            return {}
+        raise RuntimeError(f"{lab_root.name} : cible {host_name} non déclarée")
+    requested = os.environ.get("DSOXLAB_TARGET")
+    chosen = next(
+        (t for t in candidates if t.get("name") == (requested or runtime.get("default"))),
+        None,
+    )
+    if chosen is None:
+        if requested or len(candidates) != 1:
+            raise RuntimeError(f"{lab_root.name} : cible ambiguë ou inconnue pour {host_name}")
+        chosen = candidates[0]
+    return dict(chosen.get("roles") or {})
+
+
 def _replay_shell_solution(lab_root: Path, rel_path: Path) -> None:
     """Joue la solution d'un lab shell dans son workdir.
 
@@ -945,6 +964,7 @@ def _apply_lab_state(request) -> None:
         repo_meta,
         terraform_outputs=tf_outputs,
         target_fqdn=host_name,
+        roles=lab_target_roles(lab_root, host_name),
     )
 
     vault_password_file: Path | None = None

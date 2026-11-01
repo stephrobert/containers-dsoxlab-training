@@ -2,7 +2,7 @@
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
 - name: Défaire le lab compose-plusieurs-environnements
-  hosts: lab_target
+  hosts: lab_target:lab_production
   become: true
   tasks:
     - name: Retirer les deux projets du lab
@@ -25,4 +25,4 @@
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      loop: [/opt/lab-compose-env, /root/.lab-compose-env.sha256, /opt/MISSION.md]
+      loop: [/opt/lab-compose-env, /root/.lab-compose-env.sha256, /root/.lab-compose-env-image.id, /opt/MISSION.md]

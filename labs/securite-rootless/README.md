@@ -2,11 +2,14 @@
 
 **Audience:** learners.
 
-Start only the dedicated unprivileged daemon and verify its rootless identity.
+Qualify the unprivileged daemon, its network and persistent data.
 
 ## What you will practice
 
-The dedicated service is active and its daemon reports rootless mode.
+The dedicated service is active and its real owner is unprivileged. The
+rootless HTTP workload responds, the network refuses an outside peer and data
+survives recreation. Explain UID mapping and the separate image store without
+confusing root inside the container with root on the host.
 
 ## Safety boundaries
 

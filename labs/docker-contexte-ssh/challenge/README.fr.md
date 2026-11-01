@@ -1,3 +1,7 @@
 # Contrat fonctionnel : docker-contexte-ssh
 
-Les tests inspectent l’état effectif sur l’hôte distant `docker.lab`. Ils refusent l’état initial et ne réussissent que si la mission est accomplie. Les ressources de test sont bornées et portent l’étiquette unique du lab.
+Le client Docker sur `docker.lab` doit utiliser un contexte SSH nommé vers
+le vrai moteur de `docker-client.lab`. Les tests comparent les identités des
+moteurs, préservent le contexte sélectionné et exigent le refus d'une clé SSH
+lisible mais non autorisée. L'état initial est refusé. Seuls les identités et
+espaces dédiés au lab sont modifiés.

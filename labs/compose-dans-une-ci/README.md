@@ -2,10 +2,12 @@
 
 Challenge, c4, 45 minutes. Read [the mission](scenario.md).
 Run real integration tests without a hosted runner; the evaluator checks exit
-codes, fresh source and cleanup on both paths.
+codes, fresh committed source and cleanup on both paths. Accepted image archives
+are reloaded and bound to actual OCI revision, source commit and archive SHA-256;
+failed tests and uncommitted changes cannot publish them.
 
 Runtime: Debian 13 VM, Docker, BuildKit, Compose v2 (`up --wait`), Python 3,
-POSIX shell and `timeout`. Setup fetches apt packages and a digest-pinned Python
+Git, POSIX shell and `timeout`. Setup fetches apt packages and a digest-pinned Python
 image; CI itself is offline. Only `/opt/lab-compose-ci` and labelled lab
 resources are removed. No global Docker operations or workstation execution.
 Preexisting base IDs are recorded before pulls; only newly seeded, unshared

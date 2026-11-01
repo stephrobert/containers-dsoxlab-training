@@ -1,6 +1,6 @@
 ---
 - name: Défaire le lab donnees-postgres-sauvegarde
-  hosts: lab_target
+  hosts: lab_target:lab_restore
   become: true
   tasks:
     - name: Supprimer uniquement les bases portant le marqueur aléatoire du lab

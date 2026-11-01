@@ -7,7 +7,9 @@ initializes `/data/value.txt` only if missing. No deployments run initially.
 
 ## Mission
 
-Write overrides `dev.yaml` and `prod.yaml` in the same directory. Merge the base
+Write `dev.yaml` on `docker.lab` and `prod.yaml` on `docker-client.lab`, both
+under `/opt/lab-compose-env`. The setup transfers the same image archive over
+SSH; it does not rebuild the image on the production VM. Merge the base
 first, then the selected override with two `-f` options. Run both projects simultaneously:
 
 | Override | Project | APP_ENV | Memory | Publication |
@@ -20,6 +22,7 @@ network. Keep supplied image/command and the inherited volume mount, without
 replacement mounts, global resource names or shared external resources.
 
 The two HTTP endpoints must report their actual environment. Force-recreating
-one project must preserve fresh data in its volume and leave the other container's
+one project on its VM must preserve fresh data in its volume and leave the other VM's container
 identity and data unchanged. No manual copies, builds or downloads are needed.
-Checks perform these independent recreations with random data and restore the original.
+Checks compare the prepared image digest with both running images, prohibit a
+Compose deployment build and perform independent recreations with fresh data.

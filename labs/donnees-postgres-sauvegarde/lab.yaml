@@ -1,7 +1,7 @@
 id: donnees-postgres-sauvegarde
-title: "Back up and restore PostgreSQL data"
+title: "Restore PostgreSQL data on a second VM"
 level: c3
-description: "Create a consistent PostgreSQL custom-format backup, restore it into an isolated database, and verify restored rows against the live source."
+description: "Create a consistent PostgreSQL custom-format backup, transfer it to a second VM, restore a fresh database there, and verify the running service and every row against the live source."
 skills:
   - postgresql
   - database-backup
@@ -16,6 +16,8 @@ runtime:
   targets:
     - name: cible
       host: docker.lab
+      roles:
+        restore: docker-client.lab
   default: cible
 validation:
   functional: true

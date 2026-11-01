@@ -1,2 +1,2 @@
 title: "Exécuter Compose dans une CI locale reproductible"
-description: "Construire la source modifiée, attendre la disponibilité, propager les vrais échecs d'intégration et toujours retirer la stack isolée."
+description: "Construire un commit réel, tester et publier l'archive acceptée avec sa provenance, refuser la source non commitée et toujours nettoyer."

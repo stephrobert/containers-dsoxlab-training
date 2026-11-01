@@ -16,7 +16,10 @@ Do not use replacement mounts, entrypoints or environment-variable copies.
 Observer must have no mounts and must not see the secret.
 
 Keep the token unchanged. It must not appear in container metadata, rendered
-configuration or logs. The startup fingerprint must match the file's actual bytes.
+configuration, logs or Git history. The prepared repository ignores `credentials/`;
+never add the token even temporarily before deleting it from a later commit.
+Checks inspect actual reachable Git blobs without printing the credential.
+The startup fingerprint must match the file's actual bytes.
 The check briefly rotates the pedagogical token and force-recreates the services,
 then restores the original file and deployment.
 

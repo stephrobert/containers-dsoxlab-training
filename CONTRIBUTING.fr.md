@@ -31,6 +31,28 @@ lab suivant qui en paierait le prix, en trouvant un état qu'il n'a pas posé.
 python3 scripts/valider-labs.py --lab <id>
 ```
 
+Pour les preuves couvrant les contrats complets du parcours, mesurez aussi
+le second passage :
+
+```bash
+LAB_HOME=$PWD python3 scripts/valider-labs.py --lab <id> --double-passage
+python3 scripts/valider-labs.py --check --lab <id> --double-passage
+```
+
+Le protocole mesuré est `0 → plein → 0 → plein → propre`. La relecture stricte
+refuse un ancien relevé sans second succès effectivement mesuré : ni skip ni
+contrôle absent ne deviennent un succès. Cette option est incompatible avec
+`--sans-rejeu`.
+
+Docker doit exister avant la photographie pré-setup. `infra/bootstrap.yaml`
+prépare ce socle VM. `runtime.targets` sélectionne des cibles alternatives ;
+les hôtes simultanés appartiennent aux `roles` de la cible sélectionnée et
+deviennent des groupes d'inventaire `lab_<role>`. Le validateur photographie
+tous ces hôtes ; le rejeu de référence reçoit les mêmes rôles. Chaque moteur
+doit rester intact. Ajoutez les nouveaux hôtes en fin de `infra.hosts` pour
+préserver les adresses existantes et sérialisez les cycles VM : jamais deux
+attestations concurrentes.
+
 ## Ce que votre lab doit porter
 
 | Fichier | Rôle |

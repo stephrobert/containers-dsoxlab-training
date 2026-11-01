@@ -1,0 +1,5 @@
+# Surcharge française du lab registry-droits-minimaux. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Accorder les droits minimaux à un éditeur et un lecteur distinct"
+description: "Corriger les ACL d'un service de jetons, publier en TLS vérifié et tirer le digest exact sur un second hôte Docker tout en refusant les uploads du lecteur."

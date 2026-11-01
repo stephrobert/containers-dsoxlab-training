@@ -3,7 +3,7 @@
 id: compose-plusieurs-environnements                      # REQUIS
 title: "Deploy isolated development and production Compose projects"
 level: c3                     # REQUIS
-description: "Merge environment-specific overrides onto one base and operate two isolated deployments without mixing data or resources."
+description: "Promote the same prepared image to two distinct VMs, apply environment-specific overrides and prove independent configuration, runtime behavior and data persistence without a deployment rebuild."
 skills:                       # REQUIS, non vide
   - compose-overrides
   - environment-isolation
@@ -17,6 +17,8 @@ runtime:
   targets:                    # REQUIS pour vm, non vide
     - name: cible
       host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      roles:
+        production: docker-client.lab
   default: cible
 validation:
   functional: true

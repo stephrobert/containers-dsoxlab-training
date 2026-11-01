@@ -41,7 +41,7 @@
   tasks:
     - name: Installer le moteur de conteneurs
       ansible.builtin.apt:
-        name: docker.io
+        name: [docker.io, python3]
         state: present
         update_cache: true
 
@@ -61,6 +61,26 @@
         name: "{{ ansible_user | default('ansible') }}"
         groups: docker
         append: true
+    - name: Photographier les images préexistantes avant le pull
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          images = subprocess.check_output(["docker", "image", "ls", "-aq", "--no-trunc"], text=True).split()
+          existing = json.loads(subprocess.check_output(["docker", "image", "inspect", *set(images)], text=True)) if images else []
+          for image in existing:
+              if "lab-diagnostic:1.0" in (image["RepoTags"] or []) and (
+                  (image["Config"]["Labels"] or {}).get("dsoxlab.lab") != "reseau-diagnostic-dns"):
+                  raise SystemExit("Reserved diagnostic image tag belongs to another owner")
+          volumes = subprocess.check_output(["docker", "volume", "ls", "-q"], text=True).split()
+          if "dsoxlab-diagnostic-data" in volumes:
+              volume = json.loads(subprocess.check_output(["docker", "volume", "inspect", "dsoxlab-diagnostic-data"], text=True))[0]
+              if (volume["Labels"] or {}).get("dsoxlab.lab") != "reseau-diagnostic-dns":
+                  raise SystemExit("Reserved diagnostic volume belongs to another owner")
+          Path("/root/.lab-diagnostic-state.json").write_text(json.dumps({"images": images}))
+          PY
+      changed_when: true
 
     - name: Tirer l'image de base, par son digest
       ansible.builtin.command:
@@ -68,16 +88,16 @@
       register: tirage
       changed_when: "'Downloaded newer image' in tirage.stdout"
 
-    - name: Repartir d'une table rase, un passage précédent a pu laisser ses conteneurs
+    - name: Retirer seulement les ressources identifiées du passage précédent
       ansible.builtin.shell:
-        cmd: docker rm -f boutique catalogue 2>/dev/null || true
-      changed_when: false
-
-    - name: Retirer les réseaux du passage précédent, APRÈS leurs conteneurs
-      ansible.builtin.shell:
-        cmd: >
-          docker network rm {{ reseau_boutique }} {{ reseau_catalogue }}
-          2>/dev/null || true
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          if test -n "$ids"; then docker rm -f $ids; fi
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          if test -n "$ids"; then docker network rm $ids; fi
+          ids=$(docker volume ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          if test -n "$ids"; then docker volume rm $ids; fi
       changed_when: false
 
     - name: Déposer le répertoire de construction
@@ -88,16 +108,20 @@
 
     # L'écouteur est porté par l'image : ce challenge fait recréer des
     # conteneurs, et l'apprenant ne doit pas avoir à réécrire un service qu'il
-    # n'a jamais vu. Le jeton change à chaque démarrage, et les contrôles
+    # n'a jamais vu. Le jeton persiste sur le volume, et les contrôles
     # lisent la RÉPONSE, jamais la seule connexion.
     - name: Écrire l'écouteur que l'image portera
       ansible.builtin.copy:
         dest: "{{ atelier }}/ecouteur.sh"
         mode: "0755"
         content: |
-          jeton=$(od -An -tx1 -N6 /dev/urandom | tr -d ' \n')
+          set -eu
+          mkdir -p /data
+          if ! test -s /data/jeton; then
+            od -An -tx1 -N6 /dev/urandom | tr -d ' \n' > /data/jeton
+          fi
           while true; do
-            echo "jeton=$jeton" | nc -l -p 80 || true
+            printf 'jeton=%s\n' "$(cat /data/jeton)" | nc -l -p 80 || true
           done
 
     - name: Écrire l'image de service du challenge
@@ -106,6 +130,7 @@
         mode: "0644"
         content: |
           FROM {{ image_epinglee }}
+          LABEL dsoxlab.lab="reseau-diagnostic-dns"
           COPY ecouteur.sh /usr/local/bin/ecouteur.sh
           CMD ["sh", "/usr/local/bin/ecouteur.sh"]
 
@@ -113,11 +138,28 @@
       ansible.builtin.command:
         cmd: docker build -q -t {{ tag_local }} {{ atelier }}
       changed_when: true
+    - name: Garder l'identité réelle de l'image fournie
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          path = Path("/root/.lab-diagnostic-state.json")
+          state = json.loads(path.read_text())
+          state["image_id"] = json.loads(subprocess.check_output(
+              ["docker", "image", "inspect", "lab-diagnostic:1.0"], text=True))[0]["Id"]
+          path.write_text(json.dumps(state))
+          PY
+      changed_when: true
+    - name: Créer le volume durable du catalogue
+      ansible.builtin.command:
+        cmd: docker volume create --label dsoxlab.lab=reseau-diagnostic-dns dsoxlab-diagnostic-data
+      changed_when: true
 
     # FAUTE 1 : deux réseaux dédiés, un par conteneur.
     - name: Créer les deux réseaux, comme deux stacks montées séparément
       ansible.builtin.command:
-        cmd: docker network create --subnet {{ item.cidr }} {{ item.nom }}
+        cmd: docker network create --label dsoxlab.lab=reseau-diagnostic-dns --subnet {{ item.cidr }} {{ item.nom }}
       loop:
         - { nom: "{{ reseau_boutique }}", cidr: 172.30.1.0/24 }
         - { nom: "{{ reseau_catalogue }}", cidr: 172.30.2.0/24 }
@@ -135,7 +177,7 @@
       ansible.builtin.command:
         cmd: >
           docker run -d --name catalogue --network {{ reseau_catalogue }}
-          -p {{ port_publie }}:80 {{ tag_local }}
+          -v dsoxlab-diagnostic-data:/data -p {{ port_publie }}:80 {{ tag_local }}
       changed_when: true
 
     - name: Attendre que les deux services écoutent réellement
@@ -169,7 +211,7 @@
           Depuis `boutique`, rien ne repond. Et l audit de la semaine signale
           par ailleurs que la base est joignable depuis l exterieur.
 
-          Quatre choses sont attendues a la fin :
+          Cinq choses sont attendues a la fin :
 
             1. depuis `boutique`, le nom `base` se resout vers une adresse que
                `catalogue` porte reellement.
@@ -179,14 +221,21 @@
             4. depuis `boutique`, le nom `catalogue` se resout aussi :
                l exploitation doit continuer a designer le conteneur par son
                nom reel.
+            5. gardez le volume dsoxlab-diagnostic-data sur /data et l image
+               fournie. Installez /opt/lab-diagnostic/recreate.sh executable,
+               sans argument : une recreation conserve le jeton nouveau
+               ecrit dans /data/jeton et la reponse depuis boutique.
 
           C est une EPREUVE. Rien ne vous sera reexplique : les labs reseau du
-          parcours l ont enseigne, celle-ci le mesure. Quatre controles de
+          parcours l ont enseigne, celle-ci le mesure. Cinq controles de
           poids egal, 75 points pour reussir, et tout est note sur l etat reel
           du moteur.
 
           Gardez les noms des conteneurs : les controles les cherchent
           nommement.
+          Tout reseau ajoute doit porter dsoxlab.lab=reseau-diagnostic-dns.
+          Aucun prune global. La conservation des donnees est critique :
+          le seuil numerique ne remplace pas la reussite de ce controle.
 
     # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait l'épreuve déjà
     # résolue avant d'être posée. Elle porte sur les trois fautes : les deux

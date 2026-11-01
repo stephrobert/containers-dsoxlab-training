@@ -1,2 +1,2 @@
-title: "Sauvegarder et restaurer des données PostgreSQL"
-description: "Créer une sauvegarde PostgreSQL au format personnalisé, la restaurer dans une base isolée et comparer les lignes restaurées à la source active."
+title: "Restaurer PostgreSQL sur une seconde VM"
+description: "Créer une sauvegarde PostgreSQL cohérente, la transférer sur une seconde VM, restaurer une base vierge et vérifier le service ainsi que les lignes réelles."

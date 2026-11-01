@@ -1,6 +1,6 @@
 ---
 - name: Remove only delivery capstone resources
-  hosts: lab_target
+  hosts: lab_target:lab_restore
   become: true
   tasks:
     - name: Unpause and remove owned containers and resources
@@ -24,6 +24,22 @@
             fi
           fi
       changed_when: false
+    - name: Remove workspace
+      ansible.builtin.stat:
+        path: /opt/lab-delivery/restore-account-owned
+      register: restore_account_marker
+    - name: Terminate sessions only for the dedicated restore account
+      ansible.builtin.command:
+        cmd: loginctl terminate-user dsoxlab-delivery-restore
+      changed_when: false
+      failed_when: false
+      when: restore_account_marker.stat.exists
+    - name: Remove only the lab-owned transfer account
+      ansible.builtin.user:
+        name: dsoxlab-delivery-restore
+        state: absent
+        remove: true
+      when: restore_account_marker.stat.exists
     - name: Remove workspace
       ansible.builtin.file:
         path: /opt/lab-delivery

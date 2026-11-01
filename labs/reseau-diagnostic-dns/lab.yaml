@@ -7,12 +7,13 @@
 id: reseau-diagnostic-dns                      # REQUIS
 title: "The shop cannot find its catalogue"            # REQUIS
 level: c1                     # REQUIS
-description: "An application no longer reaches its database by name, and an audit reports the database is exposed. Three independent faults, one diagnosis, and nothing is explained to you."
+description: "Repair real name resolution, access and exposure faults, then recreate the catalogue without losing a fresh persistent business value."
 skills:                       # REQUIS, non vide
   - docker
   - reseau
   - dns
   - diagnostic
+  - persistence
 distros:                      # REQUIS, non vide
   - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker   # REQUIS, http(s)

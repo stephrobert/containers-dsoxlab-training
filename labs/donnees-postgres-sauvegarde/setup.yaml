@@ -78,3 +78,55 @@
         src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
         dest: /opt/MISSION.md
         mode: "0644"
+
+- name: Prepare a distinct PostgreSQL restore host
+  hosts: lab_restore
+  become: true
+  vars:
+    source_host: "{{ groups['lab_target'][0] }}"
+  tasks:
+    - name: Install the target PostgreSQL service
+      ansible.builtin.apt:
+        name: [postgresql, postgresql-client]
+        state: present
+        update_cache: true
+    - name: Start target PostgreSQL
+      ansible.builtin.systemd_service:
+        name: postgresql
+        state: started
+        enabled: true
+    - name: Create the target workspace and readable backup directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /opt/lab-postgres-sauvegarde
+        - /opt/lab-postgres-sauvegarde/backup
+    - name: Require the randomly named target database to be absent
+      ansible.builtin.command:
+        argv:
+          - runuser
+          - -u
+          - postgres
+          - --
+          - psql
+          - -X
+          - -A
+          - -t
+          - -d
+          - postgres
+          - -c
+          - "SELECT count(*) FROM pg_database WHERE datname = '{{ hostvars[source_host].restored_db }}';"
+      register: target_database
+      changed_when: false
+      failed_when: target_database.rc != 0 or target_database.stdout != '0'
+    - name: Copy the target ownership state
+      ansible.builtin.copy:
+        dest: /opt/lab-postgres-sauvegarde/state.env
+        mode: "0644"
+        content: |
+          SOURCE_DB={{ hostvars[source_host].source_db }}
+          RESTORED_DB={{ hostvars[source_host].restored_db }}
+          BACKUP_DIR=/opt/lab-postgres-sauvegarde/backup
+          OWNERSHIP={{ hostvars[source_host].ownership }}

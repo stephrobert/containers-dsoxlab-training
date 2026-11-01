@@ -5,7 +5,7 @@
   tasks:
     - name: Install runtime
       ansible.builtin.apt:
-        name: [docker.io, docker-buildx, docker-compose, python3, coreutils]
+        name: [docker.io, docker-buildx, docker-compose, python3, coreutils, git]
         state: present
         update_cache: true
     - name: Start Docker
@@ -30,6 +30,24 @@
         dest: /opt/lab-compose-ci/
         owner: "{{ ansible_user | default('ansible') }}"
         mode: preserve
+    - name: Initialize the prepared source repository
+      become_user: "{{ ansible_user | default('ansible') }}"
+      ansible.builtin.command:
+        argv: [git, -C, /opt/lab-compose-ci/source, init, -q]
+        creates: /opt/lab-compose-ci/source/.git
+      register: ci_source_repository
+    - name: Commit the prepared source without personal author configuration
+      become_user: "{{ ansible_user | default('ansible') }}"
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cd /opt/lab-compose-ci/source
+          git add .
+          git -c user.name=DSOxLab -c user.email=fixture@invalid commit -q \
+            -m "Prepared training source" \
+            -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+      when: ci_source_repository.changed
+      changed_when: true
     - name: Record preexisting base images
       ansible.builtin.command:
         cmd: /usr/bin/python3 /opt/lab-compose-ci/base-cache.py snapshot

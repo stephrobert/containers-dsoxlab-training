@@ -9,10 +9,13 @@ The unique database names, marker and writable backup directory are in
 
 Create a PostgreSQL custom-format dump at
 `/opt/lab-postgres-sauvegarde/backup/orders.dump`. Restore it into the
-`RESTORED_DB` named in `state.env`, without changing the source. Add the exact
+`RESTORED_DB` on the separate VM `docker-client.lab`, without changing the source
+on `docker.lab`. Transfer the exact dump to the same backup path on the second
+VM. A second database on the source VM does not satisfy this requirement. Add the exact
 `OWNERSHIP` comment to the restore database so cleanup can identify the
 resource created for this run.
 
 A file that merely exists is not proof: the functional check restores the dump
-into a separate temporary database and compares its rows with the live source
-and the named restore database. That scratch database is removed by the test.
+into a fresh temporary database on the second VM and compares its rows with the live source
+and the named restore database. The target PostgreSQL service must answer real
+queries. The test also refuses an invalid dump and removes its scratch database.

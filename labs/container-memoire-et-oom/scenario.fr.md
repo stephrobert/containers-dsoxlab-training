@@ -11,3 +11,6 @@ Le contrôle vérifie les deux limites et la marge hôte avant d'allouer. Il obs
 `memory.events`, pas un code de sortie supposé. Ne stressez pas l'hôte, ne
 désactivez pas l'OOM killer, ne changez pas le swap hôte et n'utilisez pas
 d'allocateur non borné.
+Le même PID 1 doit rester actif sans redémarrage, et un reçu applicatif frais
+doit rester lisible après l'incident. L'essai retire seulement son propre reçu ;
+cette conservation pendant l'incident ne garantit pas la survie à un reboot.

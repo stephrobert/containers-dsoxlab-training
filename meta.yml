@@ -66,16 +66,21 @@ repo:
 # `provision`, empreinté, rejoué seulement s'il change.
 
 infra:
+  bootstrap: infra/bootstrap.yaml
   provider:
     - kvm
   network: lab-containers
   cidr: 10.10.120.0/24
   hosts:
-    # Un hote unique : les labs de ce catalogue manipulent des images et des
-    # conteneurs sur UNE machine, pas un cluster. 2 Go suffisent a un demon
-    # Docker et a quelques conteneurs applicatifs ; le disque porte les couches
-    # d images, qui sont ce qui grossit le plus vite.
+    # Le premier hote garde sa position et donc son adresse.
     - name: docker.lab
+      distro: debian13
+      role: debian-family
+      ram_mb: 2048
+      vcpu: 2
+      disk_gb: 20
+    # Client vierge, restauration et promotion : ajoute en fin de liste.
+    - name: docker-client.lab
       distro: debian13
       role: debian-family
       ram_mb: 2048
@@ -132,9 +137,10 @@ sections:
       - reseau-bridge-dedie
       - reseau-publication-de-ports
       - reseau-interne
-      - reseau-diagnostic-dns
       - donnees-volumes-et-montages
       - donnees-permissions-uid-gid
+      - container-arret-transactionnel
+      - reseau-diagnostic-dns
 
   - id: conteneurs-isolation
     title: "Measure isolation, and put a container back in service"
@@ -171,6 +177,7 @@ sections:
       - images-healthcheck
       - buildkit-cache-monte
       - buildkit-secret-de-build
+      - images-multi-architecture
 
   - id: images-distribution
     title: "Distribute images"
@@ -183,6 +190,7 @@ sections:
       - images-epingler-par-digest
       - registry-locale-tls
       - registry-authentification
+      - registry-droits-minimaux
       - registry-air-gap
 
   # ── Niveau c3 : exploiter une application avec Compose ──────────────────
@@ -208,6 +216,7 @@ sections:
       Logs and resources, backup and restore, update and roll back, then a
       stack to bring back by oneself.
     labs:
+      - compose-correlation-et-saturation
       - donnees-postgres-sauvegarde
       - compose-capstone
 
@@ -231,6 +240,7 @@ sections:
       - securite-seccomp
       - securite-apparmor
       - container-systeme-en-lecture-seule
+      - reseau-pare-feu-cible
       - container-limite-de-processus
       - secrets-au-runtime
       - container-memoire-et-oom
@@ -246,6 +256,7 @@ sections:
     labs:
       - compose-dans-une-ci
       - image-scan-de-vulnerabilites
+      - images-signature-identite
       - capstone-chaine-complete
 
   # ── Hors tronc de la formation, et déclaré comme tel ────────────────────

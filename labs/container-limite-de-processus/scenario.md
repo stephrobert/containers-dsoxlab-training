@@ -10,3 +10,5 @@ retain the memory and CPU guards.
 The checker launches at most 24 short-lived sleep children, only after verifying
 the effective cap. This is not a fork bomb. Never use recursion, unbounded loops
 that fork, or host-wide process limits.
+After the finite burst ends, the original service must resume without restarting
+or losing a freshly written application receipt. Only the trial receipt is removed.

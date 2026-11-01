@@ -2,11 +2,13 @@
 
 **Public :** apprenants.
 
-Create and use a named context for the prepared loopback SSH daemon.
+Créer et utiliser un contexte nommé pour le moteur de la VM distincte `docker-client.lab`.
 
 ## Ce que vous allez pratiquer
 
-Le contexte nommé joint le démon du lab par SSH ; le contexte par défaut reste sélectionné.
+Le contexte nommé joint le démon distant par SSH ; le contexte par défaut
+reste sélectionné. Comparez les identifiants réels des moteurs et vérifiez
+qu'une clé non autorisée est refusée par le service SSH distant joignable.
 
 ## Limites de sécurité
 

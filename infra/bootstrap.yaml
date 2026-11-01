@@ -1,0 +1,24 @@
+---
+- name: Prepare the Docker baseline on provisioned lab VMs
+  hosts: labenv
+  become: true
+  tasks:
+    - name: Install the distribution Docker engine and diagnostic tools
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx, docker-compose, python3, iproute2]
+        state: present
+        update_cache: true
+    - name: Start and enable the engine
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Grant the dedicated lab account access to its VM engine
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Verify the actual engine baseline
+      ansible.builtin.command:
+        cmd: docker version --format '{{ '{{' }}.Server.Version{{ '}}' }}'
+      changed_when: false

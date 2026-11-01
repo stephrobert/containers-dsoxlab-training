@@ -1,2 +1,2 @@
 title: "Livrer et rétablir une application isolée de bout en bout"
-description: "Construire un artefact mesuré, publier et déployer par digest, prouver données durables et isolation, puis rétablir huit incidents injectés."
+description: "Construire et déployer par digest, rétablir les pannes, restaurer sur seconde VM et maintenir sans perdre lectures métier ni données."

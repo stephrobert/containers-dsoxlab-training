@@ -92,17 +92,18 @@ La colonne `rt` est retirée des tableaux : elle ne porterait plus qu'une seule
 valeur, et une colonne muette est exactement le travers que `gen_catalog.py`
 reproche à la sienne. Les **90** labs de ce fichier sont donc en `runtime: vm`.
 
-### Ce qui exige une SECONDE machine, et reste à câbler
+### Ce qui exige une seconde machine ou une seconde architecture
 
-`meta.yml` ne déclare aujourd'hui qu'un hôte, `docker.lab`. Six contrats du
-pilotage en demandent deux, et il faudra les ajouter avant d'écrire ces
-labs :
+`meta.yml` déclare `docker.lab` et `docker-client.lab`. Les cibles simultanées
+sont câblées par les rôles runtime pour la distribution, la restauration et
+la promotion. Le lab multi-architecture exécute AMD64 nativement et ARM64 sous
+QEMU dans la VM : l'émulation n'est pas une seconde machine native.
 
 | Contrat | Ce qu'il exige |
 | --- | --- |
 | `conteneurs-21`, `conteneurs-22`, `conteneurs-44` | deux environnements isolés (publier ici, récupérer là) |
 | `conteneurs-32`, `conteneurs-34` | deux environnements isolés (sauvegarder, restaurer ailleurs) |
-| `conteneurs-18` | deux architectures, ou un périmètre réduit déclaré |
+| `conteneurs-18` | deux architectures exécutées, mode natif ou émulé déclaré |
 
 Un hôte nouveau **s'ajoute en fin de liste** dans `infra.hosts` : l'adresse IP
 et la MAC dérivent de la position (`cidrhost(cidr, idx + 11)`), et insérer au

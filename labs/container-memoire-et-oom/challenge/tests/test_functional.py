@@ -1,6 +1,7 @@
 """Bounded allocation, guarded by the effective memory and swap limits."""
 
 import json
+import uuid
 
 import pytest
 
@@ -31,12 +32,37 @@ def test_memory_cgroup_contains_a_real_oom(host):
     before = host.run("docker exec %s cat /sys/fs/cgroup/memory.events", cid)
     assert before.rc == 0, message(fr="Lire les événements avant la sonde", en="Read events before the probe")
     killed = int(dict(line.split() for line in before.stdout.splitlines())["oom_kill"])
-    probe = host.run(
-        "timeout 10 docker exec %s awk 'BEGIN {s=\"x\"; for(i=0;i<26;i++) s=s s; print length(s)}'",
-        cid,
+    witness = uuid.uuid4().hex
+    reserved = host.run("docker exec %s mktemp", cid)
+    path = reserved.stdout.strip()
+    assert reserved.rc == 0 and path, message(
+        en="Reserve a private receipt file inside the worker.",
+        fr="Réservez un fichier de reçu privé dans le worker.",
     )
-    assert probe.rc not in (0, 124), message(fr="La sonde bornée doit subir un OOM, pas un délai", en="Bounded probe must hit OOM, not a timeout")
-    after = host.run("docker exec %s cat /sys/fs/cgroup/memory.events", cid)
-    assert after.rc == 0 and int(dict(line.split() for line in after.stdout.splitlines())["oom_kill"]) > killed, message(fr="Un oom_kill réel doit être compté", en="A real oom_kill must be counted")
-    state = json.loads(host.run("docker inspect %s", cid).stdout)[0]["State"]
-    assert state["Running"], message(fr="L'OOM de la sonde ne doit pas tuer PID 1", en="Probe OOM must not kill PID 1")
+    try:
+        stored = host.run("docker exec %s sh -c %s", cid, f"printf %s {witness} > {path}")
+        assert stored.rc == 0, message(
+            en="Store a fresh application receipt before the bounded OOM.",
+            fr="Conservez un reçu applicatif frais avant l'OOM borné.",
+        )
+        probe = host.run(
+            "timeout 10 docker exec %s awk 'BEGIN {s=\"x\"; for(i=0;i<26;i++) s=s s; print length(s)}'",
+            cid,
+        )
+        assert probe.rc not in (0, 124), message(fr="La sonde bornée doit subir un OOM, pas un délai", en="Bounded probe must hit OOM, not a timeout")
+        after = host.run("docker exec %s cat /sys/fs/cgroup/memory.events", cid)
+        assert after.rc == 0 and int(dict(line.split() for line in after.stdout.splitlines())["oom_kill"]) > killed, message(fr="Un oom_kill réel doit être compté", en="A real oom_kill must be counted")
+        state = json.loads(host.run("docker inspect %s", cid).stdout)[0]["State"]
+        retained = host.run("docker exec %s cat %s", cid, path)
+        assert state["Running"] and state["StartedAt"] == info["State"]["StartedAt"] and (
+            retained.rc == 0 and retained.stdout == witness
+        ), message(
+            en="The original service must survive the OOM and retain its fresh application receipt.",
+            fr="Le service original doit survivre à l'OOM et conserver son reçu applicatif frais.",
+        )
+    finally:
+        removed = host.run("docker exec %s rm -f %s", cid, path)
+        assert removed.rc == 0, message(
+            en="Remove only the memory-trial receipt.",
+            fr="Retirez seulement le reçu de l'essai mémoire.",
+        )

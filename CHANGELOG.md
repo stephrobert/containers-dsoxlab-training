@@ -18,6 +18,21 @@ of the Docker engine and in which storage mode. That is what
 
 ### Added
 
+- Six labs extend the catalogue to 77: transactional shutdown,
+  AMD64/ARM64 execution (VM-local QEMU for ARM64), TLS registry ACLs,
+  trusted signing identity, correlated CPU saturation and targeted firewall
+  repair. Their placement follows the ordered pedagogical catalogue.
+- Data-preserving beginner diagnostics and transactional shutdown follow
+  volumes and UID/GID permissions. Persistence trials now retain non-root
+  ownership and refused access after recreation; bounded CPU, OOM and
+  process-limit trials preserve fresh application receipts.
+- A second VM supports fresh-client pulls, application restoration and
+  promotion of one artifact without rebuilding. The VM bootstrap installs
+  the Docker baseline; runtime roles are replayed and photographed together.
+- Strict `--double-passage` validation requires `0/full/0/full/clean`.
+  Selective ledger rereading respects `--lab`; historical attestations do
+  not count as strict second-passage evidence.
+
 - Nine completed labs on `chantier/labs-restants`: `buildkit-cache-monte`,
   `buildkit-secret-de-build`, `registry-tag-push-pull`,
   `registry-tag-contre-digest`, `images-epingler-par-digest`,

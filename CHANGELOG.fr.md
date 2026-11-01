@@ -17,6 +17,21 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Ajouté
 
+- Six labs portent le catalogue à 77 : arrêt transactionnel, exécution
+  AMD64/ARM64 (QEMU dans la VM pour ARM64), ACL de registre TLS, identité de
+  signature approuvée, saturation CPU corrélée et réparation ciblée de
+  pare-feu. Ils suivent l'ordre pédagogique du catalogue.
+- Le diagnostic débutant avec conservation des données et l'arrêt
+  transactionnel suivent les volumes et permissions UID/GID. La persistance
+  conserve les droits non-root et les refus après recréation ; les essais
+  CPU, OOM et limites de processus préservent des reçus applicatifs frais.
+- Une seconde VM permet les pulls sur client vierge, la restauration
+  applicative et la promotion d'un artefact sans reconstruction. Le bootstrap
+  installe le socle Docker ; les rôles runtime sont rejoués et photographiés.
+- La validation stricte `--double-passage` exige `0/plein/0/plein/propre`.
+  La relecture respecte `--lab` ; une attestation historique ne prouve pas
+  le second passage strict.
+
 - Neuf labs complétés sur `chantier/labs-restants` : `buildkit-cache-monte`,
   `buildkit-secret-de-build`, `registry-tag-push-pull`,
   `registry-tag-contre-digest`, `images-epingler-par-digest`,

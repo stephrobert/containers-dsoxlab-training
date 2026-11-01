@@ -1,17 +1,19 @@
 id: capstone-chaine-complete
 title: "Deliver and recover an isolated application end to end"
 level: c4
-description: "Build a measured artefact, publish and deploy by digest, prove durable data and isolation, then recover eight injected incidents."
-skills: [buildkit, multi-stage, sbom, registry, digest, compose, postgresql, secrets, hardening, recovery]
+description: "Build and deploy by digest, recover incidents, restore on a second VM, refuse incompatible rollback and maintain without losing live reads or data."
+skills: [buildkit, multi-stage, sbom, registry, digest, compose, postgresql, secrets, hardening, recovery, backup, rollback, maintenance]
 distros: [debian13]
 doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
 lab_type: capstone
-estimated_time: 120m
+estimated_time: 180m
 runtime:
   type: vm
   targets:
     - name: cible
       host: docker.lab
+      roles:
+        restore: docker-client.lab
   default: cible
 validation:
   functional: true

@@ -2,11 +2,13 @@
 
 **Audience:** learners.
 
-Create and use a named context for the prepared loopback SSH daemon.
+Create and use a named context for the engine on the separate `docker-client.lab` VM.
 
 ## What you will practice
 
-The named context reaches the lab daemon over SSH; the default context remains selected.
+The named context reaches the remote daemon over SSH; the default context
+remains selected. Compare the real engine IDs and verify that an unauthorized
+key is refused by the reachable remote SSH service.
 
 ## Safety boundaries
 

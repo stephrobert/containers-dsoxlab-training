@@ -1,7 +1,7 @@
 id: securite-rootless
 title: "Start the prepared rootless Docker engine"
 level: c4
-description: "Start only the dedicated unprivileged daemon and verify its rootless identity."
+description: "Qualify the dedicated unprivileged daemon with real process ownership, rootless network checks and data surviving container recreation."
 skills:
   - docker
   - rootless

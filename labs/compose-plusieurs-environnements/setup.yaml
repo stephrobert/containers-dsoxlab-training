@@ -50,6 +50,19 @@
       ansible.builtin.command:
         cmd: docker build -t dsoxlab-compose-env:app /opt/lab-compose-env/image
       changed_when: true
+    - name: Record the immutable prepared image identity
+      ansible.builtin.shell:
+        cmd: docker image inspect dsoxlab-compose-env:app --format '{{ '{{' }}.Id{{ '}}' }}' > /root/.lab-compose-env-image.id
+      changed_when: true
+    - name: Export the prepared artifact without rebuilding it
+      ansible.builtin.command:
+        cmd: docker image save -o /opt/lab-compose-env/image.tar dsoxlab-compose-env:app
+      changed_when: true
+    - name: Read the artifact for SSH-backed transfer
+      ansible.builtin.slurp:
+        src: /opt/lab-compose-env/image.tar
+      register: prepared_image
+      no_log: true
     - name: Déposer la base commune
       ansible.builtin.copy:
         dest: /opt/lab-compose-env/compose.yaml
@@ -68,8 +81,57 @@
       ansible.builtin.shell:
         cmd: cd /opt/lab-compose-env && sha256sum compose.yaml > /root/.lab-compose-env.sha256
       changed_when: true
+    - name: Read the common deployment declaration
+      ansible.builtin.slurp:
+        src: /opt/lab-compose-env/compose.yaml
+      register: environment_base
     - name: Déposer la mission
       ansible.builtin.copy:
         src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
         dest: /opt/MISSION.md
         mode: "0644"
+
+- name: Prepare the distinct production VM with the same artifact
+  hosts: lab_production
+  become: true
+  vars:
+    source_host: "{{ groups['lab_target'][0] }}"
+  tasks:
+    - name: Install production runtime tools
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose, curl]
+        state: present
+        update_cache: true
+    - name: Start production Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Create the target deployment workspace
+      ansible.builtin.file:
+        path: /opt/lab-compose-env
+        state: directory
+        mode: "0755"
+    - name: Transfer the prepared image bytes over Ansible SSH
+      ansible.builtin.shell:
+        cmd: base64 --decode > /opt/lab-compose-env/image.tar
+        stdin: "{{ hostvars[source_host].prepared_image.content }}"
+      no_log: true
+      changed_when: true
+    - name: Load the artifact without a target-side build
+      ansible.builtin.command:
+        cmd: docker image load -i /opt/lab-compose-env/image.tar
+      changed_when: true
+    - name: Record the target artifact identity
+      ansible.builtin.shell:
+        cmd: docker image inspect dsoxlab-compose-env:app --format '{{ '{{' }}.Id{{ '}}' }}' > /root/.lab-compose-env-image.id
+      changed_when: true
+    - name: Install the same common declaration
+      ansible.builtin.copy:
+        content: "{{ hostvars[source_host].environment_base.content | b64decode }}"
+        dest: /opt/lab-compose-env/compose.yaml
+        mode: "0644"
+    - name: Protect the target base declaration
+      ansible.builtin.shell:
+        cmd: cd /opt/lab-compose-env && sha256sum compose.yaml > /root/.lab-compose-env.sha256
+      changed_when: true

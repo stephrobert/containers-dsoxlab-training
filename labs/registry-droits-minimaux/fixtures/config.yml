@@ -1,0 +1,15 @@
+version: 0.1
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry
+http:
+  addr: :5000
+  tls:
+    certificate: /certs/server.crt
+    key: /certs/server.key
+auth:
+  token:
+    realm: https://registry-rights.lab.test:15448/auth
+    service: dsoxlab-registry
+    issuer: dsoxlab-rights
+    rootcertbundle: /certs/server.crt

@@ -1,7 +1,7 @@
 id: docker-contexte-ssh
 title: "Create an SSH Docker context"
 level: c4
-description: "Create and use a named context for the prepared loopback SSH daemon."
+description: "Administer a distinct VM through a named SSH Docker context, verify the remote engine identity, reject an unauthorized key and preserve the original default context."
 skills:
   - docker
   - context
@@ -16,6 +16,8 @@ runtime:
   targets:
     - name: cible
       host: docker.lab
+      roles:
+        remote: docker-client.lab
   default: cible
 validation:
   functional: true

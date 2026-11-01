@@ -7,7 +7,9 @@ L'image fournie sert `APP_ENV` sur `/environment.txt` au port 8080 et initialise
 
 ## Mission
 
-Écrivez `dev.yaml` et `prod.yaml` dans le même dossier. Fusionnez la base d'abord,
+Écrivez `dev.yaml` sur `docker.lab` et `prod.yaml` sur `docker-client.lab`, dans
+`/opt/lab-compose-env`. Le setup transfère la même archive d'image par SSH,
+sans reconstruire l'image sur la VM de production. Fusionnez la base d'abord,
 puis la surcharge choisie avec deux options `-f`. Exécutez simultanément les projets :
 
 | Surcharge | Projet | APP_ENV | Mémoire | Publication |
@@ -21,6 +23,7 @@ ni ressources externes partagées.
 
 Les deux points HTTP doivent servir leur environnement réel. Recréer un projet
 doit préserver ses nouvelles données et laisser inchangées l'identité du conteneur
-et les données de l'autre. Aucune copie manuelle, construction ni téléchargement
+et les données de l'autre VM. Aucune copie manuelle, construction ni téléchargement
 n'est nécessaire. Les contrôles recréent indépendamment les projets avec données
-aléatoires puis restaurent le contenu original.
+aléatoires. Ils comparent le digest de l'image préparée aux deux images exécutées
+et refusent un build Compose pendant le déploiement.

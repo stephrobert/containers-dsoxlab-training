@@ -1,6 +1,6 @@
 ---
 - name: Clean lab docker-contexte-ssh
-  hosts: lab_target
+  hosts: lab_target:lab_remote
   become: true
   tasks:
     - name: Check whether setup created the learner context
@@ -13,6 +13,7 @@
       when: context_created_marker.stat.exists
       failed_when: false
     - name: Remove the dedicated SSH alias block only
+      when: context_created_marker.stat.exists
       ansible.builtin.blockinfile:
         path: "/home/{{ ansible_user | default('ansible') }}/.ssh/config"
         marker: "# {mark} DSOXLAB docker-contexte-ssh"

@@ -1,0 +1,28 @@
+---
+- name: Retirer seulement l'archive, les clés et les images ajoutées par ce lab
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Chercher la photographie
+      ansible.builtin.stat:
+        path: /opt/lab-image-signature/bench/baseline-images
+      register: baseline
+    - name: Retirer les images possédées absentes de la photographie
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cd /opt/lab-image-signature
+          for image in $(docker image ls -aq --filter label=dsoxlab.lab=images-signature-identite | sort -u); do
+            if ! grep -qx "$image" bench/baseline-images; then docker image rm -f "$image"; fi
+          done
+          base='alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f'
+          if ! test -f bench/base-existed; then
+            if docker image inspect "$base" >/dev/null 2>&1; then docker image rm "$base"; fi
+          fi
+      when: baseline.stat.exists
+      changed_when: true
+    - name: Retirer le répertoire possédé
+      ansible.builtin.file:
+        path: /opt/lab-image-signature
+        state: absent
+      when: baseline.stat.exists

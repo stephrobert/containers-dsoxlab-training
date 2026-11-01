@@ -11,3 +11,5 @@ Gardez le service actif et les garde-fous mémoire et CPU.
 Le contrôle lance au plus 24 enfants sleep de courte durée, uniquement après
 vérification du plafond effectif. Ce n'est pas une fork bomb. Ni récursion,
 ni boucle de fork non bornée, ni limite de processus globale sur l'hôte.
+Après la rafale finie, le service original doit reprendre sans redémarrage ni
+perte d'un reçu applicatif frais. Seul le reçu de l'essai est retiré.

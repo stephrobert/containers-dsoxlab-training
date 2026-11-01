@@ -50,6 +50,12 @@ def _services(host):
             fr=f"Gardez l'image fournie pour {name}.",
         )
         original = json.loads(image.stdout)[0]
+        if name == "app":
+            protected = host.file("/root/.lab-compose-secret-image").content_string.strip()
+            assert original["Id"] == protected, message(
+                en="Keep the actual prepared app image identity; replacing its mutable tag is not allowed.",
+                fr="Gardez l'identité réelle de l'image app préparée ; remplacer son tag mutable est interdit.",
+            )
         assert services[name]["Image"] == original["Id"] and not services[name]["Config"]["Entrypoint"], message(
             en=f"Use the supplied {name} image without replacing its entrypoint.",
             fr=f"Utilisez l'image {name} fournie sans remplacer son entrypoint.",
@@ -113,6 +119,33 @@ def test_secret_is_consumed_without_metadata_or_log_leaks(host):
     assert config.rc == 0, message(
         en="Cannot render the configuration for the leak check.",
         fr="Impossible de rendre la configuration pour le contrôle de fuite.",
+    )
+    ignored = host.run("git -c safe.directory=%s -C %s check-ignore credentials/token.txt", ROOT, ROOT)
+    tracked = host.run("git -c safe.directory=%s -C %s ls-files -- credentials", ROOT, ROOT)
+    assert ignored.rc == tracked.rc == 0 and not tracked.stdout.strip(), message(
+        en="Keep the real credential outside the repository index with an effective ignore rule.",
+        fr="Gardez l'identifiant réel hors de l'index Git avec une exclusion effective.",
+    )
+    program = (
+        "import base64,json,subprocess; from pathlib import Path;"
+        f"git=['git','-c','safe.directory={ROOT}','-C','{ROOT}'];"
+        f"token=Path({TOKEN!r}).read_bytes().strip();"
+        "variants=[token,base64.b64encode(token),token.hex().encode()];"
+        "objects=subprocess.check_output(git+['rev-list','--objects','--all'],text=True).splitlines();"
+        "blobs=[line.split()[0] for line in objects if "
+        "subprocess.check_output(git+['cat-file','-t',line.split()[0]],text=True).strip()=='blob'];"
+        "clean=all(not any(v in subprocess.check_output(git+['cat-file','blob',oid]) for v in variants) for oid in blobs);"
+        "print(json.dumps({'clean':clean,'blobs':len(blobs)}))"
+    )
+    scanned = host.run(shlex.join(["python3", "-c", program]))
+    assert scanned.rc == 0, message(
+        en="Inspect actual reachable Git blobs without printing the credential.",
+        fr="Inspectez les blobs Git accessibles sans afficher l'identifiant.",
+    )
+    history = json.loads(scanned.stdout)
+    assert history["clean"] and history["blobs"] > 0, message(
+        en="The secret must be absent from all reachable Git history, including base64/hex forms.",
+        fr="Le secret est absent de tout l'historique Git accessible, y compris en base64/hex.",
     )
     for container in services.values():
         logs = host.run("docker logs %s", container["Id"])

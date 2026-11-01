@@ -6,7 +6,8 @@ Diagnosis, not a command. It closes the five networking labs of the course and
 explains nothing again: what is needed was taught there, this one measures it.
 
 It is the section's only `lab_type: challenge`, and that is what allows its
-`exam_passing_score`, set to **75**: three checks out of four.
+`exam_passing_score`, set to **75**. There are now five equal-weight checks;
+the course separately requires success on critical data preservation.
 
 ## The fault that is set, and it is stated nowhere in the brief
 
@@ -69,19 +70,18 @@ A name pointing elsewhere is **worse** than no name at all: the application
 would talk to something else, and the symptom would become
 incomprehensible. That is a real case as soon as a name lingers in a resolver.
 
-## The cleanup clears more than the setup laid down
+## Durable repair and bounded cleanup
 
-A diagnosis assessment leaves behind what the learner built while searching: an
-extra network, a stopgap container. The setup's two networks are named, but a
-network created by the learner cannot be, hence the final `network prune`.
-
-It touches neither the engine's networks nor those still carrying a container:
-so it cannot break another lab of the catalogue, each removing its own
-containers in its own cleanup.
+A fresh value written into the catalogue's named volume must remain visible
+after an actual replacement, through the corrected application path.
+Containers, images, networks and volumes carry this lab's ownership label.
+Only those objects are removed. Preexisting bases are preserved; an introduced
+base is removed without force only when unused. No global network/image/builder
+prune is performed, because an unused object can still belong to another owner.
 
 ## The starting state is broken, and that is the repository's rule
 
-All four checks are false at the start. A setup task **verifies** the three
+All five checks are false at the start. A setup task **verifies** the three
 faults before handing over: neither name resolves from `boutique`, and the port
 is indeed published.
 

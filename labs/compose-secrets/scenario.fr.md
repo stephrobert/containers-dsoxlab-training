@@ -16,7 +16,10 @@ N'utilisez ni montages de remplacement, entrypoints ni copies dans l'environneme
 Observer ne doit avoir aucun montage et ne doit pas voir le secret.
 
 Gardez le jeton inchangé. Il ne doit apparaître ni dans les métadonnées des conteneurs,
-ni dans la configuration rendue, ni dans les journaux. L'empreinte au démarrage
+ni dans la configuration rendue, ni dans les journaux ou l'historique Git.
+Le dépôt préparé ignore `credentials/` ; n'ajoutez jamais le jeton, même
+brièvement avant de l'effacer d'un commit. Les contrôles parcourent les vrais
+blobs accessibles, sans imprimer le secret. L'empreinte au démarrage
 doit correspondre aux octets du fichier. Le contrôle renouvelle brièvement le jeton
 pédagogique, recrée les services, puis restaure le fichier et le déploiement originaux.
 

@@ -20,10 +20,20 @@ def host():
 
 
 def _compose(host, env, *args):
+    host = _environment_host(host, env)
     return host.run(shlex.join([
         "docker", "compose", "-p", f"dsoxlab-env-{env}",
         "-f", f"{ROOT}/compose.yaml", "-f", f"{ROOT}/{env}.yaml", *args,
     ]))
+
+
+def _environment_host(host, environment):
+    return host if environment == "dev" else lab_host("docker-client.lab")
+
+
+def _container_host(host, app):
+    environment = app["Config"]["Labels"]["com.docker.compose.project"].removeprefix("dsoxlab-env-")
+    return _environment_host(host, environment)
 
 
 def _apps(host):
@@ -39,14 +49,25 @@ def _apps(host):
         fr="Gardez l'image fournie.",
     )
     original = json.loads(image.stdout)[0]
+    prepared_id = host.file("/root/.lab-compose-env-image.id").content_string.strip()
+    assert original["Id"] == prepared_id, message(
+        en="Keep the prepared immutable image; promotion must not substitute a rebuilt artifact.",
+        fr="Gardez l'image immuable préparée ; la promotion ne doit pas substituer un artefact reconstruit.",
+    )
     for env, (name, port, memory) in ENVIRONMENTS.items():
+        target = _environment_host(host, env)
+        unchanged = target.run("cd %s && sha256sum -c /root/.lab-compose-env.sha256", ROOT)
+        assert unchanged.rc == 0, message(
+            en="Keep the same base declaration on each VM.",
+            fr="Gardez la même déclaration de base sur chaque VM.",
+        )
         project = f"dsoxlab-env-{env}"
-        found = host.run("docker ps -aq --filter %s", f"label=com.docker.compose.project={project}")
+        found = target.run("docker ps -aq --filter %s", f"label=com.docker.compose.project={project}")
         assert found.rc == 0 and len(found.stdout.split()) == 1, message(
             en=f"Start exactly one app in project {project}.",
             fr=f"Démarrez exactement une app dans le projet {project}.",
         )
-        inspected = host.run("docker inspect %s", found.stdout.strip())
+        inspected = target.run("docker inspect %s", found.stdout.strip())
         assert inspected.rc == 0, message(
             en=f"Cannot inspect {env}.",
             fr=f"Impossible d'inspecter {env}.",
@@ -70,12 +91,12 @@ def _apps(host):
             en="Use only the inherited named data volume.",
             fr="Utilisez seulement le volume nommé de données hérité.",
         )
-        volume = host.run("docker volume inspect %s", mounts[0]["Name"])
+        volume = target.run("docker volume inspect %s", mounts[0]["Name"])
         assert volume.rc == 0 and (json.loads(volume.stdout)[0]["Labels"] or {}).get("com.docker.compose.project") == project, message(
             en="Each data volume must belong to its own Compose project.",
             fr="Chaque volume doit appartenir à son propre projet Compose.",
         )
-        response = host.run("curl --noproxy '*' -fsS --retry 10 --retry-connrefused --retry-delay 1 --max-time 3 %s", f"http://127.0.0.1:{port}/environment.txt")
+        response = target.run("curl --noproxy '*' -fsS --retry 10 --retry-connrefused --retry-delay 1 --max-time 3 %s", f"http://127.0.0.1:{port}/environment.txt")
         assert response.rc == 0 and response.stdout.strip() == name, message(
             en=f"The {env} endpoint must serve its actual environment identity.",
             fr=f"Le point d'accès {env} doit servir l'identité réelle de son environnement.",
@@ -91,6 +112,7 @@ def _apps(host):
 
 
 def _data(host, app):
+    host = _container_host(host, app)
     result = host.run("docker exec %s cat /data/value.txt", app["Id"])
     assert result.rc == 0, message(
         en="Cannot read application data.",
@@ -100,6 +122,7 @@ def _data(host, app):
 
 
 def _write(host, app, value):
+    host = _container_host(host, app)
     result = host.run("docker exec %s sh -c %s", app["Id"], f"printf %s {shlex.quote(value)} > /data/value.txt")
     assert result.rc == 0, message(
         en="Cannot write the environment-isolation trial value.",
@@ -116,7 +139,7 @@ def test_two_merged_deployments_have_distinct_effective_configuration(host):
             fr=f"La base et la surcharge {env} doivent fusionner avec succès.",
         )
         resolved = json.loads(config.stdout)["services"]
-        assert set(resolved) == {"app"} and resolved["app"]["environment"]["APP_ENV"] == name and int(resolved["app"]["mem_limit"]) == memory and int(resolved["app"]["ports"][0]["published"]) == port, message(
+        assert set(resolved) == {"app"} and "build" not in resolved["app"] and resolved["app"]["environment"]["APP_ENV"] == name and int(resolved["app"]["mem_limit"]) == memory and int(resolved["app"]["ports"][0]["published"]) == port, message(
             en=f"The merged {env} configuration must carry its environment-specific settings.",
             fr=f"La configuration fusionnée {env} doit porter ses réglages spécifiques.",
         )

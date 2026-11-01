@@ -1,0 +1,77 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer les deux moteurs sans modifier leur configuration
+  hosts: lab_publisher:lab_reader
+  become: true
+  tasks:
+    - name: Installer les outils bornés
+      ansible.builtin.apt:
+        name: [openssl, curl, apache2-utils, python3]
+        state: present
+    - name: Refuser de remplacer un répertoire existant
+      ansible.builtin.stat:
+        path: /opt/lab-registry-rights
+      register: existing
+    - name: Exiger un espace propre au lab
+      ansible.builtin.assert:
+        that: not existing.stat.exists
+        fail_msg: "Run clean first; an existing directory must not be overwritten."
+    - name: Copier les fixtures
+      ansible.builtin.copy:
+        src: fixtures/
+        dest: /opt/lab-registry-rights/
+        mode: preserve
+    - name: Photographier les références et sauvegarder la confiance
+      ansible.builtin.command:
+        cmd: python3 /opt/lab-registry-rights/lifecycle.py snapshot
+      changed_when: true
+    - name: Résoudre le service sur l'adresse privée réelle
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} dsoxlab-registry-droits-minimaux"
+        block: "{{ hostvars[groups['lab_publisher'][0]].ansible_host }} registry-rights.lab.test"
+
+- name: Préparer le registre et le service réel de scopes
+  hosts: lab_publisher
+  become: true
+  tasks:
+    - name: Créer TLS et les comptes synthétiques
+      ansible.builtin.command:
+        cmd: bash /opt/lab-registry-rights/prepare.sh {{ ansible_host }}
+      changed_when: true
+      no_log: true
+    - name: Attendre le challenge HTTPS vérifié
+      ansible.builtin.uri:
+        url: https://registry-rights.lab.test:15447/v2/
+        ca_path: /opt/lab-registry-rights/certs/ca.crt
+        status_code: 401
+        use_proxy: false
+      register: ready
+      until: ready.status == 401
+      retries: 20
+      delay: 1
+    - name: Lire la CA publique
+      ansible.builtin.slurp:
+        src: /opt/lab-registry-rights/certs/ca.crt
+      register: rights_ca
+
+- name: Installer la confiance spécifique sur les deux clients
+  hosts: lab_publisher:lab_reader
+  become: true
+  tasks:
+    - name: Créer le répertoire de confiance spécifique
+      ansible.builtin.file:
+        path: /etc/docker/certs.d/registry-rights.lab.test:15447
+        state: directory
+        mode: "0755"
+    - name: Installer seulement la CA du registre
+      ansible.builtin.copy:
+        content: "{{ hostvars[groups['lab_publisher'][0]].rights_ca.content | b64decode }}"
+        dest: /etc/docker/certs.d/registry-rights.lab.test:15447/ca.crt
+        mode: "0644"
+    - name: Fournir la CA à curl sur le client
+      ansible.builtin.copy:
+        content: "{{ hostvars[groups['lab_publisher'][0]].rights_ca.content | b64decode }}"
+        dest: /opt/lab-registry-rights/ca.crt
+        mode: "0644"

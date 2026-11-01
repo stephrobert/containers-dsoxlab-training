@@ -1,0 +1,24 @@
+# Lab images-multi-architecture. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-multi-architecture                      # REQUIS
+title: "Publish two architectures and execute both"
+level: c2
+description: "Publish an AMD64/ARM64 image index and prove actual execution of each variant, explicitly using QEMU for ARM64 in the disposable VM."
+skills:                       # REQUIS, non vide
+  - docker
+  - multi-architecture
+  - qemu
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#builds-multi-plateformes
+lab_type: challenge
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

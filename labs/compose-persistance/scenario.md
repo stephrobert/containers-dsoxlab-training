@@ -10,6 +10,10 @@ Write `/opt/lab-compose-persist/compose.yaml`, project `dsoxlab-persistance`.
 Run exactly one service `app` using the supplied image and command.
 Declare a named Compose volume `data` and mount it writable at `/data`.
 Do not use bind mounts, anonymous volumes, extra mounts or replacement commands.
+Run the application as UID/GID 10001 with a read-only root filesystem.
+Prepare `/data` with owner 10001:10001 and mode 0700. Another UID must not
+read or write the data; the application must not write outside `/data`.
+These effective permissions must remain unchanged after recreation.
 
 The initial value must be visible in `/data/value.txt`. More importantly, fresh
 writes must survive both force-recreation and `docker compose down` followed by

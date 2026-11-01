@@ -133,30 +133,13 @@ def photographier(lab: Path, journal) -> dict:
         host = os.environ.get("DSOXLAB_TARGET_HOST") or selected.get("host")
         if not host:
             raise Echec(f"{lab.name} : aucune cible VM à photographier")
-        snapshot = commande(
-            [python_dsoxlab(), "-c", _PHOTO_VM, host], journal, 120,
-        )
-        if snapshot.returncode != 0:
-            raise Echec(
-                f"photographie de {host} impossible : "
-                f"{snapshot.stderr.strip()[-600:]}"
-            )
-        try:
-            etat = json.loads(snapshot.stdout)
-        except json.JSONDecodeError as exc:
-            raise Echec(f"photographie de {host} illisible") from exc
-        required = ("images", "conteneurs", "volumes", "reseaux")
-        if (
-            not isinstance(etat, dict)
-            or any(not isinstance(etat.get(key), list) for key in required)
-            or any(not isinstance(name, str) for key in required for name in etat[key])
-            or not isinstance(etat.get("docker"), str)
-            or not isinstance(etat.get("store"), str)
-        ):
-            raise Echec(f"photographie de {host} incomplète")
+        etat = photographier_vm(host, journal)
         etat["workdir_present"] = workdir(lab).is_dir()
-        etat["host"] = host
-        journal.write(f"\n# photographie de la VM {host}\n")
+        autres = sorted(set((selected.get("roles") or {}).values()) - {host})
+        if autres:
+            etat["autres_hotes"] = {
+                nom: photographier_vm(nom, journal) for nom in autres
+            }
         return etat
     etat = {
         "images": sorted(docker(["image", "ls", "--format", "{{.Repository}}:{{.Tag}}"])),
@@ -170,6 +153,34 @@ def photographier(lab: Path, journal) -> dict:
         f"{len(etat['conteneurs'])} conteneur(s), {len(etat['volumes'])} volume(s), "
         f"{len(etat['reseaux'])} réseau(x)\n"
     )
+    journal.flush()
+    return etat
+
+
+def photographier_vm(host: str, journal) -> dict:
+    snapshot = commande(
+        [python_dsoxlab(), "-c", _PHOTO_VM, host], journal, 120,
+    )
+    if snapshot.returncode != 0:
+        raise Echec(
+            f"photographie de {host} impossible : {snapshot.stderr.strip()[-600:]}"
+        )
+    try:
+        etat = json.loads(snapshot.stdout)
+    except json.JSONDecodeError as exc:
+        raise Echec(f"photographie de {host} illisible") from exc
+    required = ("images", "conteneurs", "volumes", "reseaux")
+    if (
+        not isinstance(etat, dict)
+        or any(not isinstance(etat.get(key), list) for key in required)
+        or any(not isinstance(name, str) for key in required for name in etat[key])
+        or not isinstance(etat.get("docker"), str)
+        or not isinstance(etat.get("store"), str)
+    ):
+        raise Echec(f"photographie de {host} incomplète")
+    etat["workdir_present"] = False
+    etat["host"] = host
+    journal.write(f"\n# photographie de la VM {host}\n")
     journal.flush()
     return etat
 
@@ -207,6 +218,15 @@ def ecarts(avant: dict, apres: dict) -> list[str]:
         trouves += [f"{categorie[:-1]} préexistant supprimé : {nom}" for nom in supprimes]
     if apres["workdir_present"]:
         trouves.append("le répertoire de travail existe encore après `clean`")
+    avant_hotes = avant.get("autres_hotes", {})
+    apres_hotes = apres.get("autres_hotes", {})
+    for nom in sorted(set(avant_hotes) | set(apres_hotes)):
+        if nom not in avant_hotes or nom not in apres_hotes:
+            trouves.append(f"{nom} : photographie manquante avant ou après")
+        else:
+            trouves.extend(
+                f"{nom} : {ecart}" for ecart in ecarts(avant_hotes[nom], apres_hotes[nom])
+            )
     return trouves
 
 
@@ -333,7 +353,9 @@ def poser_solution(lab: Path, journal) -> None:
     journal.flush()
 
 
-def valider(lab: Path, rejeu: bool = True) -> dict:
+def valider(lab: Path, rejeu: bool = True, double_passage: bool = False) -> dict:
+    if double_passage and not rejeu:
+        raise ValueError("Le double passage exige le rejeu après clean et run.")
     ident = lab.name
     debut = time.time()
     etapes: list[str] = []
@@ -341,6 +363,8 @@ def valider(lab: Path, rejeu: bool = True) -> dict:
         "id": ident,
         "date": datetime.now(UTC).strftime("%Y-%m-%d"),
     }
+    if double_passage:
+        resultat["protocole"] = "double-passage"
 
     def dire(message: str) -> None:
         etapes.append(message)
@@ -359,6 +383,12 @@ def valider(lab: Path, rejeu: bool = True) -> dict:
                 resultat["docker"] = avant["docker"]
                 resultat["store"] = avant["store"]
                 resultat["host"] = avant["host"]
+                resultat["moteurs"] = {
+                    nom: {"docker": photo["docker"], "store": photo["store"]}
+                    for nom, photo in {
+                        avant["host"]: avant, **avant.get("autres_hotes", {}),
+                    }.items()
+                }
             else:
                 resultat["docker"] = (docker(["version", "--format", "{{.Server.Version}}"]) or ["inconnue"])[0]
                 resultat["store"] = "containerd" if any(
@@ -400,6 +430,13 @@ def valider(lab: Path, rejeu: bool = True) -> dict:
                     )
                 resultat["rejeu"] = check(ident, journal)
                 dire(f"après clean et run : {resultat['rejeu']['passed']}/{resultat['rejeu']['total']}")
+                if double_passage:
+                    poser_solution(lab, journal)
+                    resultat["apres_rejeu"] = check(ident, journal)
+                    dire(
+                        "après la seconde solution : "
+                        f"{resultat['apres_rejeu']['passed']}/{resultat['apres_rejeu']['total']}"
+                    )
 
             res = dsoxlab(["clean", ident, "--yes"], journal, 300)
             if res.returncode != 0:
@@ -438,6 +475,11 @@ def verdict(r: dict, rejeu: bool) -> str:
         # quand rien n'a tourné : un second `run` dont la suite skippe passait
         # donc pour un point de départ sain.
         etapes.append(("après clean et run", r["rejeu"]))
+    if r.get("protocole") == "double-passage":
+        if "apres_rejeu" not in r:
+            r["raisons"] = ["le second passage après reset n'a pas été enregistré"]
+            return "ROUGE"
+        etapes.append(("après la seconde solution", r["apres_rejeu"]))
     for quand, c in etapes:
         if not verdict_check.a_mesure(c):
             r["raisons"] = [f"{quand}, {verdict_check.pourquoi_rien_mesure(c)}"]
@@ -457,13 +499,17 @@ def verdict(r: dict, rejeu: bool) -> str:
         )
     if rejeu and r.get("rejeu", {}).get("passed"):
         raisons.append(f"{r['rejeu']['passed']} test(s) passent après clean et run")
+    if "apres_rejeu" in r and r["apres_rejeu"]["passed"] != r["apres_rejeu"]["total"]:
+        raisons.append("la solution ne rend pas le score plein après reset")
+    if "apres_rejeu" in r and r["apres_rejeu"]["total"] != r["apres"]["total"]:
+        raisons.append("le second passage ne mesure pas le même nombre de tests")
     if r.get("ecarts"):
         raisons.append("le moteur n'est pas rendu intact")
     r["raisons"] = raisons
     return "VALIDE" if not raisons else "ROUGE"
 
 
-def relire() -> int:
+def relire(double_passage: bool = False, selection: list[str] | None = None) -> int:
     """Le verdict versionné couvre-t-il le catalogue, et est-il vert ?
 
     Vérifie DEUX choses, et la première est la moins évidente : qu'aucun lab
@@ -475,7 +521,13 @@ def relire() -> int:
         return 1
 
     verdicts = json.loads(RESULTATS.read_text(encoding="utf-8"))
-    labs = sorted(p.parent.name for p in LABS.rglob("lab.yaml"))
+    catalogue = sorted(p.parent.name for p in LABS.rglob("lab.yaml"))
+    if selection is not None:
+        inconnus = sorted(set(selection) - set(catalogue))
+        if inconnus:
+            print(f"lab(s) inconnu(s) : {', '.join(inconnus)}", file=sys.stderr)
+            return 2
+    labs = catalogue if selection is None else sorted(set(selection))
 
     manquants = [nom for nom in labs if nom not in verdicts]
     if manquants:
@@ -516,7 +568,7 @@ def relire() -> int:
         # « rien à réparer » avec « tout est mesuré ».
         return verdict_check.RC_UN_SKIP
 
-    fantomes = sorted(set(verdicts) - set(labs))
+    fantomes = sorted(set(verdicts) - set(catalogue))
     if fantomes:
         print(
             f"{RESULTATS.name} porte le verdict de lab(s) qui n'existent plus : "
@@ -524,6 +576,20 @@ def relire() -> int:
             file=sys.stderr,
         )
         return 1
+    if double_passage:
+        incomplets = [
+            nom for nom in labs
+            if verdicts[nom].get("protocole") != "double-passage"
+            or verdicts[nom].get("apres_rejeu", {}).get("status") != "passed"
+            or verdicts[nom].get("apres_rejeu", {}).get("total", 0) <= 0
+            or verdicts[nom]["apres_rejeu"]["passed"] != verdicts[nom]["apres_rejeu"]["total"]
+        ]
+        if incomplets:
+            print(
+                f"{len(incomplets)} lab(s) sans double passage attesté : "
+                f"{', '.join(incomplets)}", file=sys.stderr,
+            )
+            return verdict_check.RC_UN_SKIP
 
     print(f"{len(labs)} lab(s), tous VALIDE")
     return verdict_check.RC_TOUT_VALIDE
@@ -536,14 +602,17 @@ def main() -> int:
     ap.add_argument("--lab", action="append", help="ne jouer que ce lab (répétable)")
     ap.add_argument("--sans-rejeu", action="store_true", help="sauter l'étape clean, run, check")
     ap.add_argument(
+        "--double-passage", action="store_true",
+        help="exiger un second score plein après reset, en plus du cycle 0/100/0",
+    )
+    ap.add_argument(
         "--check",
         action="store_true",
         help="relire validation-labs.json sans rien rejouer : exit 0 si tout est VALIDE",
     )
     args = ap.parse_args()
-
-    if args.check:
-        return relire()
+    if args.double_passage and args.sans_rejeu:
+        ap.error("--double-passage est incompatible avec --sans-rejeu")
 
     labs = sorted(p.parent for p in LABS.rglob("lab.yaml"))
     if args.lab:
@@ -557,13 +626,19 @@ def main() -> int:
         print("aucun lab à valider", file=sys.stderr)
         return 2
 
+    if args.check:
+        return relire(
+            double_passage=args.double_passage,
+            selection=[p.name for p in labs] if args.lab else None,
+        )
+
     print(f"{len(labs)} lab(s) à éprouver dans les deux sens")
     anciens = json.loads(RESULTATS.read_text(encoding="utf-8")) if RESULTATS.is_file() else {}
     rouges = 0
     skips = 0
     for lab in labs:
         print(f"\n{lab.name}", flush=True)
-        r = valider(lab, rejeu=not args.sans_rejeu)
+        r = valider(lab, rejeu=not args.sans_rejeu, double_passage=args.double_passage)
         anciens[lab.name] = r
         RESULTATS.write_text(
             json.dumps(anciens, ensure_ascii=False, indent=1, sort_keys=True) + "\n",

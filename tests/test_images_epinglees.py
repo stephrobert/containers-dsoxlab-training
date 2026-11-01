@@ -84,7 +84,7 @@ PORTEE_MAXIMALE = 12
 RE_CONSOMMATION = re.compile(
     r"""(?:
           docker\s+pull\s+
-        | ^\s*FROM\s+
+        | ^\s*FROM\s+(?![a-z_][\w.]*\s+import\b)
         | ^\s*image:\s+
         )
         (?P<ref>[a-z0-9][a-z0-9._/-]*(?::[\w.-]+)?(?:@sha256:[0-9a-f]{64})?)
@@ -273,6 +273,16 @@ def test_il_y_a_des_setups_a_mesurer() -> None:
         "Aucun `labs/*/setup.yaml` ni `cleanup.yaml` : le glob ne regarde plus "
         "au bon endroit, ou le catalogue est vide."
     )
+
+
+def test_les_imports_python_ne_sont_pas_des_images() -> None:
+    source = (
+        "          from pathlib import Path\n"
+        "          from urllib.request import urlopen\n"
+        "          FROM pathlib\n"
+        "          from alpine:3.20 AS runtime\n"
+    )
+    assert [ref for _, ref in _references_nues(source)] == ["pathlib", "alpine:3.20"]
 
 
 def test_le_detecteur_reconnait_ce_qu_il_doit_reconnaitre() -> None:

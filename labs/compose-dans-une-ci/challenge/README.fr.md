@@ -1,6 +1,8 @@
 # Challenge
 
 Implémentez `/opt/lab-compose-ci/ci.sh` selon [le contrat](../scenario.fr.md).
-Trois contrôles d'état exécutent le succès, un test en échec puis deux sources
-distinctes. Tous échouent avant intervention. Le conteneur de test fourni
-produit les rapports ; le YAML ne suffit pas.
+Quatre contrôles exécutent succès, échec, sources commitées distinctes et refus
+d'une source non commitée. Les archives acceptées sont rechargées et comparées
+au commit réel, à l'identité d'image et au SHA-256 ; un échec ne publie rien.
+Tous échouent avant intervention. Tests applicatifs et artefacts réels produisent
+les preuves ; le YAML ne suffit pas.

@@ -31,6 +31,12 @@ Both are built on the image `lab-diagnostic:1.0`.
 3. `catalogue` publishes **no** port.
 4. From `boutique`, the name `catalogue` resolves **as well**: operations must
    keep designating the container by its real name.
+5. Preserve the supplied image and mount `dsoxlab-diagnostic-data` at `/data`.
+   Implement executable `/opt/lab-diagnostic/recreate.sh`, without arguments.
+   It actually replaces `catalogue` without losing a fresh value written to
+   `/data/jeton`; the replacement serves that exact value from `boutique`
+   and remains unexposed. Label any added network
+   `dsoxlab.lab=reseau-diagnostic-dns`; no global prune is permitted.
 
 The brief is also written to `/opt/MISSION.md`.
 
@@ -41,9 +47,11 @@ taught what is needed: the default network and its limits, a dedicated network
 and its name resolution, port publishing and its three postures. This one
 measures.
 
-Four checks of equal weight, **75 points to pass**, and everything is graded on
+Five checks of equal weight, **75 points to pass**, and everything is graded on
 the real state of the engine. The checks' messages name the symptom, not the
 move: making the link is your job.
+The course's data-preservation requirement is critical: reaching the numerical
+threshold alone does not replace success on that requirement.
 
 Four hints exist, from the vaguest to the most explicit, and they cost points.
 

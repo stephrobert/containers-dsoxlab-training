@@ -24,3 +24,5 @@ Le contrôle lance une boucle active bornée à trois secondes et exige une haus
 des compteurs de bridage du cgroup CPU. Il n'alloue pas de mémoire excessive,
 ne crée pas de bombe de processus et ne mesure pas d'OOM : ce sont d'autres sujets.
 Le nettoyage retire uniquement les ressources du projet et garde l'image de base.
+Le même service doit rester opérationnel après la charge CPU, sans redémarrage
+ni perte de son reçu applicatif frais. L'essai retire seulement ce reçu.

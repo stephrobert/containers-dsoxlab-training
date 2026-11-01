@@ -52,6 +52,15 @@ def _app(host):
         en="Run the supplied app image and command as a Compose service.",
         fr="Exécutez l'image et la commande app fournies comme service Compose.",
     )
+    identity = host.run("docker exec %s id -u", app["Id"])
+    rights = host.run("docker exec %s stat -c %s /data", app["Id"], "%u:%g:%a")
+    assert identity.rc == rights.rc == 0 and identity.stdout.strip() == "10001" and (
+        rights.stdout.strip() == "10001:10001:700"
+        and app["HostConfig"]["ReadonlyRootfs"]
+    ), message(
+        en="Run UID 10001 with read-only rootfs and /data owned by UID/GID 10001, mode 0700.",
+        fr="Exécutez sous UID 10001, racine en lecture seule et /data appartenant à UID/GID 10001, mode 0700.",
+    )
     mounts = app["Mounts"]
     assert len(mounts) == 1 and mounts[0]["Type"] == "volume" and mounts[0]["Destination"] == "/data" and mounts[0]["RW"], message(
         en="Mount only a writable named volume at /data; no bind or anonymous replacement.",
@@ -68,6 +77,22 @@ def _app(host):
         fr="Déclarez le volume nommé data dans ce projet Compose.",
     )
     return app, mounts[0]["Name"]
+
+
+def _denied_access(host, app):
+    denied = host.run(
+        "docker exec --user 10002:10002 %s sh -c %s", app["Id"],
+        "test ! -r /data/value.txt && test ! -w /data/value.txt "
+        "&& ! cat /data/value.txt && ! touch /data/unauthorized",
+    )
+    outside = host.run(
+        "docker exec %s sh -c %s", app["Id"],
+        "! touch /tmp/unauthorized",
+    )
+    assert denied.rc == outside.rc == 0, message(
+        en="Another UID must neither read nor write application data; the app cannot write outside /data.",
+        fr="Un autre UID ne doit ni lire ni écrire les données ; l'application ne doit pas écrire hors de /data.",
+    )
 
 
 def _read(host, app):
@@ -92,6 +117,7 @@ def _write(host, app, value):
 
 def test_named_volume_contains_the_initial_application_data(host):
     app, _ = _app(host)
+    _denied_access(host, app)
     expected = json.loads(host.file("/root/.lab-compose-persist.json").content_string)["value"]
     assert _read(host, app).strip() == expected, message(
         en="The volume must contain the supplied initial data.",
@@ -102,6 +128,7 @@ def test_named_volume_contains_the_initial_application_data(host):
 @pytest.mark.parametrize("operation", ["recreate", "down-up"])
 def test_fresh_data_survives_container_replacement(host, operation):
     before, volume = _app(host)
+    _denied_access(host, before)
     original = _read(host, before)
     alternate = secrets.token_hex(32)
     try:
@@ -115,6 +142,7 @@ def test_fresh_data_survives_container_replacement(host, operation):
             )
         _compose(host, "up", "-d", "--force-recreate", "--no-build", "--pull", "never")
         after, after_volume = _app(host)
+        _denied_access(host, after)
         assert before["Id"] != after["Id"] and volume == after_volume and _read(host, after) == alternate, message(
             en="A new container must reuse the same volume and keep the fresh write, not reseed the original.",
             fr="Un nouveau conteneur doit réutiliser le même volume et garder la nouvelle écriture, pas réinitialiser l'original.",

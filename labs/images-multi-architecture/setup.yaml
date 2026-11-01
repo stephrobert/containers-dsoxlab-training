@@ -1,0 +1,73 @@
+---
+- name: Prepare the multi-architecture workshop
+  hosts: lab_target
+  become: true
+  vars:
+    registry_image: registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+  tasks:
+    - name: Install compiler and VM-local emulation
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx, golang-go, qemu-user, qemu-user-binfmt, binfmt-support, python3, iproute2]
+        state: present
+        update_cache: true
+    - name: Start Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Register the packaged binary-format interpreters inside the VM
+      ansible.builtin.systemd_service:
+        name: systemd-binfmt
+        state: restarted
+    - name: Grant lab user Docker access
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Require the workshop port to be unused
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          test -z "$(ss -H -ltn 'sport = :15318')" || {
+            echo "Lab port 15318 is occupied; do not stop another service." >&2
+            exit 1
+          }
+      changed_when: false
+    - name: Create workspace
+      ansible.builtin.file:
+        path: /opt/lab-multiarch
+        state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0755"
+    - name: Copy source
+      ansible.builtin.copy:
+        src: fixtures/
+        dest: /opt/lab-multiarch/
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: preserve
+    - name: Record whether the pinned registry image already exists
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if docker image inspect '{{ registry_image }}' >/dev/null 2>&1; then
+            touch /opt/lab-multiarch/registry-preexisting
+          fi
+      changed_when: false
+    - name: Seed pinned registry image
+      ansible.builtin.command:
+        cmd: docker pull {{ registry_image }}
+      changed_when: true
+    - name: Start the workshop-only loopback registry
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name dsoxlab-multiarch-registry
+          --label dsoxlab.lab=images-multi-architecture
+          -p 127.0.0.1:15318:5000
+          -v /opt/lab-multiarch/registry:/var/lib/registry
+          {{ registry_image }}
+      changed_when: true
+    - name: Copy the mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/lab-multiarch/MISSION.md
+        mode: "0644"

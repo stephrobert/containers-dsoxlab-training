@@ -1,0 +1,5 @@
+# Surcharge française du lab images-multi-architecture. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Publier deux architectures et exécuter les deux"
+description: "Publier un index AMD64/ARM64 et prouver l'exécution réelle de chaque variante, avec QEMU explicitement utilisé pour ARM64 dans la VM jetable."

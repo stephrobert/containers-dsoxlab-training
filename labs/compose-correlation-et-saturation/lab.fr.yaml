@@ -1,0 +1,2 @@
+title: "Corréler une requête métier et attribuer la saturation CPU"
+description: "Configurer la passerelle et le calculateur fournis, mesurer le bridage cgroup sous charge métier bornée et exclure les en-têtes sensibles des deux traces JSON."

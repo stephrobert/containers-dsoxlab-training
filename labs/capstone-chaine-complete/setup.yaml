@@ -66,3 +66,80 @@
         src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
         dest: /opt/lab-delivery/MISSION.md
         mode: "0644"
+    - name: Create a dedicated source-to-restore SSH key
+      ansible.builtin.command:
+        cmd: ssh-keygen -q -t ed25519 -N "" -f /opt/lab-delivery/restore-key
+        creates: /opt/lab-delivery/restore-key
+    - name: Read the restore public key
+      ansible.builtin.command:
+        cmd: cat /opt/lab-delivery/restore-key.pub
+      register: restore_public_key
+      changed_when: false
+    - name: Restrict the transport key to the lab learner
+      ansible.builtin.file:
+        path: /opt/lab-delivery/restore-key
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0600"
+    - name: Record the distinct restore VM address
+      ansible.builtin.copy:
+        dest: /opt/lab-delivery/restore-host
+        content: "{{ hostvars[groups['lab_restore'][0]].ansible_host }}\n"
+        mode: "0644"
+
+- name: Prepare a fresh distinct VM for application restoration
+  hosts: lab_restore
+  become: true
+  tasks:
+    - name: Require the restore port to be unused
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          test -z "$(ss -H -ltn 'sport = :18089')" || {
+            echo "Restore port 18089 is already occupied." >&2
+            exit 1
+          }
+      changed_when: false
+    - name: Require an unused dedicated restore account
+      ansible.builtin.command:
+        cmd: getent passwd dsoxlab-delivery-restore
+      register: restore_account
+      changed_when: false
+      failed_when: restore_account.rc == 0
+    - name: Create the dedicated archive transfer account
+      ansible.builtin.user:
+        name: dsoxlab-delivery-restore
+        comment: "dsoxlab capstone restore transport"
+        groups: docker
+        append: true
+        home: /var/lib/dsoxlab-delivery-restore
+        create_home: true
+        shell: /bin/sh
+    - name: Create the restore workspace
+      ansible.builtin.file:
+        path: /opt/lab-delivery
+        state: directory
+        owner: dsoxlab-delivery-restore
+        mode: "0755"
+    - name: Mark the transfer account as lab-owned
+      ansible.builtin.file:
+        path: /opt/lab-delivery/restore-account-owned
+        state: touch
+        mode: "0600"
+    - name: Authorize only the dedicated source key
+      ansible.posix.authorized_key:
+        user: dsoxlab-delivery-restore
+        key: "{{ hostvars[groups['lab_target'][0]].restore_public_key.stdout }}"
+        key_options: "no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty"
+    - name: Copy the existing base-image cache helper
+      ansible.builtin.copy:
+        src: fixtures/base-cache.py
+        dest: /opt/lab-delivery/base-cache.py
+        mode: "0644"
+    - name: Record the restore VM base images
+      ansible.builtin.command:
+        cmd: /usr/bin/python3 /opt/lab-delivery/base-cache.py snapshot
+      changed_when: false
+    - name: Seed only the pinned PostgreSQL restore runtime
+      ansible.builtin.command:
+        cmd: docker pull postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+      changed_when: true

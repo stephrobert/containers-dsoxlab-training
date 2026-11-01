@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 
 import pytest
 
@@ -70,17 +71,44 @@ def test_memory_and_process_budgets_are_effective(host):
 def test_half_cpu_budget_actually_throttles_a_bounded_workload(host):
     worker = _worker(host)
     _budgets(host, worker)
-    before = dict(line.split() for line in _cgroup(host, worker, "cpu.stat").splitlines())
-    trial = host.run("docker exec %s timeout 3 sh -c %s", worker["Id"], "while :; do :; done")
-    assert trial.rc == 143, message(
-        en="The bounded three-second CPU trial must stop on its timeout.",
-        fr="L'essai CPU borné à trois secondes doit s'arrêter sur son délai.",
+    witness = uuid.uuid4().hex
+    reserved = host.run("docker exec %s mktemp", worker["Id"])
+    path = reserved.stdout.strip()
+    assert reserved.rc == 0 and path, message(
+        en="Reserve a private receipt file inside the worker.",
+        fr="Réservez un fichier de reçu privé dans le worker.",
     )
-    after = dict(line.split() for line in _cgroup(host, worker, "cpu.stat").splitlines())
-    assert int(after["nr_throttled"]) > int(before["nr_throttled"]) and int(after["throttled_usec"]) > int(before["throttled_usec"]), message(
-        en="The cgroup must report actual CPU throttling during the bounded workload.",
-        fr="Le cgroup doit signaler un bridage CPU réel pendant la charge bornée.",
-    )
+    try:
+        stored = host.run("docker exec %s sh -c %s", worker["Id"], f"printf %s {witness} > {path}")
+        assert stored.rc == 0, message(
+            en="Store a fresh application receipt before CPU saturation.",
+            fr="Conservez un reçu applicatif frais avant saturation CPU.",
+        )
+        before = dict(line.split() for line in _cgroup(host, worker, "cpu.stat").splitlines())
+        trial = host.run("docker exec %s timeout 3 sh -c %s", worker["Id"], "while :; do :; done")
+        assert trial.rc == 143, message(
+            en="The bounded three-second CPU trial must stop on its timeout.",
+            fr="L'essai CPU borné à trois secondes doit s'arrêter sur son délai.",
+        )
+        after = dict(line.split() for line in _cgroup(host, worker, "cpu.stat").splitlines())
+        assert int(after["nr_throttled"]) > int(before["nr_throttled"]) and int(after["throttled_usec"]) > int(before["throttled_usec"]), message(
+            en="The cgroup must report actual CPU throttling during the bounded workload.",
+            fr="Le cgroup doit signaler un bridage CPU réel pendant la charge bornée.",
+        )
+        current = _worker(host)
+        retained = host.run("docker exec %s cat %s", current["Id"], path)
+        assert current["Id"] == worker["Id"] and current["State"]["StartedAt"] == worker["State"]["StartedAt"] and (
+            retained.rc == 0 and retained.stdout == witness
+        ), message(
+            en="The same worker must remain operational after the load and retain its fresh receipt.",
+            fr="Le même worker doit rester opérationnel après la charge et conserver son reçu frais.",
+        )
+    finally:
+        removed = host.run("docker exec %s rm -f %s", worker["Id"], path)
+        assert removed.rc == 0, message(
+            en="Remove only the bounded CPU-trial receipt.",
+            fr="Retirez seulement le reçu de l'essai CPU borné.",
+        )
 
 
 def test_recreation_keeps_all_effective_budgets(host):

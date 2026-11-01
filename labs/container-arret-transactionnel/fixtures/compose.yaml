@@ -1,0 +1,21 @@
+services:
+  ledger:
+    image: python:3.13.8-slim-bookworm@sha256:61169c2bdb8e6bb44a8dfad33f569d324d52f079fded9a204b322a6fb9c9f799
+    entrypoint: ["/bin/sh", "/app/entry.sh"]
+    environment: {SERVICE_MODE: standard}
+    stop_grace_period: 8s
+    labels:
+      dsoxlab.lab: container-arret-transactionnel
+    volumes:
+      - .:/app:ro
+      - ledger:/data
+    ports:
+      - "127.0.0.1::8080"
+volumes:
+  ledger:
+    labels:
+      dsoxlab.lab: container-arret-transactionnel
+networks:
+  default:
+    labels:
+      dsoxlab.lab: container-arret-transactionnel

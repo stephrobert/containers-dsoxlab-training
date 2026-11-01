@@ -1,0 +1,19 @@
+---
+- name: Restaurer exclusivement les objets et fichiers de ce lab
+  hosts: lab_publisher:lab_reader
+  become: true
+  tasks:
+    - name: Chercher la photographie
+      ansible.builtin.stat:
+        path: /opt/lab-registry-rights/baseline.json
+      register: baseline
+    - name: Retirer les objets possédés et restaurer la confiance préexistante
+      ansible.builtin.command:
+        cmd: python3 /opt/lab-registry-rights/lifecycle.py clean
+      when: baseline.stat.exists
+      changed_when: true
+    - name: Retirer le répertoire possédé
+      ansible.builtin.file:
+        path: /opt/lab-registry-rights
+        state: absent
+      when: baseline.stat.exists
