@@ -7,7 +7,7 @@
   tasks:
     - name: Installer Docker et Buildx
       ansible.builtin.apt:
-        name: [docker.io, docker-buildx]
+        name: [docker-ce, docker-buildx-plugin]
         state: present
         update_cache: true
 

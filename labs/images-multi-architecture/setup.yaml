@@ -7,7 +7,7 @@
   tasks:
     - name: Install compiler and VM-local emulation
       ansible.builtin.apt:
-        name: [docker.io, docker-buildx, golang-go, qemu-user, qemu-user-binfmt, binfmt-support, python3, iproute2]
+        name: [docker-ce, docker-buildx-plugin, golang-go, qemu-user, qemu-user-binfmt, binfmt-support, python3, iproute2]
         state: present
         update_cache: true
     - name: Start Docker

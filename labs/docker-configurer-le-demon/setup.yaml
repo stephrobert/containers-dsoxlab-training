@@ -8,7 +8,7 @@
   tasks:
     - name: Install Docker and the small test runtime
       ansible.builtin.apt:
-        name: [docker.io, python3]
+        name: [docker-ce, python3]
         state: present
         update_cache: true
     - name: Ensure Docker is available for this host lab

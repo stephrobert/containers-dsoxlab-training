@@ -11,7 +11,7 @@
       ansible.builtin.shell: |
         set -eu
         docker info >/dev/null
-        docker compose version >/dev/null 2>&1 || docker-compose version >/dev/null
+        docker compose version >/dev/null 2>&1 || docker-compose-plugin version >/dev/null
         test "$(stat -fc %T /sys/fs/cgroup)" = cgroup2fs
         grep -qw pids /sys/fs/cgroup/cgroup.controllers
         test ! -e "{{ work }}"
@@ -43,7 +43,7 @@
       ansible.builtin.shell: |
         set -eu
         cd "{{ work }}"
-        if docker compose version >/dev/null 2>&1; then docker compose -p dsoxlab-{{ lab }} up -d; else docker-compose -p dsoxlab-{{ lab }} up -d; fi
+        if docker compose version >/dev/null 2>&1; then docker compose -p dsoxlab-{{ lab }} up -d; else docker-compose-plugin -p dsoxlab-{{ lab }} up -d; fi
       changed_when: true
     - name: Install the mission
       ansible.builtin.copy:

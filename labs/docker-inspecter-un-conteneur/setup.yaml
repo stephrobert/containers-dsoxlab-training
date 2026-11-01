@@ -53,7 +53,7 @@
   tasks:
     - name: Installer le moteur de conteneurs
       ansible.builtin.apt:
-        name: docker.io
+        name: docker-ce
         state: present
         update_cache: true
 

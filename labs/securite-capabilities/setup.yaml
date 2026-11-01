@@ -11,7 +11,7 @@
       ansible.builtin.shell: |
         set -eu
         docker info >/dev/null
-        docker compose version >/dev/null 2>&1 || docker-compose version >/dev/null
+        docker compose version >/dev/null 2>&1 || docker-compose-plugin version >/dev/null
         test ! -e "{{ work }}"
         test ! -L "{{ work }}"
         test -z "$(docker ps -aq --filter label=com.docker.compose.project=dsoxlab-{{ lab }})"
@@ -45,7 +45,7 @@
         if docker compose version >/dev/null 2>&1; then
           docker compose -p dsoxlab-{{ lab }} up -d
         else
-          docker-compose -p dsoxlab-{{ lab }} up -d
+          docker-compose-plugin -p dsoxlab-{{ lab }} up -d
         fi
       changed_when: true
     - name: Install the bilingual mission without changing global files

@@ -5,7 +5,7 @@
   tasks:
     - name: Install Docker and the proxy runtime
       ansible.builtin.apt:
-        name: [docker.io, python3, curl]
+        name: [docker-ce, python3, curl]
         state: present
         update_cache: true
     - name: Ensure Docker is available for this host lab

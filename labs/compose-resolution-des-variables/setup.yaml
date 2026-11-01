@@ -7,7 +7,7 @@
   tasks:
     - name: Installer Docker et Compose v2
       ansible.builtin.apt:
-        name: [docker.io, docker-compose]
+        name: [docker-ce, docker-compose-plugin]
         state: present
         update_cache: true
 

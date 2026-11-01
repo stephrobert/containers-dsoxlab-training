@@ -19,7 +19,7 @@
     - name: Installer le moteur de conteneurs et de quoi lire une image
       ansible.builtin.apt:
         name:
-          - docker.io
+          - docker-ce
           - skopeo
         state: present
         update_cache: true

@@ -7,7 +7,7 @@
   tasks:
     - name: Install Docker and rootless runtime prerequisites
       ansible.builtin.apt:
-        name: [docker.io, python3, uidmap, rootlesskit, slirp4netns, dbus-user-session, fuse-overlayfs, acl]
+        name: [docker-ce, python3, uidmap, rootlesskit, slirp4netns, dbus-user-session, fuse-overlayfs, acl]
         state: present
         update_cache: true
     - name: Ensure Docker is available for this host lab

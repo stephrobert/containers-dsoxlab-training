@@ -7,7 +7,7 @@
   tasks:
     - name: Installer les outils de la VM
       ansible.builtin.apt:
-        name: [docker.io, docker-buildx, python3]
+        name: [docker-ce, docker-buildx-plugin, python3]
         state: present
         update_cache: true
 

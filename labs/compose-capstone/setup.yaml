@@ -5,7 +5,7 @@
   tasks:
     - name: Installer Docker, Compose et curl
       ansible.builtin.apt:
-        name: [docker.io, docker-compose, curl]
+        name: [docker-ce, docker-compose-plugin, curl]
         state: present
         update_cache: true
     - name: Démarrer Docker

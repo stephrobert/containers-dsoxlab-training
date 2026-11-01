@@ -1,24 +1,126 @@
 ---
+# Socle pose par `dsoxlab provision` sur chaque VM du catalogue, AVANT tout lab.
+#
+# POURQUOI LE DEPOT OFFICIEL, ET NON `docker.io` DE DEBIAN. Mesure du 2026-11-01 :
+# Debian 13 livre l'Engine 26.1.5, Buildx 0.13.1 et Compose 2.26.1, quand le depot
+# officiel sert 29.9.2, 0.38.1 et 5.6.1. Trois versions majeures d'ecart sur le
+# moteur. Une formation Docker qui enseigne sur 26 mesure un comportement que
+# l'apprenant ne retrouve pas : il suit la documentation officielle, et obtient
+# 29.x. L'ecart a deja une victime mesuree, le champ `.NetworkSettings.IPAddress`,
+# qui a disparu en 29 et que quatre labs lisent encore.
+#
+# POURQUOI DES VERSIONS EPINGLEES. Le pilotage du projet l'impose : la combinaison
+# testee s'epingle, et `latest` est banni des fixtures. Un lab qui installe la
+# version du jour n'est pas reproductible, et son verdict ne dit plus sur quoi il
+# portait. Ces cinq valeurs se relevent dans le fichier `Packages` du depot et se
+# changent ENSEMBLE, suivies d'une reattestation du catalogue.
 - name: Prepare the Docker baseline on provisioned lab VMs
   hosts: labenv
   become: true
+  vars:
+    docker_versions:
+      docker-ce: "5:29.9.2-1~debian.13~trixie"
+      docker-ce-cli: "5:29.9.2-1~debian.13~trixie"
+      containerd.io: "2.4.2-3~debian.13~trixie"
+      docker-buildx-plugin: "0.38.1-1~debian.13~trixie"
+      docker-compose-plugin: "5.6.1-1~debian.13~trixie"
   tasks:
-    - name: Install the distribution Docker engine and diagnostic tools
+    - name: Install the packages needed to fetch a signed repository
       ansible.builtin.apt:
-        name: [docker.io, docker-buildx, docker-compose, python3, iproute2]
+        name: [ca-certificates, curl, gnupg]
         state: present
         update_cache: true
+
+    - name: Create the keyring directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Install the Docker repository signing key
+      # `force: false` keeps the file when it is already there, so a re-run does
+      # not refetch it and does not need the network.
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/debian/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: false
+
+    - name: Declare the Docker repository for this distribution release
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/debian
+          {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+        update_cache: true
+
+    - name: Remove the distribution Docker packages first
+      # MEASURED FAILURE, 2026-11-01. Installing the official plugins over the
+      # Debian ones breaks in dpkg, because both own the same files:
+      #   trying to overwrite '/usr/libexec/docker/cli-plugins/docker-buildx',
+      #   which is also in package docker-buildx (0.13.1+ds1-3)
+      # apt removes `docker.io` on its own (the official engine conflicts with
+      # it) but NOT `docker-buildx` nor `docker-compose`, which declare no
+      # conflict. The run then leaves the VM with no engine at all. They are
+      # therefore removed explicitly, as the Docker documentation requires.
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-cli
+          - docker-compose
+          - docker-buildx
+          - docker-doc
+          - podman-docker
+          - containerd
+          - runc
+        state: absent
+        purge: false
+
+    - name: Install the pinned engine, CLI, runtime and plugins
+      ansible.builtin.apt:
+        name: "{{ docker_versions | dict2items | map(attribute='key') | zip(docker_versions | dict2items | map(attribute='value')) | map('join', '=') | list }}"
+        state: present
+        allow_downgrade: true
+
+    - name: Hold these versions so an unattended upgrade cannot move them
+      # Without the hold, a `apt upgrade` on the VM silently changes the engine
+      # the attestations were measured on.
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop: "{{ docker_versions | dict2items | map(attribute='key') | list }}"
+
+    - name: Install the diagnostic tools the labs read the system with
+      ansible.builtin.apt:
+        name: [python3, iproute2]
+        state: present
+
     - name: Start and enable the engine
       ansible.builtin.systemd_service:
         name: docker
         state: started
         enabled: true
+
     - name: Grant the dedicated lab account access to its VM engine
       ansible.builtin.user:
         name: "{{ ansible_user | default('ansible') }}"
         groups: docker
         append: true
+
     - name: Verify the actual engine baseline
       ansible.builtin.command:
         cmd: docker version --format '{{ '{{' }}.Server.Version{{ '}}' }}'
       changed_when: false
+      register: engine_version
+
+    - name: Fail when the engine is not the pinned one
+      # A silent mismatch is the whole reason this file was rewritten: the
+      # attestations must say which engine they measured.
+      ansible.builtin.assert:
+        that:
+          - engine_version.stdout is version('29.0', '>=')
+        fail_msg: >-
+          The engine answers {{ engine_version.stdout }}, below the 29.x this
+          catalogue is attested on. The Docker repository was probably not used.

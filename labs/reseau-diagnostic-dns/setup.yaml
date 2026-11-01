@@ -41,7 +41,7 @@
   tasks:
     - name: Installer le moteur de conteneurs
       ansible.builtin.apt:
-        name: [docker.io, python3]
+        name: [docker-ce, python3]
         state: present
         update_cache: true
 

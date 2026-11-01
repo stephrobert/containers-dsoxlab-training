@@ -7,7 +7,7 @@
   tasks:
     - name: Installer les outils de distribution
       ansible.builtin.apt:
-        name: [docker.io, docker-buildx, skopeo]
+        name: [docker-ce, docker-buildx-plugin, skopeo]
         state: present
         update_cache: true
 

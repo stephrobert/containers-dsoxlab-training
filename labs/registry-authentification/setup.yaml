@@ -7,7 +7,7 @@
   tasks:
     - name: Installer les outils du registre privé
       ansible.builtin.apt:
-        name: [docker.io, openssl, curl, apache2-utils]
+        name: [docker-ce, openssl, curl, apache2-utils]
         state: present
         update_cache: true
 

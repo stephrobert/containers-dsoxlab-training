@@ -7,7 +7,7 @@
   tasks:
     - name: Installer les outils
       ansible.builtin.apt:
-        name: [docker.io, openssl, curl]
+        name: [docker-ce, openssl, curl]
         state: present
         update_cache: true
 

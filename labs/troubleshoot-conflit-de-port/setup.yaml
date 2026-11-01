@@ -42,7 +42,7 @@
     - name: Installer le moteur de conteneurs et les outils de diagnostic réseau
       ansible.builtin.apt:
         name:
-          - docker.io
+          - docker-ce
           - iproute2
           - netcat-openbsd
         state: present

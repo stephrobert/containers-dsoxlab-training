@@ -7,7 +7,7 @@
   tasks:
     - name: Installer les outils
       ansible.builtin.apt:
-        name: [docker.io, skopeo, curl]
+        name: [docker-ce, skopeo, curl]
         state: present
         update_cache: true
 
