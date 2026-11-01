@@ -1,0 +1,24 @@
+# Lab images-signature-identite. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-signature-identite                      # REQUIS
+title: "Verify a container archive signature and its approved signer identity"
+level: c3
+description: "Bind a real container archive to a cryptographic signature and a CA-approved identity; reject altered bytes, other identities and other keys."
+skills:                       # REQUIS, non vide
+  - docker
+  - openssl
+  - signatures
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/securiser/supply-chain/cosign/#la-solution--signature-cryptographique
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

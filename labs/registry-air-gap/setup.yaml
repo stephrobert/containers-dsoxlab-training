@@ -1,0 +1,121 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer le lab registry-air-gap
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer les outils
+      ansible.builtin.apt:
+        name: [docker.io, skopeo, curl]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Retirer l'ancien registre de ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if docker container inspect dsoxlab-air-gap-registry >/dev/null 2>&1; then
+            docker rm -f dsoxlab-air-gap-registry
+          fi
+      changed_when: false
+
+    - name: Repartir sans ancienne livraison
+      ansible.builtin.file:
+        path: /opt/lab-air-gap
+        state: absent
+
+    - name: Créer les répertoires du lab
+      ansible.builtin.file:
+        path: "/opt/lab-air-gap/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [data, appli]
+
+    - name: Tirer les images épinglées
+      ansible.builtin.command:
+        cmd: docker pull {{ item }}
+      loop:
+        - registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+        - alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+      register: pulls
+      changed_when: "'Downloaded newer image' in pulls.stdout"
+
+    - name: Démarrer le registre d'origine sur la boucle locale
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name dsoxlab-air-gap-registry -p 127.0.0.1:15006:5000
+          -v /opt/lab-air-gap/data:/var/lib/registry
+          registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      changed_when: true
+
+    - name: Attendre le registre d'origine
+      ansible.builtin.uri:
+        url: http://127.0.0.1:15006/v2/
+      register: ready
+      until: ready.status == 200
+      retries: 15
+      delay: 1
+
+    - name: Tirer la release publiée
+      ansible.builtin.set_fact:
+        release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters']) }}"
+
+    - name: Déposer le produit
+      ansible.builtin.copy:
+        dest: /opt/lab-air-gap/appli/release.txt
+        content: "{{ release }}\n"
+        mode: "0644"
+
+    - name: Déposer son Dockerfile
+      ansible.builtin.copy:
+        dest: /opt/lab-air-gap/appli/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="registry-air-gap"
+          COPY release.txt /release.txt
+          CMD ["cat", "/release.txt"]
+
+    - name: Publier le produit
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker build -t 127.0.0.1:15006/catalogue/appli:1.0 /opt/lab-air-gap/appli
+          docker push 127.0.0.1:15006/catalogue/appli:1.0
+      changed_when: true
+
+    - name: Relever l'identité publiée
+      ansible.builtin.command:
+        cmd: docker image inspect 127.0.0.1:15006/catalogue/appli:1.0 --format '{% raw %}{{.Id}}{% endraw %}'
+      register: image
+      changed_when: false
+
+    - name: Garder le relevé privé du banc
+      ansible.builtin.copy:
+        dest: /root/.lab-air-gap.json
+        content: "{{ {'image': image.stdout | trim, 'release': release} | to_json }}"
+        mode: "0600"
+
+    - name: Retirer le produit local pour laisser le registre comme seule source
+      ansible.builtin.command:
+        cmd: docker image rm 127.0.0.1:15006/catalogue/appli:1.0
+      changed_when: true
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

@@ -1,0 +1,2 @@
+title: "Plafonner le nombre de tâches du conteneur"
+description: "Appliquer un plafond cgroup de 16 tâches et observer le refus d'une rafale finie de processus éphémères."

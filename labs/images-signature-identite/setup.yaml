@@ -1,0 +1,27 @@
+---
+- name: Préparer un artefact réel et des signataires synthétiques
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer la cryptographie
+      ansible.builtin.apt:
+        name: [openssl, python3]
+        state: present
+    - name: Refuser de remplacer un répertoire préexistant
+      ansible.builtin.stat:
+        path: /opt/lab-image-signature
+      register: existing
+    - name: Exiger un espace propre au lab
+      ansible.builtin.assert:
+        that: not existing.stat.exists
+        fail_msg: "Run clean first; an existing directory must not be overwritten."
+    - name: Copier les fixtures du lab
+      ansible.builtin.copy:
+        src: fixtures/
+        dest: /opt/lab-image-signature/
+        mode: preserve
+    - name: Générer les clés privées dans la VM et exporter l'image épinglée
+      ansible.builtin.command:
+        cmd: bash /opt/lab-image-signature/prepare.sh
+      changed_when: true
+      no_log: true

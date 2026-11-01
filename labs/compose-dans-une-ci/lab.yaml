@@ -1,0 +1,18 @@
+id: compose-dans-une-ci
+title: "Run Compose as a reproducible local CI job"
+level: c4
+description: "Build real commits, publish only accepted image archives with provenance, refuse uncommitted source and always clean the isolated stack."
+skills: [compose, ci, integration-testing, lifecycle, provenance, git]
+distros: [debian13]
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#commandes-essentielles
+lab_type: challenge
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

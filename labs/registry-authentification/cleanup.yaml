@@ -1,0 +1,34 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+- name: Défaire le lab registry-authentification
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Retirer les objets Docker propres au lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if docker container inspect dsoxlab-auth-registry >/dev/null 2>&1; then
+            docker rm -f dsoxlab-auth-registry
+          fi
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=registry-authentification)
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+
+    - name: Retirer la résolution du nom propre au lab
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} dsoxlab-registry-auth"
+        state: absent
+
+    - name: Retirer les fichiers et identifiants propres au lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-registry-auth
+        - /root/.lab-registry-auth.json
+        - /etc/docker/certs.d/registry-auth.lab.test:15445
+        - /opt/MISSION.md

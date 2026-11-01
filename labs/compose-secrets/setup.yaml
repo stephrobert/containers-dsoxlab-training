@@ -1,0 +1,99 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer le lab compose-secrets
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer Docker et Compose
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose, git, python3]
+        state: present
+        update_cache: true
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Créer le dépôt de travail apprenant
+      ansible.builtin.file:
+        path: /opt/lab-compose-secret
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user | default('ansible') }}"
+    - name: Créer le contexte et le dossier de secret séparé
+      ansible.builtin.file:
+        path: "/opt/lab-compose-secret/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [image, credentials]
+    - name: Déposer un jeton pédagogique
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-secret/credentials/token.txt
+        content: "{{ lookup('ansible.builtin.password', '/dev/null', length=48, chars=['ascii_letters', 'digits']) }}\n"
+        mode: "0600"
+      no_log: true
+    - name: Garder l'empreinte du jeton
+      ansible.builtin.shell:
+        cmd: sha256sum /opt/lab-compose-secret/credentials/token.txt | cut -d ' ' -f 1 > /root/.lab-compose-secret.sha256
+      changed_when: true
+    - name: Déposer le consommateur
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-secret/image/start.sh
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+          sha256sum /run/secrets/api_token | cut -d ' ' -f 1 > /tmp/fingerprint
+          exec sleep infinity
+    - name: Déposer le Dockerfile sans le secret
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-secret/image/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="compose-secrets"
+          COPY start.sh /usr/local/bin/start.sh
+          CMD ["/usr/local/bin/start.sh"]
+    - name: Exclure les secrets de la version
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-secret/.gitignore
+        content: "credentials/\n"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+    - name: Initialiser le dépôt sans secret
+      become_user: "{{ ansible_user | default('ansible') }}"
+      ansible.builtin.command:
+        argv: [git, -C, /opt/lab-compose-secret, init, -q]
+        creates: /opt/lab-compose-secret/.git
+      register: secret_repository
+    - name: Versionner seulement le contexte non secret
+      become_user: "{{ ansible_user | default('ansible') }}"
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cd /opt/lab-compose-secret
+          git add .gitignore image/
+          git -c user.name=DSOxLab -c user.email=fixture@invalid commit -q \
+            -m "Prepared secret-free training context" \
+            -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+      when: secret_repository.changed
+      changed_when: true
+    - name: Construire l'image
+      ansible.builtin.command:
+        cmd: docker build -t dsoxlab-compose-secret:app /opt/lab-compose-secret/image
+      changed_when: true
+    - name: Garder l'identité de l'image fournie hors de portée du remplacement de tag
+      ansible.builtin.shell:
+        cmd: docker image inspect dsoxlab-compose-secret:app --format '{{ "{{" }}.Id{{ "}}" }}' > /root/.lab-compose-secret-image
+      changed_when: true
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

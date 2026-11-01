@@ -1,0 +1,2 @@
+title: "Administrer une seconde VM avec un contexte Docker SSH"
+description: "Vérifier l'identité du moteur distant, refuser une clé SSH non autorisée et préserver le contexte par défaut."

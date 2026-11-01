@@ -1,0 +1,24 @@
+# Lab reseau-pare-feu-cible. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: reseau-pare-feu-cible                      # REQUIS
+title: "Repair one routed firewall path without dropping protections"
+level: c4
+description: "Diagnose client, router and server hops, correct one namespace-scoped nftables rule and retain default-deny, untrusted-client and debug-port protections after recreation."
+skills:                       # REQUIS, non vide
+  - docker
+  - reseau
+  - nftables
+  - diagnostic
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker
+lab_type: lab
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

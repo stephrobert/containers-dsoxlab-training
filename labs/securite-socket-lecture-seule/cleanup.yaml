@@ -1,0 +1,27 @@
+---
+- name: Clean lab securite-socket-lecture-seule
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Remove only containers carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker ps -aq --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
+        if [ -n "$ids" ]; then docker rm -f $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove only volumes carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker volume ls -q --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
+        if [ -n "$ids" ]; then docker volume rm $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove the unique work directory created for this lab
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-socket-lecture-seule
+        state: absent

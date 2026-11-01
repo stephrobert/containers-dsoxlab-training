@@ -1,0 +1,37 @@
+---
+- name: Clean lab securite-groupe-docker
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Check whether setup created the synthetic audit account
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-securite-groupe-docker/account-created
+      register: audit_account_marker
+    - name: Remove only the synthetic audit account created by setup
+      ansible.builtin.user:
+        name: dsoxlab-auditor
+        state: absent
+        remove: true
+      when: audit_account_marker.stat.exists
+    - name: Remove only containers carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker ps -aq --filter label=dsoxlab.lab=securite-groupe-docker)"
+        if [ -n "$ids" ]; then docker rm -f $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove only volumes carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker volume ls -q --filter label=dsoxlab.lab=securite-groupe-docker)"
+        if [ -n "$ids" ]; then docker volume rm $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove the unique work directory created for this lab
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-groupe-docker
+        state: absent

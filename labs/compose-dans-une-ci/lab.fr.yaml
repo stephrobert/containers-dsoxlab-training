@@ -1,0 +1,2 @@
+title: "Exécuter Compose dans une CI locale reproductible"
+description: "Construire un commit réel, tester et publier l'archive acceptée avec sa provenance, refuser la source non commitée et toujours nettoyer."

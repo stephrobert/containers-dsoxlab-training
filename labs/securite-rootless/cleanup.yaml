@@ -1,0 +1,106 @@
+---
+- name: Clean lab securite-rootless
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Check whether setup owns the rootless service
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-securite-rootless/service-owned
+      register: rootless_service_marker
+    - name: Check whether setup created the rootless account
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-securite-rootless/account-created
+      register: rootless_account_marker
+    - name: Read the dedicated rootless UID before deleting its runtime path
+      ansible.builtin.command: id -u dsoxlab-rootless
+      register: rootless_uid_before_delete
+      changed_when: false
+      failed_when: rootless_uid_before_delete.rc not in [0, 1]
+      when: rootless_account_marker.stat.exists
+    - name: Check the newly created account's user manager
+      ansible.builtin.command:
+        cmd: "systemctl is-active user@{{ rootless_uid_before_delete.stdout }}.service"
+      register: rootless_user_manager
+      changed_when: false
+      failed_when: rootless_user_manager.rc not in [0, 3, 4]
+      when: rootless_account_marker.stat.exists and rootless_uid_before_delete.rc == 0
+    - name: Stop only the dedicated user daemon
+      ansible.builtin.command:
+        argv:
+          - sudo
+          - -n
+          - -u
+          - dsoxlab-rootless
+          - env
+          - "XDG_RUNTIME_DIR=/run/user/{{ rootless_uid_before_delete.stdout }}"
+          - "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{{ rootless_uid_before_delete.stdout }}/bus"
+          - systemctl
+          - --user
+          - stop
+          - dsoxlab-rootless.service
+      changed_when: true
+      when:
+        - rootless_service_marker.stat.exists
+        - rootless_account_marker.stat.exists
+        - rootless_user_manager.rc | default(3) == 0
+    - name: Disable lingering only for the account created by this lab
+      ansible.builtin.command:
+        cmd: loginctl disable-linger dsoxlab-rootless
+      changed_when: true
+      when: rootless_account_marker.stat.exists and rootless_uid_before_delete.rc == 0
+    - name: Stop only the newly created account's user manager
+      ansible.builtin.systemd_service:
+        name: "user@{{ rootless_uid_before_delete.stdout }}.service"
+        state: stopped
+      when: rootless_account_marker.stat.exists and rootless_uid_before_delete.rc == 0
+    - name: Remove only the dedicated rootless runtime directory
+      ansible.builtin.file:
+        path: "/run/user/{{ rootless_uid_before_delete.stdout }}"
+        state: absent
+      when: rootless_account_marker.stat.exists and rootless_uid_before_delete.stdout is defined and rootless_uid_before_delete.stdout | length > 0
+    - name: Remove only the dedicated rootless account and its home
+      ansible.builtin.user:
+        name: dsoxlab-rootless
+        state: absent
+        remove: true
+      when: rootless_account_marker.stat.exists
+    - name: Remove only the subordinate ID ranges owned by this lab account
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: "^dsoxlab-rootless:"
+        state: absent
+      loop:
+        - /etc/subuid
+        - /etc/subgid
+      when: rootless_account_marker.stat.exists
+    - name: Remove only containers carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker ps -aq --filter label=dsoxlab.lab=securite-rootless)"
+        if [ -n "$ids" ]; then docker rm -f $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove only volumes carrying this lab's label
+      ansible.builtin.shell: |
+        set -eu
+        ids="$(docker volume ls -q --filter label=dsoxlab.lab=securite-rootless)"
+        if [ -n "$ids" ]; then docker volume rm $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove the unique work directory created for this lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if test -d /opt/dsoxlab-securite-rootless && ! test -f /opt/dsoxlab-securite-rootless/image-preexisting; then
+            image='python:3.13.8-slim-bookworm@sha256:61169c2bdb8e6bb44a8dfad33f569d324d52f079fded9a204b322a6fb9c9f799'
+            if docker image inspect "$image" >/dev/null 2>&1; then docker image rm "$image"; fi
+          fi
+      changed_when: false
+    - name: Remove the unique work directory created for this lab
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-rootless
+        state: absent

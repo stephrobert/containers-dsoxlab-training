@@ -31,6 +31,26 @@ by finding a state it did not create.
 python3 scripts/valider-labs.py --lab <id>
 ```
 
+For complete course-contract evidence, also measure the second passage:
+
+```bash
+LAB_HOME=$PWD python3 scripts/valider-labs.py --lab <id> --double-passage
+python3 scripts/valider-labs.py --check --lab <id> --double-passage
+```
+
+The measured protocol is `0 → full → 0 → full → clean`. Strict rereading refuses
+an older record without an actually measured second success; it never infers
+success from a skipped or missing check. This option is incompatible with
+`--sans-rejeu`.
+
+Docker must exist before the pre-setup photograph. `infra/bootstrap.yaml`
+prepares the VM baseline. `runtime.targets` select alternative execution
+targets; simultaneous hosts belong in the selected target's `roles` and become
+`lab_<role>` inventory groups. The validator photographs all those hosts and
+the reference replay receives the same roles. Every engine must finish intact.
+Append new hosts to `infra.hosts` to preserve existing addresses, and serialize
+VM cycles: never run two attestations concurrently.
+
 ## What your lab must carry
 
 | File | Role |

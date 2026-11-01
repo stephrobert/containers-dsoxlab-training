@@ -7,7 +7,8 @@ et ne réexplique rien : ce qu'il faut savoir y a été enseigné, celle-ci le
 mesure.
 
 C'est le seul `lab_type: challenge` de la section, et c'est ce qui autorise son
-`exam_passing_score`, fixé à **75** : trois contrôles sur quatre.
+`exam_passing_score`, fixé à **75**. Les cinq contrôles sont de poids égal ;
+le parcours exige séparément la réussite de la conservation critique des données.
 
 ## La panne posée, et elle n'est dite nulle part dans l'énoncé
 
@@ -73,20 +74,18 @@ Un nom qui pointe ailleurs est **pire** que pas de nom du tout : l'application
 parlerait à autre chose, et le symptôme deviendrait incompréhensible. C'est un
 cas réel dès qu'un nom traîne dans un résolveur.
 
-## Le cleanup nettoie plus large que ce que le setup a posé
+## Réparation durable et nettoyage borné
 
-Une épreuve de diagnostic laisse derrière elle ce que l'apprenant a fabriqué en
-cherchant : un réseau de plus, un conteneur de rattrapage. Les deux réseaux du
-setup sont nommés, mais un réseau créé par l'apprenant ne peut pas l'être, d'où
-le `network prune` final.
-
-Il ne touche ni les réseaux du moteur ni ceux qui portent encore un conteneur :
-il ne peut donc pas casser un autre lab du catalogue, chacun retirant ses
-propres conteneurs dans son propre cleanup.
+Une valeur nouvelle du volume nommé reste visible après remplacement réel
+du catalogue, via le chemin applicatif corrigé. Conteneurs, images, réseaux
+et volumes portent le label de propriété du lab ; seuls ces objets sont retirés.
+Les bases préexistantes restent intactes ; une base introduite est retirée sans
+force seulement si inutilisée. Aucun prune réseau/image/builder global :
+un objet inutilisé peut appartenir à un autre propriétaire.
 
 ## L'état de départ est cassé, et c'est la règle du dépôt
 
-Les quatre contrôles sont faux au départ. Une tâche du setup **vérifie** les
+Les cinq contrôles sont faux au départ. Une tâche du setup **vérifie** les
 trois fautes avant de rendre la main : les deux noms ne résolvent pas depuis
 `boutique`, et le port est bien publié.
 

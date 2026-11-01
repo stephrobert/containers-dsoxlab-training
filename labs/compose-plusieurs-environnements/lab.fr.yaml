@@ -1,0 +1,5 @@
+# Surcharge française du lab compose-plusieurs-environnements. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Déployer des projets Compose de développement et production isolés"
+description: "Promouvoir l'image préparée exacte sans rebuild sur deux VM et fusionner des surcharges sans mélanger données ni ressources."

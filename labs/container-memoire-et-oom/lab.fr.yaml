@@ -1,0 +1,2 @@
+title: "Fixer un plafond mémoire et contenir un OOM"
+description: "Appliquer 32 Mio sans swap et prouver qu'une sonde exec bornée subit un OOM local au conteneur."

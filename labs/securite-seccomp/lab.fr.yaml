@@ -1,0 +1,2 @@
+title: "Mesurer un refus seccomp ciblé"
+description: "Attacher un filtre local au conteneur refusant getpgid(2147483647) avec EPERM tout en autorisant les appels ordinaires getpgid et getpid."

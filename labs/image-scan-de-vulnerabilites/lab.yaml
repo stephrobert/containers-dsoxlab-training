@@ -1,0 +1,19 @@
+id: image-scan-de-vulnerabilites
+title: "Gate an image using dated, real offline vulnerability scans"
+level: c4
+description: "Scan genuine archived Debian libraries, preserve findings tied to image and database, and enforce a reproducible CVE policy."
+skills: [image-scanning, vulnerability-policy, evidence, supply-chain]
+distros: [debian13]
+doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/quay-io/#publier-une-image-sur-quayio
+lab_type: lab
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

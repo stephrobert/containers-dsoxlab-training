@@ -1,0 +1,22 @@
+id: securite-capabilities
+title: "Drop all but one Linux capability"
+level: c4
+description: "Recreate the service with all capabilities dropped except NET_BIND_SERVICE."
+skills:
+  - docker
+  - capabilities
+  - least-privilege
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#capabilities--fragmenter-les-privilèges-root
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

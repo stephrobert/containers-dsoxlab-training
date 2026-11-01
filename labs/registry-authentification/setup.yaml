@@ -1,0 +1,193 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer le lab registry-authentification
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer les outils du registre privé
+      ansible.builtin.apt:
+        name: [docker.io, openssl, curl, apache2-utils]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Résoudre le nom sur le réseau privé de la VM
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} dsoxlab-registry-auth"
+        block: "{{ ansible_default_ipv4.address }} registry-auth.lab.test"
+
+    - name: Retirer seulement l'ancien registre de ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if docker container inspect dsoxlab-auth-registry >/dev/null 2>&1; then
+            docker rm -f dsoxlab-auth-registry
+          fi
+      changed_when: false
+
+    - name: Repartir sans ancien contexte ni confiance propre à ce lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-registry-auth
+        - /etc/docker/certs.d/registry-auth.lab.test:15445
+
+    - name: Créer les répertoires
+      ansible.builtin.file:
+        path: "/opt/lab-registry-auth/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [certs, auth, client, data, appli]
+
+    - name: Générer les certificats propres à cette exécution
+      ansible.builtin.shell:
+        chdir: /opt/lab-registry-auth/certs
+        cmd: |
+          set -eu
+          umask 077
+          openssl req -x509 -newkey rsa:2048 -nodes -days 2 \
+            -keyout ca.key -out ca.crt -subj '/CN=dsoxlab registry auth CA' \
+            -addext 'basicConstraints=critical,CA:TRUE' \
+            -addext 'keyUsage=critical,keyCertSign,cRLSign'
+          openssl req -newkey rsa:2048 -nodes -keyout server.key \
+            -out server.csr -subj '/CN=registry-auth.lab.test'
+          printf '%s\n' 'subjectAltName=DNS:registry-auth.lab.test' \
+            'extendedKeyUsage=serverAuth' 'basicConstraints=critical,CA:FALSE' > extensions.cnf
+          openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
+            -CAcreateserial -out server.crt -days 2 -extfile extensions.cnf
+          chmod 644 ca.crt server.crt
+      changed_when: true
+
+    - name: Installer la confiance TLS préalable
+      ansible.builtin.file:
+        path: /etc/docker/certs.d/registry-auth.lab.test:15445
+        state: directory
+        mode: "0755"
+
+    - name: Déposer la CA pour Docker
+      ansible.builtin.copy:
+        src: /opt/lab-registry-auth/certs/ca.crt
+        remote_src: true
+        dest: /etc/docker/certs.d/registry-auth.lab.test:15445/ca.crt
+        mode: "0644"
+
+    - name: Déposer TLS sans authentification
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-auth/config.yml
+        mode: "0644"
+        content: |
+          version: 0.1
+          storage:
+            filesystem:
+              rootdirectory: /var/lib/registry
+          http:
+            addr: :5000
+            tls:
+              certificate: /certs/server.crt
+              key: /certs/server.key
+
+    - name: Tirer les images épinglées
+      ansible.builtin.command:
+        cmd: docker pull {{ item }}
+      loop:
+        - registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+        - alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+      register: pulls
+      changed_when: "'Downloaded newer image' in pulls.stdout"
+
+    - name: Démarrer le registre TLS ouvert
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name dsoxlab-auth-registry -p 15445:5000
+          -v /opt/lab-registry-auth/config.yml:/etc/docker/registry/config.yml:ro
+          -v /opt/lab-registry-auth/certs:/certs:ro
+          -v /opt/lab-registry-auth/auth:/auth:ro
+          -v /opt/lab-registry-auth/data:/var/lib/registry
+          registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      changed_when: true
+
+    - name: Attendre HTTPS vérifié
+      ansible.builtin.command:
+        cmd: curl --noproxy '*' --fail --silent --show-error --cacert /opt/lab-registry-auth/certs/ca.crt https://registry-auth.lab.test:15445/v2/
+      register: ready
+      until: ready.rc == 0
+      retries: 15
+      delay: 1
+      changed_when: false
+
+    - name: Tirer une identité de lab et une release
+      ansible.builtin.set_fact:
+        lab_password: "{{ lookup('ansible.builtin.password', '/dev/null', length=32, chars=['ascii_letters', 'digits']) }}"
+        release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters']) }}"
+      no_log: true
+
+    - name: Fournir les identifiants à l'apprenant
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-auth/credentials.env
+        mode: "0600"
+        content: |
+          REGISTRY_USER=publisher
+          REGISTRY_PASSWORD={{ lab_password }}
+      no_log: true
+
+    - name: Déposer le produit
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-auth/appli/release.txt
+        content: "{{ release }}\n"
+        mode: "0644"
+
+    - name: Déposer le Dockerfile du produit
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-auth/appli/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="registry-authentification"
+          COPY release.txt /release.txt
+          CMD ["cat", "/release.txt"]
+
+    - name: Prépublier un produit et retirer son tag local
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker build -t registry-auth.lab.test:15445/catalogue/appli:1.0 /opt/lab-registry-auth/appli
+          docker push registry-auth.lab.test:15445/catalogue/appli:1.0
+      changed_when: true
+
+    - name: Relever l'identité du produit
+      ansible.builtin.command:
+        cmd: docker image inspect registry-auth.lab.test:15445/catalogue/appli:1.0 --format '{% raw %}{{.Id}}{% endraw %}'
+      register: image
+      changed_when: false
+
+    - name: Garder le relevé du banc
+      ansible.builtin.copy:
+        dest: /root/.lab-registry-auth.json
+        content: "{{ {'image': image.stdout | trim, 'release': release, 'username': 'publisher', 'password': lab_password} | to_json }}"
+        mode: "0600"
+      no_log: true
+
+    - name: Retirer le tag du produit prépublié
+      ansible.builtin.command:
+        cmd: docker image rm registry-auth.lab.test:15445/catalogue/appli:1.0
+      changed_when: true
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

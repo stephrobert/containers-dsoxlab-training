@@ -1,0 +1,22 @@
+id: container-systeme-en-lecture-seule
+title: "Use a read-only container root filesystem"
+level: c4
+description: "Protect the root filesystem while keeping the worker operational through a 4 MiB writable runtime tmpfs."
+skills:
+  - docker
+  - read-only-rootfs
+  - tmpfs
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

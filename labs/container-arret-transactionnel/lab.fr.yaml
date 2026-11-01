@@ -1,0 +1,2 @@
+title: "Terminer une transaction HTTP avant l'arrêt"
+description: "Réparer la transmission du signal, terminer une écriture SQLite réelle, la relire après recréation et comparer un abandon forcé contrôlé."

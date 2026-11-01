@@ -1,0 +1,23 @@
+# Lab compose-ressources. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: compose-ressources                      # REQUIS
+title: "Enforce Compose resource budgets on the engine"
+level: c3                     # REQUIS
+description: "Apply memory, CPU and process limits and verify cgroup enforcement instead of trusting the YAML alone."
+skills:                       # REQUIS, non vide
+  - compose-resources
+  - cgroups
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

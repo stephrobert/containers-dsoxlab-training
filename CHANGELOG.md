@@ -14,6 +14,58 @@ of the Docker engine and in which storage mode. That is what
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Six labs extend the catalogue to 77: transactional shutdown,
+  AMD64/ARM64 execution (VM-local QEMU for ARM64), TLS registry ACLs,
+  trusted signing identity, correlated CPU saturation and targeted firewall
+  repair. Their placement follows the ordered pedagogical catalogue.
+- Data-preserving beginner diagnostics and transactional shutdown follow
+  volumes and UID/GID permissions. Persistence trials now retain non-root
+  ownership and refused access after recreation; bounded CPU, OOM and
+  process-limit trials preserve fresh application receipts.
+- A second VM supports fresh-client pulls, application restoration and
+  promotion of one artifact without rebuilding. The VM bootstrap installs
+  the Docker baseline; runtime roles are replayed and photographed together.
+- Strict `--double-passage` validation requires `0/full/0/full/clean`.
+  Selective ledger rereading respects `--lab`; historical attestations do
+  not count as strict second-passage evidence.
+
+- Nine completed labs on `chantier/labs-restants`: `buildkit-cache-monte`,
+  `buildkit-secret-de-build`, `registry-tag-push-pull`,
+  `registry-tag-contre-digest`, `images-epingler-par-digest`,
+  `registry-locale-tls`, `registry-authentification`, `registry-air-gap`
+  and `compose-premiere-stack`, with bilingual challenges and hints,
+  encrypted reference solutions and runtime attestations.
+- Registry trust is verified through actual CA-removal failures. Offline
+  delivery checks reject missing layers even with a warm Docker cache and
+  a recalculated checksum. Compose checks force-recreate both services.
+- Eight more completed Compose labs cover variable resolution, network
+  isolation, persistence, one-shot migration, secrets, health dependencies,
+  resource budgets and multiple environments. Each has bilingual material,
+  an encrypted solution and a measured 0 → 100 → 0 VM cycle.
+  Trials verify direct-IP isolation, fresh persistent writes, failed-job and
+  never-ready startup gating, token rotation, effective cgroup controls and
+  independent environment recreation.
+- Seven completed administration and security labs cover Docker daemon defaults,
+  SSH contexts, per-container log rotation, Docker-group privilege removal,
+  rootless mode, unsafe socket mounts and a least-privilege API proxy. Each has
+  bilingual learner material, an encrypted solution and a clean VM attestation.
+- The PostgreSQL backup lab now has an encrypted reference solution and tests
+  that independently restore a custom-format dump and compare the actual rows.
+- All 71 catalog labs now have a `VALIDE` verdict in `validation-labs.json`;
+  the final capstone and updated socket-proxy revisions passed their VM cycles.
+
+### Fixed
+
+- VM lab validation now snapshots Docker over SSH on the actual target,
+  including orphaned image IDs, instead of inspecting the workstation.
+  Cleanup also rejects deletion of pre-existing objects. New labs remove
+  their labeled intermediate images without globally pruning other work.
+  Earlier attestations must be rerun before claiming this stronger guarantee.
+
 ## [0.2.3] - 2026-10-23
 
 ### Added

@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "La boutique ne trouve plus son catalogue"
-description: "Une application ne joint plus sa base par son nom, et un audit signale que la base est exposée. Trois fautes indépendantes, un seul diagnostic, et rien ne vous est expliqué."
+description: "Réparer résolution, accès et exposition réels, puis recréer le catalogue sans perdre une donnée métier nouvelle persistante."

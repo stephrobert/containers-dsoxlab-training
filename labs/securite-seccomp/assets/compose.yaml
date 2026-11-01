@@ -1,0 +1,12 @@
+services:
+  worker:
+    image: dsoxlab-securite-seccomp-probe:1
+    labels:
+      dsoxlab.lab: securite-seccomp
+    network_mode: none
+    mem_limit: 64m
+    memswap_limit: 64m
+    pids_limit: 32
+    cpus: 0.25
+    security_opt:
+      - seccomp:unconfined

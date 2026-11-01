@@ -50,13 +50,14 @@ pas davantage : ils ont leurs propres guides.
 
 | Ce qu'il faut | Pourquoi |
 | --- | --- |
-| **Un moteur Docker qui répond** | tous les labs l'interrogent. `docker info` doit aboutir |
+| **La VM Docker provisionnée** | tous les labs interrogent son moteur ; Docker n'est pas requis sur le poste |
 | **`uv`** | il installe dsoxlab et l'outillage du catalogue |
 | **`mise`**, facultatif | il pose hadolint, dive et trivy aux versions épinglées |
 
-Docker n'est pas installé par ce catalogue : c'est un démon, avec un service,
-un groupe d'utilisateurs et un socket. Le blog a un guide pour cela, et le
-premier lab du parcours fait de sa vérification son sujet.
+`infra/bootstrap.yaml` installe Docker et son outillage dans les VM provisionnées.
+Le premier lab vérifie ce socle. Les labs nécessitant plusieurs hôtes simultanés
+déclarent des rôles sur leur cible runtime ; la table du catalogue indique
+le nombre de VM requis.
 
 ## Installation
 
@@ -74,8 +75,8 @@ mise install
 
 Chaque lab se joue dans une **machine virtuelle jetable**, que
 `dsoxlab provision` monte pour vous et que `dsoxlab destroy` retire. Vous
-n'installez donc rien sur votre poste, Docker compris : c'est le lab qui pose
-le moteur, dans une Debian 13 qui ne survit pas à la séance. Comptez quelques
+n'installez donc rien sur votre poste, Docker compris : le provisionnement pose
+le moteur dans Debian 13. Comptez quelques
 minutes de provisionnement avant le premier lab.
 
 ### Votre premier lab, en cinq minutes
@@ -84,10 +85,11 @@ minutes de provisionnement avant le premier lab.
 export LAB_HOME=$PWD
 
 dsoxlab list-labs                        # ce que le catalogue contient
-dsoxlab run       images-premiere-image  # pose le point de départ
-dsoxlab challenge images-premiere-image  # la mission
+dsoxlab provision                       # prépare le socle VM
+dsoxlab run       docker-verifier-son-moteur  # pose le point de départ
+dsoxlab challenge docker-verifier-son-moteur  # la mission
 # ... vous travaillez dans challenge/work ...
-dsoxlab check     images-premiere-image  # le score
+dsoxlab check     docker-verifier-son-moteur  # le score
 ```
 
 ### Garder à jour
@@ -217,9 +219,10 @@ consensus et son état de contrôle à protéger.
 | `reseau-bridge-dedie` | Un réseau à soi : nommer et isoler | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation) |
 | `reseau-publication-de-ports` | Publier un port, et seulement où il faut | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#bonnes-pratiques-réseau) |
 | `reseau-interne` | Deux isolations qui ne se ressemblent pas | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale) |
-| `reseau-diagnostic-dns` | La boutique ne trouve plus son catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
 | `donnees-volumes-et-montages` | Où les données survivent : les trois types de montage | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes) |
 | `donnees-permissions-uid-gid` | Deux conteneurs, un volume, des droits qui tiennent | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
+| `container-arret-transactionnel` | Terminer une transaction HTTP avant l'arrêt | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-) |
+| `reseau-diagnostic-dns` | La boutique ne trouve plus son catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
 
 ### Mesurer l'isolation, et remettre un conteneur en service
 
@@ -248,8 +251,77 @@ consensus et son état de contrôle à protéger.
 | `images-build-multi-etapes` | Ce qui vient du socle ne se retire pas | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères) |
 | `images-non-root` | USER change l'identité, et aucun droit | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root) |
 | `images-healthcheck` | « Up » ne dit rien du service | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck) |
+| `buildkit-cache-monte` | Réutiliser les dépendances quand l'étape de build rejoue | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#cache-avancé) |
+| `buildkit-secret-de-build` | Récupérer une dépendance privée sans embarquer le secret de build | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build) |
+| `images-multi-architecture` | Publier deux architectures et exécuter les deux | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#builds-multi-plateformes) |
 
-_32 labs, table générée par `scripts/gen_catalog.py`._
+### Distribuer ses images
+
+| Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
+|---|---|---|---|---|---|
+| `registry-tag-push-pull` | Publier une image qu'un autre client peut réellement récupérer | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/#docker-push--envoyer-une-image-vers-la-registry) |
+| `registry-tag-contre-digest` | Retrouver la release d'origine après déplacement de son tag | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/#tags-vs-digests--la-distinction-critique) |
+| `images-epingler-par-digest` | Garder le socle approuvé quand son tag change | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/#tags-vs-digests--la-distinction-critique) |
+| `registry-locale-tls` | Servir un registre de confiance et tirer sans désactiver TLS | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/distribution/#configurer-tls) |
+| `registry-authentification` | Protéger un registre TLS par authentification | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/distribution/#configurer-lauthentification) |
+| `registry-droits-minimaux` | Accorder les droits minimaux à un éditeur et un lecteur distinct | c2 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/#4-séparer-les-droits-pullpush) |
+| `registry-air-gap` | Livrer une image complète sans son registre d'origine | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/outils/skopeo/#environnements-air-gap-déconnectés) |
+
+### Décrire une application avec Compose
+
+| Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
+|---|---|---|---|---|---|
+| `compose-premiere-stack` | Démarrer et recréer une application Compose à deux services | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#votre-premier-composeyaml) |
+| `compose-resolution-des-variables` | Résoudre les variables Compose sans mélanger les environnements | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
+| `compose-isolation-reseau` | Séparer les réseaux de façade et de données avec Compose | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#concepts-clés) |
+| `compose-persistance` | Conserver les données après recréation Compose | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#concepts-clés) |
+| `compose-tache-de-migration` | Conditionner le démarrage à une migration réussie | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
+| `compose-secrets` | Accorder un secret Compose uniquement à son consommateur | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
+| `compose-sante-et-dependances` | Attendre la disponibilité, pas seulement un conteneur démarré | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
+| `compose-ressources` | Faire appliquer les budgets Compose par le moteur | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
+| `compose-plusieurs-environnements` | Déployer des projets Compose de développement et production isolés | c3 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
+
+### Exploiter une application Compose
+
+| Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
+|---|---|---|---|---|---|
+| `compose-correlation-et-saturation` | Corréler une requête métier et attribuer la saturation CPU | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
+| `donnees-postgres-sauvegarde` | Restaurer PostgreSQL sur une seconde VM | c3 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker) |
+| `compose-capstone` | Remettre une stack Compose en service | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
+
+### Administrer et durcir un hôte Docker
+
+| Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
+|---|---|---|---|---|---|
+| `docker-configurer-le-demon` | Configure persistent Docker log defaults | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/) |
+| `docker-contexte-ssh` | Administrer une seconde VM avec un contexte Docker SSH | c4 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe) |
+| `docker-rotation-des-journaux` | Rotate one container log | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#logging-drivers) |
+| `securite-groupe-docker` | Remove an unnecessary Docker grant | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker) |
+| `securite-socket-lecture-seule` | Remove direct Docker socket access | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas) |
+| `securite-socket-proxy` | Restrict a Docker API socket proxy | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/) |
+| `securite-rootless` | Qualifier un moteur Docker rootless | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#rootless-mode) |
+| `securite-capabilities` | Retirer toutes les capabilities sauf une | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/#capabilities--fragmenter-les-privilèges-root) |
+| `securite-no-new-privileges` | Empêcher les gains de privilèges au runtime | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
+| `securite-seccomp` | Mesurer un refus seccomp ciblé | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#profils-seccomp) |
+| `securite-apparmor` | Confiner le service avec AppArmor | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#apparmor-et-selinux) |
+| `container-systeme-en-lecture-seule` | Utiliser une racine de conteneur en lecture seule | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
+| `reseau-pare-feu-cible` | Réparer un flux routé sans retirer les protections | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
+| `container-limite-de-processus` | Plafonner le nombre de tâches du conteneur | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
+| `secrets-au-runtime` | Garder un jeton runtime hors de l'environnement | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes) |
+| `container-memoire-et-oom` | Fixer un plafond mémoire et contenir un OOM | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#diagnostic-approfondi--le-cas-oom-kill) |
+| `troubleshoot-disque-plein` | Récupérer de l'espace dans un sandbox ENOSPC borné | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#optimisations-production) |
+| `donnees-volume-orphelin` | Récupérer les données orphelines et retirer seulement le jetable | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#bonnes-pratiques-de-gestion-des-volumes) |
+
+### Industrialiser la chaîne de livraison
+
+| Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
+|---|---|---|---|---|---|
+| `compose-dans-une-ci` | Exécuter Compose dans une CI locale reproductible | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#commandes-essentielles) |
+| `image-scan-de-vulnerabilites` | Bloquer une image sur un vrai scan hors ligne daté | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/quay-io/#publier-une-image-sur-quayio) |
+| `images-signature-identite` | Vérifier la signature d'une archive et l'identité de son signataire | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/securiser/supply-chain/cosign/#la-solution--signature-cryptographique) |
+| `capstone-chaine-complete` | Livrer et rétablir une application isolée de bout en bout | c4 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
+
+_77 labs, table générée par `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Où en est ce catalogue

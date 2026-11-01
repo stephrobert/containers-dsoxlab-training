@@ -1,0 +1,2 @@
+title: "Rotate one container log"
+description: "Replace the labelled demo service with bounded per-container json-file rotation."

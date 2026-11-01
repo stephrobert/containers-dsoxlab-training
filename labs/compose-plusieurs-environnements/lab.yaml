@@ -1,0 +1,25 @@
+# Lab compose-plusieurs-environnements. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: compose-plusieurs-environnements                      # REQUIS
+title: "Deploy isolated development and production Compose projects"
+level: c3                     # REQUIS
+description: "Promote the same prepared image to two distinct VMs, apply environment-specific overrides and prove independent configuration, runtime behavior and data persistence without a deployment rebuild."
+skills:                       # REQUIS, non vide
+  - compose-overrides
+  - environment-isolation
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+      roles:
+        production: docker-client.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

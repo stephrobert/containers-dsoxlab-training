@@ -1,0 +1,2 @@
+title: "Empêcher les gains de privilèges au runtime"
+description: "Empêcher une sonde setuid inoffensive d'obtenir EUID 0 grâce à une barrière runtime héritée."

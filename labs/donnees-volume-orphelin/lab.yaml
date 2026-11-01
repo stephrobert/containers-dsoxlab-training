@@ -1,0 +1,22 @@
+id: donnees-volume-orphelin
+title: "Recover retained orphan data and remove only disposable data"
+level: c4
+description: "Reconnect a retained original volume read-only and delete only the uniquely labelled expendable lab orphan."
+skills:
+  - docker
+  - volumes
+  - resource-cleanup
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#bonnes-pratiques-de-gestion-des-volumes
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

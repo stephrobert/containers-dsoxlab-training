@@ -1,0 +1,23 @@
+# Lab container-arret-transactionnel. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: container-arret-transactionnel                      # REQUIS
+title: "Finish an HTTP transaction before stopping"
+level: c1
+description: "Repair signal delivery, drain a real SQLite write, read it after recreation and compare a controlled forced abort."
+skills:                       # REQUIS, non vide
+  - docker
+  - signaux
+  - persistance
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-
+lab_type: lab
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

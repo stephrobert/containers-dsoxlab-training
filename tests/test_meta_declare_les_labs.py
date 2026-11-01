@@ -30,6 +30,7 @@ où qu'ils soient, et compare des chemins relatifs, pas des noms.
 
 from __future__ import annotations
 
+import runpy
 import sys
 from collections import Counter
 from pathlib import Path
@@ -101,6 +102,29 @@ def test_aucun_lab_n_est_declare_deux_fois() -> None:
     places différentes dans le parcours, ce qui n'a pas de sens."""
     doublons = sorted(lab for lab, n in Counter(_declares()).items() if n > 1)
     assert not doublons, f"Lab(s) déclaré(s) plusieurs fois : {', '.join(doublons)}."
+
+
+def test_le_catalogue_compte_les_roles_simultanes_pas_les_cibles_alternatives() -> None:
+    label = runpy.run_path(str(RACINE / "scripts/gen_catalog.py"))["_runtime_label"]
+    lab = {"runtime": {"type": "vm", "targets": [
+        {"host": "debian.lab"}, {"host": "alpine.lab"},
+    ]}}
+    assert label(lab, "en") == "1 VM"
+    lab["runtime"]["targets"][0]["roles"] = {
+        "source": "debian.lab", "client": "client.lab", "restore": "client.lab",
+    }
+    assert label(lab, "en") == "2 VMs"
+    assert label(lab, "fr") == "2 VM"
+
+
+def test_les_epreuves_integrees_suivent_leurs_prerequis() -> None:
+    order = _declares()
+    assert order.index("container-signaux-et-pid-1") < order.index("container-arret-transactionnel")
+    assert order.index("donnees-permissions-uid-gid") < order.index("container-arret-transactionnel")
+    assert order.index("donnees-volumes-et-montages") < order.index("reseau-diagnostic-dns")
+    assert order.index("compose-correlation-et-saturation") < order.index("donnees-postgres-sauvegarde")
+    assert order.index("container-systeme-en-lecture-seule") < order.index("reseau-pare-feu-cible")
+    assert order.index("reseau-pare-feu-cible") < order.index("container-limite-de-processus")
 
 
 #: Ce qu'un lab de CE dépôt porte forcément. Pas de `setup.yaml` ni de

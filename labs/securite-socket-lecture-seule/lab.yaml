@@ -1,0 +1,22 @@
+id: securite-socket-lecture-seule
+title: "Remove direct Docker socket access"
+level: c4
+description: "Remove the host socket mount; read-only on a Unix socket does not create a read-only API."
+skills:
+  - docker
+  - socket
+  - least-privilege
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

@@ -1,0 +1,46 @@
+---
+- name: Remove only delivery capstone resources
+  hosts: lab_target:lab_restore
+  become: true
+  tasks:
+    - name: Unpause and remove owned containers and resources
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -euo pipefail
+          if command -v docker >/dev/null 2>&1; then
+            containers=$(docker ps -aq --filter label=dsoxlab.lab=capstone-chaine-complete)
+            for container in $containers; do
+              if test "$(docker inspect -f '{{ '{{' }}.State.Paused{{ '}}' }}' "$container")" = true; then
+                docker unpause "$container"
+              fi
+              docker rm -f "$container"
+            done
+            docker network ls -q --filter label=dsoxlab.lab=capstone-chaine-complete | xargs -r docker network rm
+            docker volume ls -q --filter label=dsoxlab.lab=capstone-chaine-complete | xargs -r docker volume rm
+            docker image ls -q --filter label=dsoxlab.lab=capstone-chaine-complete | sort -u | xargs -r docker image rm -f
+            if test -f /opt/lab-delivery/base-cache.py; then
+              /usr/bin/python3 /opt/lab-delivery/base-cache.py clean
+            fi
+          fi
+      changed_when: false
+    - name: Remove workspace
+      ansible.builtin.stat:
+        path: /opt/lab-delivery/restore-account-owned
+      register: restore_account_marker
+    - name: Terminate sessions only for the dedicated restore account
+      ansible.builtin.command:
+        cmd: loginctl terminate-user dsoxlab-delivery-restore
+      changed_when: false
+      failed_when: false
+      when: restore_account_marker.stat.exists
+    - name: Remove only the lab-owned transfer account
+      ansible.builtin.user:
+        name: dsoxlab-delivery-restore
+        state: absent
+        remove: true
+      when: restore_account_marker.stat.exists
+    - name: Remove workspace
+      ansible.builtin.file:
+        path: /opt/lab-delivery
+        state: absent

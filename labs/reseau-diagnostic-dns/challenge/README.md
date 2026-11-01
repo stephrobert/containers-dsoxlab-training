@@ -13,7 +13,7 @@ Both are running, both answer when questioned from the inside, and the
 application reaches nothing. The audit also reports that the database is
 reachable from the outside.
 
-## The four checks
+## The five checks
 
 **1. From `boutique`, the name `base` resolves**, to an address `catalogue`
 actually carries.
@@ -36,14 +36,21 @@ outside: its application reaches it through the container network.
 Operations must keep designating the container by its real name. That is a
 requirement, not a detail: the application has its own name, operations keeps
 theirs.
+**5. Actual replacement preserves fresh business data.**
+
+Keep the supplied image and `dsoxlab-diagnostic-data` mounted at `/data`.
+Implement `/opt/lab-diagnostic/recreate.sh`; the new container must serve the
+fresh `/data/jeton` value through the corrected application path without exposure.
+Added networks carry `dsoxlab.lab=reseau-diagnostic-dns`; no global prune.
 
 ## This is an assessment
 
 **Nothing will be explained to you again.** The five networking labs of the
 course taught what is needed. This one measures.
 
-Four checks of equal weight, **75 points to pass**. The checks' messages name
+Five checks of equal weight, **75 points to pass**. The checks' messages name
 the symptom, never the move: making the link is the work.
+The numerical threshold does not waive critical data preservation in the course.
 
 Four hints exist, from the vaguest to the most explicit, and they cost points.
 The last one names the mistakes that let success be believed.

@@ -1,0 +1,5 @@
+# Surcharge française du lab buildkit-secret-de-build. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Récupérer une dépendance privée sans embarquer le secret de build"
+description: "Authentifier le build auprès d'un dépôt privé, garder les identifiants hors de l'historique et des couches, et refuser un secret absent ou incorrect."

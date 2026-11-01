@@ -1,0 +1,19 @@
+---
+- name: Remove only vulnerability lab artifacts
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Remove owned extraction containers and fixture images
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -euo pipefail
+          if command -v docker >/dev/null 2>&1; then
+            docker ps -aq --filter label=dsoxlab.lab=image-scan-de-vulnerabilites | xargs -r docker rm -f
+            docker image ls -q --filter label=dsoxlab.lab=image-scan-de-vulnerabilites | sort -u | xargs -r docker image rm -f
+          fi
+      changed_when: false
+    - name: Remove workspace
+      ansible.builtin.file:
+        path: /opt/lab-image-scan
+        state: absent

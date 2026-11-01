@@ -1,0 +1,61 @@
+---
+- name: Prepare the isolated setuid exercise
+  hosts: lab_target
+  become: true
+  vars:
+    lab: securite-no-new-privileges
+    work: /opt/dsoxlab-securite-no-new-privileges
+    image: alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+  tasks:
+    - name: Require the existing engine and refuse collisions
+      ansible.builtin.shell: |
+        set -eu
+        docker info >/dev/null
+        docker compose version >/dev/null 2>&1 || docker-compose version >/dev/null
+        test ! -e "{{ work }}"
+        test ! -L "{{ work }}"
+        test -z "$(docker ps -aq --filter label=com.docker.compose.project=dsoxlab-{{ lab }})"
+        test -z "$(docker image ls -q --filter label=dsoxlab.lab={{ lab }})"
+        ! docker image inspect dsoxlab-{{ lab }}-probe:1 >/dev/null 2>&1
+      changed_when: false
+    - name: Create the learner-owned workspace
+      ansible.builtin.file:
+        path: "{{ work }}"
+        state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0750"
+    - name: Record image ownership
+      ansible.builtin.shell: |
+        set -eu
+        printf '%s\n' '{{ lab }}' > "{{ work }}/.owner"
+        if ! docker image inspect "{{ image }}" >/dev/null 2>&1; then
+          touch "{{ work }}/.image-owned"
+          docker pull "{{ image }}" >/dev/null
+        fi
+      changed_when: true
+    - name: Install the editable project and harmless setuid probe
+      ansible.builtin.copy:
+        src: assets/
+        dest: "{{ work }}/"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: preserve
+    - name: Build the probe without retaining intermediate image tags
+      ansible.builtin.command: docker build --force-rm -t dsoxlab-{{ lab }}-probe:1 {{ work }}
+      changed_when: true
+    - name: Record the immutable identity of the original probe image
+      ansible.builtin.shell: |
+        set -eu
+        docker image inspect -f '{% raw %}{{.Id}}{% endraw %}' dsoxlab-{{ lab }}-probe:1 > "{{ work }}/.probe-image-id"
+        chmod 444 "{{ work }}/.probe-image-id"
+      changed_when: true
+    - name: Start the deliberately missing privilege barrier
+      ansible.builtin.shell: |
+        set -eu
+        cd "{{ work }}"
+        if docker compose version >/dev/null 2>&1; then docker compose -p dsoxlab-{{ lab }} up -d; else docker-compose -p dsoxlab-{{ lab }} up -d; fi
+      changed_when: true
+    - name: Install the mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: "{{ work }}/MISSION.md"
+        mode: "0644"

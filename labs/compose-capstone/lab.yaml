@@ -1,0 +1,23 @@
+# Lab compose-capstone.
+id: compose-capstone
+title: "Bring a Compose stack back into service"
+level: c3
+description: "Build a two-service Compose stack with an ordered one-shot producer, shared named data, a healthy read-only web service, and a loopback-only endpoint."
+skills:
+  - docker-compose
+  - service-orchestration
+  - persistent-data
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
+lab_type: capstone
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

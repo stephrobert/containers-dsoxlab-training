@@ -1,0 +1,109 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer le lab registry-tag-push-pull
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer le moteur et le client indépendant
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx, skopeo]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Retirer le registre d'un passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if docker container inspect dsoxlab-registry-push >/dev/null 2>&1; then
+            docker rm -f dsoxlab-registry-push
+          fi
+      changed_when: false
+
+    - name: Retirer les fichiers d'un passage précédent
+      ansible.builtin.file:
+        path: /opt/lab-registry-push
+        state: absent
+
+    - name: Créer le contexte et le stockage du registre
+      ansible.builtin.file:
+        path: "/opt/lab-registry-push/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [appli, registry]
+
+    - name: Tirer la release du jour
+      ansible.builtin.set_fact:
+        release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters', 'digits']) }}"
+
+    - name: Déposer le produit à distribuer
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-push/appli/release.txt
+        content: "{{ release }}\n"
+        mode: "0644"
+
+    - name: Déposer le Dockerfile de la release
+      ansible.builtin.copy:
+        dest: /opt/lab-registry-push/appli/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="registry-tag-push-pull"
+          COPY release.txt /release.txt
+          CMD ["cat", "/release.txt"]
+
+    - name: Construire la release seulement en local
+      ansible.builtin.command:
+        cmd: docker build -t dsoxlab-registry-app:release /opt/lab-registry-push/appli
+      changed_when: true
+
+    - name: Lire l'identité de l'image de référence
+      ansible.builtin.command:
+        cmd: docker image inspect dsoxlab-registry-app:release --format '{% raw %}{{.Id}}{% endraw %}'
+      register: reference
+      changed_when: false
+
+    - name: Garder le relevé de référence
+      ansible.builtin.copy:
+        dest: /root/.lab-registry-push.json
+        content: "{{ {'image': reference.stdout | trim, 'release': release} | to_json }}"
+        mode: "0600"
+
+    - name: Tirer le registre épinglé
+      ansible.builtin.command:
+        cmd: docker pull registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      register: registry_pull
+      changed_when: "'Downloaded newer image' in registry_pull.stdout"
+
+    - name: Démarrer le registre vide sur la boucle locale
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name dsoxlab-registry-push
+          -p 127.0.0.1:15000:5000
+          -v /opt/lab-registry-push/registry:/var/lib/registry
+          registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+      changed_when: true
+
+    - name: Attendre le registre
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 15000
+        timeout: 20
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

@@ -1,0 +1,5 @@
+# Surcharge française du lab images-epingler-par-digest. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Garder le socle approuvé quand son tag change"
+description: "Épingler le build au manifeste approuvé du registre, reconstruire après changement de source et prouver que remplacer le tag du socle ne change pas le socle livré."

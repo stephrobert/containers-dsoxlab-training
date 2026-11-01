@@ -1,0 +1,5 @@
+# Surcharge française du lab registry-locale-tls. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Servir un registre de confiance et tirer sans désactiver TLS"
+description: "Activer TLS sur le registre, installer sa CA privée pour Docker et prouver un vrai pull avec vérification du certificat, sans exception insecure-registry."

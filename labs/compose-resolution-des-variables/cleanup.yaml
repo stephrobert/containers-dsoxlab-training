@@ -1,0 +1,29 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+- name: Défaire le lab compose-resolution-des-variables
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Retirer seulement les ressources du projet de ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          containers=$(docker container ls -aq --filter label=com.docker.compose.project=dsoxlab-resolution-variables)
+          if test -n "$containers"; then docker container rm -f $containers; fi
+          networks=$(docker network ls -q --filter label=com.docker.compose.project=dsoxlab-resolution-variables)
+          if test -n "$networks"; then docker network rm $networks; fi
+          volumes=$(docker volume ls -q --filter label=com.docker.compose.project=dsoxlab-resolution-variables)
+          if test -n "$volumes"; then docker volume rm $volumes; fi
+      changed_when: false
+
+    - name: Retirer les fichiers propres au lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-compose-vars
+        - /root/.lab-compose-vars.json
+        - /root/.lab-compose-vars.sha256
+        - /opt/MISSION.md

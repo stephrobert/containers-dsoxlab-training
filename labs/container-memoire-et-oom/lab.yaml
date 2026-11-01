@@ -1,0 +1,22 @@
+id: container-memoire-et-oom
+title: "Set a hard memory ceiling"
+level: c4
+description: "Apply a 32 MiB no-swap cgroup budget and prove a bounded exec probe experiences a container-local OOM."
+skills:
+  - docker
+  - memory-limit
+  - oom
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#diagnostic-approfondi--le-cas-oom-kill
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

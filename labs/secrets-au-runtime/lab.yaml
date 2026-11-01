@@ -1,0 +1,22 @@
+id: secrets-au-runtime
+title: "Keep a runtime token out of Env"
+level: c4
+description: "Deliver a private random pedagogic token at runtime and verify consumption without leakage into environment, logs or image metadata."
+skills:
+  - docker
+  - runtime-secrets
+  - read-only-mounts
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

@@ -1,0 +1,43 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer le lab compose-ressources
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer Docker et Compose
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose]
+        state: present
+        update_cache: true
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Vérifier cgroup v2
+      ansible.builtin.command:
+        cmd: docker info --format {% raw %}{{.CgroupVersion}}{% endraw %}
+      register: cgroups
+      changed_when: false
+      failed_when: cgroups.rc != 0 or cgroups.stdout | trim != '2'
+    - name: Tirer Alpine épinglée
+      ansible.builtin.command:
+        cmd: docker pull alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+      register: pulled
+      changed_when: "'Downloaded newer image' in pulled.stdout"
+    - name: Créer le dossier de travail
+      ansible.builtin.file:
+        path: /opt/lab-compose-resources
+        state: directory
+        mode: "0755"
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

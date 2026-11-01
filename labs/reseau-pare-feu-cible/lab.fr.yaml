@@ -1,0 +1,2 @@
+title: "Réparer un flux routé sans retirer les protections"
+description: "Diagnostiquer les sauts client, routeur et serveur, corriger une règle nftables isolée et conserver refus par défaut, client non autorisé et port debug après recréation."

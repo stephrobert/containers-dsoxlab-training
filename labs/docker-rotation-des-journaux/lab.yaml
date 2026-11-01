@@ -1,0 +1,22 @@
+id: docker-rotation-des-journaux
+title: "Rotate one container log"
+level: c4
+description: "Replace the labelled demo service with bounded per-container json-file rotation."
+skills:
+  - docker
+  - logging
+  - log-rotation
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#logging-drivers
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

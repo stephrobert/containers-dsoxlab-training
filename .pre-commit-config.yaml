@@ -135,7 +135,7 @@ repos:
       # rouge tant qu'il n'est pas écrit, jamais vert et muet.
       - id: maturite-des-labs
         name: un squelette ne passe pas pour un lab qui prouve quelque chose
-        entry: uv run --no-sync pytest tests/test_maturite_des_labs.py -q
+        entry: uv run --no-sync pytest tests/test_maturite_des_labs.py tests/test_capstone_recovery.py -q
         language: system
         pass_filenames: false
         always_run: true

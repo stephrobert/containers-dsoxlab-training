@@ -1,0 +1,28 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+- name: Défaire le lab compose-tache-de-migration
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Retirer les ressources des projets de ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for project in dsoxlab-migration dsoxlab-migration-cold dsoxlab-migration-failed; do
+            containers=$(docker ps -aq --filter label=com.docker.compose.project=$project)
+            if test -n "$containers"; then docker rm -f $containers; fi
+            networks=$(docker network ls -q --filter label=com.docker.compose.project=$project)
+            if test -n "$networks"; then docker network rm $networks; fi
+            volumes=$(docker volume ls -q --filter label=com.docker.compose.project=$project)
+            if test -n "$volumes"; then docker volume rm $volumes; fi
+          done
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=compose-tache-de-migration)
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+    - name: Retirer les fichiers du lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: [/opt/lab-compose-migrate, /opt/MISSION.md]

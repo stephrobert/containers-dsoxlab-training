@@ -1,0 +1,22 @@
+id: securite-seccomp
+title: "Measure a targeted seccomp syscall denial"
+level: c4
+description: "Attach a container-only filter that denies getpgid(2147483647) with EPERM while allowing ordinary getpgid and getpid calls."
+skills:
+  - docker
+  - seccomp
+  - runtime-security
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#profils-seccomp
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

@@ -1,0 +1,2 @@
+title: "Récupérer les données orphelines et retirer seulement le jetable"
+description: "Reconnecter le volume original en lecture seule et retirer uniquement l'orphelin jetable labellisé du lab."

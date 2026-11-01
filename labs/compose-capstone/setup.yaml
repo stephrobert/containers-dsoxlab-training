@@ -1,0 +1,77 @@
+---
+- name: Préparer le lab compose-capstone
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer Docker, Compose et curl
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose, curl]
+        state: present
+        update_cache: true
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Créer le contexte de construction
+      ansible.builtin.file:
+        path: /opt/lab-compose-capstone
+        state: directory
+        mode: "0755"
+    - name: Générer le contenu attendu
+      ansible.builtin.set_fact:
+        release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=20, chars=['ascii_letters']) }}"
+    - name: Déposer le contenu de départ
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-capstone/release.txt
+        content: "{{ release }}\n"
+        mode: "0644"
+    - name: Déposer le comportement des services
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-capstone/start.sh
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+          case "${ROLE:-}" in
+            writer)
+              mkdir -p /data
+              cp /seed/release.txt /data/release.txt
+              ;;
+            web)
+              mkdir -p /www
+              ln -sf /data/release.txt /www/release.txt
+              exec busybox-extras httpd -f -p 8080 -h /www
+              ;;
+            *) exit 64 ;;
+          esac
+    - name: Déposer le Dockerfile
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-capstone/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="compose-capstone"
+          RUN apk add --no-cache busybox-extras
+          COPY release.txt /seed/release.txt
+          COPY start.sh /usr/local/bin/start.sh
+          ENTRYPOINT ["/usr/local/bin/start.sh"]
+    - name: Construire l'image locale de la mission
+      ansible.builtin.command:
+        cmd: docker build -t dsoxlab-compose-capstone:service /opt/lab-compose-capstone
+      changed_when: true
+    - name: Déposer les données de validation
+      ansible.builtin.copy:
+        dest: /opt/lab-compose-capstone/state.json
+        content: "{{ {'release': release} | to_json }}\n"
+        mode: "0644"
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

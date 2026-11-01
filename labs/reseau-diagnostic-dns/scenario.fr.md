@@ -32,6 +32,12 @@ Les deux sont bâtis sur l'image `lab-diagnostic:1.0`.
 3. `catalogue` ne publie **aucun** port.
 4. Depuis `boutique`, le nom `catalogue` se résout **aussi** : l'exploitation
    doit continuer à désigner le conteneur par son nom réel.
+5. Gardez l'image fournie et le volume `dsoxlab-diagnostic-data` sur `/data`.
+   Installez `/opt/lab-diagnostic/recreate.sh` exécutable sans argument :
+   il remplace réellement `catalogue` sans perdre la valeur nouvelle écrite
+   dans `/data/jeton`. Le remplaçant sert cette valeur exacte depuis `boutique`
+   et reste non exposé. Tout réseau ajouté porte
+   `dsoxlab.lab=reseau-diagnostic-dns` ; aucun prune global.
 
 L'énoncé est aussi déposé dans `/opt/MISSION.md`.
 
@@ -42,9 +48,11 @@ qu'il faut savoir : le réseau par défaut et ses limites, un réseau dédié et
 résolution de noms, la publication de ports et ses trois postures. Celle-ci
 mesure.
 
-Quatre contrôles de poids égal, **75 points pour réussir**, et tout est noté sur
+Cinq contrôles de poids égal, **75 points pour réussir**, et tout est noté sur
 l'état réel du moteur. Les messages des contrôles nomment le symptôme, pas le
 geste : c'est à vous de faire le lien.
+La conservation des données est critique dans le parcours : le seuil
+numérique seul ne remplace pas la réussite de cette exigence.
 
 Quatre indices existent, du plus vague au plus explicite, et ils coûtent des
 points.

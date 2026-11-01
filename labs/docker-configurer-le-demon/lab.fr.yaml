@@ -1,0 +1,2 @@
+title: "Configure persistent Docker log defaults"
+description: "Merge bounded json-file log defaults into the daemon configuration."

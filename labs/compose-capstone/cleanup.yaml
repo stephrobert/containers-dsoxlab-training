@@ -1,0 +1,26 @@
+---
+- name: Défaire le lab compose-capstone
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Retirer uniquement les ressources Compose du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          containers=$(docker ps -aq --filter label=com.docker.compose.project=dsoxlab-compose-capstone)
+          if test -n "$containers"; then docker rm -f $containers; fi
+          networks=$(docker network ls -q --filter label=com.docker.compose.project=dsoxlab-compose-capstone)
+          if test -n "$networks"; then docker network rm $networks; fi
+          volumes=$(docker volume ls -q --filter label=com.docker.compose.project=dsoxlab-compose-capstone)
+          if test -n "$volumes"; then docker volume rm $volumes; fi
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=compose-capstone)
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+    - name: Retirer le contexte et la mission
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-compose-capstone
+        - /opt/MISSION.md

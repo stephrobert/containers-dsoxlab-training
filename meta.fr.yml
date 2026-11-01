@@ -1,32 +1,88 @@
+# Surcharge française du catalogue, lue par dsoxlab (0.1.54) et par les
+# générateurs de README. Elle ne porte QUE `repo.title`,
+# `repo.description` et les `title` / `description` des sections,
+# appariés par `id` et jamais par position : une section insérée au
+# milieu ne décale donc rien.
+#
+# La langue par défaut de l'outil est l'anglais : `meta.yml` porte
+# l'anglais, ce fichier le français. Jusqu'au 2026-10-17, ce dépôt n'avait
+# pas de surcharge et son `meta.yml` portait le français : une session
+# anglaise lisait donc onze titres de sections en français.
+
 repo:
-  title: Conteneurs, du Dockerfile à l'orchestration
-  description: 'Labs vérifiables de la formation Conteneurisation du blog. Chaque lab
-
-    s''éprouve sur l''état réel du moteur : une image construite, sa taille,
-
-    l''utilisateur qui l''exécute, les montages d''un conteneur, ce que
-
-    l''application répond. Le blog enseigne, ce catalogue éprouve.
-
+  title: "Conteneurs, du Dockerfile à l'orchestration"
+  description: |
+    Labs vérifiables de la formation Conteneurisation du blog. Chaque lab
+    s'éprouve sur l'état réel du moteur : une image construite, sa taille,
+    l'utilisateur qui l'exécute, les montages d'un conteneur, ce que
+    l'application répond. Le blog enseigne, ce catalogue éprouve.
 
     Une même application FastAPI traverse tout le parcours et devient
-
-    progressivement plus correcte. L''apprenant n''a pas besoin de savoir
-
-    programmer : le code est fourni, il travaille l''image, l''exécution, le
-
+    progressivement plus correcte. L'apprenant n'a pas besoin de savoir
+    programmer : le code est fourni, il travaille l'image, l'exécution, le
     réseau, le stockage, la distribution et le durcissement.
 
-    '
+# Les `id` sont ceux des modules du programme cible de
+# `src/data/parcours/docker.yaml`, et l'appariement se fait par eux : c'est le
+# point qui avait diverge avant le 2026-10-28, quand ce fichier portait onze
+# sections face a huit modules. Le `title` reste libre, et c'est lui que
+# l'apprenant lit.
 sections:
-- id: conteneurs-utilisation
-  title: Utiliser les conteneurs
-  description: 'Image et conteneur ne sont pas la même chose, et le cycle de vie explique la moitié des
-    pannes. Lancer, inspecter, publier un port, conserver des données : aucun build pour l''instant.'
-- id: conteneurs-isolation
-  title: Mesurer l'isolation, et remettre un conteneur en service
-  description: Namespaces, cgroups et la chaîne qui va de la CLI au processus, observés et non récités.
-    Puis des incidents courts, où le symptôme ne nomme pas la cause.
-- id: images-construction
-  title: Construire ses images
-  description: Du premier Dockerfile à l'image multi-étapes non-root, chaque étape mesurée contre la précédente.
+  - id: conteneurs-utilisation
+    title: "Utiliser les conteneurs"
+    description: >-
+      Image et conteneur ne sont pas la même chose, et le cycle de vie explique
+      la moitié des pannes. Lancer, inspecter, publier un port, conserver des
+      données : aucun build pour l'instant.
+
+  - id: conteneurs-isolation
+    title: "Mesurer l'isolation, et remettre un conteneur en service"
+    description: >-
+      Namespaces, cgroups et la chaîne qui va de la CLI au processus, observés
+      et non récités. Puis des incidents courts, où le symptôme ne nomme pas la
+      cause.
+
+  - id: images-construction
+    title: "Construire ses images"
+    description: >-
+      Du premier Dockerfile à l'image multi-étapes non-root, chaque étape
+      mesurée contre la précédente.
+
+  - id: images-distribution
+    title: "Distribuer ses images"
+    description: >-
+      Pousser, retrouver par digest, publier dans une registry privée, et
+      franchir un air-gap.
+
+  - id: compose-application
+    title: "Décrire une application avec Compose"
+    description: >-
+      Une application à plusieurs services, décrite dans un fichier : réseaux,
+      données, secrets, santé et ressources.
+
+  - id: compose-exploitation
+    title: "Exploiter une application Compose"
+    description: >-
+      Journaux et ressources, sauvegarde et restauration, mise à jour et retour
+      arrière, puis une stack à relever seul.
+
+  - id: docker-administration
+    title: "Administrer et durcir un hôte Docker"
+    description: >-
+      Le démon, la socket, le rootless, les capabilities, seccomp et AppArmor,
+      et le diagnostic d'un hôte qui ne répond plus. Un conteneur qui
+      fonctionne n'est pas un conteneur sûr.
+
+  - id: docker-industrialisation
+    title: "Industrialiser la chaîne de livraison"
+    description: >-
+      Build et publication automatisés, ce qu'une image contient vraiment, la
+      promotion d'un artefact, et une chaîne complète à reprendre sans que le
+      sujet soit annoncé.
+
+  - id: swarm-hors-tronc
+    title: "Docker Swarm, parcours avancé hors formation"
+    description: >-
+      Un orchestrateur distribué : consensus Raft, quorum, overlay, secrets
+      distribués, et un état de contrôle à protéger. Hors du tronc de la
+      formation Conteneurs et Docker, qui renvoie Swarm à un parcours distinct.

@@ -1,0 +1,23 @@
+---
+- name: Remove only multi-architecture workshop objects
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Remove the labelled registry and local release variants
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if docker container inspect dsoxlab-multiarch-registry >/dev/null 2>&1; then
+            docker rm -f dsoxlab-multiarch-registry
+          fi
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=images-multi-architecture)
+          if test -n "$images"; then docker image rm -f $images; fi
+          if test -d /opt/lab-multiarch && ! test -f /opt/lab-multiarch/registry-preexisting; then
+            image='registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373'
+            if docker image inspect "$image" >/dev/null 2>&1; then docker image rm "$image"; fi
+          fi
+      changed_when: false
+    - name: Remove workspace
+      ansible.builtin.file:
+        path: /opt/lab-multiarch
+        state: absent

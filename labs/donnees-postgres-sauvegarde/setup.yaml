@@ -1,0 +1,132 @@
+---
+- name: Préparer le lab donnees-postgres-sauvegarde
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer PostgreSQL serveur et client
+      ansible.builtin.apt:
+        name: [postgresql, postgresql-client]
+        state: present
+        update_cache: true
+    - name: Démarrer PostgreSQL
+      ansible.builtin.systemd_service:
+        name: postgresql
+        state: started
+        enabled: true
+    - name: Créer un identifiant unique pour les bases du lab
+      ansible.builtin.set_fact:
+        token: "{{ lookup('ansible.builtin.password', '/dev/null', length=16, chars=['ascii_lowercase', 'digits']) }}"
+    - name: Définir les noms et le marqueur de propriété
+      ansible.builtin.set_fact:
+        source_db: "dsoxlab_pg_source_{{ token }}"
+        restored_db: "dsoxlab_pg_restored_{{ token }}"
+        ownership: "dsoxlab:donnees-postgres-sauvegarde:{{ token }}"
+        backup_dir: "/opt/lab-postgres-sauvegarde/backup"
+    - name: Créer les répertoires propres au lab
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ ansible_user | default('ansible') if item.path.endswith('/backup') else 'root' }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: /opt/lab-postgres-sauvegarde
+          mode: "0755"
+        - path: /opt/lab-postgres-sauvegarde/backup
+          mode: "0755"
+    - name: Créer la base source réservée au lab
+      ansible.builtin.command:
+        argv:
+          - runuser
+          - -u
+          - postgres
+          - --
+          - createdb
+          - "{{ source_db }}"
+      changed_when: true
+    - name: Marquer la base source et créer son jeu de données
+      ansible.builtin.command:
+        argv:
+          - runuser
+          - -u
+          - postgres
+          - --
+          - psql
+          - -X
+          - -v
+          - ON_ERROR_STOP=1
+          - -d
+          - "{{ source_db }}"
+          - -c
+          - "COMMENT ON DATABASE {{ source_db }} IS '{{ ownership }}'; CREATE TABLE orders (id integer PRIMARY KEY, region text NOT NULL, total_cents integer NOT NULL); INSERT INTO orders VALUES (1, 'north', 1299), (2, 'south', 850), (3, 'west', 2400);"
+      changed_when: true
+    - name: Déposer les paramètres lisibles par l'apprenant
+      ansible.builtin.copy:
+        dest: /opt/lab-postgres-sauvegarde/state.env
+        mode: "0644"
+        content: |
+          SOURCE_DB={{ source_db }}
+          RESTORED_DB={{ restored_db }}
+          BACKUP_DIR={{ backup_dir }}
+          OWNERSHIP={{ ownership }}
+    - name: Déposer l'état attendu des données
+      ansible.builtin.copy:
+        dest: /opt/lab-postgres-sauvegarde/state.json
+        mode: "0644"
+        content: "{{ {'source_db': source_db, 'restored_db': restored_db, 'backup_dir': backup_dir, 'rows': ['1|north|1299', '2|south|850', '3|west|2400'], 'ownership': ownership} | to_json }}\n"
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"
+
+- name: Prepare a distinct PostgreSQL restore host
+  hosts: lab_restore
+  become: true
+  vars:
+    source_host: "{{ groups['lab_target'][0] }}"
+  tasks:
+    - name: Install the target PostgreSQL service
+      ansible.builtin.apt:
+        name: [postgresql, postgresql-client]
+        state: present
+        update_cache: true
+    - name: Start target PostgreSQL
+      ansible.builtin.systemd_service:
+        name: postgresql
+        state: started
+        enabled: true
+    - name: Create the target workspace and readable backup directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /opt/lab-postgres-sauvegarde
+        - /opt/lab-postgres-sauvegarde/backup
+    - name: Require the randomly named target database to be absent
+      ansible.builtin.command:
+        argv:
+          - runuser
+          - -u
+          - postgres
+          - --
+          - psql
+          - -X
+          - -A
+          - -t
+          - -d
+          - postgres
+          - -c
+          - "SELECT count(*) FROM pg_database WHERE datname = '{{ hostvars[source_host].restored_db }}';"
+      register: target_database
+      changed_when: false
+      failed_when: target_database.rc != 0 or target_database.stdout != '0'
+    - name: Copy the target ownership state
+      ansible.builtin.copy:
+        dest: /opt/lab-postgres-sauvegarde/state.env
+        mode: "0644"
+        content: |
+          SOURCE_DB={{ hostvars[source_host].source_db }}
+          RESTORED_DB={{ hostvars[source_host].restored_db }}
+          BACKUP_DIR=/opt/lab-postgres-sauvegarde/backup
+          OWNERSHIP={{ hostvars[source_host].ownership }}

@@ -1,0 +1,22 @@
+id: securite-no-new-privileges
+title: "Prevent privilege gain at runtime"
+level: c4
+description: "Prevent a harmless setuid probe from gaining EUID 0 using an inherited runtime privilege barrier."
+skills:
+  - docker
+  - no-new-privileges
+  - runtime-security
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

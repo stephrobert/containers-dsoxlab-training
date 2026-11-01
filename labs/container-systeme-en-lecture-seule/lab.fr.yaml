@@ -1,0 +1,2 @@
+title: "Utiliser une racine de conteneur en lecture seule"
+description: "Protéger la racine tout en gardant le worker opérationnel grâce à un tmpfs runtime modifiable de 4 Mio."

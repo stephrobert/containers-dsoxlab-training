@@ -1,0 +1,5 @@
+# Surcharge française du lab registry-air-gap. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Livrer une image complète sans son registre d'origine"
+description: "Emballer une image publiée avec sa somme d'intégrité et prouver sa récupération hors ligne sans dépendre du cache Docker local."

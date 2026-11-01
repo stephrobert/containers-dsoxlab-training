@@ -1,0 +1,17 @@
+hints:
+  - id: 1
+    cost: 10
+    text_en: TG9vayBhdCBkYWVtb24uanNvbiBsb2dnaW5nIGRlZmF1bHRzOyB0aGlzIGlzIGEgcGVyLXJlc291cmNlIHRhc2ssIG5vdCBhIGdsb2JhbCBjbGVhbnVwLg==
+    text_fr: RXhhbWluZXogZGFlbW9uLmpzb24gbG9nZ2luZyBkZWZhdWx0cyA7IGlsIHPigJlhZ2l0IGTigJl1bmUgdMOiY2hlIGNpYmzDqWUsIHBhcyBk4oCZdW4gbmV0dG95YWdlIGdsb2JhbC4=
+  - id: 2
+    cost: 15
+    text_en: SW5zcGVjdCB0aGUgZWZmZWN0aXZlIGRhZW1vbi5qc29uIGxvZ2dpbmcgZGVmYXVsdHMgc3RhdGUgb24gRG9ja2VyIGRhZW1vbi4=
+    text_fr: SW5zcGVjdGV6IGzigJnDqXRhdCBlZmZlY3RpZiBkZSBkYWVtb24uanNvbiBsb2dnaW5nIGRlZmF1bHRzIHN1ciBEb2NrZXIgZGFlbW9uLg==
+  - id: 3
+    cost: 20
+    text_en: VGhlIHRhcmdldCBzdGF0ZSBpcyBqc29uLWZpbGUsIG1heC1zaXplPTFtLCBtYXgtZmlsZT0yLg==
+    text_fr: TOKAmcOpdGF0IGF0dGVuZHUgZXN0IDoganNvbi1maWxlLCBtYXgtc2l6ZT0xbSwgbWF4LWZpbGU9Mi4=
+  - id: 4
+    cost: 25
+    text_en: QXBwbHkganNvbi1maWxlLCBtYXgtc2l6ZT0xbSwgbWF4LWZpbGU9MiB0byBEb2NrZXIgZGFlbW9uLCBwcmVzZXJ2aW5nIHVucmVsYXRlZCByZXNvdXJjZXMu
+    text_fr: QXBwbGlxdWV6IGpzb24tZmlsZSwgbWF4LXNpemU9MW0sIG1heC1maWxlPTIgw6AgRG9ja2VyIGRhZW1vbiBlbiBwcsOpc2VydmFudCBsZXMgcmVzc291cmNlcyBzYW5zIHJhcHBvcnQu

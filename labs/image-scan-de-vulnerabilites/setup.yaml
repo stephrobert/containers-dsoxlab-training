@@ -1,0 +1,46 @@
+---
+- name: Prepare genuine offline image vulnerability fixtures
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Install runtime and actual Debian scanner
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx, python3, python3-apt, debsecan, dpkg]
+        state: present
+        update_cache: true
+    - name: Start Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Grant Docker access
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Create workspace
+      ansible.builtin.file:
+        path: /opt/lab-image-scan
+        state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0755"
+    - name: Copy immutable packages and dated database
+      ansible.builtin.copy:
+        src: fixtures/
+        dest: /opt/lab-image-scan/
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: preserve
+    - name: Assemble authentic package root filesystems
+      ansible.builtin.command:
+        cmd: /usr/bin/python3 /opt/lab-image-scan/prepare.py
+      changed_when: true
+    - name: Build scratch fixtures without downloads
+      ansible.builtin.command:
+        cmd: docker build --network=none -t dsoxlab-scan:{{ item }} /opt/lab-image-scan/{{ item }}
+      loop: [legacy, fixed]
+      changed_when: true
+    - name: Copy mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/lab-image-scan/MISSION.md
+        mode: "0644"

@@ -1,0 +1,22 @@
+id: securite-groupe-docker
+title: "Remove an unnecessary Docker grant"
+level: c4
+description: "Remove only docker-group membership from the synthetic audit account."
+skills:
+  - docker
+  - linux-groups
+  - least-privilege
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

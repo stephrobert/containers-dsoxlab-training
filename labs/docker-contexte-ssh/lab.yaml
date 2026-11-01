@@ -1,0 +1,24 @@
+id: docker-contexte-ssh
+title: "Create an SSH Docker context"
+level: c4
+description: "Administer a distinct VM through a named SSH Docker context, verify the remote engine identity, reject an unauthorized key and preserve the original default context."
+skills:
+  - docker
+  - context
+  - ssh
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+      roles:
+        remote: docker-client.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

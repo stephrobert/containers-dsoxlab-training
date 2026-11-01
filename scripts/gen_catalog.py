@@ -94,8 +94,12 @@ def _runtime_label(lab: dict, lang: str) -> str:
 
     services = sorted(n for n in (s.get("name", "") for s in (runtime.get("services") or [])) if n)
     if base == "vm":
-        hotes = {c.get("host") for c in (runtime.get("targets") or []) if c.get("host")}
-        etiquette = MENTION_VM[lang] if len(hotes) <= 1 else MENTION_VM_N[lang].format(n=len(hotes))
+        counts = [
+            len({target["host"], *(target.get("roles") or {}).values()})
+            for target in (runtime.get("targets") or []) if target.get("host")
+        ]
+        count = max(counts, default=1)
+        etiquette = MENTION_VM[lang] if count <= 1 else MENTION_VM_N[lang].format(n=count)
         return f"{etiquette} + " + ", ".join(services) if services else etiquette
     if services:
         return f"{base} + " + ", ".join(services)

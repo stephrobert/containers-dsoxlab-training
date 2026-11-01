@@ -1,0 +1,63 @@
+---
+- name: Prepare an executable local CI challenge
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Install runtime
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx, docker-compose, python3, coreutils, git]
+        state: present
+        update_cache: true
+    - name: Start Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Grant Docker access
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Create workspace
+      ansible.builtin.file:
+        path: /opt/lab-compose-ci
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user | default('ansible') }}"
+    - name: Copy exercise files
+      ansible.builtin.copy:
+        src: fixtures/
+        dest: /opt/lab-compose-ci/
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: preserve
+    - name: Initialize the prepared source repository
+      become_user: "{{ ansible_user | default('ansible') }}"
+      ansible.builtin.command:
+        argv: [git, -C, /opt/lab-compose-ci/source, init, -q]
+        creates: /opt/lab-compose-ci/source/.git
+      register: ci_source_repository
+    - name: Commit the prepared source without personal author configuration
+      become_user: "{{ ansible_user | default('ansible') }}"
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cd /opt/lab-compose-ci/source
+          git add .
+          git -c user.name=DSOxLab -c user.email=fixture@invalid commit -q \
+            -m "Prepared training source" \
+            -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+      when: ci_source_repository.changed
+      changed_when: true
+    - name: Record preexisting base images
+      ansible.builtin.command:
+        cmd: /usr/bin/python3 /opt/lab-compose-ci/base-cache.py snapshot
+      changed_when: false
+    - name: Seed pinned runtime before offline CI
+      ansible.builtin.command:
+        cmd: docker pull python:3.13.8-alpine3.22@sha256:3a77fbbb5bc88c0f63cc2692a13b011547f25ee93536e991544c452801856226
+      changed_when: true
+    - name: Copy mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/lab-compose-ci/MISSION.md
+        mode: "0644"

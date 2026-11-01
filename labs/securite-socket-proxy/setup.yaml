@@ -1,0 +1,88 @@
+---
+- name: Prepare lab securite-socket-proxy
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Install Docker and the proxy runtime
+      ansible.builtin.apt:
+        name: [docker.io, python3, curl]
+        state: present
+        update_cache: true
+    - name: Ensure Docker is available for this host lab
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+    - name: Refuse to overwrite lab-labelled containers or volumes
+      ansible.builtin.shell: |
+        set -eu
+        test -z "$(docker ps -aq --filter label=dsoxlab.lab=securite-socket-proxy)"
+        test -z "$(docker volume ls -q --filter label=dsoxlab.lab=securite-socket-proxy)"
+      args:
+        executable: /bin/sh
+      changed_when: false
+    - name: Refuse to overwrite a previous lab work directory
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-securite-socket-proxy
+      register: workdir_state
+    - name: Require a clean lab work directory
+      ansible.builtin.assert:
+        that: not workdir_state.stat.exists
+        fail_msg: "/opt/dsoxlab-securite-socket-proxy already exists; cleanup must restore the previous run first."
+    - name: Refuse to overwrite an existing proxy service
+      ansible.builtin.stat:
+        path: /etc/systemd/system/dsoxlab-securite-socket-proxy.service
+      register: proxy_service_unit
+    - name: Require an unused proxy service name
+      ansible.builtin.assert:
+        that: not proxy_service_unit.stat.exists
+        fail_msg: "The dedicated proxy service already exists; cleanup must restore the previous run first."
+    - name: Create the unique lab work directory
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-socket-proxy
+        state: directory
+        mode: "0750"
+    - name: Install the loopback-only proxy implementation
+      ansible.builtin.copy:
+        src: fixtures/proxy.py
+        dest: /opt/dsoxlab-securite-socket-proxy/proxy.py
+        mode: "0644"
+    - name: Install a deliberately broad starter API policy
+      ansible.builtin.copy:
+        dest: /opt/dsoxlab-securite-socket-proxy/policy.json
+        mode: "0600"
+        content: |
+          {"rules":[{"method":"*","path":"*"}]}
+    - name: Install the dedicated proxy service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/dsoxlab-securite-socket-proxy.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=DSOXLAB loopback Docker API proxy
+          After=docker.service
+          Requires=docker.service
+          [Service]
+          Type=simple
+          User=root
+          ExecStart=/usr/bin/python3 /opt/dsoxlab-securite-socket-proxy/proxy.py /opt/dsoxlab-securite-socket-proxy/policy.json
+          Restart=on-failure
+          NoNewPrivileges=yes
+          PrivateTmp=yes
+          [Install]
+          WantedBy=multi-user.target
+    - name: Mark the dedicated proxy service as lab-owned
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-socket-proxy/service-owned
+        state: touch
+        mode: "0600"
+    - name: Start the lab-scoped proxy only
+      ansible.builtin.systemd_service:
+        name: dsoxlab-securite-socket-proxy.service
+        daemon_reload: true
+        state: started
+        enabled: false
+    - name: Install this lab's bilingual mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/dsoxlab-securite-socket-proxy/MISSION.md
+        mode: "0644"

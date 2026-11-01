@@ -1,0 +1,70 @@
+---
+- name: Prepare lab securite-groupe-docker
+  hosts: lab_target
+  become: true
+  vars:
+    pinned_image: alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+  tasks:
+    - name: Install Docker and the small test runtime
+      ansible.builtin.apt:
+        name: [docker.io, python3]
+        state: present
+        update_cache: true
+    - name: Ensure Docker is available for this host lab
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+    - name: Refuse to overwrite lab-labelled containers or volumes
+      ansible.builtin.shell: |
+        set -eu
+        test -z "$(docker ps -aq --filter label=dsoxlab.lab=securite-groupe-docker)"
+        test -z "$(docker volume ls -q --filter label=dsoxlab.lab=securite-groupe-docker)"
+      args:
+        executable: /bin/sh
+      changed_when: false
+    - name: Refuse to overwrite a previous lab work directory
+      ansible.builtin.stat:
+        path: /opt/dsoxlab-securite-groupe-docker
+      register: workdir_state
+    - name: Require a clean lab work directory
+      ansible.builtin.assert:
+        that: not workdir_state.stat.exists
+        fail_msg: "/opt/dsoxlab-securite-groupe-docker already exists; cleanup must restore the previous run first."
+    - name: Create the unique lab work directory
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-groupe-docker
+        state: directory
+        mode: "0750"
+    - name: Check whether the pinned image is already present
+      ansible.builtin.command: docker image inspect "{{ pinned_image }}"
+      register: image_state
+      changed_when: false
+      failed_when: false
+    - name: Pull the pinned disposable image only when absent
+      ansible.builtin.command: docker pull "{{ pinned_image }}"
+      when: image_state.rc != 0
+    - name: Refuse to reuse an existing audit account
+      ansible.builtin.command: getent passwd dsoxlab-auditor
+      register: audit_account
+      changed_when: false
+      failed_when: audit_account.rc == 0
+    - name: Create the dedicated synthetic audit account with Docker access
+      ansible.builtin.user:
+        name: dsoxlab-auditor
+        comment: "dsoxlab lab account securite-groupe-docker"
+        home: /var/lib/dsoxlab-auditor
+        create_home: true
+        shell: /bin/sh
+        groups: docker
+        append: true
+        state: present
+    - name: Mark the account as lab-owned
+      ansible.builtin.file:
+        path: /opt/dsoxlab-securite-groupe-docker/account-created
+        state: touch
+        mode: "0600"
+    - name: Install this lab's bilingual mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/dsoxlab-securite-groupe-docker/MISSION.md
+        mode: "0644"

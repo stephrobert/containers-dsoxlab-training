@@ -1,92 +1,279 @@
+# Catalogue containers-dsoxlab-training, décrit par le contrat v1 de dsoxlab.
+#
+# `repo.id` sert de clé pour l'état local : le changer déplace l'historique des
+# scores et le répertoire d'état de l'apprenant.
+#
+# ## Organisé par COMPÉTENCE, pas par fonctionnalité
+#
+# Les sections ci-dessous ne suivent pas le manuel de Docker, elles suivent ce
+# qu'un apprenant doit savoir démontrer. « Construire des images » est une
+# compétence ; « les instructions du Dockerfile » serait un chapitre de
+# référence, et le blog le tient déjà.
+#
+# L'ordre compte : il est celui dans lequel les compétences se tiennent l'une
+# l'autre. On ne distribue pas une image qu'on ne sait pas construire, et on ne
+# durcit pas un conteneur qu'on ne sait pas exécuter.
+#
 schema_version: 1
+
 repo:
   id: containers-dsoxlab-training
   category: containers
-  title: Containers, from the Dockerfile to orchestration
+  title: "Containers, from the Dockerfile to orchestration"
   blog_url: https://www.stephane-robert.info/docs/conteneurs/
   issues_url: https://github.com/stephrobert/containers-dsoxlab-training/issues
-  description: 'Verifiable labs for the blog''s containerisation course. Every lab is
-
+  description: |
+    Verifiable labs for the blog's containerisation course. Every lab is
     graded on the real state of the engine: an image that was built, its
-
-    size, the user that runs it, a container''s mounts, what the application
-
+    size, the user that runs it, a container's mounts, what the application
     answers. The blog teaches, this catalogue proves.
 
-
     One and the same FastAPI application runs through the whole path and
-
     becomes progressively more correct. The learner does not need to know
-
     how to program: the code is provided, and the work is on the image, the
-
     runtime, networking, storage, distribution and hardening.
 
-    '
+# `learning.portal_url` reste vide, et c'est une décision en attente, pas un
+# oubli. Le blog porte bien une page de parcours à cocher
+# (`moteurs-conteneurs/docker/parcours/`, HTTP 200), mais le contrat décrit ce
+# champ comme une URL de REMISE d'une preuve d'apprentissage. Les deux se
+# ressemblent sans se confondre, et inscrire l'une à la place de l'autre ferait
+# annoncer à dsoxlab quelque chose que le site ne fait pas. Voir COVERAGE.md.
+
+# Le bloc `infra:` est arrivé le 2026-10-28 avec le premier lab, et le
+# commentaire qui le précédait disait encore le contraire : « aucun bloc infra
+# pour l'instant », juste au-dessus d'un bloc infra. Corrigé en même temps que
+# les sections.
+#
+# TOUS LES LABS SONT EN `runtime: vm`. Décision de Stéphane du 2026-10-28 : on
+# ne force pas l'apprenant à installer Docker sur son poste. Le lab monte cette
+# Debian 13, y installe le moteur, et la détruit à la fin ; une VM se jette, un
+# démon Docker posé sur un portable de bureau reste.
+#
+# L'ancienne règle disait l'inverse, `runtime: shell` par défaut, au nom du §20
+# du brief. Elle était aussi la seule à le dire : les 46 contrats de TP de
+# `src/data/parcours/docker.yaml` déclarent tous
+# `environnement.reference: vm_linux_jetable`.
+#
+# UN SEUL HÔTE SUFFIT POUR 62 DES 90 LABS du backlog. Six contrats
+# (`conteneurs-18`, `21`, `22`, `32`, `34`, `44`) exigent deux environnements
+# isolés, et Swarm une topologie à part. Le second hôte s'ajoutera donc EN FIN
+# DE LISTE, jamais au milieu : l'adresse et la MAC dérivent de la position
+# (`cidrhost(cidr, idx + 11)`), et une insertion réattribue les adresses des
+# suivants, ce que libvirt refuse en cours de route.
+#
+# `infra.bootstrap` de la 0.3.0 portera le socle commun : joué une fois après
+# `provision`, empreinté, rejoué seulement s'il change.
+
 infra:
+  bootstrap: infra/bootstrap.yaml
   provider:
-  - kvm
+    - kvm
   network: lab-containers
   cidr: 10.10.120.0/24
   hosts:
-  - name: docker.lab
-    distro: debian13
-    role: debian-family
-    ram_mb: 2048
-    vcpu: 2
-    disk_gb: 20
+    # Le premier hote garde sa position et donc son adresse.
+    - name: docker.lab
+      distro: debian13
+      role: debian-family
+      ram_mb: 2048
+      vcpu: 2
+      disk_gb: 20
+    # Client vierge, restauration et promotion : ajoute en fin de liste.
+    - name: docker-client.lab
+      distro: debian13
+      role: debian-family
+      ram_mb: 2048
+      vcpu: 2
+      disk_gb: 20
   providers:
     kvm:
-      libvirt_uri: qemu:///system
-      bridge_name: virbr-cont
+      libvirt_uri: "qemu:///system"
+      bridge_name: "virbr-cont"
+
+# ── Les sections PORTENT LES IDENTIFIANTS DES MODULES DE LA FORMATION ────────
+#
+# Jusqu'au 2026-10-28, ce fichier découpait le catalogue en onze sections
+# (`c1-comprendre` à `c10-capstone`, plus Swarm), écrites avant que la formation
+# ne soit pilotée. Le programme cible de `src/data/parcours/docker.yaml` en
+# compte HUIT, aux intitulés différents. Deux découpages coexistaient donc, l'un
+# dans le catalogue et l'autre dans le parcours, avec des noms qui se
+# ressemblaient assez pour qu'on les croie équivalents : `comprendre` désignait
+# ici « manipuler un conteneur » et là-bas « regarder sous le capot ».
+#
+# C'est exactement le second catalogue tenu à la main que décrit la règle K du
+# socle de pilotage, et il se réconcilie dans un seul sens : le catalogue
+# s'aligne sur le parcours, jamais l'inverse. Les `id` ci-dessous sont donc
+# ceux des modules du programme cible, mot pour mot, pour qu'un identifiant
+# suffise à joindre un lab à son module. Le `title` reste de la prose lisible
+# par l'apprenant : c'est la clé qui devait cesser de diverger, pas la phrase.
+#
+# L'ordre est celui des quatre niveaux de `architecture.niveaux`, et le champ
+# `level` de chaque `lab.yaml` nomme ce niveau (`c1` à `c4`), pas la section.
+#
+# ## Les labs non encore écrits ne figurent PAS ici
+#
+# Une section ne déclare que les labs qui existent : `validate-structure`
+# refuse un lab déclaré sans `lab.yaml`, et il a raison - un parcours qui
+# promet un lab absent se voit à l'usage, pas à la relecture. Le backlog
+# complet vit dans `ROADMAP.md`, rangé sous ces mêmes huit modules.
 sections:
-- id: conteneurs-utilisation
-  title: Use containers
-  description: 'An image and a container are not the same thing, and the lifecycle explains half of the
-    failures. Running, inspecting, publishing a port, keeping data: no build yet.'
-  labs:
-  - docker-verifier-son-moteur
-  - docker-premier-conteneur
-  - docker-cycle-de-vie
-  - container-entrypoint-et-cmd
-  - container-signaux-et-pid-1
-  - docker-inspecter-un-conteneur
-  - docker-anatomie-dune-image
-  - reseau-bridge-par-defaut
-  - reseau-bridge-dedie
-  - reseau-publication-de-ports
-  - reseau-interne
-  - reseau-diagnostic-dns
-  - donnees-volumes-et-montages
-  - donnees-permissions-uid-gid
-- id: conteneurs-isolation
-  title: Measure isolation, and put a container back in service
-  description: Namespaces, cgroups and the chain that goes from the CLI to the process, observed rather
-    than recited. Then short incidents where the symptom does not name the cause.
-  labs:
-  - internes-namespaces
-  - internes-cgroups-v2
-  - internes-stockage-des-images
-  - internes-chaine-dexecution
-  - container-limite-cpu
-  - container-ulimits-et-shm
-  - troubleshoot-exit-127
-  - troubleshoot-conflit-de-port
-  - troubleshoot-permission-refusee
-  - troubleshoot-boucle-de-redemarrage
-- id: images-construction
-  title: Build images
-  description: From a first Dockerfile to a non-root multi-stage image, each step measured against the
-    previous one.
-  labs:
-  - images-identifier-image
-  - images-ordre-des-couches
-  - images-contexte-de-build
-  - images-optimiser-la-taille
-  - images-migrer-vers-alpine
-  - images-build-multi-etapes
-  - images-non-root
-  - images-healthcheck
+  # ── Niveau c1 : utiliser et comprendre les conteneurs ────────────────────
+  - id: conteneurs-utilisation
+    title: "Use containers"
+    description: >-
+      An image and a container are not the same thing, and the lifecycle
+      explains half of the failures. Running, inspecting, publishing a port,
+      keeping data: no build yet.
+    labs:
+      - docker-verifier-son-moteur
+      - docker-premier-conteneur
+      - docker-cycle-de-vie
+      - container-entrypoint-et-cmd
+      - container-signaux-et-pid-1
+      - docker-inspecter-un-conteneur
+      - docker-anatomie-dune-image
+      - reseau-bridge-par-defaut
+      - reseau-bridge-dedie
+      - reseau-publication-de-ports
+      - reseau-interne
+      - donnees-volumes-et-montages
+      - donnees-permissions-uid-gid
+      - container-arret-transactionnel
+      - reseau-diagnostic-dns
+
+  - id: conteneurs-isolation
+    title: "Measure isolation, and put a container back in service"
+    description: >-
+      Namespaces, cgroups and the chain that goes from the CLI to the process,
+      observed rather than recited. Then short incidents where the symptom does
+      not name the cause.
+    labs:
+      - internes-namespaces
+      - internes-cgroups-v2
+      - internes-stockage-des-images
+      - internes-chaine-dexecution
+      - container-limite-cpu
+      - container-ulimits-et-shm
+      - troubleshoot-exit-127
+      - troubleshoot-conflit-de-port
+      - troubleshoot-permission-refusee
+      - troubleshoot-boucle-de-redemarrage
+
+  # ── Niveau c2 : construire et distribuer ses images ─────────────────────
+  - id: images-construction
+    title: "Build images"
+    description: >-
+      From a first Dockerfile to a non-root multi-stage image, each step
+      measured against the previous one.
+    labs:
+      - images-identifier-image
+      - images-ordre-des-couches
+      - images-contexte-de-build
+      - images-optimiser-la-taille
+      - images-migrer-vers-alpine
+      - images-build-multi-etapes
+      - images-non-root
+      - images-healthcheck
+      - buildkit-cache-monte
+      - buildkit-secret-de-build
+      - images-multi-architecture
+
+  - id: images-distribution
+    title: "Distribute images"
+    description: >-
+      Push, find an image again by its digest, publish to a private registry,
+      and cross an air gap.
+    labs:
+      - registry-tag-push-pull
+      - registry-tag-contre-digest
+      - images-epingler-par-digest
+      - registry-locale-tls
+      - registry-authentification
+      - registry-droits-minimaux
+      - registry-air-gap
+
+  # ── Niveau c3 : exploiter une application avec Compose ──────────────────
+  - id: compose-application
+    title: "Describe an application with Compose"
+    description: >-
+      An application made of several services, described in one file: networks,
+      data, secrets, health and resources.
+    labs:
+      - compose-premiere-stack
+      - compose-resolution-des-variables
+      - compose-isolation-reseau
+      - compose-persistance
+      - compose-tache-de-migration
+      - compose-secrets
+      - compose-sante-et-dependances
+      - compose-ressources
+      - compose-plusieurs-environnements
+
+  - id: compose-exploitation
+    title: "Operate a Compose application"
+    description: >-
+      Logs and resources, backup and restore, update and roll back, then a
+      stack to bring back by oneself.
+    labs:
+      - compose-correlation-et-saturation
+      - donnees-postgres-sauvegarde
+      - compose-capstone
+
+  # ── Niveau c4 : fiabiliser, sécuriser et industrialiser ─────────────────
+  - id: docker-administration
+    title: "Administer and harden a Docker host"
+    description: >-
+      The daemon, the socket, rootless, capabilities, seccomp and AppArmor, and
+      the diagnosis of a host that no longer answers. A container that works is
+      not a container that is safe.
+    labs:
+      - docker-configurer-le-demon
+      - docker-contexte-ssh
+      - docker-rotation-des-journaux
+      - securite-groupe-docker
+      - securite-socket-lecture-seule
+      - securite-socket-proxy
+      - securite-rootless
+      - securite-capabilities
+      - securite-no-new-privileges
+      - securite-seccomp
+      - securite-apparmor
+      - container-systeme-en-lecture-seule
+      - reseau-pare-feu-cible
+      - container-limite-de-processus
+      - secrets-au-runtime
+      - container-memoire-et-oom
+      - troubleshoot-disque-plein
+      - donnees-volume-orphelin
+
+  - id: docker-industrialisation
+    title: "Industrialise the delivery chain"
+    description: >-
+      Automated build and publication, what an image really contains, artefact
+      promotion, and a complete chain to take over without being told the
+      topic.
+    labs:
+      - compose-dans-une-ci
+      - image-scan-de-vulnerabilites
+      - images-signature-identite
+      - capstone-chaine-complete
+
+  # ── Hors tronc de la formation, et déclaré comme tel ────────────────────
+  #
+  # `projet.perimetre.hors_tronc` de `docker.yaml` écarte explicitement Swarm :
+  # « Kubernetes et Swarm: parcours distincts ». Cette section n'a donc PAS de
+  # module en face, et c'est une décision, pas un oubli d'alignement. Elle
+  # reste ici pour que les dix-huit labs du backlog Swarm gardent une
+  # destination tant que l'arbitrage de `ROADMAP.md` n'est pas rendu : socle
+  # posé une fois par `infra.bootstrap`, ou catalogue séparé.
+  - id: swarm-hors-tronc
+    title: "Docker Swarm, advanced path outside the course"
+    description: >-
+      A distributed orchestrator: Raft consensus, quorum, overlay networks,
+      distributed secrets, and control state to protect. Outside the trunk of
+      the Containers and Docker course, which sends Swarm to a separate path.
+    labs: []
 
 # Envoi des preuves vers le compte facultatif du site, par `dsoxlab login` puis
 # `dsoxlab push`. Rien ne part sans ces deux gestes de l'apprenant. Toutes ces

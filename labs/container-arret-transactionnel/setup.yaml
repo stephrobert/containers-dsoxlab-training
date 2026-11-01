@@ -1,0 +1,38 @@
+---
+- name: Prepare the owned transactional HTTP laboratory
+  hosts: lab_target
+  become: true
+  vars:
+    work: /opt/dsoxlab-container-arret-transactionnel
+  tasks:
+    - name: Refuse a pre-existing work directory
+      ansible.builtin.stat:
+        path: "{{ work }}"
+      register: existing
+    - name: Protect pre-existing files
+      ansible.builtin.assert:
+        that: not existing.stat.exists
+        fail_msg: "Work directory already exists; clean an owned lab first."
+    - name: Install declared runtime tools
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose, python3, python3-yaml]
+        state: present
+        update_cache: true
+    - name: Start Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+    - name: Authorize the learner account
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Copy the complete supplied fixture
+      ansible.builtin.copy:
+        src: fixtures/
+        dest: "{{ work }}/"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: preserve
+    - name: Record ownership and start the faulty service
+      ansible.builtin.command:
+        cmd: python3 {{ work }}/lifecycle.py setup

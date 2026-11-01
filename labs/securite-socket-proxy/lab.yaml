@@ -1,0 +1,22 @@
+id: securite-socket-proxy
+title: "Restrict a Docker API socket proxy"
+level: c4
+description: "Limit the loopback proxy to two read-only API endpoints."
+skills:
+  - docker
+  - socket-proxy
+  - api-authorization
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

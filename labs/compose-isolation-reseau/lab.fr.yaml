@@ -1,0 +1,5 @@
+# Surcharge française du lab compose-isolation-reseau. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Séparer les réseaux de façade et de données avec Compose"
+description: "Raccorder une API à deux réseaux tout en empêchant la façade d'accéder directement au service de données."

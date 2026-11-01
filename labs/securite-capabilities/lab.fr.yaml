@@ -1,0 +1,2 @@
+title: "Retirer toutes les capabilities sauf une"
+description: "Recréer le service sans capabilities sauf NET_BIND_SERVICE et vérifier son masque effectif."

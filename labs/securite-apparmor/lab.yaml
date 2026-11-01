@@ -1,0 +1,22 @@
+id: securite-apparmor
+title: "Confine the service with AppArmor"
+level: c4
+description: "Attach a uniquely named enforcing profile that denies one file read without changing any preexisting policy."
+skills:
+  - docker
+  - apparmor
+  - runtime-security
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#apparmor-et-selinux
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

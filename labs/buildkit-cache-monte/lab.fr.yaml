@@ -1,0 +1,5 @@
+# Surcharge française du lab buildkit-cache-monte. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Réutiliser les dépendances quand l'étape de build rejoue"
+description: "Garder le cache des dépendances hors des couches de l'image, le réutiliser quand la source change et conserver un build à froid fonctionnel."

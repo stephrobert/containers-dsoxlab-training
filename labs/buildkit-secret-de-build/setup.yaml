@@ -1,0 +1,104 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer le lab buildkit-secret-de-build
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer les outils de la VM
+      ansible.builtin.apt:
+        name: [docker.io, docker-buildx, python3]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Créer l'atelier et le répertoire du dépôt
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /opt/lab-buildkit-secret/appli
+        - /usr/local/lib/lab-buildkit-secret
+
+    - name: Tirer le secret pédagogique et le produit
+      ansible.builtin.set_fact:
+        depot_token: "lab-{{ lookup('ansible.builtin.password', '/dev/null', length=32, chars=['ascii_letters', 'digits']) }}"
+        depot_artifact: "artifact-{{ lookup('ansible.builtin.password', '/dev/null', length=32, chars=['ascii_letters', 'digits']) }}"
+      no_log: true
+
+    - name: Poser l'état du dépôt privé
+      ansible.builtin.copy:
+        dest: /root/.lab-buildkit-secret.json
+        content: "{{ {'token': depot_token, 'artifact': depot_artifact} | to_json }}"
+        mode: "0600"
+      no_log: true
+
+    - name: Donner le secret au compte apprenant hors du contexte
+      ansible.builtin.copy:
+        dest: /opt/lab-buildkit-secret/depot.token
+        content: "{{ depot_token }}"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0600"
+      no_log: true
+
+    - name: Déposer le serveur du dépôt privé
+      ansible.builtin.copy:
+        src: fixtures/depot.py
+        dest: /usr/local/lib/lab-buildkit-secret/depot.py
+        mode: "0644"
+
+    - name: Déclarer le service du dépôt
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/dsoxlab-buildkit-secret.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Private repository for the BuildKit secret lab
+          After=network.target
+          [Service]
+          ExecStart=/usr/bin/python3 /usr/local/lib/lab-buildkit-secret/depot.py
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Démarrer le dépôt
+      ansible.builtin.systemd_service:
+        name: dsoxlab-buildkit-secret
+        state: restarted
+        enabled: true
+        daemon_reload: true
+
+    - name: Attendre le dépôt
+      ansible.builtin.wait_for:
+        port: 18083
+        timeout: 20
+
+    - name: Poser le Dockerfile qui fuit dans son historique
+      ansible.builtin.copy:
+        dest: /opt/lab-buildkit-secret/appli/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          LABEL dsoxlab.lab="buildkit-secret-de-build"
+          ARG DEPOT_URL
+          ARG DEPOT_SECRET
+          RUN wget -q -O /produit.txt --header="Authorization: Bearer $DEPOT_SECRET" "$DEPOT_URL"
+          CMD ["cat", "/produit.txt"]
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

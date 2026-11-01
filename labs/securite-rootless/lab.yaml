@@ -1,0 +1,22 @@
+id: securite-rootless
+title: "Start the prepared rootless Docker engine"
+level: c4
+description: "Qualify the dedicated unprivileged daemon with real process ownership, rootless network checks and data surviving container recreation."
+skills:
+  - docker
+  - rootless
+  - user-namespaces
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#rootless-mode
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

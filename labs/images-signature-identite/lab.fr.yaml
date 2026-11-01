@@ -1,0 +1,5 @@
+# Surcharge française du lab images-signature-identite. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Vérifier la signature d'une archive et l'identité de son signataire"
+description: "Lier une véritable archive de conteneur à une signature cryptographique et une identité approuvée par une CA ; refuser les octets altérés, les autres identités et les autres clés."

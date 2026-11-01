@@ -1,4 +1,4 @@
-"""Tests fonctionnels du challenge reseau-diagnostic-dns : quatre contrôles de poids égal.
+"""Tests fonctionnels du challenge reseau-diagnostic-dns : cinq contrôles de poids égal.
 
 C'EST UNE ÉPREUVE, et cela change ce que les messages doivent dire. Un lab
 guide : son message nomme le geste qui manque. Un challenge évalue : son message
@@ -14,8 +14,8 @@ LA PANNE POSÉE, qui n'est dite nulle part dans l'énoncé :
 
 TROIS SYMPTÔMES, UNE CORRECTION POSSIBLE : recréer `catalogue` sur le réseau de
 `boutique`, avec l'alias et sans publication. C'est ce qui fait la valeur de
-l'épreuve, et c'est pourquoi les quatre contrôles sont de poids égal : ils
-mesurent le même diagnostic vu de quatre côtés.
+l'épreuve. Quatre contrôles mesurent le diagnostic réseau ; le cinquième
+exige une recréation qui conserve les données et les protections.
 
 POURQUOI LE CONTRÔLE 4 EXIGE LE VRAI NOM. Sans lui, renommer le conteneur en
 `base` satisferait les trois autres, et l'apprenant n'aurait rien appris des
@@ -38,7 +38,9 @@ dépendre des groupes du compte, ce qui est le sujet d'un autre lab.
 
 from __future__ import annotations
 
+import json
 import re
+import uuid
 
 import pytest
 
@@ -63,6 +65,53 @@ def host():
     modifier.
     """
     return lab_host(TARGET_HOST)
+
+
+def test_la_recreation_conserve_la_donnee_et_la_reponse_metier(host) -> None:
+    _tourne(host, APPLICATION)
+    _tourne(host, BASE)
+    assert _resout(host, APPLICATION, NOM_ATTENDU) in _adresses(host, BASE) and (
+        _repond(host, APPLICATION, NOM_ATTENDU, PORT)
+    ), message(
+        en="The corrected application must reach the real catalogue before its recreation trial.",
+        fr="L'application corrigée doit joindre le vrai catalogue avant l'essai de recréation.",
+    )
+    inspected = host.run("docker inspect %s", BASE)
+    state = host.run("cat /root/.lab-diagnostic-state.json")
+    assert inspected.rc == state.rc == 0, message(
+        en="The catalogue and its prepared artifact identity must be inspectable.",
+        fr="Le catalogue et l'identité préparée de son artefact doivent être inspectables.",
+    )
+    before = json.loads(inspected.stdout)[0]
+    assert before["Image"] == json.loads(state.stdout)["image_id"] and not before["HostConfig"]["PortBindings"] and any(
+        mount["Type"] == "volume" and mount["Name"] == "dsoxlab-diagnostic-data" and mount["Destination"] == "/data"
+        for mount in before["Mounts"]
+    ), message(
+        en="The isolated catalogue must use the prepared artifact and its durable data volume.",
+        fr="Le catalogue isolé doit utiliser l'artefact préparé et son volume durable.",
+    )
+    marker = uuid.uuid4().hex
+    written = host.run("docker exec %s sh -c %s", BASE, f"printf '%s' '{marker}' > /data/jeton")
+    recreated = host.run("/opt/lab-diagnostic/recreate.sh")
+    assert written.rc == recreated.rc == 0, message(
+        en="The fresh data write and executable recreation operation must succeed.",
+        fr="L'écriture nouvelle et l'opération de recréation exécutable doivent réussir.",
+    )
+    after = host.run("docker inspect %s", BASE)
+    assert after.rc == 0 and json.loads(after.stdout)[0]["Id"] != before["Id"], message(
+        en="The catalogue container must actually have been replaced.",
+        fr="Le conteneur catalogue doit réellement avoir été remplacé.",
+    )
+    for _ in range(4):
+        response = host.run("docker exec %s nc -w 3 %s %s", APPLICATION, NOM_ATTENDU, str(PORT))
+        if f"jeton={marker}" in response.stdout:
+            break
+    assert response.rc == 0 and f"jeton={marker}" in response.stdout and (
+        not json.loads(after.stdout)[0]["HostConfig"]["PortBindings"]
+    ), message(
+        en="The replaced, unexposed catalogue must serve the exact fresh persistent business value.",
+        fr="Le catalogue remplacé et non exposé doit servir la valeur métier nouvelle persistante exacte.",
+    )
 
 
 def _tourne(host, nom: str) -> None:

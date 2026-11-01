@@ -1,0 +1,2 @@
+title: "Confiner le service avec AppArmor"
+description: "Attacher un profil enforce au nom unique refusant une lecture sans modifier les politiques préexistantes."

@@ -1,0 +1,33 @@
+services:
+  api:
+    image: ${PROJECT}-api
+    build:
+      context: ${SOURCE_DIR}
+      network: none
+      args:
+        SOURCE_COMMIT: ${SOURCE_COMMIT:?Derive the committed source identity}
+    labels:
+      dsoxlab.lab: compose-dans-une-ci
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 1s
+      timeout: 3s
+      retries: 20
+  tests:
+    image: ${PROJECT}-api
+    command: ["python", "test.py"]
+    labels:
+      dsoxlab.lab: compose-dans-une-ci
+    environment:
+      EXPECTED_VALUE: ${EXPECTED_VALUE}
+      TEST_FAIL: ${TEST_FAIL:-0}
+    volumes:
+      - ${ARTIFACT_DIR}:/artifacts
+    depends_on:
+      api:
+        condition: service_healthy
+networks:
+  default:
+    internal: true
+    labels:
+      dsoxlab.lab: compose-dans-une-ci

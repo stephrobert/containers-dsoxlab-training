@@ -1,0 +1,2 @@
+title: "Remettre une stack Compose en service"
+description: "Construire une stack Compose à deux services avec un producteur ponctuel ordonné, des données nommées partagées, un service web sain en lecture seule et un point d'accès limité à la boucle locale."

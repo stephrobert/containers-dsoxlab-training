@@ -1,0 +1,14 @@
+services:
+  worker:
+    image: alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+    labels:
+      dsoxlab.lab: securite-apparmor
+    network_mode: none
+    mem_limit: 64m
+    memswap_limit: 64m
+    pids_limit: 32
+    cpus: 0.25
+    cap_drop: [ALL]
+    security_opt:
+      - apparmor:unconfined
+    command: ["sh", "-c", "mkdir -p /lab; printf public > /lab/public.txt; printf pedagogic > /lab/private.txt; chmod 444 /lab/*.txt; while :; do sleep 3600; done"]

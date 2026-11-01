@@ -1,0 +1,2 @@
+title: "Remove direct Docker socket access"
+description: "Remove the host socket mount; read-only on a Unix socket does not create a read-only API."
