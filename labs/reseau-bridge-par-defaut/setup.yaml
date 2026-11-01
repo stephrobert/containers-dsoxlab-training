@@ -129,9 +129,16 @@
 
     - name: Relever l'adresse de `arriere`, pour pouvoir l'attendre
       ansible.builtin.command:
-        cmd: >
-          docker container inspect arriere
-          --format {{ '{{' }}range .NetworkSettings.Networks{{ '}}' }}{{ '{{' }}.IPAddress{{ '}}' }}{{ '{{' }}end{{ '}}' }}
+        # `argv` ET NON `cmd` : le format Go contient un espace, et un
+        # `cmd:` le decouperait en deux arguments. Go recevrait
+        # `{{range` seul et repondrait « unclosed action ».
+        argv:
+          - docker
+          - container
+          - inspect
+          - arriere
+          - --format
+          - "{{ '{{' }}range .NetworkSettings.Networks{{ '}}' }}{{ '{{' }}.IPAddress{{ '}}' }}{{ '{{' }}end{{ '}}' }}"
       register: adresse_arriere
       changed_when: false
       failed_when: adresse_arriere.stdout | trim | length == 0
