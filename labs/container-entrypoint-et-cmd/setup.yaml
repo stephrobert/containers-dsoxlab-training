@@ -25,6 +25,22 @@
       alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
     travail: /opt/lab-entrypoint
   tasks:
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE. Le socle public est partage entre
+      # labs : celui qui le retire alors qu'un autre l'avait tire casse la photo
+      # initiale du suivant, et celui qui ne le retire pas laisse l'image du
+      # precedent. Mesure du 2026-11-01 : sept labs ROUGE sur ce seul motif.
+      # Le marqueur dit au cleanup s'il doit rendre l'image, ou la laisser.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-container-entrypoint-et-cmd.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-container-entrypoint-et-cmd.socle-a-rendre'
+          docker pull 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null
+        fi
+      changed_when: false
+
     - name: Installer le moteur de conteneurs
       ansible.builtin.apt:
         name: docker-ce

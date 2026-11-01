@@ -20,6 +20,18 @@
     tag_local: lab-publication:1.0
     atelier: /opt/lab-publication
   tasks:
+    - name: Rendre le socle public, et seulement si ce lab l'a tire
+      # Voir la tache jumelle du setup : sans ce test, le lab retire une image
+      # que d'autres partagent, ou laisse celle qu'il a tiree.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-reseau-publication-de-ports.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-reseau-publication-de-ports.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Retirer les trois conteneurs, AVANT l'image dont ils dérivent
       ansible.builtin.shell:
         cmd: docker rm -f vitrine annexe interne 2>/dev/null || true
@@ -27,7 +39,7 @@
 
     - name: Retirer l'image de service, puis l'image de base par son digest
       ansible.builtin.shell:
-        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+        cmd: docker rmi -f {{ tag_local }} 2>/dev/null || true
       changed_when: false
 
     - name: Retirer les couches orphelines et le cache de construction

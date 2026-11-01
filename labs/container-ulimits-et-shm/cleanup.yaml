@@ -19,6 +19,18 @@
     tag_local: lab-ulimits:1.0
     atelier: /opt/lab-ulimits
   tasks:
+    - name: Rendre le socle public, et seulement si ce lab l'a tire
+      # Voir la tache jumelle du setup : sans ce test, le lab retire une image
+      # que d'autres partagent, ou laisse celle qu'il a tiree.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-container-ulimits-et-shm.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-container-ulimits-et-shm.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Retirer le conteneur, et avec lui sa mémoire partagée
       ansible.builtin.shell:
         cmd: docker rm -f etroit 2>/dev/null || true
@@ -26,7 +38,7 @@
 
     - name: Retirer le tag local, puis l'image par son digest
       ansible.builtin.shell:
-        cmd: docker rmi -f {{ tag_local }} {{ image_epinglee }} 2>/dev/null || true
+        cmd: docker rmi -f {{ tag_local }} 2>/dev/null || true
       changed_when: false
 
     - name: Retirer les couches orphelines

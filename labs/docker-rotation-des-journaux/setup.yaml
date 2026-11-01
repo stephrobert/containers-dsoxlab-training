@@ -5,6 +5,21 @@
   vars:
     pinned_image: alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
   tasks:
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Ce
+      # lab TIRAIT le socle sans jamais le retirer : le validateur comptait
+      # « image laisse », et le lab suivant heritait d'un moteur modifie. Le
+      # marqueur dit au cleanup s'il doit rendre l'image, ou la laisser parce
+      # qu'elle etait deja la.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-docker-rotation-des-journaux.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-docker-rotation-des-journaux.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Install Docker and the small test runtime
       ansible.builtin.apt:
         name: [docker-ce, python3]
