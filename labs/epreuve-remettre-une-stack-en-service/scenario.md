@@ -1,13 +1,13 @@
 # Bring the stack back into service
 
-The local image `dsoxlab-compose-capstone:service` contains two roles. `writer`
+The local image `dsoxlab-epreuve-remettre-une-stack-en-service:service` contains two roles. `writer`
 copies a supplied release marker into `/data` and exits; `web` serves that file
 on port 8080. No application containers or volumes exist yet.
 
 ## Mission
 
-Create `/opt/lab-compose-capstone/compose.yaml` for project
-`dsoxlab-compose-capstone`. Define exactly two services using the supplied
+Create `/opt/lab-epreuve-remettre-une-stack-en-service/compose.yaml` for project
+`dsoxlab-epreuve-remettre-une-stack-en-service`. Define exactly two services using the supplied
 image: `writer` with `ROLE=writer`, and `web` with `ROLE=web`. Use a named
 volume mounted at `/data` by both services. The writer must be the successful
 one-shot prerequisite for web; web must mount the data read-only.

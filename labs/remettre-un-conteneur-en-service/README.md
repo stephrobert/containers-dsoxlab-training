@@ -1,4 +1,4 @@
-# reseau-diagnostic-dns: the networking track's assessment
+# remettre-un-conteneur-en-service: the networking track's assessment
 
 ## What this assessment tests
 

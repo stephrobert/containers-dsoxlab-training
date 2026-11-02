@@ -39,9 +39,9 @@ garde le sien.
 **5. Le remplacement réel conserve la donnée métier nouvelle.**
 
 Gardez l'image fournie et `dsoxlab-diagnostic-data` sur `/data`.
-Installez `/opt/lab-diagnostic/recreate.sh` : le nouveau conteneur sert la
+Installez `/opt/lab-remise-en-service/recreate.sh` : le nouveau conteneur sert la
 valeur nouvelle de `/data/jeton` via le chemin corrigé, sans exposition.
-Tout réseau ajouté porte `dsoxlab.lab=reseau-diagnostic-dns` ; aucun prune global.
+Tout réseau ajouté porte `dsoxlab.lab=remettre-un-conteneur-en-service` ; aucun prune global.
 
 ## C'est une épreuve
 

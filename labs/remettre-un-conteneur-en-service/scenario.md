@@ -32,11 +32,11 @@ Both are built on the image `lab-diagnostic:1.0`.
 4. From `boutique`, the name `catalogue` resolves **as well**: operations must
    keep designating the container by its real name.
 5. Preserve the supplied image and mount `dsoxlab-diagnostic-data` at `/data`.
-   Implement executable `/opt/lab-diagnostic/recreate.sh`, without arguments.
+   Implement executable `/opt/lab-remise-en-service/recreate.sh`, without arguments.
    It actually replaces `catalogue` without losing a fresh value written to
    `/data/jeton`; the replacement serves that exact value from `boutique`
    and remains unexposed. Label any added network
-   `dsoxlab.lab=reseau-diagnostic-dns`; no global prune is permitted.
+   `dsoxlab.lab=remettre-un-conteneur-en-service`; no global prune is permitted.
 
 The brief is also written to `/opt/MISSION.md`.
 

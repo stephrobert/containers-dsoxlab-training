@@ -1,13 +1,13 @@
 # Remettre la stack en service
 
-L'image locale `dsoxlab-compose-capstone:service` contient deux rôles.
+L'image locale `dsoxlab-epreuve-remettre-une-stack-en-service:service` contient deux rôles.
 `writer` copie un marqueur release fourni dans `/data` puis s'arrête ; `web`
 sert ce fichier sur le port 8080. Aucun conteneur applicatif ni volume n'existe.
 
 ## Mission
 
-Créez `/opt/lab-compose-capstone/compose.yaml` pour le projet
-`dsoxlab-compose-capstone`. Déclarez exactement deux services avec l'image
+Créez `/opt/lab-epreuve-remettre-une-stack-en-service/compose.yaml` pour le projet
+`dsoxlab-epreuve-remettre-une-stack-en-service`. Déclarez exactement deux services avec l'image
 fournie : `writer` avec `ROLE=writer` et `web` avec `ROLE=web`. Utilisez un
 volume nommé monté sur `/data` par les deux services. `writer` doit réussir
 avant web, qui monte les données en lecture seule.

@@ -27,14 +27,14 @@
 # `catalogue` résout ENCORE, ce qui permet d'exiger les deux noms et donc
 # d'écarter un simple renommage. Et la publication subsiste à tout, puisque
 # aucune commande ne retire un `-p`.
-- name: Préparer le challenge reseau-diagnostic-dns
+- name: Préparer le challenge remettre-un-conteneur-en-service
   hosts: lab_target
   become: true
   vars:
     image_epinglee: >-
       alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
     tag_local: lab-diagnostic:1.0
-    atelier: /opt/lab-diagnostic
+    atelier: /opt/lab-remise-en-service
     reseau_boutique: front
     reseau_catalogue: arriere-plan
     port_publie: 18095
@@ -48,9 +48,9 @@
       ansible.builtin.shell: |
         set -eu
         if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
-          rm -f '/var/tmp/dsoxlab-reseau-diagnostic-dns.socle-a-rendre'
+          rm -f '/var/tmp/dsoxlab-remettre-un-conteneur-en-service.socle-a-rendre'
         else
-          : > '/var/tmp/dsoxlab-reseau-diagnostic-dns.socle-a-rendre'
+          : > '/var/tmp/dsoxlab-remettre-un-conteneur-en-service.socle-a-rendre'
           docker pull 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null
         fi
       changed_when: false
@@ -87,12 +87,12 @@
           existing = json.loads(subprocess.check_output(["docker", "image", "inspect", *set(images)], text=True)) if images else []
           for image in existing:
               if "lab-diagnostic:1.0" in (image["RepoTags"] or []) and (
-                  (image["Config"]["Labels"] or {}).get("dsoxlab.lab") != "reseau-diagnostic-dns"):
+                  (image["Config"]["Labels"] or {}).get("dsoxlab.lab") != "remettre-un-conteneur-en-service"):
                   raise SystemExit("Reserved diagnostic image tag belongs to another owner")
           volumes = subprocess.check_output(["docker", "volume", "ls", "-q"], text=True).split()
           if "dsoxlab-diagnostic-data" in volumes:
               volume = json.loads(subprocess.check_output(["docker", "volume", "inspect", "dsoxlab-diagnostic-data"], text=True))[0]
-              if (volume["Labels"] or {}).get("dsoxlab.lab") != "reseau-diagnostic-dns":
+              if (volume["Labels"] or {}).get("dsoxlab.lab") != "remettre-un-conteneur-en-service":
                   raise SystemExit("Reserved diagnostic volume belongs to another owner")
           Path("/root/.lab-diagnostic-state.json").write_text(json.dumps({"images": images}))
           PY
@@ -108,11 +108,11 @@
       ansible.builtin.shell:
         cmd: |
           set -eu
-          ids=$(docker ps -aq --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
           if test -n "$ids"; then docker rm -f $ids; fi
-          ids=$(docker network ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
           if test -n "$ids"; then docker network rm $ids; fi
-          ids=$(docker volume ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          ids=$(docker volume ls -q --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
           if test -n "$ids"; then docker volume rm $ids; fi
       changed_when: false
 
@@ -146,7 +146,7 @@
         mode: "0644"
         content: |
           FROM {{ image_epinglee }}
-          LABEL dsoxlab.lab="reseau-diagnostic-dns"
+          LABEL dsoxlab.lab="remettre-un-conteneur-en-service"
           COPY ecouteur.sh /usr/local/bin/ecouteur.sh
           CMD ["sh", "/usr/local/bin/ecouteur.sh"]
 
@@ -169,13 +169,13 @@
       changed_when: true
     - name: Créer le volume durable du catalogue
       ansible.builtin.command:
-        cmd: docker volume create --label dsoxlab.lab=reseau-diagnostic-dns dsoxlab-diagnostic-data
+        cmd: docker volume create --label dsoxlab.lab=remettre-un-conteneur-en-service dsoxlab-diagnostic-data
       changed_when: true
 
     # FAUTE 1 : deux réseaux dédiés, un par conteneur.
     - name: Créer les deux réseaux, comme deux stacks montées séparément
       ansible.builtin.command:
-        cmd: docker network create --label dsoxlab.lab=reseau-diagnostic-dns --subnet {{ item.cidr }} {{ item.nom }}
+        cmd: docker network create --label dsoxlab.lab=remettre-un-conteneur-en-service --subnet {{ item.cidr }} {{ item.nom }}
       loop:
         - { nom: "{{ reseau_boutique }}", cidr: 172.30.1.0/24 }
         - { nom: "{{ reseau_catalogue }}", cidr: 172.30.2.0/24 }
@@ -238,7 +238,7 @@
                l exploitation doit continuer a designer le conteneur par son
                nom reel.
             5. gardez le volume dsoxlab-diagnostic-data sur /data et l image
-               fournie. Installez /opt/lab-diagnostic/recreate.sh executable,
+               fournie. Installez /opt/lab-remise-en-service/recreate.sh executable,
                sans argument : une recreation conserve le jeton nouveau
                ecrit dans /data/jeton et la reponse depuis boutique.
 
@@ -249,7 +249,7 @@
 
           Gardez les noms des conteneurs : les controles les cherchent
           nommement.
-          Tout reseau ajoute doit porter dsoxlab.lab=reseau-diagnostic-dns.
+          Tout reseau ajoute doit porter dsoxlab.lab=remettre-un-conteneur-en-service.
           Aucun prune global. La conservation des donnees est critique :
           le seuil numerique ne remplace pas la reussite de ce controle.
 

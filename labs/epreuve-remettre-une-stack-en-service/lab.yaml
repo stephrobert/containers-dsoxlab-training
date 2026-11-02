@@ -1,5 +1,5 @@
-# Lab compose-capstone.
-id: compose-capstone
+# Lab epreuve-remettre-une-stack-en-service.
+id: epreuve-remettre-une-stack-en-service
 title: "Bring a Compose stack back into service"
 level: c3
 description: "Build a two-service Compose stack with an ordered one-shot producer, shared named data, a healthy read-only web service, and a loopback-only endpoint."
@@ -9,8 +9,9 @@ skills:
   - persistent-data
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
-lab_type: capstone
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/
+lab_type: challenge
+exam_passing_score: 75
 estimated_time: 45m
 runtime:
   type: vm

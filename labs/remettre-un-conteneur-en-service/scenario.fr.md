@@ -33,11 +33,11 @@ Les deux sont bâtis sur l'image `lab-diagnostic:1.0`.
 4. Depuis `boutique`, le nom `catalogue` se résout **aussi** : l'exploitation
    doit continuer à désigner le conteneur par son nom réel.
 5. Gardez l'image fournie et le volume `dsoxlab-diagnostic-data` sur `/data`.
-   Installez `/opt/lab-diagnostic/recreate.sh` exécutable sans argument :
+   Installez `/opt/lab-remise-en-service/recreate.sh` exécutable sans argument :
    il remplace réellement `catalogue` sans perdre la valeur nouvelle écrite
    dans `/data/jeton`. Le remplaçant sert cette valeur exacte depuis `boutique`
    et reste non exposé. Tout réseau ajouté porte
-   `dsoxlab.lab=reseau-diagnostic-dns` ; aucun prune global.
+   `dsoxlab.lab=remettre-un-conteneur-en-service` ; aucun prune global.
 
 L'énoncé est aussi déposé dans `/opt/MISSION.md`.
 

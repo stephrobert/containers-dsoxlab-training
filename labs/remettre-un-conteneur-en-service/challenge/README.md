@@ -39,9 +39,9 @@ theirs.
 **5. Actual replacement preserves fresh business data.**
 
 Keep the supplied image and `dsoxlab-diagnostic-data` mounted at `/data`.
-Implement `/opt/lab-diagnostic/recreate.sh`; the new container must serve the
+Implement `/opt/lab-remise-en-service/recreate.sh`; the new container must serve the
 fresh `/data/jeton` value through the corrected application path without exposure.
-Added networks carry `dsoxlab.lab=reseau-diagnostic-dns`; no global prune.
+Added networks carry `dsoxlab.lab=remettre-un-conteneur-en-service`; no global prune.
 
 ## This is an assessment
 

@@ -121,7 +121,7 @@ def test_les_epreuves_integrees_suivent_leurs_prerequis() -> None:
     order = _declares()
     assert order.index("container-signaux-et-pid-1") < order.index("container-arret-transactionnel")
     assert order.index("donnees-permissions-uid-gid") < order.index("container-arret-transactionnel")
-    assert order.index("donnees-volumes-et-montages") < order.index("reseau-diagnostic-dns")
+    assert order.index("donnees-volumes-et-montages") < order.index("remettre-un-conteneur-en-service")
     assert order.index("compose-correlation-et-saturation") < order.index("donnees-postgres-sauvegarde")
     assert order.index("container-systeme-en-lecture-seule") < order.index("reseau-pare-feu-cible")
     assert order.index("reseau-pare-feu-cible") < order.index("container-limite-de-processus")

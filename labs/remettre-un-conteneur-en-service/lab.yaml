@@ -1,10 +1,10 @@
-# Challenge reseau-diagnostic-dns. Les champs marqués REQUIS sont exigés par le validator :
+# Challenge remettre-un-conteneur-en-service. Les champs marqués REQUIS sont exigés par le validator :
 # sans eux, le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 #
 # `lab_type: challenge` et non `lab` : c'est ce qui autorise
 # `exam_passing_score`, et ce qui dit à l'apprenant que cette épreuve ÉVALUE.
 # Rien n'y est réexpliqué : les labs réseau du parcours l'ont enseigné.
-id: reseau-diagnostic-dns                      # REQUIS
+id: remettre-un-conteneur-en-service                      # REQUIS
 title: "The shop cannot find its catalogue"            # REQUIS
 level: c1                     # REQUIS
 description: "Repair real name resolution, access and exposure faults, then recreate the catalogue without losing a fresh persistent business value."
@@ -16,7 +16,7 @@ skills:                       # REQUIS, non vide
   - persistence
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/
 lab_type: challenge
 exam_passing_score: 75
 estimated_time: 45m

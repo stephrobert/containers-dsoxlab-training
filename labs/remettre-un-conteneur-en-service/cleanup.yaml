@@ -9,9 +9,9 @@
       ansible.builtin.shell: |
         set -eu
         if ! command -v docker >/dev/null 2>&1; then exit 0; fi
-        if test -e '/var/tmp/dsoxlab-reseau-diagnostic-dns.socle-a-rendre'; then
+        if test -e '/var/tmp/dsoxlab-remettre-un-conteneur-en-service.socle-a-rendre'; then
           docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
-          rm -f '/var/tmp/dsoxlab-reseau-diagnostic-dns.socle-a-rendre'
+          rm -f '/var/tmp/dsoxlab-remettre-un-conteneur-en-service.socle-a-rendre'
         fi
       changed_when: false
 
@@ -19,13 +19,13 @@
       ansible.builtin.shell:
         cmd: |
           set -eu
-          ids=$(docker ps -aq --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
           if test -n "$ids"; then docker rm -f $ids; fi
-          ids=$(docker network ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
           if test -n "$ids"; then docker network rm $ids; fi
-          ids=$(docker volume ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          ids=$(docker volume ls -q --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
           if test -n "$ids"; then docker volume rm $ids; fi
-          ids=$(docker image ls -q --filter label=dsoxlab.lab=reseau-diagnostic-dns)
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
           if test -n "$ids"; then docker image rm $ids; fi
       changed_when: false
     - name: Examiner le marqueur de cache préparé
@@ -56,4 +56,4 @@
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      loop: [/opt/lab-diagnostic, /root/.lab-diagnostic-state.json, /opt/MISSION.md]
+      loop: [/opt/lab-remise-en-service, /root/.lab-diagnostic-state.json, /opt/MISSION.md]

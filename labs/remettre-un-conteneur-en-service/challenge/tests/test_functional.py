@@ -1,4 +1,4 @@
-"""Tests fonctionnels du challenge reseau-diagnostic-dns : cinq contrôles de poids égal.
+"""Tests fonctionnels du challenge remettre-un-conteneur-en-service : cinq contrôles de poids égal.
 
 C'EST UNE ÉPREUVE, et cela change ce que les messages doivent dire. Un lab
 guide : son message nomme le geste qui manque. Un challenge évalue : son message
@@ -92,7 +92,7 @@ def test_la_recreation_conserve_la_donnee_et_la_reponse_metier(host) -> None:
     )
     marker = uuid.uuid4().hex
     written = host.run("docker exec %s sh -c %s", BASE, f"printf '%s' '{marker}' > /data/jeton")
-    recreated = host.run("/opt/lab-diagnostic/recreate.sh")
+    recreated = host.run("/opt/lab-remise-en-service/recreate.sh")
     assert written.rc == recreated.rc == 0, message(
         en="The fresh data write and executable recreation operation must succeed.",
         fr="L'écriture nouvelle et l'opération de recréation exécutable doivent réussir.",

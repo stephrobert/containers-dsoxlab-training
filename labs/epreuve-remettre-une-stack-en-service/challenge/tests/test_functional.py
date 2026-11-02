@@ -10,8 +10,8 @@ import pytest
 
 from conftest import lab_host, message
 
-PROJECT = "dsoxlab-compose-capstone"
-COMPOSE = "/opt/lab-compose-capstone/compose.yaml"
+PROJECT = "dsoxlab-epreuve-remettre-une-stack-en-service"
+COMPOSE = "/opt/lab-epreuve-remettre-une-stack-en-service/compose.yaml"
 PORT = 18092
 
 
@@ -47,7 +47,7 @@ def _stack(host):
         fr="Il manque un service requis dans le projet Compose.",
     )
     writer, web = services["writer"], services["web"]
-    image = host.run("docker image inspect dsoxlab-compose-capstone:service")
+    image = host.run("docker image inspect dsoxlab-epreuve-remettre-une-stack-en-service:service")
     assert image.rc == 0, message(
         en="Cannot inspect the supplied stack image.",
         fr="Impossible d'inspecter l'image de stack fournie.",
@@ -119,7 +119,7 @@ def _stack(host):
 
 
 def _release(host):
-    state = host.file("/opt/lab-compose-capstone/state.json")
+    state = host.file("/opt/lab-epreuve-remettre-une-stack-en-service/state.json")
     assert state.exists, message(
         en="The supplied release fixture is missing.",
         fr="Le jeu de données de release fourni est absent.",

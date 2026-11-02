@@ -1,5 +1,5 @@
 ---
-- name: Préparer le lab compose-capstone
+- name: Préparer le lab epreuve-remettre-une-stack-en-service
   hosts: lab_target
   become: true
   tasks:
@@ -20,7 +20,7 @@
         append: true
     - name: Créer le contexte de construction
       ansible.builtin.file:
-        path: /opt/lab-compose-capstone
+        path: /opt/lab-epreuve-remettre-une-stack-en-service
         state: directory
         mode: "0755"
     - name: Générer le contenu attendu
@@ -28,12 +28,12 @@
         release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=20, chars=['ascii_letters']) }}"
     - name: Déposer le contenu de départ
       ansible.builtin.copy:
-        dest: /opt/lab-compose-capstone/release.txt
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/release.txt
         content: "{{ release }}\n"
         mode: "0644"
     - name: Déposer le comportement des services
       ansible.builtin.copy:
-        dest: /opt/lab-compose-capstone/start.sh
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/start.sh
         mode: "0755"
         content: |
           #!/bin/sh
@@ -52,22 +52,22 @@
           esac
     - name: Déposer le Dockerfile
       ansible.builtin.copy:
-        dest: /opt/lab-compose-capstone/Dockerfile
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/Dockerfile
         mode: "0644"
         content: |
           FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
-          LABEL dsoxlab.lab="compose-capstone"
+          LABEL dsoxlab.lab="epreuve-remettre-une-stack-en-service"
           RUN apk add --no-cache busybox-extras
           COPY release.txt /seed/release.txt
           COPY start.sh /usr/local/bin/start.sh
           ENTRYPOINT ["/usr/local/bin/start.sh"]
     - name: Construire l'image locale de la mission
       ansible.builtin.command:
-        cmd: docker build -t dsoxlab-compose-capstone:service /opt/lab-compose-capstone
+        cmd: docker build -t dsoxlab-epreuve-remettre-une-stack-en-service:service /opt/lab-epreuve-remettre-une-stack-en-service
       changed_when: true
     - name: Déposer les données de validation
       ansible.builtin.copy:
-        dest: /opt/lab-compose-capstone/state.json
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/state.json
         content: "{{ {'release': release} | to_json }}\n"
         mode: "0644"
     - name: Déposer la mission

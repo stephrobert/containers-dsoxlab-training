@@ -1,4 +1,4 @@
-# reseau-diagnostic-dns : l'épreuve du parcours réseau
+# remettre-un-conteneur-en-service : l'épreuve du parcours réseau
 
 ## Ce que cette épreuve éprouve
 

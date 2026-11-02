@@ -49,7 +49,7 @@ une épreuve, et sans seuil `dsoxlab submit` ne rend aucun verdict).
 
 ## 2. `epreuve-restaurer-une-stack` : l'épreuve du niveau 3 (C34)
 
-**Pourquoi il manque.** `compose-capstone` prouve « livrer une stack
+**Pourquoi il manque.** `epreuve-remettre-une-stack-en-service` prouve « livrer une stack
 exploitable » au minimum, en **un seul test**, sur un couple `writer`/`web` qui
 sert un fichier texte. Il ne prouve ni la restauration après perte, ni le
 passage sur un environnement distinct, qui sont les critères du niveau. Il
