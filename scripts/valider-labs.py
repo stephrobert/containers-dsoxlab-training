@@ -208,13 +208,47 @@ print(json.dumps(state))
 """
 
 
+# L'OUTIL DU MOTEUR N'EST PAS UN OBJET DE LAB. `docker buildx create` tire
+# `moby/buildkit:buildx-stable-1` implicitement : c'est le moteur de
+# construction, au même titre que le démon. Elle n'est le livrable d'aucun lab,
+# elle sert tous les `buildx` suivants de la machine, et la retirer coûte 249 Mo
+# de retéléchargement à l'apprenant pour un objet qu'il n'a pas demandé.
+#
+# La compter faisait dépendre le verdict d'un fait qu'aucun lab ne contrôle :
+# un constructeur avait-il déjà été créé sur cette machine ? Mesuré le
+# 2026-11-02, les deux labs qui emploient buildx, joués SEULS, rendaient deux
+# écarts opposés sur cette seule image, selon l'état de départ.
+#
+# L'exemption nomme un dépôt, et pas un motif large : une exemption large finit
+# par couvrir ce qu'on voulait mesurer.
+OUTILS_DU_MOTEUR = ("moby/buildkit:",)
+
+
+def _est_un_outil_du_moteur(nom: str) -> bool:
+    """Vrai pour une image que le moteur tire pour lui, pas pour le lab."""
+    return nom.startswith(OUTILS_DU_MOTEUR)
+
+
+def _a_comparer(categorie: str, noms) -> set:
+    """Les noms d'une catégorie, l'outil du moteur retiré des seules images.
+
+    L'exemption ne porte QUE sur les images. Un conteneur de constructeur est
+    bien à la charge du lab, et il continue de compter.
+    """
+    if categorie != "images":
+        return set(noms)
+    return {nom for nom in noms if not _est_un_outil_du_moteur(nom)}
+
+
 def ecarts(avant: dict, apres: dict) -> list[str]:
     """Ce que le lab a laissé derrière lui, nommé objet par objet."""
     trouves = []
     for categorie in ("images", "conteneurs", "volumes", "reseaux"):
-        restes = sorted(set(apres[categorie]) - set(avant[categorie]))
+        def garder(noms, _c=categorie):
+            return _a_comparer(_c, noms)
+        restes = sorted(garder(apres[categorie]) - garder(avant[categorie]))
         trouves += [f"{categorie[:-1]} laissé : {nom}" for nom in restes]
-        supprimes = sorted(set(avant[categorie]) - set(apres[categorie]))
+        supprimes = sorted(garder(avant[categorie]) - garder(apres[categorie]))
         trouves += [f"{categorie[:-1]} préexistant supprimé : {nom}" for nom in supprimes]
     if apres["workdir_present"]:
         trouves.append("le répertoire de travail existe encore après `clean`")

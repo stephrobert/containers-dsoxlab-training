@@ -37,20 +37,22 @@
           fi
       changed_when: false
 
-    - name: Retirer l'image du constructeur, qu'aucun conteneur n'utilise plus
-      # `docker buildx rm` retire le conteneur du constructeur, jamais son
-      # image : elle reste sur l'hote (249 Mo), et le cycle de validation la
-      # compte comme laissee. Le filtre `ancestor` protege un constructeur
-      # d'un autre lab qui tournerait sur la meme machine.
-      ansible.builtin.shell:
-        cmd: |
-          set -eu
-          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
-          utilisee=$(docker ps -aq --filter ancestor=moby/buildkit)
-          if test -n "$utilisee"; then exit 0; fi
-          images=$(docker image ls -q --filter reference='moby/buildkit')
-          if test -n "$images"; then docker image rm -f $images; fi
-      changed_when: false
+    # L'IMAGE DU CONSTRUCTEUR N'EST PAS RETIRÉE, et c'est délibéré.
+    #
+    # Ce cleanup la retirait, pour une raison qui était une erreur de
+    # raisonnement : le cycle de validation la comptait comme laissée. La
+    # correction avait donc été appliquée à la plainte de la mesure, et non au
+    # fait. `docker buildx create` tire `moby/buildkit:buildx-stable-1`
+    # implicitement : c'est le moteur de construction, elle n'est le livrable
+    # d'aucun lab, elle sert tous les `buildx` suivants de la machine, et la
+    # retirer coûte 249 Mo de retéléchargement à l'apprenant, pour un objet
+    # qu'il n'a pas demandé.
+    #
+    # Pire, le lab retirait ainsi une image qu'il n'avait pas créée quand elle
+    # préexistait. Mesuré le 2026-11-02 : joué seul sur une machine portant
+    # déjà un constructeur, il sortait ROUGE sur « image préexistante
+    # supprimée ». Le validateur l'exempte désormais, et le cleanup ne retire
+    # plus que le CONTENEUR du constructeur, qui est bien à lui.
 
     - name: Retirer seulement les fichiers du lab
       ansible.builtin.file:
