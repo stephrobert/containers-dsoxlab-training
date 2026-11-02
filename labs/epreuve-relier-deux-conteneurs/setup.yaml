@@ -1,0 +1,280 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# C'EST UNE ÉPREUVE, et cela change la façon d'écrire ce setup. Un lab pose une
+# situation et nomme le geste ; un challenge pose une PANNE et ne nomme que le
+# symptôme. Les quatre fautes ci-dessous ne sont dites nulle part : ni dans
+# l'énoncé, ni dans les deux premiers indices.
+#
+# LES QUATRE FAUTES, et chacune est celle qu'on commet pour de vrai en lançant
+# deux conteneurs à la main, sans réfléchir au réseau :
+#   1. `vitrine` et `inventaire` sont tous deux sur le réseau PAR DÉFAUT. On y
+#      obtient une adresse et une route, mais AUCUNE résolution de nom entre
+#      conteneurs : c'est la différence que le module enseigne, et c'est celle
+#      qui surprend le plus, parce que « ça marche » par adresse IP.
+#   2. Le nom que la vitrine interroge, `stock`, n'est porté par personne. Même
+#      sur un réseau à soi, il ne résoudrait pas : il faut un alias réseau.
+#   3. `inventaire` publie un port sur toutes les interfaces. C'est la faute que
+#      l'audit relève, et c'est l'EXIGENCE CRITIQUE de l'épreuve.
+#   4. `vitrine` publie elle aussi sur toutes les interfaces, alors que
+#      l'énoncé ne la veut joignable que depuis la machine.
+#
+# UN BON DIAGNOSTIC LES RÈGLE EN DEUX GESTES : un réseau à soi, puis les deux
+# conteneurs recréés dessus, l'un avec son alias et sans publication, l'autre
+# publié sur la seule interface demandée. Qui corrige faute par faute s'en sort
+# aussi, en quatre fois.
+#
+# CE QUI EST HORS PÉRIMÈTRE, parce que le module ne l'a pas encore enseigné :
+# aucun volume, aucun Compose. La donnée témoin vit dans l'IMAGE, portée par un
+# label, ce qui a un avantage mesurable : elle survit à la recréation des deux
+# conteneurs, donc le contrôle de la traversée ne punit pas un apprenant qui
+# recrée tout, ce qui est pourtant la bonne façon de s'y prendre.
+- name: Préparer l'épreuve epreuve-relier-deux-conteneurs
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    tag_local: lab-relier:1.0
+    atelier: /opt/lab-relier
+    frontal: vitrine
+    base: inventaire
+    nom_cherche: stock
+    # Les ports ne sont ceux d'aucune leçon ni d'aucun autre lab du catalogue :
+    # vérifié par grep sur `labs/` le 2026-11-02.
+    port_vitrine: 18311
+    port_parasite: 18312
+  tasks:
+    - name: Noter si le socle public était déjà présent
+      # UN LAB NE REND QUE CE QU'IL A POSÉ. Le socle public est partagé entre
+      # labs : celui qui le retire alors qu'un autre l'avait tiré casse la
+      # photographie initiale du suivant, et celui qui ne le retire pas laisse
+      # l'image du précédent. Le marqueur dit au cleanup s'il doit rendre
+      # l'image, ou la laisser. Sept labs avaient été ROUGE sur ce seul motif.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ image_epinglee }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-epreuve-relier-deux-conteneurs.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-epreuve-relier-deux-conteneurs.socle-a-rendre'
+          docker pull '{{ image_epinglee }}' >/dev/null
+        fi
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: [docker-ce, python3]
+        state: present
+        update_cache: true
+
+    # Cette épreuve suppose un moteur en état : c'est le sujet de
+    # `epreuve-mettre-un-service-en-marche`, qui ouvre le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Refuser de démarrer si un autre propriétaire tient les noms réservés
+      # Le lab REFUSE de s'installer plutôt que d'écraser le travail d'un autre.
+      # Le tag et les deux noms de conteneurs sont à lui, et seulement à lui :
+      # un homonyme appartenant à quelqu'un d'autre est une collision, pas une
+      # situation à nettoyer en silence.
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess, sys
+          lab = "epreuve-relier-deux-conteneurs"
+          def inspecte(genre, nom):
+              r = subprocess.run(["docker", genre, "inspect", nom],
+                                 capture_output=True, text=True)
+              return json.loads(r.stdout)[0] if r.returncode == 0 else None
+          image = inspecte("image", "{{ tag_local }}")
+          if image and (image["Config"]["Labels"] or {}).get("dsoxlab.lab") != lab:
+              sys.exit("Reserved image tag {{ tag_local }} belongs to another owner")
+          for nom in ("{{ frontal }}", "{{ base }}"):
+              c = inspecte("container", nom)
+              if c and (c["Config"]["Labels"] or {}).get("dsoxlab.lab") != lab:
+                  sys.exit(f"Reserved container name {nom} belongs to another owner")
+          PY
+      changed_when: false
+
+    - name: Photographier les images préexistantes
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          images = subprocess.check_output(
+              ["docker", "image", "ls", "-aq", "--no-trunc"], text=True).split()
+          Path("/root/.lab-relier-state.json").write_text(
+              json.dumps({"images": images}))
+          PY
+      changed_when: true
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer seulement les ressources identifiées du passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          if test -n "$ids"; then docker rm -f $ids; fi
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          if test -n "$ids"; then docker network rm $ids; fi
+      changed_when: false
+
+    - name: Déposer le répertoire de construction
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Tirer au sort la donnée témoin, une fois par passage
+      # Elle est tirée ICI et non écrite en dur : un chiffre figé dans un dépôt
+      # public est une réponse publiée. Elle part ensuite dans l'image, et le
+      # contrôle la relit depuis le LABEL de l'image, pas depuis un fichier de
+      # l'hôte : ainsi elle survit à la recréation des deux conteneurs, qui est
+      # précisément ce que l'épreuve demande de faire.
+      ansible.builtin.shell:
+        cmd: od -An -tx1 -N6 /dev/urandom | tr -d ' \n'
+      register: tirage_article
+      changed_when: true
+
+    - name: Écrire la donnée témoin que l'image portera
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/article.txt"
+        mode: "0644"
+        content: "{{ tirage_article.stdout }}"
+
+    # Le service est porté par l'image : l'épreuve fait recréer des conteneurs,
+    # et l'apprenant ne doit pas avoir à réécrire un service qu'il n'a jamais
+    # vu. Les contrôles lisent la RÉPONSE, jamais la seule connexion : le proxy
+    # de Docker accepte dès le `run`, avant que quoi que ce soit écoute.
+    - name: Écrire le service que l'image portera, dans ses deux rôles
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/service.sh"
+        mode: "0755"
+        content: |
+          set -eu
+          case "${ROLE:-}" in
+            base)
+              while true; do
+                printf 'article=%s\n' "$(cat /etc/article)" | nc -l -p 80 || true
+              done
+              ;;
+            vitrine)
+              while true; do
+                recu=$(nc -w 3 "${CIBLE:-stock}" 80 2>/dev/null || true)
+                test -n "$recu" || recu='article=injoignable'
+                printf 'vitrine=ok\n%s\n' "$recu" | nc -l -p 80 || true
+              done
+              ;;
+            *)
+              echo 'ROLE must be base or vitrine' >&2
+              exit 64
+              ;;
+          esac
+
+    - name: Écrire l'image de service de l'épreuve
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          LABEL dsoxlab.lab="epreuve-relier-deux-conteneurs"
+          LABEL dsoxlab.article="{{ tirage_article.stdout }}"
+          COPY article.txt /etc/article
+          COPY service.sh /usr/local/bin/service.sh
+          CMD ["sh", "/usr/local/bin/service.sh"]
+
+    - name: Construire l'image de service, pour que l'apprenant puisse recréer
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    # FAUTES 1 et 3 : la base est sur le réseau par défaut, et elle publie.
+    - name: Lancer la base, sur le réseau par défaut et publiée par mégarde
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ base }} -e ROLE=base
+          -p {{ port_parasite }}:80 {{ tag_local }}
+      changed_when: true
+
+    # FAUTES 1, 2 et 4 : la vitrine est sur le réseau par défaut, elle cherche
+    # un nom que personne ne porte, et elle publie sur toutes les interfaces.
+    - name: Lancer la vitrine, sur le réseau par défaut et trop exposée
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ frontal }} -e ROLE=vitrine
+          -e CIBLE={{ nom_cherche }} -p {{ port_vitrine }}:80 {{ tag_local }}
+      changed_when: true
+
+    - name: Attendre que la vitrine réponde réellement
+      # Une connexion acceptée ne prouve rien sur un port publié : on attend la
+      # RÉPONSE. Et l'on n'attend pas celle de la base : elle est injoignable
+      # par construction, c'est le symptôme de l'épreuve.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for _ in $(seq 1 30); do
+            if nc -w 3 127.0.0.1 {{ port_vitrine }} 2>/dev/null | grep -q 'vitrine=ok'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'la vitrine ne repond pas apres 30 s' >&2
+          exit 1
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine
+      # Dans l'atelier, et non dans `/opt/MISSION.md` : ce chemin est partagé
+      # par plusieurs labs du catalogue, et deux labs qui écrivent le même
+      # fichier se volent leur énoncé.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : relier deux conteneurs
+
+          Deux conteneurs tournent sur cette machine, `{{ frontal }}` et
+          `{{ base }}`. Ils sont la vitrine d un magasin et son inventaire.
+
+          CE QUI EST CONSTATE, et c est tout ce qui est constate :
+
+            - la vitrine repond, mais elle annonce que l article est
+              injoignable ;
+            - un audit signale que l inventaire repond depuis le reseau de
+              l entreprise ;
+            - la vitrine repond elle aussi depuis le reseau de l entreprise,
+              alors qu elle ne doit l etre que depuis cette machine.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            - la vitrine joint l inventaire par le nom `{{ nom_cherche }}`,
+              qui est ecrit dans sa configuration et ne se change pas ;
+            - l exploitation continue de designer l inventaire par son nom
+              reel, `{{ base }}` : les deux noms doivent resoudre ;
+            - la vitrine est joignable sur le port {{ port_vitrine }} DEPUIS
+              CETTE MACHINE SEULEMENT ;
+            - l inventaire ne publie plus aucun port.
+
+          Les deux conteneurs gardent leurs noms. L image `{{ tag_local }}`
+          porte le service : il n y a rien a reecrire, et les variables
+          d environnement `ROLE` et `CIBLE` sont celles qu elle attend.
+
+          Ni volume ni Compose : ce n est pas le sujet.

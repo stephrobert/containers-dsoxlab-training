@@ -1,0 +1,29 @@
+# Lab epreuve-remettre-une-stack-en-service.
+id: epreuve-remettre-une-stack-en-service
+title: "Bring a Compose stack back into service"
+level: c3
+description: "Rebuild a lost composition: two services in a named project, a front end that reaches its data by service name, a single façade published on the loopback, data that survives the stack being recreated, and values read from the provided environment file."
+skills:
+  - docker-compose
+  - service-orchestration
+  - persistent-data
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/
+lab_type: challenge
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense : une donnée écrite avant
+  # une recréation doit être servie après. C'est la seule chose
+  # qu'une composition perd pour de bon.
+  - test_une_donnee_ecrite_avant_une_recreation_est_servie_apres
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: docker.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

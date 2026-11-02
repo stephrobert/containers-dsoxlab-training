@@ -1,0 +1,2 @@
+title: "Remettre une stack Compose en service"
+description: "Reconstruire une composition perdue : deux services dans un projet nommé, un frontal qui joint ses données par leur nom de service, une seule façade publiée sur la boucle locale, une donnée qui survit à la recréation de la pile, et des valeurs lues dans le fichier d'environnement fourni."

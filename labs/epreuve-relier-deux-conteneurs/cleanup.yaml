@@ -1,0 +1,97 @@
+---
+# Joué par `dsoxlab clean`, et ce qu'il retire est exactement ce que le setup a
+# posé. Rien de plus : aucun `prune`, aucun filtre large. La machine d'un
+# apprenant porte son travail à lui, et un lab qui nettoie trop le détruit.
+#
+# L'ORDRE N'EST PAS LIBRE : les conteneurs d'abord, les réseaux ensuite, les
+# images en dernier. Un réseau qui porte encore un conteneur ne se retire pas,
+# et une image dont un conteneur descend non plus. Deux labs du catalogue
+# avaient été ROUGE sur cette seule inversion.
+#
+# LE RÉSEAU QUE L'APPRENANT A CRÉÉ est retiré lui aussi, et c'est voulu : la
+# correction attendue en crée un, et le laisser ferait échouer la photographie
+# du lab suivant. Il est retrouvé par la seule chose qui le désigne à coup sûr,
+# les conteneurs du lab qui y sont attachés, puisque l'épreuve n'impose aucun
+# nom de réseau.
+- name: Retirer seulement les ressources de l'épreuve relier deux conteneurs
+  hosts: lab_target
+  become: true
+  vars:
+    tag_local: lab-relier:1.0
+    atelier: /opt/lab-relier
+  tasks:
+    - name: Relever les réseaux où vivent les conteneurs du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          if test -z "$ids"; then exit 0; fi
+          docker container inspect $ids \
+            --format '{{ "{{range $nom, $_ := .NetworkSettings.Networks}}{{println $nom}}{{end}}" }}' \
+            | sort -u
+      register: reseaux_portes
+      changed_when: false
+
+    - name: Retirer les conteneurs du lab, avant tout le reste
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          if test -n "$ids"; then docker rm -f $ids; fi
+      changed_when: false
+
+    - name: Retirer les réseaux relevés, sauf ceux que Docker fournit
+      # `bridge`, `host` et `none` sont les réseaux du moteur : les retirer
+      # casserait la machine, et le moteur refuse d'ailleurs de le faire. Un
+      # réseau encore porteur d'un conteneur étranger refuse aussi, et c'est
+      # tant mieux : on ne force pas.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          # Le `""` de tête garde la boucle valide quand la liste est vide :
+          # `for nom in ; do` est une erreur de syntaxe, et le `case` ci-dessous
+          # écarte la chaîne vide de toute façon.
+          for nom in "" {{ (reseaux_portes.stdout_lines | default([])) | map('quote') | join(' ') }}; do
+            case "$nom" in
+              bridge|host|none|'') continue ;;
+            esac
+            docker network rm "$nom" >/dev/null 2>&1 || true
+          done
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          if test -n "$ids"; then docker network rm $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer l'image de service, construite par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if docker image inspect '{{ tag_local }}' >/dev/null 2>&1; then
+            docker image rm -f '{{ tag_local }}' >/dev/null
+          fi
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Rendre le socle public, et seulement si ce lab l'a tiré
+      # Voir la tâche jumelle du setup : sans ce test, le lab retire une image
+      # que d'autres partagent, ou laisse celle qu'il a tirée.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-epreuve-relier-deux-conteneurs.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-epreuve-relier-deux-conteneurs.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer seulement les fichiers préparés
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /root/.lab-relier-state.json

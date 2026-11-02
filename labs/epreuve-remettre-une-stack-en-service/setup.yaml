@@ -1,0 +1,116 @@
+---
+- name: Préparer le lab epreuve-remettre-une-stack-en-service
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Installer Docker, Compose et curl
+      ansible.builtin.apt:
+        name: [docker-ce, docker-compose-plugin, curl]
+        state: present
+        update_cache: true
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Créer le contexte de construction
+      ansible.builtin.file:
+        path: /opt/lab-epreuve-remettre-une-stack-en-service
+        state: directory
+        mode: "0755"
+    - name: Générer le contenu attendu
+      ansible.builtin.set_fact:
+        release: "release-{{ lookup('ansible.builtin.password', '/dev/null', length=20, chars=['ascii_letters']) }}"
+    - name: Déposer le contenu de départ
+      ansible.builtin.copy:
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/release.txt
+        content: "{{ release }}\n"
+        mode: "0644"
+    - name: Déposer le comportement des services
+      ansible.builtin.copy:
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/start.sh
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+          case "${ROLE:-}" in
+            donnees)
+              # Il sert son repertoire sur le reseau, et ne publie rien : seul
+              # le frontal est joignable du dehors.
+              #
+              # La valeur de depart n est posee QUE si elle manque. Sans ce
+              # garde, une recreation effacerait la donnee ecrite entre-temps,
+              # et l exigence critique ne mesurerait plus rien.
+              mkdir -p /data
+              if ! test -f /data/release.txt; then
+                cp /seed/release.txt /data/release.txt
+              fi
+              exec busybox-extras httpd -f -p 8080 -h /data
+              ;;
+            frontal)
+              # Il va chercher la valeur CHEZ le service de donnees, par le nom
+              # que `CIBLE` lui donne, puis la sert a son tour sur 8080.
+              #
+              # IL REESSAIE JUSQU A CE QUE L AMONT REPONDE : l ordre de
+              # demarrage devient indifferent, et c est pourquoi cette epreuve
+              # n exige ni sonde de sante ni condition de dependance, qui
+              # s enseignent au module suivant.
+              mkdir -p /www
+              cible="${CIBLE:?CIBLE manquante}"
+              valeur=amont-injoignable
+              for _ in $(seq 1 60); do
+                if valeur=$(wget -q -T 3 -O - \
+                     "http://${cible}:8080/release.txt" 2>/dev/null); then
+                  break
+                fi
+                sleep 1
+              done
+              printf '%s' "$valeur" > /www/release.txt
+              exec busybox-extras httpd -f -p 8080 -h /www
+              ;;
+            *) exit 64 ;;
+          esac
+    - name: Déposer le fichier d'environnement de la pile
+      # LE CONTRÔLE 5 EXIGE UNE INTERPOLATION, et il faut donc qu'il y ait
+      # quelque chose à interpoler. Ce fichier est lu par Compose sans qu'on
+      # le nomme, du moment qu'il s'appelle `.env` et qu'il est à côté de la
+      # composition.
+      ansible.builtin.copy:
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/.env
+        mode: "0644"
+        content: |
+          # Le port publié de la façade, et l'adresse sur laquelle la publier.
+          # La composition doit les LIRE, pas les recopier : une valeur écrite
+          # en dur dans le fichier ne vient d'aucune interpolation.
+          FACADE_ADRESSE=127.0.0.1
+          FACADE_PORT=18092
+    - name: Déposer le Dockerfile
+      ansible.builtin.copy:
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/Dockerfile
+        mode: "0644"
+        content: |
+          FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+          LABEL dsoxlab.lab="epreuve-remettre-une-stack-en-service"
+          RUN apk add --no-cache busybox-extras
+          COPY release.txt /seed/release.txt
+          COPY start.sh /usr/local/bin/start.sh
+          ENTRYPOINT ["/usr/local/bin/start.sh"]
+    - name: Construire l'image locale de la mission
+      ansible.builtin.command:
+        cmd: docker build -t dsoxlab-epreuve-remettre-une-stack-en-service:service /opt/lab-epreuve-remettre-une-stack-en-service
+      changed_when: true
+    - name: Déposer les données de validation
+      ansible.builtin.copy:
+        dest: /opt/lab-epreuve-remettre-une-stack-en-service/state.json
+        content: "{{ {'release': release} | to_json }}\n"
+        mode: "0644"
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"
