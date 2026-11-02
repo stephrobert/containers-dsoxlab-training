@@ -28,7 +28,6 @@ les règles du pare-feu.
 from __future__ import annotations
 
 import json
-import re
 
 import pytest
 
@@ -248,14 +247,14 @@ def test_le_secret_n_est_ni_dans_l_environnement_ni_dans_l_image(
         SERVICE,
         "{{range .Config.Env}}{{println .}}{{end}}",
     )
-    fautives = [l.strip() for l in env.stdout.splitlines() if secret in l]
+    fautives = [ligne.strip() for ligne in env.stdout.splitlines() if secret in ligne]
     assert not fautives, message(
         en=f"the secret is readable in `{SERVICE}`'s environment:\n"
-           + "\n".join(f"  {l}" for l in fautives) + "\n"
+           + "\n".join(f"  {ligne}" for ligne in fautives) + "\n"
            "An environment variable is read by `docker inspect` and by anyone "
            "who can talk to the daemon. No total makes up for it.",
         fr=f"le secret se lit dans l'environnement de `{SERVICE}` :\n"
-           + "\n".join(f"  {l}" for l in fautives) + "\n"
+           + "\n".join(f"  {ligne}" for ligne in fautives) + "\n"
            "Une variable d'environnement se lit par `docker inspect` et par "
            "quiconque parle au démon. Aucun total ne le compense.",
     )
@@ -392,11 +391,11 @@ def test_le_volume_utile_est_servi_et_les_jetables_sont_retires(
     presents = {v.strip() for v in liste.stdout.splitlines() if v.strip()}
     restants = sorted(set(JETABLES) & presents)
     assert not restants, message(
-        en=f"the disposable volumes are still there:\n"
+        en="the disposable volumes are still there:\n"
            + "\n".join(f"  {v}" for v in restants) + "\n"
            "The brief names which volume counts. Keeping everything is not "
            "caution, it is leaving the next person to guess.",
-        fr=f"les volumes jetables sont encore là :\n"
+        fr="les volumes jetables sont encore là :\n"
            + "\n".join(f"  {v}" for v in restants) + "\n"
            "L'énoncé nomme le volume qui compte. Tout garder n'est pas de la "
            "prudence, c'est laisser le suivant deviner.",

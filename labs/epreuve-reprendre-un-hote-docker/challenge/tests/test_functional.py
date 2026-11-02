@@ -257,10 +257,10 @@ def test_la_place_est_rendue_et_le_volume_utile_est_intact(host, releve) -> None
             trouvees[morceaux[1]] = morceaux[0]
     perdues = sorted(n for n, e in empreintes.items() if trouvees.get(n) != e)
     assert not perdues, message(
-        en=f"backups are missing or altered:\n"
+        en="backups are missing or altered:\n"
            + "\n".join(f"  {n}" for n in perdues) + "\n"
            "The volume is there and its contents are not what they were.",
-        fr=f"des sauvegardes manquent ou sont altérées :\n"
+        fr="des sauvegardes manquent ou sont altérées :\n"
            + "\n".join(f"  {n}" for n in perdues) + "\n"
            "Le volume est là et son contenu n'est pas celui qu'il était.",
     )
@@ -276,16 +276,16 @@ def test_la_place_est_rendue_et_le_volume_utile_est_intact(host, releve) -> None
         "{{.Names}} {{.State}}",
     )
     traine = [
-        l.strip() for l in arretes.stdout.splitlines()
-        if l.strip() and l.split()[-1] in {"exited", "created", "dead"}
+        ligne.strip() for ligne in arretes.stdout.splitlines()
+        if ligne.strip() and ligne.split()[-1] in {"exited", "created", "dead"}
     ]
     assert not traine, message(
-        en=f"stopped containers are still taking up room:\n"
-           + "\n".join(f"  {l}" for l in traine) + "\n"
+        en="stopped containers are still taking up room:\n"
+           + "\n".join(f"  {ligne}" for ligne in traine) + "\n"
            "A stopped container keeps its name, its configuration and its "
            "writable layer.",
-        fr=f"des conteneurs arrêtés occupent encore la place :\n"
-           + "\n".join(f"  {l}" for l in traine) + "\n"
+        fr="des conteneurs arrêtés occupent encore la place :\n"
+           + "\n".join(f"  {ligne}" for ligne in traine) + "\n"
            "Un conteneur arrêté garde son nom, sa configuration et sa couche "
            "d'écriture.",
     )
@@ -386,12 +386,12 @@ def test_le_groupe_docker_ne_porte_que_ceux_qui_doivent_y_etre(
     # doit avoir été ajouté.
     perdus = sorted(avant - membres - {STAGIAIRE})
     assert not perdus, message(
-        en=f"accounts that were in the group before have been removed:\n"
+        en="accounts that were in the group before have been removed:\n"
            + "\n".join(f"  {c}" for c in perdus) + "\n"
            "A removal applied too broadly also takes out the account that "
            "administers the machine. The work looks done, and the host becomes "
            "unreachable to whoever needs it.",
-        fr=f"des comptes qui étaient dans le groupe avant ont été retirés :\n"
+        fr="des comptes qui étaient dans le groupe avant ont été retirés :\n"
            + "\n".join(f"  {c}" for c in perdus) + "\n"
            "Un retrait appliqué trop large emporte aussi le compte qui "
            "administre la machine. Le travail a l'air fait, et l'hôte devient "
@@ -399,11 +399,11 @@ def test_le_groupe_docker_ne_porte_que_ceux_qui_doivent_y_etre(
     )
     ajoutes = sorted(membres - avant - {EXPLOITANT})
     assert not ajoutes, message(
-        en=f"accounts have been added to the group:\n"
+        en="accounts have been added to the group:\n"
            + "\n".join(f"  {c}" for c in ajoutes) + "\n"
            "The brief asks for one removal, not for a new distribution of "
            "rights.",
-        fr=f"des comptes ont été ajoutés au groupe :\n"
+        fr="des comptes ont été ajoutés au groupe :\n"
            + "\n".join(f"  {c}" for c in ajoutes) + "\n"
            "L'énoncé demande un retrait, pas une nouvelle distribution des "
            "droits.",
@@ -506,12 +506,12 @@ def test_le_demon_n_ecoute_aucun_socket_tcp_sans_tls(host) -> None:
         adresse = ligne.split()[3] if len(ligne.split()) > 3 else ""
         fautifs.append(adresse)
     assert not fautifs, message(
-        en=f"the daemon is still listening on a TCP socket:\n"
+        en="the daemon is still listening on a TCP socket:\n"
            + "\n".join(f"  {a}" for a in fautifs) + "\n"
            "Whoever reaches that port can start a privileged container, and so "
            "become root on this machine. Note that correcting a file without "
            "restarting the daemon leaves the listener in place.",
-        fr=f"le démon écoute encore sur un socket TCP :\n"
+        fr="le démon écoute encore sur un socket TCP :\n"
            + "\n".join(f"  {a}" for a in fautifs) + "\n"
            "Quiconque atteint ce port peut lancer un conteneur privilégié, donc "
            "devenir root sur cette machine. À noter : corriger un fichier sans "
@@ -525,11 +525,11 @@ def test_le_demon_n_ecoute_aucun_socket_tcp_sans_tls(host) -> None:
     )
     exposes = re.findall(r"-H\s+tcp://[^\s;]+", ligne.stdout)
     assert not exposes, message(
-        en=f"the daemon is still started with a TCP endpoint:\n"
+        en="the daemon is still started with a TCP endpoint:\n"
            + "\n".join(f"  {e}" for e in exposes) + "\n"
            "The listener may be closed right now and come back at the next "
            "boot: what starts the daemon is what decides.",
-        fr=f"le démon est encore lancé avec un point d'accès TCP :\n"
+        fr="le démon est encore lancé avec un point d'accès TCP :\n"
            + "\n".join(f"  {e}" for e in exposes) + "\n"
            "L'écoute peut être fermée à l'instant et revenir au prochain "
            "démarrage : ce qui lance le démon est ce qui décide.",
@@ -548,7 +548,7 @@ def _adresse_du_proxy(host) -> str:
         f"ancestor={IMAGE_PROXY}",
         "{{.ID}}",
     )
-    identifiants = [l.strip() for l in liste.stdout.splitlines() if l.strip()]
+    identifiants = [ligne.strip() for ligne in liste.stdout.splitlines() if ligne.strip()]
     if not identifiants:
         pytest.fail(message(
             en=f"no container from the `{IMAGE_PROXY}` image is running. The "
@@ -564,7 +564,7 @@ def _adresse_du_proxy(host) -> str:
             trouve = re.search(r"->\s*([0-9.]+):(\d+)", ligne)
             if trouve:
                 hote = trouve.group(1)
-                if hote == "0.0.0.0":
+                if hote == "0.0.0.0":  # noqa: S104 -- dans le conteneur ; la publication du lab est bornée à la boucle locale
                     hote = "127.0.0.1"
                 return f"{hote}:{trouve.group(2)}"
     pytest.fail(message(

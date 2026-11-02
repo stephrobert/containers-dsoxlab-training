@@ -52,7 +52,7 @@ SOURCE_MONTEE = "/app/src"
 # Il existe parce que ni `docker kill` ni un `kill -9 1` interne ne font
 # mourir un service de facon a declencher sa politique : voir la docstring
 # du controle concerne, qui porte les deux mesures.
-DECLENCHEUR = "/tmp/panne-provoquee"
+DECLENCHEUR = "/tmp/panne-provoquee"  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
 
 # Les politiques qui font repartir un conteneur tué. `on-failure` en fait
 # partie : un conteneur tué par un signal sort en échec.
@@ -190,12 +190,12 @@ def test_le_mot_de_passe_n_est_ni_dans_l_environnement_ni_dans_l_image(
         ]
         assert not fautives, message(
             en=f"the password is readable in `{service}`'s environment:\n"
-               + "\n".join(f"  {l}" for l in fautives) + "\n"
+               + "\n".join(f"  {ligne}" for ligne in fautives) + "\n"
                "An environment variable is read by `docker inspect`, by "
                "`docker compose config`, and by anyone who can talk to the "
                "daemon. No total makes up for it.",
             fr=f"le mot de passe se lit dans l'environnement de `{service}` :\n"
-               + "\n".join(f"  {l}" for l in fautives) + "\n"
+               + "\n".join(f"  {ligne}" for ligne in fautives) + "\n"
                "Une variable d'environnement se lit par `docker inspect`, par "
                "`docker compose config`, et par quiconque parle au démon. "
                "Aucun total ne le compense.",
@@ -266,7 +266,7 @@ def test_chaque_service_porte_une_limite_memoire_appliquee(host) -> None:
             conteneur,
             "{{.HostConfig.Memory}}",
         )
-        declaree = int((lu.stdout.strip() or "0"))
+        declaree = int(lu.stdout.strip() or "0")
         assert declaree > 0, message(
             en=f"service `{service}` carries no memory limit the engine "
                "retained.\n"

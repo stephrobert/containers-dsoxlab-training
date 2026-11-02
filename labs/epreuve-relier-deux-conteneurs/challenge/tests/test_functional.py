@@ -117,6 +117,21 @@ def article(host) -> str:
     return res.stdout.strip()
 
 
+def liaisons_lisibles(hotes: set[tuple[str, str]]) -> str:
+    """« 0.0.0.0:18311 », lisible, pour un message d'échec.
+
+    Sortie du message parce qu'une f-string imbriquée qui réutilise le
+    guillemet extérieur est du Python 3.12, et que ce dépôt vise 3.11 : le
+    fichier ne se CHARGEAIT PAS sur la version cible. Ce n'était pas un goût
+    de style, c'était un défaut de portabilité, et seul ruff l'a vu.
+
+    Une adresse vide est rendue `0.0.0.0`, qui est ce qu'elle veut dire : la
+    publication vaut alors pour toutes les interfaces de l'hôte.
+    """
+    return ", ".join(f"{adresse or '0.0.0.0'}:{port}"  # noqa: S104 -- dans le conteneur ; la publication du lab est bornée à la boucle locale
+                     for adresse, port in sorted(hotes))
+
+
 def test_la_vitrine_ne_publie_que_sur_l_interface_demandee(host) -> None:
     """Publier n'est pas publier partout, et l'énoncé le demande explicitement.
 
@@ -147,16 +162,16 @@ def test_la_vitrine_ne_publie_que_sur_l_interface_demandee(host) -> None:
            f"  attendu : {attendu} seul\n"
            "L'énoncé demande une seule entrée, et une seule.",
     )
-    hotes = {(l.get("HostIp") or "", l.get("HostPort") or "")
-             for l in liaisons[attendu] or []}
+    hotes = {(ligne.get("HostIp") or "", ligne.get("HostPort") or "")
+             for ligne in liaisons[attendu] or []}
     assert hotes == {(INTERFACE_ATTENDUE, str(PORT_PUBLIE))}, message(
         en=f"`{FRONTAL}` is published, but not where the brief asks.\n"
-           f"  bindings: {', '.join(f'{i or '0.0.0.0'}:{p}' for i, p in sorted(hotes)) or '(none)'}\n"
+           f"  bindings: {liaisons_lisibles(hotes) or '(none)'}\n"
            f"  expected: {INTERFACE_ATTENDUE}:{PORT_PUBLIE}\n"
            "An empty or 0.0.0.0 address means every interface of the host, so "
            "the company network as well.",
         fr=f"`{FRONTAL}` est publiée, mais pas là où l'énoncé le demande.\n"
-           f"  liaisons : {', '.join(f'{i or '0.0.0.0'}:{p}' for i, p in sorted(hotes)) or '(aucune)'}\n"
+           f"  liaisons : {liaisons_lisibles(hotes) or '(aucune)'}\n"
            f"  attendu  : {INTERFACE_ATTENDUE}:{PORT_PUBLIE}\n"
            "Une adresse vide ou 0.0.0.0 désigne toutes les interfaces de "
            "l'hôte, donc le réseau de l'entreprise aussi.",
@@ -260,7 +275,7 @@ def test_la_base_est_sur_un_reseau_sans_issue(host) -> None:
            "transforme une lecture non autorisée en fuite.",
     )
     routes = host.run("docker exec %s ip route", BASE)
-    defauts = [l for l in routes.stdout.splitlines() if l.startswith("default")]
+    defauts = [ligne for ligne in routes.stdout.splitlines() if ligne.startswith("default")]
     assert routes.rc == 0 and not defauts, message(
         en=f"`{BASE}` still has a default route, so it can leave.\n"
            f"  {' / '.join(defauts) or routes.stderr.strip()[:200]}\n"

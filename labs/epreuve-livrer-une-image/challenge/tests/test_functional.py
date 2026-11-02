@@ -310,7 +310,7 @@ def test_le_compte_en_lecture_seule_ne_peut_pas_publier(host, client) -> None:
     )
 
     sonde = f"{DEPOT}:sonde-lecteur"
-    contexte = "/tmp/dsoxlab-livraison-sonde"
+    contexte = "/tmp/dsoxlab-livraison-sonde"  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
     try:
         derive = client.run(
             "mkdir -p %s && printf 'FROM %s\\nLABEL dsoxlab.lab=\"%s\"\\n' > %s "

@@ -469,7 +469,7 @@ def _fichiers(host) -> list[str]:
         liste = host.run("docker export %s | tar -t", jetable)
     finally:
         host.run("docker rm -f %s", jetable)
-    return [l.strip() for l in liste.stdout.splitlines() if l.strip()]
+    return [ligne.strip() for ligne in liste.stdout.splitlines() if ligne.strip()]
 
 
 def _fichiers(host) -> list[str]:
@@ -497,7 +497,7 @@ def _fichiers(host) -> list[str]:
         liste = host.run("docker export %s | tar -t", jetable)
     finally:
         host.run("docker rm -f %s", jetable)
-    return [l.strip() for l in liste.stdout.splitlines() if l.strip()]
+    return [ligne.strip() for ligne in liste.stdout.splitlines() if ligne.strip()]
 
 
 def _tire(host) -> None:

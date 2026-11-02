@@ -202,7 +202,7 @@ def test_le_rapport_complet_est_copie_sur_l_hote(host) -> None:
     )
     attendue = f"reference: {lue.stdout.strip()}"
 
-    manquantes = [l for l in (DEBUT, attendue, FIN) if l not in contenu]
+    manquantes = [ligne for ligne in (DEBUT, attendue, FIN) if ligne not in contenu]
     assert not manquantes, message(
         en=f"the copied report is truncated.\n"
            f"  missing: {', '.join(manquantes)}\n"
@@ -243,16 +243,16 @@ def test_aucun_conteneur_du_lab_ne_traine_a_l_arret(host) -> None:
         "{{.Names}} {{.State}}",
     )
     traine = [
-        l.strip() for l in res.stdout.splitlines()
-        if l.strip() and l.split()[-1] in {"exited", "created", "dead"}
+        ligne.strip() for ligne in res.stdout.splitlines()
+        if ligne.strip() and ligne.split()[-1] in {"exited", "created", "dead"}
     ]
     assert not traine, message(
-        en=f"containers of this lab are left stopped:\n"
-           + "\n".join(f"  {l}" for l in traine) + "\n"
+        en="containers of this lab are left stopped:\n"
+           + "\n".join(f"  {ligne}" for ligne in traine) + "\n"
            "A stopped container keeps its name, its configuration and its disk "
            "space. The three containers are expected to be running.",
-        fr=f"des conteneurs de ce lab restent à l'arrêt :\n"
-           + "\n".join(f"  {l}" for l in traine) + "\n"
+        fr="des conteneurs de ce lab restent à l'arrêt :\n"
+           + "\n".join(f"  {ligne}" for ligne in traine) + "\n"
            "Un conteneur arrêté garde son nom, sa configuration et son espace "
            "disque. Les trois conteneurs sont attendus en marche.",
     )
@@ -341,7 +341,7 @@ def _mesurer_l_arret(host) -> None:
     # vers `-` écrit une ARCHIVE TAR, où un `in` sur le texte passerait par
     # chance et échouerait dès qu'un nom de fichier ou un entête tomberait au
     # mauvais endroit. Un contrôle qui marche par chance ne mesure rien.
-    temporaire = f"/tmp/rapport-verifie-{int(time.monotonic() * 1000)}.txt"
+    temporaire = f"/tmp/rapport-verifie-{int(time.monotonic() * 1000)}.txt"  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
     try:
         copie = host.run("docker cp %s:%s %s", SCRIBE, RAPPORT, temporaire)
         assert copie.rc == 0, message(
@@ -353,7 +353,7 @@ def _mesurer_l_arret(host) -> None:
         contenu = host.run("cat %s", temporaire).stdout
     finally:
         host.run("rm -f %s", temporaire)
-    manquantes = [l for l in (DEBUT, FIN) if l not in contenu]
+    manquantes = [ligne for ligne in (DEBUT, FIN) if ligne not in contenu]
     assert not manquantes, message(
         en=f"after an orderly stop, the report inside the container is still "
            f"incomplete.\n  missing: {', '.join(manquantes)}\n"

@@ -254,8 +254,8 @@ def test_seul_le_frontal_publie_et_sur_la_boucle_locale(host, facade) -> None:
            f"  publiés : {', '.join(publies) or '(aucun)'}\n"
            "  attendu : 8080/tcp seul",
     )
-    ou = {(l.get("HostIp") or "", l.get("HostPort") or "")
-          for l in liaisons_frontal["8080/tcp"] or []}
+    ou = {(ligne.get("HostIp") or "", ligne.get("HostPort") or "")
+          for ligne in liaisons_frontal["8080/tcp"] or []}
     assert ou == {(adresse, str(port))}, message(
         en=f"`{FRONTAL}` is published, but not where the brief asks.\n"
            f"  bindings: {sorted(ou)}\n"
@@ -379,14 +379,14 @@ def test_la_composition_resolue_ne_porte_aucune_variable_en_suspens(
         fr=f"`docker compose config` échoue, donc la composition ne se résout "
            f"même pas :\n{rendu.stderr.strip()[:400]}",
     )
-    en_suspens = [l.strip() for l in rendu.stdout.splitlines() if "${" in l]
+    en_suspens = [ligne.strip() for ligne in rendu.stdout.splitlines() if "${" in ligne]
     assert not en_suspens, message(
-        en=f"the resolved composition still carries unresolved variables:\n"
-           + "\n".join(f"  {l}" for l in en_suspens[:5]) + "\n"
+        en="the resolved composition still carries unresolved variables:\n"
+           + "\n".join(f"  {ligne}" for ligne in en_suspens[:5]) + "\n"
            "An unresolved variable becomes an empty string without Compose "
            "complaining.",
-        fr=f"la composition résolue porte encore des variables non résolues :\n"
-           + "\n".join(f"  {l}" for l in en_suspens[:5]) + "\n"
+        fr="la composition résolue porte encore des variables non résolues :\n"
+           + "\n".join(f"  {ligne}" for ligne in en_suspens[:5]) + "\n"
            "Une variable non résolue devient une chaîne vide sans que Compose "
            "s'en plaigne.",
     )

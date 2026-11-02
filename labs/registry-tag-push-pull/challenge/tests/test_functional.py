@@ -50,7 +50,7 @@ def _publication(host):
     expected = json.loads(host.run("sudo cat /root/.lab-registry-push.json").stdout)
     result = host.run(
         "curl --fail --silent --show-error --max-time 8 -H %s -D %s %s",
-        f"Accept: {ACCEPT}", "/tmp/dsoxlab-push-pull.headers",
+        f"Accept: {ACCEPT}", "/tmp/dsoxlab-push-pull.headers",  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
         "http://127.0.0.1:15000/v2/catalogue/appli/manifests/1.0",
     )
     assert result.rc == 0, message(
@@ -58,10 +58,10 @@ def _publication(host):
         fr=f"Le registre ne sert pas catalogue/appli:1.0. Étiquetez et poussez la release locale : {result.stderr}",
     )
     manifest = json.loads(result.stdout)
-    entetes = host.run("cat %s", "/tmp/dsoxlab-push-pull.headers")
+    entetes = host.run("cat %s", "/tmp/dsoxlab-push-pull.headers")  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
     servi = next(
-        (l.split(":", 1)[1].strip() for l in entetes.stdout.splitlines()
-         if l.lower().startswith("docker-content-digest:")),
+        (ligne.split(":", 1)[1].strip() for ligne in entetes.stdout.splitlines()
+         if ligne.lower().startswith("docker-content-digest:")),
         "",
     )
     assert _identifie(manifest, servi, expected["image"]), message(

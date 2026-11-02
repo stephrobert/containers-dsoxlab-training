@@ -2644,7 +2644,7 @@
   },
   "date": "2026-11-02",
   "docker": "29.9.2",
-  "duree_s": 84,
+  "duree_s": 82,
   "ecarts": [],
   "etapes": [
    "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
@@ -2836,7 +2836,7 @@
   },
   "date": "2026-11-02",
   "docker": "29.9.2",
-  "duree_s": 134,
+  "duree_s": 137,
   "ecarts": [],
   "etapes": [
    "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",

@@ -45,7 +45,7 @@ ATELIER = "/opt/lab-gourmand"
 RELEVE_APPRENANT = f"{ATELIER}/releve.txt"
 ETAT = "/root/.lab-gourmand-state.json"
 RESULTATS = "/resultats"
-DECLENCHEUR = "/tmp/pointe"
+DECLENCHEUR = "/tmp/pointe"  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
 LIGNE_DE_FIN = "fin du lot"
 
 # L'hôte du `meta.yml`, et le même que `runtime.targets[].host` du lab.yaml.
@@ -328,12 +328,12 @@ def test_les_resultats_anterieurs_sont_intacts_et_aucun_n_est_tronque(
 
     manquants = sorted(set(attendues) - set(trouvees))
     assert not manquants, message(
-        en=f"earlier results have disappeared:\n"
+        en="earlier results have disappeared:\n"
            + "\n".join(f"  {n}" for n in manquants) + "\n"
            "Setting a limit requires recreating the container, and that is "
            "where a volume gets forgotten. Those results do not come back, and "
            "no total makes up for them.",
-        fr=f"des résultats antérieurs ont disparu :\n"
+        fr="des résultats antérieurs ont disparu :\n"
            + "\n".join(f"  {n}" for n in manquants) + "\n"
            "Poser une limite exige de recréer le conteneur, et c'est là qu'un "
            "volume s'oublie. Ces résultats ne reviennent pas, et aucun total ne "
@@ -341,11 +341,11 @@ def test_les_resultats_anterieurs_sont_intacts_et_aucun_n_est_tronque(
     )
     alteres = sorted(n for n, e in attendues.items() if trouvees.get(n) != e)
     assert not alteres, message(
-        en=f"earlier results are present but altered:\n"
+        en="earlier results are present but altered:\n"
            + "\n".join(f"  {n}" for n in alteres) + "\n"
            "The names are plausible and the contents are not the same: the "
            "volume was replaced, and the batch job refilled it.",
-        fr=f"des résultats antérieurs sont présents mais altérés :\n"
+        fr="des résultats antérieurs sont présents mais altérés :\n"
            + "\n".join(f"  {n}" for n in alteres) + "\n"
            "Les noms sont plausibles et le contenu ne l'est pas : le volume a "
            "été remplacé, et le traitement l'a regarni.",
@@ -358,14 +358,14 @@ def test_les_resultats_anterieurs_sont_intacts_et_aucun_n_est_tronque(
         f"cd {RESULTATS} && for f in *.txt; do "
         f"grep -q '{LIGNE_DE_FIN}' \"$f\" || echo \"$f\"; done",
     )
-    fautifs = [l.strip() for l in incomplets.stdout.splitlines() if l.strip()]
+    fautifs = [ligne.strip() for ligne in incomplets.stdout.splitlines() if ligne.strip()]
     assert not fautifs, message(
-        en=f"these result files are truncated:\n"
+        en="these result files are truncated:\n"
            + "\n".join(f"  {n}" for n in fautifs) + "\n"
            f"A complete file carries its `{LIGNE_DE_FIN}` line. The batch job "
            "writes atomically, so an incomplete file means it was written some "
            "other way.",
-        fr=f"ces fichiers de résultats sont tronqués :\n"
+        fr="ces fichiers de résultats sont tronqués :\n"
            + "\n".join(f"  {n}" for n in fautifs) + "\n"
            f"Un fichier complet porte sa ligne `{LIGNE_DE_FIN}`. Le traitement "
            "écrit de façon atomique : un fichier incomplet signifie qu'il a été "

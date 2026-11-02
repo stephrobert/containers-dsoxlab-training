@@ -13,7 +13,7 @@ IMAGE = f"{REGISTRY}/catalogue/appli"
 LAB = "registry-droits-minimaux"
 # Le contexte de la sonde inédite du lecteur, sur SA machine : la poussée se
 # mesure depuis le second hôte, pas depuis celui qui publie.
-SONDE_CONTEXTE = "/tmp/dsoxlab-registry-droits-minimaux-sonde"
+SONDE_CONTEXTE = "/tmp/dsoxlab-registry-droits-minimaux-sonde"  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
 
 
 def _require(result, en, fr):

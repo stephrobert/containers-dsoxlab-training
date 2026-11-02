@@ -223,13 +223,13 @@ def test_l_ancien_conteneur_homonyme_a_disparu(host) -> None:
         f"name=^{SERVICE}$",
         "{{.ID}} {{.Status}}",
     )
-    lignes = [l for l in res.stdout.splitlines() if l.strip()]
+    lignes = [ligne for ligne in res.stdout.splitlines() if ligne.strip()]
     assert len(lignes) == 1, message(
         en=f"{len(lignes)} containers carry the name `{SERVICE}`:\n"
-           f"  {chr(10).join('  ' + l for l in lignes) or '  (none)'}\n"
+           f"  {chr(10).join('  ' + ligne for ligne in lignes) or '  (none)'}\n"
            "Exactly one is expected, and it is the one that runs.",
         fr=f"{len(lignes)} conteneur(s) portent le nom `{SERVICE}` :\n"
-           f"  {chr(10).join('  ' + l for l in lignes) or '  (aucun)'}\n"
+           f"  {chr(10).join('  ' + ligne for ligne in lignes) or '  (aucun)'}\n"
            "Il en est attendu exactement un, et c'est celui qui tourne.",
     )
     assert "Up" in lignes[0], message(
