@@ -70,7 +70,6 @@
         content: "{{ lookup('ansible.builtin.password', '/dev/null', length=48, chars=['ascii_letters', 'digits']) }}\n"
         mode: "0600"
         force: false
-        mode: "0600"
       no_log: true
     - name: Garder l'empreinte du jeton
       ansible.builtin.shell:
