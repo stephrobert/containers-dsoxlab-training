@@ -99,7 +99,7 @@ l'hôte », et l'étape est marquée « facultatif ».
 
 Un exercice qui suppose un serveur NFS que rien n'installe n'est pas
 facultatif : il est infaisable. Et `127.0.0.1` ne désigne pas la même chose
-selon qui l'écrit — le démon Docker le résout depuis l'hôte, pas depuis le
+selon qui l'écrit : le démon Docker le résout depuis l'hôte, pas depuis le
 conteneur.
 
 ### L'ordre des couches qui invalide le cache
