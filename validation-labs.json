@@ -2301,6 +2301,70 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "epreuve-exposer-sans-exposer-sa-base": {
+  "apres": {
+   "echecs": [],
+   "passed": 5,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 5
+  },
+  "avant": {
+   "echecs": [
+    "test_l_inventaire_ne_publie_aucun_port",
+    "test_la_base_est_sur_un_reseau_sans_issue",
+    "test_la_base_repond_a_un_alias_distinct_de_son_nom",
+    "test_la_requete_metier_aboutit_malgre_l_isolement",
+    "test_la_vitrine_ne_publie_que_sur_l_interface_demandee"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "date": "2026-11-02",
+  "docker": "29.9.2",
+  "duree_s": 82,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 6 image(s), 0 conteneur(s), 5 volume(s)",
+   "avant le travail : 0/5",
+   "après la solution : 5/5",
+   "après clean et run : 0/5",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "epreuve-exposer-sans-exposer-sa-base",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-epreuve-exposer-sans-exposer-sa-base.log",
+  "moteurs": {
+   "docker.lab": {
+    "docker": "29.9.2",
+    "store": "containerd"
+   }
+  },
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_l_inventaire_ne_publie_aucun_port",
+    "test_la_base_est_sur_un_reseau_sans_issue",
+    "test_la_base_repond_a_un_alias_distinct_de_son_nom",
+    "test_la_requete_metier_aboutit_malgre_l_isolement",
+    "test_la_vitrine_ne_publie_que_sur_l_interface_demandee"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "epreuve-fiabiliser-une-stack": {
   "apres": {
    "echecs": [],
@@ -2606,70 +2670,6 @@
     "test_l_image_livree_ne_porte_plus_le_compilateur",
     "test_la_taille_reste_sous_le_seuil_mesure",
     "test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches"
-   ],
-   "passed": 0,
-   "recorded": true,
-   "score": 0,
-   "skipped": 0,
-   "status": "failed",
-   "total": 5
-  },
-  "store": "containerd",
-  "verdict": "VALIDE"
- },
- "epreuve-relier-deux-conteneurs": {
-  "apres": {
-   "echecs": [],
-   "passed": 5,
-   "recorded": true,
-   "score": 100,
-   "skipped": 0,
-   "status": "passed",
-   "total": 5
-  },
-  "avant": {
-   "echecs": [
-    "test_l_inventaire_ne_publie_aucun_port",
-    "test_la_base_est_sur_un_reseau_sans_issue",
-    "test_la_base_repond_a_un_alias_distinct_de_son_nom",
-    "test_la_requete_metier_aboutit_malgre_l_isolement",
-    "test_la_vitrine_ne_publie_que_sur_l_interface_demandee"
-   ],
-   "passed": 0,
-   "recorded": true,
-   "score": 0,
-   "skipped": 0,
-   "status": "failed",
-   "total": 5
-  },
-  "date": "2026-11-02",
-  "docker": "29.9.2",
-  "duree_s": 82,
-  "ecarts": [],
-  "etapes": [
-   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/5",
-   "après la solution : 5/5",
-   "après clean et run : 0/5",
-   "moteur rendu intact"
-  ],
-  "host": "docker.lab",
-  "id": "epreuve-relier-deux-conteneurs",
-  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-epreuve-relier-deux-conteneurs.log",
-  "moteurs": {
-   "docker.lab": {
-    "docker": "29.9.2",
-    "store": "containerd"
-   }
-  },
-  "raisons": [],
-  "rejeu": {
-   "echecs": [
-    "test_l_inventaire_ne_publie_aucun_port",
-    "test_la_base_est_sur_un_reseau_sans_issue",
-    "test_la_base_repond_a_un_alias_distinct_de_son_nom",
-    "test_la_requete_metier_aboutit_malgre_l_isolement",
-    "test_la_vitrine_ne_publie_que_sur_l_interface_demandee"
    ],
    "passed": 0,
    "recorded": true,

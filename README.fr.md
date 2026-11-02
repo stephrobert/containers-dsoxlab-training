@@ -225,7 +225,7 @@ consensus et son état de contrôle à protéger.
 | `reseau-bridge-dedie` | Un réseau à soi : nommer et isoler | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/) |
 | `reseau-publication-de-ports` | Publier un port, et seulement où il faut | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/) |
 | `reseau-interne` | Deux isolations qui ne se ressemblent pas | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale) |
-| `epreuve-relier-deux-conteneurs` | Épreuve : exposer une application sans exposer sa base | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/) |
+| `epreuve-exposer-sans-exposer-sa-base` | Exposer une application sans exposer sa base | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/) |
 | `donnees-volumes-et-montages` | Où les données survivent : les trois types de montage | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/) |
 | `donnees-permissions-uid-gid` | Deux conteneurs, un volume, des droits qui tiennent | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/droits-sur-un-volume/) |
 | `container-arret-transactionnel` | Terminer une transaction HTTP avant l'arrêt | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-) |

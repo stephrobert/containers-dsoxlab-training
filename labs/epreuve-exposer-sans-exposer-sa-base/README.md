@@ -1,4 +1,4 @@
-# epreuve-relier-deux-conteneurs: the "Expose and connect" module's test
+# epreuve-exposer-sans-exposer-sa-base: the "Expose and connect" module's test
 
 ## What this test measures
 

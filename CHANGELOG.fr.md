@@ -51,7 +51,7 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Modifié
 
-- **`epreuve-relier-deux-conteneurs` est recentrée sur son module.** Quatre de
+- **`epreuve-exposer-sans-exposer-sa-base` est recentrée sur son module.** Quatre de
   ses cinq contrôles redisaient le lab d'une leçon antérieure, et le troisième
   enseignement du module, l'isolement, n'était mesuré nulle part dans le
   catalogue. Elle note désormais la publication sur une interface choisie, un

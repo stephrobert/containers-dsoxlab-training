@@ -1,4 +1,4 @@
-# epreuve-relier-deux-conteneurs : l'épreuve du module « Exposer et relier »
+# epreuve-exposer-sans-exposer-sa-base : l'épreuve du module « Exposer et relier »
 
 ## Ce que cette épreuve éprouve
 
