@@ -1,0 +1,370 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# C'EST UNE ÉPREUVE : le setup pose des PANNES et l'énoncé ne nomme que des
+# symptômes. Les trois causes ci-dessous ne sont dites nulle part avant le
+# troisième indice.
+#
+# TROIS PANNES, TROIS CAUSES DIFFÉRENTES, et c'est le point de l'épreuve : une
+# seule méthode de diagnostic, trois conclusions distinctes.
+#
+#   1. `collecteur` est SORTI et ne redémarre pas. Cause : la variable
+#      d'environnement `DESTINATION` manque, et le programme sort en 78, qui est
+#      le code consacré pour « configuration invalide ». Personne n'a lu ce code.
+#   2. `expediteur` REDÉMARRE EN BOUCLE. Cause : il a été lancé avec un mode
+#      inconnu, son programme sort en 64, qui est le code consacré pour « mauvais
+#      usage », et sa politique `--restart always` le relance indéfiniment. La
+#      politique n'est pas la panne : elle est ce qui rend la panne visible.
+#   3. `scribe` MET DIX SECONDES À S'ARRÊTER et tronque son écriture. Cause : son
+#      PID 1 est un `sh`, pas le programme. Le `SIGTERM` de `docker stop` va au
+#      shell, qui ne le transmet pas ; le programme n'exécute donc jamais son
+#      gestionnaire de fin, et le `SIGKILL` du délai de grâce le coupe en pleine
+#      écriture.
+#
+# LA TROISIÈME EST L'EXIGENCE CRITIQUE, parce qu'elle détruit une donnée. Les
+# deux premières coûtent du temps, celle-là coûte un rapport.
+- name: Préparer l'épreuve epreuve-remettre-trois-conteneurs-en-service
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    tag_local: lab-trois-pannes:1.0
+    atelier: /opt/lab-trois-pannes
+    collecteur: collecteur
+    expediteur: expediteur
+    scribe: scribe
+    rapport: /var/log/scribe.txt
+    # Le fichier d'hôte qui porte la référence du passage, HORS de l'atelier :
+    # l'atelier est le répertoire de travail de l'apprenant, et y poser la
+    # valeur attendue reviendrait à la lui donner.
+    reference_sur_l_hote: /root/.lab-trois-pannes-reference
+
+  tasks:
+    - name: Tirer la référence de ce passage, UNE SEULE FOIS
+      # `set_fact` ET NON une variable de `vars:`, et c'est une correction
+      # payée par un échec. Un `lookup('password')` placé dans `vars:` est
+      # RÉÉVALUÉ À CHAQUE USAGE : la valeur gravée dans l'image n'était donc
+      # pas celle consignée pour le contrôle, et le setup échouait sur sa
+      # propre vérification.
+      #
+      # Tirée à chaque exécution du setup : deux passages ne donnent pas la
+      # même valeur, donc un rapport laissé par un passage précédent porte
+      # l'ancienne et se voit refusé.
+      ansible.builtin.set_fact:
+        reference_du_rapport: >-
+          {{ lookup('ansible.builtin.password', '/dev/null', length=16,
+                    chars=['ascii_lowercase', 'digits']) }}
+
+    - name: Noter si le socle public était déjà présent
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ image_epinglee }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-epreuve-remettre-trois-conteneurs-en-service.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-epreuve-remettre-trois-conteneurs-en-service.socle-a-rendre'
+          docker pull '{{ image_epinglee }}' >/dev/null
+        fi
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: [docker-ce, python3]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Refuser de démarrer si un autre propriétaire tient les noms réservés
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess, sys
+          lab = "epreuve-remettre-trois-conteneurs-en-service"
+          def inspecte(genre, nom):
+              r = subprocess.run(["docker", genre, "inspect", nom],
+                                 capture_output=True, text=True)
+              return json.loads(r.stdout)[0] if r.returncode == 0 else None
+          image = inspecte("image", "{{ tag_local }}")
+          if image and (image["Config"]["Labels"] or {}).get("dsoxlab.lab") != lab:
+              sys.exit("Reserved image tag {{ tag_local }} belongs to another owner")
+          for nom in ("{{ collecteur }}", "{{ expediteur }}", "{{ scribe }}"):
+              c = inspecte("container", nom)
+              if c and (c["Config"]["Labels"] or {}).get("dsoxlab.lab") != lab:
+                  sys.exit(f"Reserved container name {nom} belongs to another owner")
+          PY
+      changed_when: false
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer seulement les ressources identifiées du passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-remettre-trois-conteneurs-en-service)
+          if test -n "$ids"; then docker rm -f $ids; fi
+      changed_when: false
+
+    - name: Déposer le répertoire de travail
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        # IL APPARTIENT À L'APPRENANT, et c'est une correction. En `root:root`
+        # 0755, le livrable de l'épreuve, un fichier à déposer ici, exigeait
+        # `sudo` : l'épreuve mesurait alors la permission d'écrire un fichier
+        # en plus de ce qu'elle veut mesurer. Le sujet est Docker, et
+        # l'apprenant est déjà dans le groupe `docker`.
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0755"
+
+    - name: Retirer un rapport laissé par un passage précédent
+      # SANS CELA, LE CONTRÔLE DU RAPPORT PASSE AVANT TOUT TRAVAIL. Mesuré le
+      # 2026-11-02 : un `run` rejoué sans `clean` retrouvait le
+      # `diagnostic.txt` du passage d'avant, et le cycle de validation a relevé
+      # « 1 test passe avant le travail ». Un apprenant qui rejoue son lab
+      # aurait eu ce contrôle déjà vert, sur une copie qui n'était pas la
+      # sienne.
+      #
+      # Le répertoire est créé en `state: directory`, ce qui est idempotent et
+      # n'efface donc rien : c'est exact, et c'est précisément pourquoi cette
+      # tâche existe.
+      ansible.builtin.file:
+        path: "{{ atelier }}/diagnostic.txt"
+        state: absent
+
+    - name: Écrire le service que l'image portera, dans ses trois rôles
+      # LE SHEBANG EST NÉCESSAIRE : l'ENTRYPOINT exécute ce fichier
+      # directement, et sans ligne d'interpréteur le noyau refuse de le lancer.
+      # Mesuré dans ce catalogue : le conteneur meurt aussitôt et `docker run -d`
+      # réussit quand même, puisqu'il ne rend compte que du lancement.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/service.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+          case "${ROLE:-}" in
+            collecteur)
+              # 78 est le code consacre pour « configuration invalide ».
+              if test -z "${DESTINATION:-}"; then
+                echo 'collecteur: la variable DESTINATION manque' >&2
+                exit 78
+              fi
+              echo "collecteur demarre vers ${DESTINATION}"
+              while true; do
+                printf 'collecteur=ok\n' | nc -l -p 80 || true
+              done
+              ;;
+            expediteur)
+              mode=''
+              while test $# -gt 0; do
+                case "$1" in
+                  --mode)
+                    mode="${2:-}"
+                    shift 2 || true
+                    ;;
+                  *)
+                    echo "expediteur: argument inconnu: $1" >&2
+                    echo 'expediteur: usage: --mode normal' >&2
+                    exit 64
+                    ;;
+                esac
+              done
+              # 64 est le code consacre pour « mauvais usage ».
+              if test "$mode" != normal; then
+                echo "expediteur: mode invalide: ${mode:-aucun}" >&2
+                echo 'expediteur: usage: --mode normal' >&2
+                exit 64
+              fi
+              echo 'expediteur demarre en mode normal'
+              while true; do
+                printf 'expediteur=ok\n' | nc -l -p 80 || true
+              done
+              ;;
+            scribe)
+              cible='{{ rapport }}'
+              : > "$cible"
+              echo 'debut du rapport' >> "$cible"
+              # LA RÉFÉRENCE DE CE PASSAGE, portée par l'IMAGE et non par un
+              # conteneur. Le lab la tire à chaque exécution du setup, et
+              # l'image est reconstruite avec : tout scribe de ce passage
+              # l'écrit, et un rapport laissé par un passage antérieur porte
+              # l'ancienne, donc il est refusé.
+              #
+              # Elle était d'abord écrite depuis l'hôte dans le conteneur
+              # d'origine. C'était une faute : la solution DÉTRUIT ce
+              # conteneur, parce qu'il tourne derrière un shell qui avale son
+              # signal, et c'est précisément le geste que le lab enseigne.
+              echo 'reference: {{ reference_du_rapport }}' >> "$cible"
+              fini() {
+                echo 'fin du rapport' >> "$cible"
+                exit 0
+              }
+              # LE GESTIONNAIRE N'EST UTILE QUE SI LE SIGNAL ARRIVE. Lance sous
+              # un `sh -c`, ce programme n'est pas PID 1 : le SIGTERM va au
+              # shell, qui ne le transmet pas, et l'ecriture reste tronquee.
+              trap fini TERM INT
+              echo 'scribe demarre'
+              while true; do
+                sleep 1 &
+                wait $! || true
+              done
+              ;;
+            *)
+              echo "ROLE inconnu: ${ROLE:-aucun}" >&2
+              exit 64
+              ;;
+          esac
+
+    - name: Écrire l'image de service de l'épreuve
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          LABEL dsoxlab.lab="epreuve-remettre-trois-conteneurs-en-service"
+          COPY service.sh /usr/local/bin/service.sh
+          ENTRYPOINT ["/usr/local/bin/service.sh"]
+
+    - name: Construire l'image de service
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    # PANNE 1 : sorti en 78, sans politique de redémarrage, donc il reste mort.
+    - name: Lancer le collecteur sans sa configuration, et le laisser sortir
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker run -d --name {{ collecteur }} -e ROLE=collecteur \
+            {{ tag_local }} >/dev/null
+          for _ in $(seq 1 20); do
+            etat=$(docker container inspect {{ collecteur }} --format '{% raw %}{{.State.Status}}{% endraw %}')
+            if test "$etat" = exited; then exit 0; fi
+            sleep 1
+          done
+          echo 'le collecteur ne sort pas comme prevu' >&2
+          exit 1
+      changed_when: true
+
+    # PANNE 2 : mode inconnu, sortie en 64, et `--restart always` qui relance.
+    - name: Lancer l'expéditeur avec un mode inconnu, sous une politique always
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker run -d --name {{ expediteur }} --restart always \
+            -e ROLE=expediteur {{ tag_local }} --mode turbo >/dev/null
+          # On attend que la boucle soit VISIBLE : un RestartCount a zero ne
+          # montrerait pas le symptome que l'enonce decrit.
+          for _ in $(seq 1 40); do
+            n=$(docker container inspect {{ expediteur }} --format '{% raw %}{{.RestartCount}}{% endraw %}')
+            if test "$n" -ge 2; then exit 0; fi
+            sleep 1
+          done
+          echo 'la boucle de redemarrage ne se voit pas apres 40 s' >&2
+          exit 1
+      changed_when: true
+
+    # PANNE 3 : le PID 1 est un `sh`, qui ne transmet pas les signaux.
+    - name: Lancer le scribe derrière un shell, donc sourd aux signaux
+      # `&& true` empêche l'optimisation du shell qui remplacerait son propre
+      # processus par le programme : avec elle, le programme DEVIENDRAIT PID 1
+      # et recevrait le signal, ce qui supprimerait la panne. Mesuré sur
+      # docker.lab : sans `&& true`, `dash -c` fait un exec implicite.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker run -d --name {{ scribe }} -e ROLE=scribe \
+            --entrypoint sh {{ tag_local }} \
+            -c '/usr/local/bin/service.sh && true' >/dev/null
+          for _ in $(seq 1 20); do
+            if docker logs {{ scribe }} 2>&1 | grep -q 'scribe demarre'; then exit 0; fi
+            sleep 1
+          done
+          echo 'le scribe ne demarre pas' >&2
+          exit 1
+      changed_when: true
+
+    # LA DONNÉE QUI NE SE REPRODUIT PAS, et sans elle l'exigence critique de
+    # cette épreuve ne mesurait rien.
+    #
+    # Le rapport ne portait que `debut du rapport` et `fin du rapport`, les
+    # mêmes à chaque démarrage : un apprenant qui détruisait le scribe, en
+    # recréait un autre et l'arrêtait proprement rendait un fichier
+    # RIGOUREUSEMENT IDENTIQUE, et le contrôle ne voyait rien. On notait donc
+    # la perte d'une donnée qui ne se perdait pas.
+    #
+    # Cette référence est écrite DEPUIS L'HÔTE dans la couche d'écriture du
+    # conteneur : elle part avec lui, ce qui est exactement ce que l'épreuve
+    # veut mesurer.
+    - name: Consigner la référence de ce passage, pour le contrôle
+      # ELLE N'EST PLUS ÉCRITE DANS LE CONTENEUR : elle est dans l'IMAGE, donc
+      # tout scribe de ce passage la porte, y compris celui que l'apprenant
+      # recrée. Ce qui reste ici est sa consignation, hors de l'atelier, pour
+      # que le contrôle sache quoi chercher sans la donner à l'apprenant.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          printf '%s\n' '{{ reference_du_rapport }}' > '{{ reference_sur_l_hote }}'
+          chmod 600 '{{ reference_sur_l_hote }}'
+          docker exec {{ scribe }} grep -q 'reference: {{ reference_du_rapport }}' \
+            '{{ rapport }}'
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : remettre trois conteneurs en service
+
+          Trois conteneurs sont en panne sur cette machine, et les trois pannes
+          sont INDEPENDANTES.
+
+          CE QUI EST CONSTATE, et c est tout ce qui est constate :
+
+            - `{{ collecteur }}` est sorti. Personne n a lu son code de sortie.
+            - `{{ expediteur }}` redemarre sans fin.
+            - `{{ scribe }}` met dix secondes a s arreter, et le rapport qu il
+              ecrit est coupe avant la fin.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            1. `{{ collecteur }}` TOURNE, a partir de l image `{{ tag_local }}` ;
+            2. `{{ expediteur }}` TOURNE, il ne redemarre plus, et sa politique
+               de redemarrage est CONSERVEE : elle n est pas la panne ;
+            3. `{{ scribe }}` TOURNE, et il s arrete proprement : un
+               `docker stop` doit rendre la main en MOINS DE DIX SECONDES, avec
+               un code de sortie 0 ou 143, et le rapport doit etre COMPLET ;
+            4. le rapport complet est copie sur l HOTE, dans
+               `{{ atelier }}/diagnostic.txt` ;
+            5. aucun conteneur de ce lab ne traine a l arret.
+
+          Le rapport est ecrit dans le conteneur, dans `{{ rapport }}`. Il est
+          complet quand il porte sa ligne de debut ET sa ligne de fin.
+
+          POUR OBTENIR LA COPIE : arretez proprement le scribe une fois que
+          vous avez corrige sa panne, copiez son rapport, puis RELANCEZ-LE. Le
+          controle 5 exige qu aucun conteneur ne reste a l arret.
+
+          L image est fournie et porte les trois roles : il n y a rien a
+          construire. Elle lit la variable `ROLE`, et chaque role a ses propres
+          exigences, que ses journaux et son code de sortie disent.

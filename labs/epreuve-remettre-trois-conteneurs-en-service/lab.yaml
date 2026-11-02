@@ -1,0 +1,41 @@
+# Épreuve epreuve-remettre-trois-conteneurs-en-service. Les champs marqués REQUIS sont
+# exigés par le validator : sans eux, le lab est refusé, ou pire, disparaît du
+# catalogue sans un mot.
+#
+# `lab_type: challenge` autorise `exam_passing_score` et dit à l'apprenant que
+# cette épreuve ÉVALUE. Rien n'y est réexpliqué : les leçons du module l'ont
+# enseigné, à savoir lire un code de sortie, lire des journaux, comprendre une
+# politique de redémarrage, et savoir qui est PID 1.
+id: epreuve-remettre-trois-conteneurs-en-service                      # REQUIS
+title: "Three containers down, three different causes"  # REQUIS
+level: c1                     # REQUIS
+description: "Bring back three containers down for three independent reasons, keep what made one of the failures visible, and recover intact a report one of them never finished writing."
+skills:                       # REQUIS, non vide
+  - docker
+  - diagnostic
+  - journaux
+  - signaux
+  - exploitation
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/remettre-trois-conteneurs-en-service/
+lab_type: challenge
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense, et que le moteur applique
+  # depuis dsoxlab 0.7.0 : un echec ici refuse l'epreuve quel que soit
+  # le score. Avant, quatre controles sur cinq donnaient 80, et 80
+  # passait ce seuil de 75 : l'epreuve etait recue alors que son
+  # exigence critique avait echoue.
+  - test_le_rapport_complet_est_copie_sur_l_hote
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: false
+  persistence_after_reboot: false
