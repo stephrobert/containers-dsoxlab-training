@@ -15,16 +15,17 @@ starts **when you restart it twice**, and the team picks up the habit of
 restarting it. That is what this test reproduces, and that is what makes it
 hard: there is no outright failure to find, there is a fragility to name.
 
-## The four defects, and why they live together in a real file
+## The five defects, and why they live together in a real file
 
 | Defect | Symptom | What it teaches |
 | --- | --- | --- |
 | `depends_on` with no health condition | "you have to restart it twice" | starting a container is not making a service available |
 | the password in `environment` | none: everything works | a readable secret follows the stack everywhere, and nobody notices |
 | no memory limit | none, until the day there is | a leaking service takes its neighbour down, not itself |
+| no restart policy | none, until the first death | a service that dies at four in the morning stays dead until someone notices |
 | the source mount left in deployment | none, until the next deployment | what helps in development hurts in production |
 
-**Three of the four have no symptom at all.** That is the module's real lesson:
+**Four of the five have no symptom at all.** That is the module's real lesson:
 reliability is not measured by what falls over today.
 
 ## Why the start check restarts the stack itself
@@ -55,21 +56,39 @@ actually arrived.
 ## Why the limit is read in two places
 
 `HostConfig.Memory` says what the engine **retained** from the declaration.
-`memory.max` in the cgroup says what the kernel **applies**. The two can differ,
-and the case is common: a limit written in a deploy section meant for an absent
-orchestrator is read by Compose, accepted without error, and never applied. The
-container stays unlimited, and the file looks right.
+`memory.max` in the cgroup says what the kernel **applies**. Reading both is not
+a stylistic precaution: they are two distinct facts, and only the second
+protects the host.
 
-## Why the policy check kills a container
+Nine forms measured on 2026-11-02 against Docker 29.9.2 and Compose 5.6.1, and
+the result runs against intuition. `mem_limit` at service level **and**
+`deploy.resources.limits.memory` both give `HostConfig.Memory` 67108864 for 64M:
+the form is not the trap. A key written at the wrong level is not one either,
+because Compose validates its schema and **refuses** the file, with a message
+and an error code.
+
+The one case accepted without a word and never applied lies elsewhere:
+`deploy.resources.reservations.memory` is a **reservation**, not a limit. It
+passes validation, and it leaves `HostConfig.Memory` at zero and `memory.max` at
+`max`. The file talks about memory, and the container has no limit.
+
+## Why the check causes a failure instead of killing
 
 Declaring `restart:` and reading it back in the inspection proves nothing: the
 value can be there and never apply, for instance on a container created before
-the change. The only question that matters is "does it come back?", and it is
-answered by killing.
+the change. The only question that matters is "does it come back?".
 
-`docker kill` and not `docker stop`: a requested stop is a wanted stop, and no
-policy restarts a container you stopped yourself. Confusing the two leads to the
-wrong conclusion that the policy does not work.
+It is **not** answered by killing, and that is what the "Frame resources and
+restarts" lesson teaches. Measured on 2026-11-02: after a `docker kill` on a
+container with `restart: unless-stopped`, the engine treats the stop as
+**wanted**, the container stays `exited`, and the restart counter is still at
+zero twenty seconds later. A `docker exec kill -9 1` does nothing either, since
+the kernel shields a namespace's PID 1 from signals sent from inside that
+namespace, SIGKILL included.
+
+What a policy really covers is a process that **dies on its own**. The check
+therefore places the failure trigger the scenario announces,
+`/tmp/panne-provoquee`, and the service exits with an error on the next request.
 
 ## Why the checks are independent
 
@@ -85,4 +104,4 @@ verdict that depends on chance.
 ## What the test does not measure
 
 Backup, restore, a second host: that is the subject of
-`epreuve-restaurer-une-stack`. Here, one host and four points of reliability.
+`epreuve-restaurer-une-stack`. Here, one host and five points of reliability.

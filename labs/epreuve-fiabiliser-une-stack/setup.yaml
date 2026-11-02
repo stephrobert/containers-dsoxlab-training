@@ -4,10 +4,10 @@
 #
 # C'EST UNE ÉPREUVE, et la stack livrée MARCHE, ou presque. C'est ce qui la rend
 # réaliste : personne ne laisse en production une stack qui ne démarre jamais,
-# on laisse celle qui démarre « quand on la relance deux fois ». Les quatre
+# on laisse celle qui démarre « quand on la relance deux fois ». Les cinq
 # défauts ci-dessous sont ceux qu'on trouve dans un `compose.yaml` écrit vite.
 #
-# LES QUATRE DÉFAUTS, et aucun n'est dit dans l'énoncé :
+# LES CINQ DÉFAUTS, et aucun n'est dit dans l'énoncé :
 #   1. `api` démarre sans attendre que `coffre` soit PRÊT. `depends_on` seul ne
 #      regarde que le démarrage du conteneur, pas la disponibilité du service :
 #      l'API interroge un coffre qui n'écoute pas encore, et sort. D'où « il
@@ -18,7 +18,11 @@
 #      CRITIQUE.
 #   3. Aucune limite mémoire. Un service qui fuit emporte alors l'hôte, et c'est
 #      le voisin qui est tué, pas le fautif.
-#   4. Le montage du code source, qui a sa place en développement, est resté
+#   4. AUCUNE POLITIQUE DE REDÉMARRAGE. Le compose écrit plus bas ne porte
+#      aucun `restart:`, et un service qui meurt la nuit reste mort jusqu'au
+#      matin. Ce défaut n'était compté nulle part : l'énoncé en annonçait
+#      quatre pour cinq contrôles.
+#   5. Le montage du code source, qui a sa place en développement, est resté
 #      dans le fichier de déploiement.
 #
 # CE QUE LE SETUP NE FAIT PAS : il ne lance PAS la stack. L'énoncé demande de la
@@ -240,7 +244,7 @@
         content: |
           source de developpement, monte en direct pendant le travail
 
-    - name: Écrire le compose.yaml tel qu'il a été laissé, avec ses quatre défauts
+    - name: Écrire le compose.yaml tel qu'il a été laissé, avec ses cinq défauts
       ansible.builtin.copy:
         dest: "{{ atelier }}/compose.yaml"
         mode: "0644"

@@ -5,7 +5,8 @@
 # `lab_type: challenge` autorise `exam_passing_score` et dit à l'apprenant que
 # cette épreuve ÉVALUE. Rien n'y est réexpliqué : les leçons du module l'ont
 # enseigné, à savoir conditionner un démarrage à la santé d'un service, injecter
-# un secret sans l'environnement, poser une limite, et superposer deux fichiers.
+# un secret sans l'environnement, poser une limite, déclarer une politique de
+# redémarrage, et superposer deux fichiers.
 #
 # ELLE NE DOUBLE PAS `epreuve-restaurer-une-stack`, qui mesure une restauration
 # sur un SECOND hôte, sauvegarde comprise. Celle-ci reste sur un seul hôte et
