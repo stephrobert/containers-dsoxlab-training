@@ -13,7 +13,7 @@ from conftest import lab_host, message
 WORK = "/opt/lab-buildkit-cache"
 BUILDER = "dsoxlab-cache-test"
 IMAGE = "dsoxlab-cache:test"
-BUILDKIT = "moby/buildkit@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea"
+BUILDKIT = "moby/buildkit@sha256:99368f3e46177c6405b9740e4461d91cee004128daeecca78d4ceac50ec1da5c"
 CACHE_INSPECTOR = """
 import io
 import subprocess

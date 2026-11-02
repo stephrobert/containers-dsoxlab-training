@@ -24,7 +24,7 @@ skills:                       # REQUIS, non vide
   - permissions
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/#vérification-de-linstallation   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/#comment-vérifier-que-linstallation-est-juste-
 lab_type: lab
 estimated_time: 30m
 runtime:

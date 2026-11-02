@@ -7,7 +7,7 @@ are configured.
 
 `/opt/lab-registry-tls` contains:
 
-- `config.yml`, mounted at `/etc/docker/registry/config.yml` in the container;
+- `config.yml`, mounted at `/etc/distribution/config.yml` in the container;
 - `certs/server.crt` and `certs/server.key`, mounted under `/certs`;
 - `certs/ca.crt`, the private authority that signed the certificate;
 - `data/`, the existing storage, which must be retained.

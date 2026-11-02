@@ -7,7 +7,7 @@ does not decide who may use the registry.
 
 `/opt/lab-registry-auth` contains:
 
-- `config.yml`, mounted at `/etc/docker/registry/config.yml`;
+- `config.yml`, mounted at `/etc/distribution/config.yml`;
 - `auth/`, mounted at `/auth`, initially empty;
 - `certs/`, mounted at `/certs`, with the supplied TLS identity;
 - `data/`, the existing image storage;

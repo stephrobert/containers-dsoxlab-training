@@ -90,10 +90,10 @@ def _lire_reponses(host) -> dict[str, str]:
     return _paires(
         host, REPONSES,
         message(
-            en="the mission asks for three lines in it: shim=, parent_du_shim= "
-               "and runtime=",
+            en="the mission asks for three lines in it: shim=, pid_du_processus= "
+               "and shim_bis=",
             fr="la mission demande d'y écrire trois lignes : shim=, "
-               "parent_du_shim= et runtime=",
+               "pid_du_processus= et shim_bis=",
         ),
     )
 
@@ -161,16 +161,19 @@ def test_la_reponse_nomme_le_shim_de_ce_conteneur(host) -> None:
     )
 
 
-def test_la_reponse_nomme_le_parent_du_shim(host) -> None:
-    """La réponse qui surprend, et tout le lab en découle.
+def test_la_reponse_nomme_le_pid_du_processus_du_conteneur(host) -> None:
+    """Le processus du conteneur sur l'hôte, et son parent est le shim.
 
-    Le parent du shim n'est ni le démon, ni containerd : c'est le gestionnaire
-    de services de la machine. Le shim en a été détaché à dessein, et c'est ce
-    détachement qui rend les conteneurs indépendants du démon.
+    LA CHAÎNE SE PROUVE PAR LE BAS. Le processus du conteneur a un PID sur
+    l'hôte, et son parent est l'intermédiaire que la première question
+    demandait : annoncer les deux, et les voir s'accorder, c'est avoir mesuré
+    le maillon au lieu de l'avoir lu.
 
-    Le contrôle lit le parent réel plutôt que d'attendre une valeur écrite : sur
-    une machine réglée autrement, le détachement pourrait aboutir ailleurs, et
-    ce lab suivrait au lieu de devenir faux.
+    CE QUE CE CONTRÔLE A REMPLACÉ. Il demandait le parent du shim, qui vaut le
+    PID 1 sur toute machine ordinaire. La leçon qui héberge ce lab enseigne ce
+    fait et le mesure : la réponse se recopiait de la page, et le contrôle ne
+    notait plus un geste. Le PID du processus, lui, n'existe que sur la machine
+    de l'apprenant, et change à chaque démarrage.
     """
     shim = _shim_du_conteneur(host)
     if not shim:
@@ -178,79 +181,98 @@ def test_la_reponse_nomme_le_parent_du_shim(host) -> None:
             en=f"no shim carries `{CONTENEUR}`: the setup did not finish",
             fr=f"aucun shim ne porte `{CONTENEUR}` : le setup n'a pas abouti",
         ))
-    res = host.run("ps -o ppid= -p %s", shim)
-    attendu = res.stdout.strip()
-    if not attendu:
-        pytest.skip(message(
-            en=f"the parent of shim {shim} cannot be read",
-            fr=f"le parent du shim {shim} est illisible",
-        ))
-
-    annonce = _lire_reponses(host).get("parent_du_shim", "")
-    assert annonce, message(
-        en="the `parent_du_shim=` line is empty. Look at it twice before "
-           "concluding you were wrong: the answer is surprising, and it is the "
-           "point of the question.",
-        fr="la ligne `parent_du_shim=` est vide. Regardez-la deux fois avant de "
-           "conclure que vous vous êtes trompé : la réponse surprend, et c'est "
-           "le but de la question.",
-    )
-    assert annonce == attendu, message(
-        en=f"the announced PID is not the shim's parent.\n"
-           f"  you wrote : {annonce}\n"
-           "Neither the daemon nor containerd is its parent. The shim was "
-           "detached on purpose, and that detachment is what makes containers "
-           "independent of the daemon.",
-        fr=f"le PID annoncé n'est pas le parent du shim.\n"
-           f"  vous avez écrit : {annonce}\n"
-           "Ni le démon ni containerd n'en est le parent. Le shim en a été "
-           "détaché à dessein, et ce détachement est ce qui rend les conteneurs "
-           "indépendants du démon.",
-    )
-
-
-def test_la_reponse_nomme_le_runtime_employe(host) -> None:
-    """Le programme qui crée réellement le conteneur, et il est remplaçable.
-
-    Le moteur ne crée pas les conteneurs lui-même : il délègue à un runtime, et
-    ce runtime est un choix. Le savoir est ce qui rend compréhensible qu'on
-    puisse en installer un autre, pour isoler plus fort ou pour mesurer
-    autrement.
-
-    Le contrôle lit celui que LE CONTENEUR déclare, et non le défaut du moteur :
-    sur une machine qui en installe plusieurs, les deux diffèrent, et seul celui
-    du conteneur dit la vérité sur ce conteneur.
-    """
     res = host.run(
-        "docker container inspect %s --format %s", CONTENEUR, "{{.HostConfig.Runtime}}"
+        "docker container inspect %s --format %s", CONTENEUR, "{{.State.Pid}}"
     )
     attendu = res.stdout.strip()
-    if res.rc != 0 or not attendu:
+    if res.rc != 0 or not attendu or attendu == "0":
         pytest.skip(message(
-            en=f"`{CONTENEUR}` declares no runtime: the setup did not finish",
-            fr=f"`{CONTENEUR}` ne déclare aucun runtime : le setup n'a pas "
+            en=f"`{CONTENEUR}` has no running process: the setup did not finish",
+            fr=f"`{CONTENEUR}` n'a aucun processus en cours : le setup n'a pas "
                "abouti",
         ))
 
-    annonce = _lire_reponses(host).get("runtime", "").lower()
+    annonce = _lire_reponses(host).get("pid_du_processus", "")
     assert annonce, message(
-        en="the `runtime=` line is empty. The engine does not create containers "
-           "itself: it delegates to a runtime, and that runtime is a choice.",
-        fr="la ligne `runtime=` est vide. Le moteur ne crée pas les conteneurs "
-           "lui-même : il délègue à un runtime, et ce runtime est un choix.",
+        en="the `pid_du_processus=` line is empty. The container's process has "
+           "a PID on the host, and the engine states it.",
+        fr="la ligne `pid_du_processus=` est vide. Le processus du conteneur a "
+           "un PID sur l'hôte, et le moteur le déclare.",
     )
-    assert annonce == attendu.lower(), message(
-        en=f"the announced runtime is not the one `{CONTENEUR}` declares.\n"
+    assert annonce == attendu, message(
+        en=f"the announced PID is not that of `{CONTENEUR}`'s process.\n"
            f"  you wrote : {annonce}\n"
-           "Two sources state it: the engine's default, and the container's "
-           "own. On a machine with several installed they differ, and only the "
-           "container's tells the truth about this container.",
-        fr=f"le runtime annoncé n'est pas celui que déclare `{CONTENEUR}`.\n"
+           "The engine states it, and it is reassigned at every start: a value "
+           "read before a restart is no longer the right one.",
+        fr=f"le PID annoncé n'est pas celui du processus de `{CONTENEUR}`.\n"
            f"  vous avez écrit : {annonce}\n"
-           "Deux sources l'indiquent : le défaut du moteur, et celui du "
-           "conteneur. Sur une machine qui en installe plusieurs, les deux "
-           "diffèrent, et seul celui du conteneur dit la vérité sur ce "
-           "conteneur.",
+           "Le moteur le déclare, et il est réattribué à chaque démarrage : une "
+           "valeur relevée avant un redémarrage n'est plus la bonne.",
+    )
+    # LES DEUX RÉPONSES DOIVENT S'ACCORDER, et c'est là la démonstration : le
+    # parent du processus du conteneur EST le shim annoncé plus haut.
+    parent = host.run("ps -o ppid= -p %s", annonce)
+    assert parent.stdout.strip() == shim, message(
+        en=f"the parent of process {annonce} is not the shim you announced "
+           f"({shim}).\n"
+           "The two answers have to agree: the intermediary carries the "
+           "container's process, which is what makes it its parent.",
+        fr=f"le parent du processus {annonce} n'est pas le shim que vous avez "
+           f"annoncé ({shim}).\n"
+           "Les deux réponses doivent s'accorder : l'intermédiaire porte le "
+           "processus du conteneur, et c'est ce qui en fait son parent.",
+    )
+
+
+def test_la_reponse_nomme_le_shim_du_second_conteneur(host) -> None:
+    """Le même geste, sur un autre conteneur, et il ne se recopie pas.
+
+    LE GESTE SE REFAIT AU LIEU DE SE RÉCITER. La première question se résout
+    une fois ; celle-ci exige de la refaire sur `maillon-bis`, dont le shim
+    porte forcément un autre PID. C'est la propriété « un intermédiaire par
+    conteneur », vérifiée par la mesure plutôt qu'annoncée.
+
+    CE QUE CE CONTRÔLE A REMPLACÉ. Il demandait le nom du runtime, soit `runc`
+    sur toute machine ordinaire, et la leçon qui héberge ce lab le donne. Le
+    runtime n'a pas quitté le lab : le quatrième contrôle le fait constater
+    dans le nom du programme du shim.
+    """
+    premier = _shim_du_conteneur(host)
+    second = _shim_du_conteneur(host, SECOND)
+    if not premier:
+        pytest.skip(message(
+            en=f"no shim carries `{CONTENEUR}`: the setup did not finish",
+            fr=f"aucun shim ne porte `{CONTENEUR}` : le setup n'a pas abouti",
+        ))
+
+    annonce = _lire_reponses(host).get("shim_bis", "")
+    assert annonce, message(
+        en=f"the `shim_bis=` line is empty. Start `{SECOND}` and find ITS "
+           "intermediary, the same way.",
+        fr=f"la ligne `shim_bis=` est vide. Lancez `{SECOND}` et trouvez SON "
+           "intermédiaire, de la même façon.",
+    )
+    assert second, message(
+        en=f"no shim carries `{SECOND}`. It has to be started and running for "
+           "it to have one.",
+        fr=f"aucun shim ne porte `{SECOND}`. Il doit être lancé et en cours "
+           "pour en avoir un.",
+    )
+    assert annonce == second, message(
+        en=f"the announced PID is not the shim of `{SECOND}`.\n"
+           f"  you wrote : {annonce}\n"
+           "Find it by that container's identifier, as for the first one: the "
+           "machine carries as many shims as containers.",
+        fr=f"le PID annoncé n'est pas le shim de `{SECOND}`.\n"
+           f"  vous avez écrit : {annonce}\n"
+           "Trouvez-le par l'identifiant de ce conteneur, comme pour le "
+           "premier : la machine porte autant de shims que de conteneurs.",
+    )
+    assert annonce != premier, message(
+        en=f"the two announced PIDs are the same ({premier}): you searched for "
+           "the same container twice.",
+        fr=f"les deux PID annoncés sont le même ({premier}) : vous avez cherché "
+           "deux fois le même conteneur.",
     )
 
 
@@ -316,6 +338,30 @@ def test_chaque_conteneur_a_son_propre_shim(host) -> None:
     for nom, shim in ((CONTENEUR, premier), (SECOND, second)):
         res = host.run("ps -o ppid= -p %s", shim)
         parents[nom] = res.stdout.strip()
+    # LE RUNTIME SE CONSTATE ICI, et ne se récite plus. Le conteneur déclare
+    # le programme qui le crée vraiment, et le nom du shim le porte : les deux
+    # s'accordent, et c'est mesuré au lieu d'être su. L'ancienne troisième
+    # question demandait ce nom par écrit, soit une constante que la leçon
+    # donne.
+    declare = host.run(
+        "docker container inspect %s --format %s", CONTENEUR,
+        "{{.HostConfig.Runtime}}",
+    )
+    # LA LIGNE DE COMMANDE, ET NON `comm`. Mesuré le 2026-11-02 : le noyau
+    # tronque le nom court d'un processus à 15 caractères, et `ps -o comm=`
+    # rend donc `containerd-shim` pour un programme qui s'appelle
+    # `containerd-shim-runc-v2`. Le `runc` qu'on cherche tombe exactement dans
+    # ce qui est coupé, et le contrôle refusait une machine correcte.
+    programme = host.run("ps -o args= -p %s", premier)
+    assert declare.stdout.strip() and declare.stdout.strip() in programme.stdout, message(
+        en=f"the runtime `{declare.stdout.strip() or '?'}` that the container "
+           f"declares is not in its shim's command line "
+           f"(`{programme.stdout.strip()[:60] or '?'}`).",
+        fr=f"le runtime `{declare.stdout.strip() or '?'}` que déclare le "
+           f"conteneur ne se retrouve pas dans la ligne de commande de son shim "
+           f"(`{programme.stdout.strip()[:60] or '?'}`).",
+    )
+
     assert parents[CONTENEUR] and parents[CONTENEUR] == parents[SECOND], message(
         en=f"the two shims do not have the same parent.\n"
            f"  {CONTENEUR} : {parents[CONTENEUR] or '?'}\n"

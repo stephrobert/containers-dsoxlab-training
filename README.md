@@ -19,10 +19,14 @@ starting state, gives you a situation, and checks the result by querying the
 Docker engine: the image built, its size, the user running it, the container's
 mounts, what the application answers.
 
-A single FastAPI application runs through the whole path and becomes
-progressively more correct. **You do not need to know how to program**: the
-code is given. You work on the image, the runtime, the network, storage,
-distribution and hardening.
+**You do not need to know how to program**: every lab provides the code it
+needs. You work on the image, the runtime, the network, storage, distribution
+and hardening.
+
+Each module ends with a **test**: five checks of equal weight, a pass mark of 75
+out of 100, four hints that cost points, and one critical requirement that no
+total makes up for. A test grades the system's **final state**, never the
+commands typed: two paths reaching the same state get the same mark.
 
 ## What it is not
 
@@ -221,7 +225,7 @@ consensus and its control state to protect.
 | `donnees-volumes-et-montages` | Where data survives: the three kinds of mount | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes) |
 | `donnees-permissions-uid-gid` | Two containers, one volume, rights that hold | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
 | `container-arret-transactionnel` | Finish an HTTP transaction before stopping | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-) |
-| `reseau-diagnostic-dns` | The shop cannot find its catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
+| `remettre-un-conteneur-en-service` | The shop cannot find its catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
 
 ### Measure isolation, and put a container back in service
 
@@ -286,7 +290,7 @@ consensus and its control state to protect.
 |---|---|---|---|---|---|
 | `compose-correlation-et-saturation` | Correlate business requests and attribute CPU saturation | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
 | `donnees-postgres-sauvegarde` | Restore PostgreSQL data on a second VM | c3 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker) |
-| `compose-capstone` | Bring a Compose stack back into service | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
+| `epreuve-remettre-une-stack-en-service` | Bring a Compose stack back into service | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
 
 ### Administer and harden a Docker host
 

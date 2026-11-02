@@ -24,9 +24,18 @@
         cmd: docker rmi -f greffe:1.0 greffe:2.0 2>/dev/null || true
       changed_when: false
 
-    - name: Retirer l'image de base, par son digest
+    - name: Rendre l'image de base, et SEULEMENT si ce lab l'a posee
+      # Voir la tache jumelle du setup : sans cette condition, le lab retirait
+      # une image qu'une machine portait deja, et le suivant heritait d'un
+      # moteur ampute.
       ansible.builtin.shell:
-        cmd: docker rmi -f {{ base_epinglee }} 2>/dev/null || true
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '/var/tmp/dsoxlab-docker-anatomie-dune-image.socle-a-rendre'; then
+            docker rmi -f '{{ base_epinglee }}' >/dev/null 2>&1 || true
+            rm -f '/var/tmp/dsoxlab-docker-anatomie-dune-image.socle-a-rendre'
+          fi
       changed_when: false
 
     - name: Retirer les couches orphelines et le cache de construction

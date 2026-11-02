@@ -51,9 +51,16 @@ The check accepts `10001` as well as `10001:10001`, and refuses `appli`.
 ## A belief this lab does not grade
 
 **A non-root process listens on port 80** inside a container, measured on this
-machine. It is often written that root is required below 1024; the engine grants
-the capability by default. So no check bears on ports: that would measure a
-belief rather than a state.
+machine. It is often written that root is required below 1024, and the usual
+explanation is wrong: it is not a capability. The effective capabilities of a
+process started with `--user 10001:10001` are **empty**, and it still listens
+under `--cap-drop ALL`. The engine lowers the threshold itself, inside the
+container's network namespace: `net.ipv4.ip_unprivileged_port_start` is `0` there.
+Raise it to `1024` and the same container answers `nc: bind: Permission denied`.
+
+The nuance matters: anyone who believes in a capability will reach for
+`--cap-add NET_BIND_SERVICE` for a problem that flag does not solve. So no check
+bears on ports: that would measure a belief rather than a state.
 
 ## What is not graded
 

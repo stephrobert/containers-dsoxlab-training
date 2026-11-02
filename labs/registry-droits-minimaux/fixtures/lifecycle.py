@@ -10,9 +10,9 @@ ROOT = pathlib.Path("/opt/lab-registry-rights")
 REGISTRY = "registry-rights.lab.test:15447"
 TRUST = pathlib.Path("/etc/docker/certs.d") / REGISTRY
 IMAGES = (
-    "registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373",
+    "registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3",
     "cesanta/docker_auth@sha256:13c3c325f51fe1b7650356fb3613fd833242d73e249e024d00396b1f16496464",
-    "alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f",
+    "alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a",
 )
 
 

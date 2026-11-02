@@ -34,13 +34,14 @@ nofile_defaut=<la limite de descripteurs de fichiers par défaut, telle que le
                conteneur la déclare>
 ```
 
-La deuxième réponse **surprend par sa taille**. Ce n'est pas une erreur de
-lecture.
+La deuxième réponse est **plus modeste qu'on ne l'imagine** : la limite souple
+est basse, alors que le plafond dur est très haut. C'est l'écart entre les deux
+qui fait tout l'intérêt de la question.
 
 Puis lancez un conteneur nommé `etroit` avec **deux** réglages :
 
 ```text
-/dev/shm de 256 Mo, et une limite de 1024 descripteurs de fichiers
+/dev/shm de 256 Mo, et une limite de 256 descripteurs de fichiers
 ```
 
 Enfin, écrivez **128 Mo** dans son `/dev/shm`, et constatez ce que cela fait à

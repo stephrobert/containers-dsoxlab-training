@@ -11,7 +11,7 @@ skills:                       # REQUIS, non vide
   - persistance
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/
 lab_type: lab
 estimated_time: 40m
 runtime:

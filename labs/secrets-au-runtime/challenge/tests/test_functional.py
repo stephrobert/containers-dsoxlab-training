@@ -65,7 +65,7 @@ for path in root.rglob("*"):
     if path.is_file() and (path.suffix in (".yaml", ".yml", ".env") or path.name in ("Dockerfile", ".env")):
         payloads.append(path.read_bytes())
 safe = len(secret) == 48 and info["Config"]["Labels"].get("dsoxlab.lab") == "secrets-au-runtime"
-base = json.loads(docker("image", "inspect", "alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f"))[0]
+base = json.loads(docker("image", "inspect", "alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a"))[0]
 safe = safe and info["Image"] == base["Id"]
 safe = safe and all(secret not in payload for payload in payloads)
 print("safe" if safe else "leaked-or-invalid")

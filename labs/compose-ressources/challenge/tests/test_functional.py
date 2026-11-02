@@ -11,7 +11,7 @@ from conftest import lab_host, message
 
 PROJECT = "dsoxlab-ressources"
 COMPOSE = "/opt/lab-compose-resources/compose.yaml"
-IMAGE = "alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f"
+IMAGE = "alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a"
 
 
 @pytest.fixture

@@ -1,2 +1,2 @@
-title: "Restrict a Docker API socket proxy"
+title: "Restreindre un proxy devant la socket de l'API Docker"
 description: "Limit the loopback proxy to two read-only API endpoints."

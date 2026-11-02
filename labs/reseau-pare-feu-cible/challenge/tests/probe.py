@@ -73,6 +73,22 @@ def protections(router):
     }
 
 
+def canonique(noms):
+    """Les capabilities sous leur nom CANONIQUE, prefixe `CAP_` compris.
+
+    MESURE du 2026-11-02 sur Docker 29.9.2 : `--cap-add NET_ADMIN` ressort en
+    `CapAdd=[CAP_NET_ADMIN]`, la ou 26 rendait le nom nu. Comparer la forme nue
+    refusait donc une solution juste. On compare des noms canoniques : les deux
+    ecritures sont acceptees cote apprenant, et une capability de trop reste un
+    ecart. `ALL` reste `ALL`, qui n'est pas une capability mais le mot qui les
+    designe toutes.
+    """
+    return sorted(
+        n if n == "ALL" else "CAP_" + n.removeprefix("CAP_")
+        for n in (noms or [])
+    )
+
+
 def assess():
     ids = docker(
         "ps", "-q", "--filter", f"label=com.docker.compose.project={PROJECT}"
@@ -94,8 +110,8 @@ def assess():
         assert service["Config"]["Labels"].get("dsoxlab.lab") == LAB
         assert (
             not host["Privileged"]
-            and host["CapAdd"] == ["NET_ADMIN"]
-            and host["CapDrop"] == ["ALL"]
+            and canonique(host["CapAdd"]) == ["CAP_NET_ADMIN"]
+            and canonique(host["CapDrop"]) == ["ALL"]
         )
         assert host["NetworkMode"] != "host" and not host["PortBindings"]
         assert host["PidMode"] != "host" and host["IpcMode"] != "host"

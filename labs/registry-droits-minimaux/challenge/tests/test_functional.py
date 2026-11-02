@@ -10,6 +10,10 @@ from conftest import lab_host, lab_host_ip, message
 REGISTRY = "registry-rights.lab.test:15447"
 WORK = "/opt/lab-registry-rights"
 IMAGE = f"{REGISTRY}/catalogue/appli"
+LAB = "registry-droits-minimaux"
+# Le contexte de la sonde inédite du lecteur, sur SA machine : la poussée se
+# mesure depuis le second hôte, pas depuis celui qui publie.
+SONDE_CONTEXTE = "/tmp/dsoxlab-registry-droits-minimaux-sonde"
 
 
 def _require(result, en, fr):
@@ -91,11 +95,31 @@ def test_minimal_acl_controls_push_and_a_fresh_second_host_digest_pull():
             en="The transferred product must preserve its runtime nonce without network access.",
             fr="Le produit transféré doit conserver son nonce d'exécution sans accès réseau.",
         )
-        _require(reader.run("docker tag %s %s", digest, tag), "Tag the reader upload probe.", "Étiqueter la sonde d'upload du lecteur.")
-        denied = reader.run("docker --config %s push %s", readconfig, tag)
-        assert denied.rc != 0 and any(word in denied.stderr.lower() for word in ("denied", "unauthorized")), message(
-            en="The read-only account must be unable to push even the already existing image.",
-            fr="Le compte lecture seule doit être incapable de pousser même l'image existante.",
+        # LA SONDE POUSSE UN CONTENU INÉDIT, et c'est tout l'enjeu du contrôle.
+        # Mesuré le 2026-11-02 sur Docker 29.9.2 : repousser l'image qu'on vient
+        # de tirer sort en 0 sans rien écrire, le client voyant chaque couche et
+        # le manifeste déjà présents, et le journal du registre ne porte alors
+        # aucun PUT, POST ni PATCH. Le refus attendu n'avait aucune occasion de
+        # se produire : on mesurait une optimisation du client, pas un droit.
+        #
+        # Une image dérivée en une ligne suffit à rendre le manifeste inédit :
+        # sa couche de configuration doit être téléversée, donc le droit est
+        # demandé, donc l'ACL peut le refuser. Mesuré : `insufficient_scope`,
+        # et un `POST /v2/catalogue/appli/blobs/uploads/` en 401.
+        sonde = f"{IMAGE}:sonde-lecteur"
+        _require(reader.run(
+            "mkdir -p %s && printf 'FROM %s\\nLABEL dsoxlab.lab=\"%s\"\\n' > %s "
+            "&& docker build -t %s %s",
+            SONDE_CONTEXTE, digest, LAB, f"{SONDE_CONTEXTE}/Dockerfile", sonde,
+            SONDE_CONTEXTE,
+        ), "Build the reader inedit upload probe.", "Construire la sonde d'upload inédite du lecteur.")
+        denied = reader.run("docker --config %s push %s", readconfig, sonde)
+        assert denied.rc != 0 and any(
+            word in denied.stderr.lower()
+            for word in ("denied", "unauthorized", "insufficient_scope")
+        ), message(
+            en="The read-only account must be unable to push content the registry has never seen.",
+            fr="Le compte lecture seule doit être incapable de pousser un contenu inédit.",
         )
         readtoken = _token(reader, f"reader:{accounts['reader']}", "repository:catalogue/appli:pull,push")
         assert _status(reader, "/v2/catalogue/appli/blobs/uploads/", readtoken, "POST") == "401", message(
@@ -146,4 +170,10 @@ def test_minimal_acl_controls_push_and_a_fresh_second_host_digest_pull():
                 _require(host.run("docker image rm -f %s", image.stdout.strip()), "Remove the owned trial image.", "Retirer l'image d'essai possédée.")
             elif identity is not None and host.run("docker image inspect %s", identity).rc == 0:
                 _require(host.run("docker image rm -f %s", identity), "Remove the owned digest image.", "Retirer l'image par digest possédée.")
+        posee = reader.run("docker image inspect %s", f"{IMAGE}:sonde-lecteur")
+        if posee.rc == 0:
+            _require(reader.run("docker image rm -f %s", f"{IMAGE}:sonde-lecteur"),
+                     "Remove the reader upload probe.",
+                     "Retirer la sonde d'upload du lecteur.")
+        _require(reader.run("rm -rf %s", SONDE_CONTEXTE), "Remove the reader probe context.", "Retirer le contexte de la sonde du lecteur.")
         _require(publisher.run("rm -rf %s", context), "Remove the owned build context.", "Retirer le contexte de build possédé.")

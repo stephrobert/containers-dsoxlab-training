@@ -1,7 +1,7 @@
 # Ce qui est demandé
 
 Sur `docker.lab`, une Debian 13 jetable, moteur en service avec le pilote
-`overlay2`. Le conteneur `entrepot` **tourne déjà**, et il n'a encore rien
+`overlayfs` sur une installation neuve de Docker 29, `overlay2` apres une mise a niveau : regardez ce que le moteur declare, ne le supposez pas. Le conteneur `entrepot` **tourne déjà**, et il n'a encore rien
 écrit.
 
 Les deux premières réponses vont dans `/opt/lab-stockage/reponses.txt`, une

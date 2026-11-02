@@ -3,11 +3,22 @@
   hosts: lab_target
   become: true
   vars:
-    pinned_image: python:3.13.8-slim-bookworm@sha256:61169c2bdb8e6bb44a8dfad33f569d324d52f079fded9a204b322a6fb9c9f799
+    pinned_image: python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
   tasks:
     - name: Install Docker and rootless runtime prerequisites
+      # NO `rootlesskit` HERE, and this is not an omission. MEASURED on
+      # 2026-11-02: the official `docker-ce-rootless-extras`, which the VM
+      # baseline installs, ships `/usr/bin/rootlesskit` itself and declares
+      # `Conflicts: rootlesskit` / `Replaces: rootlesskit`. Asking apt for
+      # Debian's package on top of it makes resolution fail outright
+      # (« pkgProblemResolver::Resolve generated breaks »), and the lab died in
+      # its own setup. The rootless launcher is the SUBJECT of this lab, so it
+      # comes from the editor's repository, not from the distribution.
+      #
+      # `slirp4netns` and `fuse-overlayfs` DO stay on Debian's side: the
+      # official package does not ship them, and neither is the subject here.
       ansible.builtin.apt:
-        name: [docker.io, python3, uidmap, rootlesskit, slirp4netns, dbus-user-session, fuse-overlayfs, acl]
+        name: [docker-ce, python3, uidmap, slirp4netns, dbus-user-session, fuse-overlayfs, acl]
         state: present
         update_cache: true
     - name: Ensure Docker is available for this host lab
@@ -81,14 +92,31 @@
       ansible.builtin.command: id -u dsoxlab-rootless
       register: rootless_uid
       changed_when: false
-    - name: Verify the packaged rootless launcher exists
-      ansible.builtin.stat:
-        path: /usr/share/docker.io/contrib/dockerd-rootless.sh
+    - name: Locate the packaged rootless launcher
+      # THE PATH IS DISCOVERED, NOT WRITTEN. It differs per packaging, and
+      # MEASURED on 2026-11-02: Debian's `docker.io` shipped it under
+      # `/usr/share/docker.io/contrib/`, the editor's `docker-ce-rootless-extras`
+      # ships `/usr/bin/dockerd-rootless.sh`. This lab hard-coded the Debian
+      # path and died in its own setup once the baseline moved to the official
+      # repository. `command -v` answers for whatever package provides it.
+      ansible.builtin.shell: |
+        set -eu
+        command -v dockerd-rootless.sh && exit 0
+        for candidat in /usr/bin/dockerd-rootless.sh \
+                        /usr/share/docker.io/contrib/dockerd-rootless.sh \
+                        /usr/libexec/docker/dockerd-rootless.sh; do
+          if test -x "$candidat"; then echo "$candidat"; exit 0; fi
+        done
+        exit 1
       register: rootless_launcher
+      changed_when: false
+      failed_when: false
     - name: Require the packaged rootless launcher
       ansible.builtin.assert:
-        that: rootless_launcher.stat.exists
-        fail_msg: "The installed Docker package has no dockerd-rootless.sh."
+        that: rootless_launcher.rc == 0 and rootless_launcher.stdout | trim | length > 0
+        fail_msg: >-
+          No dockerd-rootless.sh on this host. The baseline installs
+          docker-ce-rootless-extras; check infra/bootstrap.yaml.
     - name: Prepare the dedicated runtime directory
       ansible.builtin.file:
         path: "/run/user/{{ rootless_uid.stdout }}"
@@ -133,7 +161,7 @@
           Type=simple
           Environment=HOME=/var/lib/dsoxlab-rootless
           Environment=XDG_RUNTIME_DIR=/run/user/{{ rootless_uid.stdout }}
-          ExecStart=/usr/share/docker.io/contrib/dockerd-rootless.sh --experimental --host=unix:///run/user/{{ rootless_uid.stdout }}/docker.sock
+          ExecStart={{ rootless_launcher.stdout | trim }} --experimental --host=unix:///run/user/{{ rootless_uid.stdout }}/docker.sock
           Delegate=yes
           KillMode=mixed
           Restart=on-failure

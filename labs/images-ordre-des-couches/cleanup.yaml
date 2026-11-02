@@ -15,10 +15,22 @@
   become: true
   vars:
     image_epinglee: >-
-      alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
     socle: lab-couches:1.0
     atelier: /opt/lab-couches
   tasks:
+    - name: Rendre le socle public, et seulement si ce lab l'a tire
+      # Voir la tache jumelle du setup : sans ce test, le lab retire une image
+      # que d'autres partagent, ou laisse celle qu'il a tiree.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-images-ordre-des-couches.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-images-ordre-des-couches.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Retirer les conteneurs d'essai du lab
       ansible.builtin.shell:
         cmd: >
@@ -30,7 +42,7 @@
     - name: Retirer les images du lab, celle de l'apprenant et le socle
       ansible.builtin.shell:
         cmd: >
-          docker rmi -f appli:ordonnee {{ socle }} {{ image_epinglee }}
+          docker rmi -f appli:ordonnee {{ socle }}
           2>/dev/null || true
       changed_when: false
 

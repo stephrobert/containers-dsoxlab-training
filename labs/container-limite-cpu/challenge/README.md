@@ -49,7 +49,10 @@ the ceiling without ever touching it, and the counter would stay at zero.
 
 ## A word on tooling
 
-You have to be root to read a container's cgroup files.
+A container's cgroup files are **readable without privilege**: measured on this
+machine, they are `r--r--r--` or `rw-r--r--`, and an ordinary account opens them
+without `sudo`. **Writing** them does require one, and that is what separates
+observing from tuning.
 
 And if you stop your load with `pkill -f`, know that the pattern may match the
 shell carrying your command: it kills itself, and the return code is that of a

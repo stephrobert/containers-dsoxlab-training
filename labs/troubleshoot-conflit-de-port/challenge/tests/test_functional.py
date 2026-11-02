@@ -7,7 +7,7 @@ MESURÉ SUR docker.lab LE 2026-10-30, et ces deux messages sont le lab :
 
 | Coupable | Message du moteur | `docker ps` le voit | `ss` le voit |
 | un conteneur | « port is already allocated » | **oui** | oui, `docker-proxy` |
-| un processus de l'hôte | « Error starting userland proxy: listen » | **non** | oui, le programme |
+| un processus de l'hôte | « failed to bind host port ... address already in use » | **non** | oui, le programme |
 
 Les deux messages diffèrent, et c'est la clé. Le premier vient du MOTEUR, qui
 sait ce qu'il a déjà réservé ; le second vient du SYSTÈME, qui refuse l'écoute.

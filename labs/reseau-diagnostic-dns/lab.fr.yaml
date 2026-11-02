@@ -1,5 +1,0 @@
-# Surcharge française du challenge reseau-diagnostic-dns. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
-title: "La boutique ne trouve plus son catalogue"
-description: "Réparer résolution, accès et exposition réels, puis recréer le catalogue sans perdre une donnée métier nouvelle persistante."

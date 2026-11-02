@@ -1,0 +1,70 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# DEUX PROJETS À RETIRER, et non un. Le deuxième contrôle lance la variante de
+# développement dans `dsoxlab-variantes-dev` pour ne pas remplacer la pile de
+# déploiement : un contrôle interrompu en laisserait les restes, et le lab
+# suivant hériterait d'un moteur modifié.
+#
+# LES DEUX VERSIONS SONT TIRÉES AU HASARD À CHAQUE PASSAGE : l'image et le
+# relevé du banc partent donc avec le reste, sinon un passage comparerait les
+# jetons d'un autre.
+- name: Défaire le lab compose-profils-et-variantes
+  hosts: lab_target
+  become: true
+  vars:
+    atelier: /opt/lab-variantes
+    socle: python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
+    depot: lab-variantes/app
+  tasks:
+    - name: Retirer les deux piles, par leur projet puis par les étiquettes
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for projet in dsoxlab-variantes dsoxlab-variantes-dev; do
+            containers=$(docker ps -aq --filter "label=com.docker.compose.project=$projet")
+            if test -n "$containers"; then docker rm -f $containers >/dev/null; fi
+            reseaux=$(docker network ls -q --filter "label=com.docker.compose.project=$projet")
+            if test -n "$reseaux"; then docker network rm $reseaux >/dev/null 2>&1 || true; fi
+          done
+          # PAR LES ETIQUETTES AUSSI : un apprenant qui a renomme le projet
+          # laisserait sinon ses conteneurs derriere lui.
+          containers=$(docker ps -aq --filter label=dsoxlab.lab=compose-profils-et-variantes)
+          if test -n "$containers"; then docker rm -f $containers >/dev/null; fi
+      changed_when: false
+
+    - name: Retirer l'image du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=compose-profils-et-variantes)
+          if test -n "$images"; then docker image rm -f $images >/dev/null 2>&1 || true; fi
+          docker image rm -f '{{ depot }}:1.0' >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Rendre le socle public s'il a été posé par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '/var/tmp/dsoxlab-compose-profils-et-variantes.socle-a-rendre'; then
+            docker image rm -f '{{ socle }}' >/dev/null 2>&1 || true
+            rm -f '/var/tmp/dsoxlab-compose-profils-et-variantes.socle-a-rendre'
+          fi
+      changed_when: false
+
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer l'atelier et le relevé du banc
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /root/.lab-variantes.json

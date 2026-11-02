@@ -10,9 +10,9 @@ MESURÉ SUR docker.lab LE 2026-10-30 :
 
 | Fait | Valeur |
 | `/dev/shm` par défaut | 64 Mo, et c'est un tmpfs |
-| `ulimit -n` par défaut | **1073741816** |
+| `ulimit -n` par défaut | **1024**, plafond dur **524288** |
 | `--shm-size 64m` | `.HostConfig.ShmSize` = 67108864 |
-| `--ulimit nofile=256:256` | `ulimit -n` = 256 dans le conteneur |
+| `--ulimit nofile=256:256` | `ulimit -n` = 256 dans le conteneur, sous le defaut mesure de 1024 |
 
 LA DEUXIÈME LIGNE SURPREND, et c'est pour cela qu'elle est demandée : la limite
 de descripteurs n'est pas le problème des conteneurs modernes, c'est son
@@ -45,7 +45,7 @@ TAG = "lab-ulimits:1.0"
 ATELIER = "/opt/lab-ulimits"
 REPONSES = f"{ATELIER}/reponses.txt"
 SHM_DEMANDE_MO = 256
-NOFILE_DEMANDE = 1024
+NOFILE_DEMANDE = 256
 A_ECRIRE_MO = 128
 
 # L'hôte du `meta.yml`, et le même que `runtime.targets[].host` du lab.yaml.
@@ -143,30 +143,34 @@ def test_la_reponse_dit_la_taille_par_defaut_de_la_memoire_partagee(
 
 
 def test_la_reponse_dit_la_limite_de_descripteurs_par_defaut(host, defauts) -> None:
-    """Le nombre qui surprend, et c'est pour cela qu'il est demandé.
+    """D'où l'on part, et c'est pour cela que la valeur est demandée.
 
-    La limite de descripteurs n'est pas le problème des conteneurs modernes :
-    elle est énorme par défaut. C'est son réglage À LA BAISSE qui en crée un, et
-    savoir d'où l'on part est ce qui permet de reconnaître un réglage hérité
-    d'un autre temps.
+    MESURÉ SUR 29.9.2 : la limite souple vaut 1024, et son plafond dur 524288.
+    Ce lab a longtemps annoncé une limite par défaut gigantesque, celle de
+    Docker 26 (1073741816) : l'apprenant cherchait ce chiffre, trouvait 1024,
+    et doutait de sa lecture alors qu'elle était juste.
+
+    La raison de demander la valeur, elle, n'a pas bougé : on ne reconnaît un
+    abaissement hérité d'un autre temps que si l'on sait d'où l'on part.
     """
     annonce = _lire_reponses(host).get("nofile_defaut", "")
     assert annonce, message(
-        en="the `nofile_defaut=` line is empty. The same container answers it, "
-           "and the value is surprising: it is not a reading error.",
-        fr="la ligne `nofile_defaut=` est vide. Le même conteneur y répond, et "
-           "la valeur surprend : ce n'est pas une erreur de lecture.",
+        en="the `nofile_defaut=` line is empty. The same container answers it: "
+           "ask it for its soft limit, the one a process actually gets.",
+        fr="la ligne `nofile_defaut=` est vide. Le même conteneur y répond : "
+           "demandez-lui sa limite souple, celle qu'un processus reçoit.",
     )
     assert annonce.replace(" ", "") == defauts["nofile"], message(
         en=f"the announced limit is not the default one.\n"
            f"  you wrote : {annonce}\n"
-           "The value is surprising by its size, and that is the point: the "
-           "descriptor limit is not modern containers' problem, lowering it is.",
+           "The soft limit is low and its hard ceiling very high; the point "
+           "is to know where you start from, because lowering the limit is "
+           "what breaks a service, not the default itself.",
         fr=f"la limite annoncée n'est pas celle du défaut.\n"
            f"  vous avez écrit : {annonce}\n"
-           "La valeur surprend par sa taille, et c'est le but : la limite de "
-           "descripteurs n'est pas le problème des conteneurs modernes, c'est "
-           "son abaissement qui en est un.",
+           "La limite souple est basse et son plafond dur très haut ; le but "
+           "est de savoir d'où l'on part, car c'est l'abaissement de la "
+           "limite qui casse un service, pas le défaut lui-même.",
     )
 
 

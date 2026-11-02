@@ -19,10 +19,15 @@ pose un état de départ, vous donne une situation, et vérifie le résultat en
 interrogeant le moteur Docker : l'image construite, sa taille, l'utilisateur
 qui l'exécute, les montages du conteneur, ce que l'application répond.
 
-Une même API FastAPI traverse tout le parcours et devient progressivement plus
-correcte. **Vous n'avez pas besoin de savoir programmer** : le code est fourni.
-Vous travaillez l'image, l'exécution, le réseau, le stockage, la distribution
-et le durcissement.
+**Vous n'avez pas besoin de savoir programmer** : chaque lab fournit le code
+dont il a besoin. Vous travaillez l'image, l'exécution, le réseau, le stockage,
+la distribution et le durcissement.
+
+Chaque module se termine par une **épreuve** : cinq contrôles de poids égal, un
+seuil de 75 sur 100, quatre indices qui coûtent des points, et une exigence
+critique qu'aucun total ne compense. Une épreuve note **l'état final** du
+système, jamais les commandes tapées : deux chemins qui aboutissent au même état
+reçoivent la même note.
 
 ## Ce que ce n'est pas
 
@@ -222,7 +227,7 @@ consensus et son état de contrôle à protéger.
 | `donnees-volumes-et-montages` | Où les données survivent : les trois types de montage | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes) |
 | `donnees-permissions-uid-gid` | Deux conteneurs, un volume, des droits qui tiennent | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#les-volumes-standards) |
 | `container-arret-transactionnel` | Terminer une transaction HTTP avant l'arrêt | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-) |
-| `reseau-diagnostic-dns` | La boutique ne trouve plus son catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
+| `remettre-un-conteneur-en-service` | La boutique ne trouve plus son catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#dépannage-réseau-docker) |
 
 ### Mesurer l'isolation, et remettre un conteneur en service
 
@@ -287,7 +292,7 @@ consensus et son état de contrôle à protéger.
 |---|---|---|---|---|---|
 | `compose-correlation-et-saturation` | Corréler une requête métier et attribuer la saturation CPU | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée) |
 | `donnees-postgres-sauvegarde` | Restaurer PostgreSQL sur une seconde VM | c3 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker) |
-| `compose-capstone` | Remettre une stack Compose en service | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
+| `epreuve-remettre-une-stack-en-service` | Remettre une stack Compose en service | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
 
 ### Administrer et durcir un hôte Docker
 

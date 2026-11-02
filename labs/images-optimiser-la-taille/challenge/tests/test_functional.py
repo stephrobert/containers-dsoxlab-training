@@ -44,12 +44,26 @@ UTILE = "/opt/app"
 CACHE = "/var/cache/fabrique"
 ESSAI = "dsoxlab-essai-taille"
 
-# LA MARGE ACCORDÉE AU-DESSUS DU STRICT NÉCESSAIRE. Deux fois le volume utile :
-# assez pour ne pas refuser une écriture correcte qui laisse quelques
-# mégaoctets de métadonnées, et très loin des 44 Mo du nettoyage tardif. La
-# mesure du 2026-10-30 donne 6,3 Mo pour la bonne écriture contre 44 pour
-# l'autre : le seuil ne départage pas des cas limites, il sépare deux mondes.
-MARGE = 2.0
+# LA MARGE ACCORDÉE AU-DESSUS DU STRICT NÉCESSAIRE, et elle vaut trois fois le
+# volume utile depuis une mesure qui a corrigé la précédente.
+#
+# CE QUE DEUX FOIS DONNAIT. Mesuré le 2026-11-02 sur Docker 29.9.2 en magasin
+# containerd : le socle pèse 12 964 983 octets, la bonne écriture 25 584 342,
+# et `du` voit 6 299 648 octets d'artefacts. Le plafond à deux fois valait donc
+# 25 564 279, soit 3 863 octets SOUS la bonne écriture elle-même. Le contrôle
+# refusait une solution juste à 0,015 % près : il ne mesurait plus le sujet du
+# lab, il mesurait du bruit, et il ne passait sur Docker 26 que par chance.
+#
+# POURQUOI LA COUCHE AJOUTÉE PÈSE LE DOUBLE DE CE QUE `du` VOIT. Elle fait
+# 12,6 Mo pour 6,3 Mo d'artefacts : la marge de deux était assise sur l'arête,
+# sans aucune place pour les métadonnées de couche.
+#
+# CE QUE TROIS FOIS DONNE. Un plafond de 31 863 927 : la bonne écriture passe
+# avec 20 % de reste, et le nettoyage tardif est refusé par un facteur 3,2,
+# puisqu'il pèse 101 118 930 octets. Le seuil sépare de nouveau DEUX MONDES,
+# ce qu'il annonçait déjà. Au passage, les 44 Mo que citait ce commentaire
+# n'existent plus : la mauvaise écriture en vaut cent.
+MARGE = 3.0
 
 # L'hôte du `meta.yml`, et le même que `runtime.targets[].host` du lab.yaml.
 TARGET_HOST = "docker.lab"

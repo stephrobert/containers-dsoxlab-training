@@ -7,7 +7,12 @@
   tasks:
     - name: Installer les outils bornés
       ansible.builtin.apt:
-        name: [openssl, curl, apache2-utils, python3]
+        # `python3-cryptography` est DECLARE, et ce n'est pas une precaution de
+        # style : `prepare.sh` lit la cle publique du certificat pour en
+        # fabriquer le JWKS que registry 3 exige. Il etait present par
+        # transitivite sur la machine de mesure, ce qui est exactement le genre
+        # de hasard qui casse chez le lecteur.
+        name: [openssl, curl, apache2-utils, python3, python3-cryptography]
         state: present
     - name: Refuser de remplacer un répertoire existant
       ansible.builtin.stat:

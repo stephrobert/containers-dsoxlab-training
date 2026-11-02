@@ -1,0 +1,6 @@
+# Surcharge francaise : `title` et `description` SEULEMENT, tout autre champ y est
+# ignore par le parseur.
+title: Deux variantes d'un même socle, et aucun montage de dev en déploiement
+description: Obtenir du même fichier de base une variante de développement qui monte les sources,
+  et une variante de déploiement qui n'en porte aucune, contrôlée sur la configuration effective
+  et non sur le fichier d'entrée. Un service optionnel ne démarre que sous son profil.

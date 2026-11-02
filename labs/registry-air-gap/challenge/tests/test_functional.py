@@ -57,9 +57,18 @@ def _delivery(host):
         )
         expected = json.loads(host.file("/root/.lab-air-gap.json").content_string)
         manifest = json.loads(host.file(f"{directory}/image/manifest.json").content_string)
-        assert manifest.get("config", {}).get("digest") == expected["image"] and manifest.get("layers"), message(
-            en="The delivery must contain the exact published product and its layers, not an exported container filesystem.",
-            fr="La livraison doit contenir le produit publié exact et ses couches, pas un export du système de fichiers d'un conteneur.",
+        # UNE CONFIGURATION D'IMAGE, ET AUTANT DE COUCHES QUE LA PUBLICATION.
+        # Mesuré le 2026-11-02 : le `manifest.json` d'une archive annonce le
+        # digest de la CONFIGURATION, quand l'`Id` relevé par le setup est
+        # désormais celui de l'index de l'image. Les deux ne coïncident plus,
+        # et comparer les couches dit la même chose : un export de système de
+        # fichiers n'en porterait qu'une, et perdrait sa configuration.
+        config = manifest.get("config", {}).get("digest", "")
+        assert config.startswith("sha256:") and len(manifest.get("layers", [])) == len(
+            expected["couches"]
+        ), message(
+            en="The delivery must carry an image configuration and every published layer, not an exported container filesystem.",
+            fr="La livraison doit porter une configuration d'image et toutes les couches publiées, pas un export du système de fichiers d'un conteneur.",
         )
         yield expected, directory
     finally:
@@ -114,10 +123,17 @@ def test_delivery_recovers_and_runs_with_the_source_registry_stopped(host):
                 en="Docker cannot load the recovered offline image.",
                 fr="Docker ne peut pas charger l'image récupérée hors ligne.",
             )
-            identity = host.run("docker image inspect %s --format %s", TRIAL, "{{.Id}}")
-            assert identity.rc == 0 and identity.stdout.strip() == expected["image"], message(
-                en="The offline image must retain the published image identity.",
-                fr="L'image hors ligne doit conserver l'identité publiée.",
+            # SES COUCHES, ET PLUS SON `Id` : voir la note du relevé, dans
+            # setup.yaml. Une image rechargée depuis une archive ne peut pas
+            # porter le digest de l'index publié, et ses couches le prouvent
+            # aussi bien, à l'ordre près qui compte ici.
+            identity = host.run(
+                "docker image inspect %s --format %s", TRIAL,
+                "{{range .RootFS.Layers}}{{println .}}{{end}}",
+            )
+            assert identity.rc == 0 and identity.stdout.split() == expected["couches"], message(
+                en="The offline image must carry exactly the published layers.",
+                fr="L'image hors ligne doit porter exactement les couches publiées.",
             )
             product = host.run("docker run --rm --pull never --network none %s", TRIAL)
             assert product.rc == 0 and product.stdout.strip() == expected["release"], message(

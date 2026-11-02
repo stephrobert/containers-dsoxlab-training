@@ -16,7 +16,7 @@ STATE = "/root/.lab-buildkit-secret.json"
 IMAGE = "dsoxlab-secret:finale"
 TRIAL_IMAGE = "dsoxlab-secret:test"
 BUILDER = "dsoxlab-secret-test"
-BUILDKIT = "moby/buildkit@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea"
+BUILDKIT = "moby/buildkit@sha256:99368f3e46177c6405b9740e4461d91cee004128daeecca78d4ceac50ec1da5c"
 INSPECTOR = (Path(__file__).resolve().parents[2] / "fixtures/inspect-image.py").read_text()
 
 
