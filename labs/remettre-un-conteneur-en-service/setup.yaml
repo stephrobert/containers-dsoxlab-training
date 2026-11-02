@@ -1,0 +1,265 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# C'EST UNE ÉPREUVE, et cela change la façon d'écrire ce setup. Un lab pose une
+# situation et nomme le geste ; un challenge pose une PANNE et ne nomme que le
+# symptôme. Les trois fautes ci-dessous ne sont donc dites nulle part : ni dans
+# l'énoncé, ni dans les indices de premier niveau.
+#
+# LES TROIS FAUTES, INDÉPENDANTES, ET TOUTES CRÉDIBLES :
+#   1. `boutique` et `catalogue` sont sur deux réseaux dédiés DIFFÉRENTS. C'est
+#      ce qui arrive dès qu'on monte deux stacks séparément, chacune créant son
+#      réseau. Aucun des deux noms ne résout alors.
+#   2. L'application cherche la base sous le nom `base`, et le conteneur
+#      s'appelle `catalogue`. Même sur un réseau commun, ce nom ne résoudrait
+#      pas : il faut un alias réseau.
+#   3. `catalogue` publie un port sur toutes les interfaces, alors qu'une base
+#      n'a aucune raison d'être joignable depuis l'extérieur.
+#
+# UN BON DIAGNOSTIC LES RÈGLE D'UN SEUL GESTE, et c'est ce qui fait la valeur de
+# l'épreuve : recréer `catalogue` sur le bon réseau, avec l'alias et sans
+# publication. Trois symptômes, une correction. Qui corrige au fur et à mesure
+# s'en sort aussi, mais en trois fois.
+#
+# MESURÉ SUR docker.lab LE 2026-10-30. Réseaux différents : ni `catalogue` ni
+# `base` ne résolvent. Après rattachement avec alias : `base` résout, et
+# `catalogue` résout ENCORE, ce qui permet d'exiger les deux noms et donc
+# d'écarter un simple renommage. Et la publication subsiste à tout, puisque
+# aucune commande ne retire un `-p`.
+- name: Préparer le challenge remettre-un-conteneur-en-service
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    tag_local: lab-diagnostic:1.0
+    atelier: /opt/lab-remise-en-service
+    reseau_boutique: front
+    reseau_catalogue: arriere-plan
+    port_publie: 18095
+  tasks:
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE. Le socle public est partage entre
+      # labs : celui qui le retire alors qu'un autre l'avait tire casse la photo
+      # initiale du suivant, et celui qui ne le retire pas laisse l'image du
+      # precedent. Mesure du 2026-11-01 : sept labs ROUGE sur ce seul motif.
+      # Le marqueur dit au cleanup s'il doit rendre l'image, ou la laisser.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-remettre-un-conteneur-en-service.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-remettre-un-conteneur-en-service.socle-a-rendre'
+          docker pull 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null
+        fi
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: [docker-ce, python3]
+        state: present
+        update_cache: true
+
+    # Ce challenge suppose un moteur en état : c'est le sujet de
+    # `docker-verifier-son-moteur`, qui ouvre le parcours.
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+    - name: Photographier les images préexistantes avant le pull
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          images = subprocess.check_output(["docker", "image", "ls", "-aq", "--no-trunc"], text=True).split()
+          existing = json.loads(subprocess.check_output(["docker", "image", "inspect", *set(images)], text=True)) if images else []
+          for image in existing:
+              if "lab-diagnostic:1.0" in (image["RepoTags"] or []) and (
+                  (image["Config"]["Labels"] or {}).get("dsoxlab.lab") != "remettre-un-conteneur-en-service"):
+                  raise SystemExit("Reserved diagnostic image tag belongs to another owner")
+          volumes = subprocess.check_output(["docker", "volume", "ls", "-q"], text=True).split()
+          if "dsoxlab-diagnostic-data" in volumes:
+              volume = json.loads(subprocess.check_output(["docker", "volume", "inspect", "dsoxlab-diagnostic-data"], text=True))[0]
+              if (volume["Labels"] or {}).get("dsoxlab.lab") != "remettre-un-conteneur-en-service":
+                  raise SystemExit("Reserved diagnostic volume belongs to another owner")
+          Path("/root/.lab-diagnostic-state.json").write_text(json.dumps({"images": images}))
+          PY
+      changed_when: true
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer seulement les ressources identifiées du passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
+          if test -n "$ids"; then docker rm -f $ids; fi
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
+          if test -n "$ids"; then docker network rm $ids; fi
+          ids=$(docker volume ls -q --filter label=dsoxlab.lab=remettre-un-conteneur-en-service)
+          if test -n "$ids"; then docker volume rm $ids; fi
+      changed_when: false
+
+    - name: Déposer le répertoire de construction
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    # L'écouteur est porté par l'image : ce challenge fait recréer des
+    # conteneurs, et l'apprenant ne doit pas avoir à réécrire un service qu'il
+    # n'a jamais vu. Le jeton persiste sur le volume, et les contrôles
+    # lisent la RÉPONSE, jamais la seule connexion.
+    - name: Écrire l'écouteur que l'image portera
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/ecouteur.sh"
+        mode: "0755"
+        content: |
+          set -eu
+          mkdir -p /data
+          if ! test -s /data/jeton; then
+            od -An -tx1 -N6 /dev/urandom | tr -d ' \n' > /data/jeton
+          fi
+          while true; do
+            printf 'jeton=%s\n' "$(cat /data/jeton)" | nc -l -p 80 || true
+          done
+
+    - name: Écrire l'image de service du challenge
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          LABEL dsoxlab.lab="remettre-un-conteneur-en-service"
+          COPY ecouteur.sh /usr/local/bin/ecouteur.sh
+          CMD ["sh", "/usr/local/bin/ecouteur.sh"]
+
+    - name: Construire l'image de service, pour que l'apprenant puisse recréer
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+    - name: Garder l'identité réelle de l'image fournie
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          path = Path("/root/.lab-diagnostic-state.json")
+          state = json.loads(path.read_text())
+          state["image_id"] = json.loads(subprocess.check_output(
+              ["docker", "image", "inspect", "lab-diagnostic:1.0"], text=True))[0]["Id"]
+          path.write_text(json.dumps(state))
+          PY
+      changed_when: true
+    - name: Créer le volume durable du catalogue
+      ansible.builtin.command:
+        cmd: docker volume create --label dsoxlab.lab=remettre-un-conteneur-en-service dsoxlab-diagnostic-data
+      changed_when: true
+
+    # FAUTE 1 : deux réseaux dédiés, un par conteneur.
+    - name: Créer les deux réseaux, comme deux stacks montées séparément
+      ansible.builtin.command:
+        cmd: docker network create --label dsoxlab.lab=remettre-un-conteneur-en-service --subnet {{ item.cidr }} {{ item.nom }}
+      loop:
+        - { nom: "{{ reseau_boutique }}", cidr: 172.30.1.0/24 }
+        - { nom: "{{ reseau_catalogue }}", cidr: 172.30.2.0/24 }
+      changed_when: true
+
+    - name: Lancer `boutique`, l'application qui cherche sa base
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name boutique --network {{ reseau_boutique }}
+          {{ tag_local }}
+      changed_when: true
+
+    # FAUTES 2 et 3 : le conteneur ne porte aucun alias, et il publie un port.
+    - name: Lancer `catalogue`, sur l'autre réseau et publié par mégarde
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name catalogue --network {{ reseau_catalogue }}
+          -v dsoxlab-diagnostic-data:/data -p {{ port_publie }}:80 {{ tag_local }}
+      changed_when: true
+
+    - name: Attendre que les deux services écoutent réellement
+      ansible.builtin.shell:
+        cmd: >
+          docker exec boutique sh -c 'nc -w 2 127.0.0.1 80' | grep -q 'jeton='
+          && docker exec catalogue sh -c 'nc -w 2 127.0.0.1 80' | grep -q 'jeton='
+      register: attente
+      until: attente.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    # L'ÉNONCÉ NE DIT QUE LE SYMPTÔME. Il nomme ce qui est attendu à la fin, et
+    # jamais les causes : c'est ce qui sépare un challenge d'un lab.
+    - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
+      ansible.builtin.copy:
+        dest: /opt/MISSION.md
+        mode: "0644"
+        content: |
+          # Epreuve : la boutique ne trouve plus son catalogue
+
+          Deux conteneurs tournent. `boutique` est l application,
+          `catalogue` est la base qu elle interroge. Les deux sont batis sur
+          l image `{{ tag_local }}`, qui ECOUTE sur son port 80 et repond un
+          jeton.
+
+          L application cherche sa base sous le nom `base`, en dur dans sa
+          configuration, et ce nom ne peut pas changer.
+
+          Depuis `boutique`, rien ne repond. Et l audit de la semaine signale
+          par ailleurs que la base est joignable depuis l exterieur.
+
+          Cinq choses sont attendues a la fin :
+
+            1. depuis `boutique`, le nom `base` se resout vers une adresse que
+               `catalogue` porte reellement.
+            2. depuis `boutique`, une connexion sur `base` port 80 rend le
+               jeton.
+            3. `catalogue` ne publie AUCUN port.
+            4. depuis `boutique`, le nom `catalogue` se resout aussi :
+               l exploitation doit continuer a designer le conteneur par son
+               nom reel.
+            5. gardez le volume dsoxlab-diagnostic-data sur /data et l image
+               fournie. Installez /opt/lab-remise-en-service/recreate.sh executable,
+               sans argument : une recreation conserve le jeton nouveau
+               ecrit dans /data/jeton et la reponse depuis boutique.
+
+          C est une EPREUVE. Rien ne vous sera reexplique : les labs reseau du
+          parcours l ont enseigne, celle-ci le mesure. Cinq controles de
+          poids egal, 75 points pour reussir, et tout est note sur l etat reel
+          du moteur.
+
+          Gardez les noms des conteneurs : les controles les cherchent
+          nommement.
+          Tout reseau ajoute doit porter dsoxlab.lab=remettre-un-conteneur-en-service.
+          Aucun prune global. La conservation des donnees est critique :
+          le seuil numerique ne remplace pas la reussite de ce controle.
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait l'épreuve déjà
+    # résolue avant d'être posée. Elle porte sur les trois fautes : les deux
+    # noms ne résolvent pas depuis `boutique`, et le port est bien publié.
+    - name: Vérifier que la panne est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          ! docker exec boutique nslookup base >/dev/null 2>&1
+          && ! docker exec boutique nslookup catalogue >/dev/null 2>&1
+          && docker port catalogue 80/tcp | grep -q '{{ port_publie }}'
+      changed_when: false

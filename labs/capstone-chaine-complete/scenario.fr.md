@@ -85,3 +85,5 @@ et ports source 15088/18088 et cible 18089 libres requis. Compose doit prendre
 en charge `!override` si utilisé pour remplacer la publication API.
 Wheel pour CPython 3.13 amd64 avec
 glibc. Les tokens publics de formation ne sont pas de vrais identifiants.
+
+**Cinq exigences ne sont compensées par aucun total**, et chacune fait échouer l'épreuve à elle seule : une perte de données, un secret divulgué, un accès hors du périmètre, une protection retirée pour faire réussir un contrôle, et un artefact déployé différent de celui qui a été accepté.

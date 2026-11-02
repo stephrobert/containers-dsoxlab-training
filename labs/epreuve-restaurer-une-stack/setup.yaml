@@ -1,0 +1,187 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET DANS QUEL ORDRE. Il monte la pile sur l'hôte
+# d'origine, y écrit un enregistrement témoin, en prend une sauvegarde, PUIS
+# détruit la pile et son volume. L'ordre importe : la sauvegarde doit contenir
+# le témoin, sinon l'épreuve serait réussissable sans restaurer quoi que ce soit.
+#
+# LA PANNE N'EST PAS ANNONCÉE. Le scénario dit que le service ne répond plus et
+# que l'hôte d'origine n'est plus de confiance ; il ne dit pas ce qui a été
+# détruit. Établir l'état réel fait partie de l'épreuve.
+#
+# LE CLIENT REÇOIT CE QU'IL FAUT ET RIEN DE PLUS : le fichier de la pile,
+# l'image, et la sauvegarde. Pas le volume, pas les conteneurs, pas d'état.
+- name: Préparer les deux moteurs de l'épreuve
+  hosts: lab_target:lab_client
+  become: true
+  vars:
+    socle: python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
+  tasks:
+    - name: Noter si le socle public etait deja present
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ socle }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-epreuve-restaurer-une-stack.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-epreuve-restaurer-une-stack.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Installer le moteur, Compose et les outils bornés
+      ansible.builtin.apt:
+        name: [docker-ce, docker-compose-plugin, python3, curl]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant à parler au moteur
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Refuser d'écraser un atelier existant
+      ansible.builtin.stat:
+        path: /opt/lab-restauration
+      register: existant
+
+    - name: Exiger un atelier propre
+      ansible.builtin.assert:
+        that: not existant.stat.exists
+        fail_msg: "/opt/lab-restauration existe déjà ; jouez `dsoxlab clean` d'abord."
+
+    - name: Créer l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user | default('ansible') }}"
+      loop:
+        - /opt/lab-restauration
+        - /opt/lab-restauration/build
+        - /opt/lab-restauration/sauvegarde
+
+    - name: Tirer le socle public épinglé
+      ansible.builtin.command:
+        cmd: docker pull {{ socle }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Déposer le contexte de construction
+      ansible.builtin.copy:
+        src: "fixtures/{{ item }}"
+        dest: "/opt/lab-restauration/build/{{ item }}"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+      loop: [service.py, Dockerfile]
+
+    - name: Construire l'image sur LES DEUX hôtes
+      # SUR LES DEUX, parce que l'hote d'origine n'est plus de confiance : le
+      # client doit pouvoir restaurer sans rien lui demander.
+      ansible.builtin.command:
+        cmd: >-
+          docker build --provenance=false
+          -t lab-restauration/service:1.0 /opt/lab-restauration/build
+      changed_when: true
+
+    - name: Déposer le fichier de la pile
+      ansible.builtin.copy:
+        src: fixtures/compose.yaml
+        dest: /opt/lab-restauration/compose.yaml
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+
+- name: Monter la pile d'origine, y écrire le témoin, en prendre la sauvegarde
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Lancer la pile d'origine
+      ansible.builtin.command:
+        chdir: /opt/lab-restauration
+        cmd: docker compose -p dsoxlab-restauration up -d --pull never
+      changed_when: true
+
+    - name: Attendre que la requête traverse les trois étages
+      ansible.builtin.uri:
+        url: http://127.0.0.1:18090/enregistrements
+        use_proxy: false
+      register: pret
+      until: pret.status == 200 and pret.json.traverse | default([]) | length == 3
+      retries: 25
+      delay: 2
+
+    - name: Tirer au hasard l'enregistrement témoin
+      ansible.builtin.set_fact:
+        temoin: "temoin-{{ lookup('ansible.builtin.password', '/dev/null', length=16, chars=['ascii_lowercase', 'digits']) }}"
+
+    - name: Écrire le témoin à travers le front
+      # À TRAVERS LE FRONT, et non directement dans le volume : c'est le chemin
+      # métier, et c'est lui que la restauration devra rétablir.
+      ansible.builtin.uri:
+        url: http://127.0.0.1:18090/enregistrements
+        method: POST
+        body: "{{ temoin }}"
+        body_format: raw
+        status_code: 201
+        use_proxy: false
+      changed_when: true
+
+    - name: Prendre la sauvegarde, depuis le conteneur de données
+      ansible.builtin.shell:
+        cmd: >-
+          docker exec dsoxlab-restauration-db
+          cat /var/lib/donnees/enregistrements.json
+          > /opt/lab-restauration/sauvegarde/enregistrements.json
+      changed_when: true
+
+    - name: Vérifier que la sauvegarde contient bien le témoin
+      # SANS CE CONTROLE, une sauvegarde vide rendrait l'epreuve reussissable
+      # sans rien restaurer, et le defaut ne se verrait qu'a la notation.
+      ansible.builtin.command:
+        cmd: grep -qF "{{ temoin }}" /opt/lab-restauration/sauvegarde/enregistrements.json
+      changed_when: false
+
+    - name: Garder le relevé privé du banc
+      ansible.builtin.copy:
+        dest: /root/.lab-restauration.json
+        mode: "0600"
+        content: "{{ {'temoin': temoin} | to_json }}"
+
+    - name: Détruire la pile d'origine, volume compris
+      # LA PANNE. Elle n'est pas annoncee : le scenario dit que le service ne
+      # repond plus et que cet hote n'est plus de confiance.
+      ansible.builtin.command:
+        chdir: /opt/lab-restauration
+        cmd: docker compose -p dsoxlab-restauration down --volumes --remove-orphans
+      changed_when: true
+
+- name: Donner au client la sauvegarde et la mission
+  hosts: lab_client
+  become: true
+  tasks:
+    - name: Lire la sauvegarde prise sur l'hôte d'origine
+      ansible.builtin.slurp:
+        src: /opt/lab-restauration/sauvegarde/enregistrements.json
+      delegate_to: "{{ groups['lab_target'][0] }}"
+      register: sauvegarde
+
+    - name: La déposer sur le client, qui restaurera
+      ansible.builtin.copy:
+        dest: /opt/lab-restauration/sauvegarde/enregistrements.json
+        content: "{{ sauvegarde.content | b64decode }}"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+
+    - name: Déposer la mission à côté de l'atelier
+      ansible.builtin.copy:
+        src: challenge/README.fr.md
+        dest: /opt/lab-restauration/MISSION.md
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"

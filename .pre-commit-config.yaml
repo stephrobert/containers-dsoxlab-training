@@ -96,6 +96,35 @@ repos:
         pass_filenames: false
         always_run: true
 
+      # L'épinglage des IMAGES a son contrôle juste au-dessus ; celui des
+      # VERSIONS DE PAQUETS n'en avait aucun. La règle de version du projet les
+      # vise pourtant toutes les deux, et une relecture du 2026-11-02 a relevé
+      # que 75 setups installent `docker-ce` sans version.
+      #
+      # La garantie est tenue ailleurs, et c'est délibéré : `infra/bootstrap.yaml`
+      # installe les versions exactes et les met en `hold` avant qu'aucun lab ne
+      # tourne. Les recopier dans 75 setups créerait 75 endroits à maintenir, et
+      # « une valeur qu'il faut penser à recopier finit toujours par mentir ».
+      # Ce contrôle défend donc l'unique endroit où elle vit.
+      - id: paquets-epingles
+        name: la version du moteur est épinglée, retenue, et à un seul endroit
+        entry: uv run --no-sync pytest tests/test_paquets_epingles.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # Une exigence annoncée doit être une exigence appliquée. Les douze
+      # épreuves promettaient « aucun total ne compense » pendant que le moteur
+      # l'ignorait ; dsoxlab 0.7.0 sait l'appliquer, mais rien n'oblige un
+      # auteur à déclarer ce que son énoncé promet. Sans ce hook, le défaut
+      # reviendrait par la première épreuve écrite demain.
+      - id: exigence-critique-declaree
+        name: une promesse « aucun total ne compense » est déclarée
+        entry: uv run --no-sync pytest tests/test_exigence_critique_declaree.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
       # Une solution lisible dans le dépôt que l'apprenant clone ne gâche pas un
       # lab une fois : git garde l'historique. L'en-tête ansible-vault est la
       # preuve du chiffrement, on la lit plutôt que de faire confiance à

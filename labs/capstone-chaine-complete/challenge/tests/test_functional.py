@@ -22,6 +22,23 @@ def host():
     return lab_host("docker.lab")
 
 
+def _identifie(manifest, servi, attendu):
+    """L'artefact publié est-il bien l'image attendue ?
+
+    DEUX FORMES, et une seule preuve. Sous le magasin containerd, Docker 29
+    publie un INDEX OCI : il n'a pas de clé `config`, et c'est son propre
+    digest qui vaut l'identifiant local de l'image (mesuré le 2026-11-02).
+    Sous le magasin classique, le registre sert un manifeste d'image, dont la
+    clé `config` porte ce même identifiant.
+
+    `servi` est le digest que le registre annonce pour cette référence, et il
+    est relevé indépendamment de `attendu` : les comparer reste une mesure, pas
+    une tautologie.
+    """
+    if "config" in manifest:
+        return manifest["config"].get("digest") == attendu
+    return bool(manifest.get("manifests")) and servi == attendu
+
 def _compose(host, args):
     return host.run(shlex.join([
         "docker", "compose", "-p", PROJECT, "--env-file", f"{ROOT}/release.env",
@@ -123,7 +140,10 @@ def test_registry_manifest_digest_pull_and_deployed_identity(host):
     request = (
         "import json,urllib.request; "
         "req=urllib.request.Request('http://127.0.0.1:15088/v2/delivery/api/manifests/1.0', "
-        "headers={'Accept':'application/vnd.docker.distribution.manifest.v2+json'}); "
+        "headers={'Accept':'application/vnd.oci.image.index.v1+json,"
+        "application/vnd.docker.distribution.manifest.list.v2+json,"
+        "application/vnd.docker.distribution.manifest.v2+json,"
+        "application/vnd.oci.image.manifest.v1+json'}); "
         "r=urllib.request.urlopen(req,timeout=5); "
         "print(json.dumps({'digest':r.headers['Docker-Content-Digest'],'manifest':json.load(r)}))"
     )
@@ -140,7 +160,13 @@ def test_registry_manifest_digest_pull_and_deployed_identity(host):
         fr="La référence immuable publiée doit pouvoir être réellement tirée.",
     )
     image = json.loads(inspected.stdout)[0]
-    assert digest == registry["digest"] and registry["manifest"]["config"]["digest"] == image["Id"] and (
+    # L'ARTEFACT PUBLIE EST UN INDEX OCI sous le magasin containerd, et un
+    # index n'a pas de clé `config` : la comparaison levait un `KeyError`.
+    # Mesuré le 2026-11-02, le digest que le registre sert pour l'étiquette
+    # EST l'identifiant local de l'image, donc l'identité se prouve encore.
+    assert digest == registry["digest"] and _identifie(
+        registry["manifest"], registry["digest"], image["Id"],
+    ) and (
         evidence["image_id"] == evidence["pulled_id"] == services["api"]["Image"] == image["Id"]
     ) and evidence["reference"] == services["api"]["Config"]["Image"] == reference, message(
         en="Source artifact, manifest, digest pull and deployed image must share the same identity.",
@@ -536,9 +562,21 @@ def test_sbom_matches_real_installed_packages_and_source(host):
         en="SPDX entries must match independently measured real packages and the application hash.",
         fr="Les entrées SPDX correspondent aux vrais paquets mesurés indépendamment et au hash applicatif.",
     )
+    # LA VERSION DU PILOTE N'EST PLUS ÉCRITE ICI, elle est MESURÉE. Le test
+    # exigeait `2.9.11`, et la montée de l'image de base en Python 3.14 a imposé
+    # la 2.9.13, la wheel cp313 étant refusée par 3.14 : le contrôle refusait
+    # alors une livraison juste, sur un nombre que rien n'obligeait à écrire. Il
+    # vérifie désormais que le SBOM annonce la version RÉELLEMENT installée dans
+    # l'image, ce qui est plus fort : un SBOM qui mentirait d'une version serait
+    # refusé, et le lab ne se périme plus à chaque montée du pilote.
+    installee = dict(tuple(p) for p in actual["python"]).get("psycopg2-binary")
+    assert installee, message(
+        en="psycopg2-binary is not installed in the API image at all.",
+        fr="psycopg2-binary n'est pas installé du tout dans l'image API.",
+    )
     assert sbom.get("spdxVersion") == "SPDX-2.3" and sbom.get("documentNamespace") == fresh["documentNamespace"] and (
         sbom.get("packages") == fresh["packages"] and sbom.get("relationships") == fresh["relationships"]
-    ) and any(p["name"] == "psycopg2-binary" and p["versionInfo"] == "2.9.11" for p in sbom["packages"]), message(
+    ) and any(p["name"] == "psycopg2-binary" and p["versionInfo"] == installee for p in sbom["packages"]), message(
         en="SPDX must match real Debian/Python inventories and the actual API source checksum.",
         fr="Le SPDX doit correspondre aux inventaires Debian/Python et à la somme du vrai code API.",
     )
@@ -671,10 +709,18 @@ def test_network_isolation_and_postgresql_real_write(host):
 
 def test_data_survives_database_and_api_container_replacement(host):
     services = _state(host)
-    mounts = [m for m in services["db"]["Mounts"] if m["Destination"] == "/var/lib/postgresql/data"]
+    # LE MONTAGE ATTENDU EST /var/lib/postgresql, ET NON SON
+    # SOUS-RÉPERTOIRE `data`. Mesuré le 2026-11-02 sur
+    # postgres:18.6-alpine3.24 : l'image déclare
+    # `PGDATA=/var/lib/postgresql/18/docker` et son volume à
+    # `/var/lib/postgresql`. Montée à l'ancien chemin, elle ne devient
+    # jamais saine et son journal dit « unused mount/volume » : les
+    # données iraient ailleurs, et elle refuse de laisser croire à une
+    # persistance qui n'existe pas.
+    mounts = [m for m in services["db"]["Mounts"] if m["Destination"] == "/var/lib/postgresql"]
     assert len(mounts) == 1 and mounts[0]["Type"] == "volume" and mounts[0]["Name"] == f"{PROJECT}_data", message(
-        en="Use the named data volume at PostgreSQL's real data directory.",
-        fr="Utilisez le volume nommé data au vrai répertoire de données PostgreSQL.",
+        en="Mount the named data volume at /var/lib/postgresql, the single mount point PostgreSQL 18 expects.",
+        fr="Montez le volume nommé data sur /var/lib/postgresql, le point de montage unique qu'attend PostgreSQL 18.",
     )
     token = uuid.uuid4().hex
     _write(host, token, token)

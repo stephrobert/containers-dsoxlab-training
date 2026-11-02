@@ -1,0 +1,371 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# CINQ DÉFAUTS, et le dernier touche le PARE-FEU de la machine. Comme pour
+# l'épreuve de reprise d'hôte, les gestes risqués ont été éprouvés sur un banc
+# AVANT d'être écrits ici, et le banc a conclu :
+#
+#   - une TABLE NFT DÉDIÉE se pose et se retire sans toucher au reste. La table
+#     est le bon grain : `nft delete table` ne touche qu'elle, là où un
+#     `nft flush ruleset` emporterait les règles de Docker et celles de SSH ;
+#   - le blocage est RÉEL sur la boucle locale, et la session SSH y survit,
+#     parce que la règle ne vise qu'un port de test et jamais le 22 ;
+#   - le déblocage est POSSIBLE sans retirer la table ni sa règle de protection,
+#     par une règle d'acceptation insérée en tête de chaîne.
+#
+# DEUX MESURES ONT CHANGÉ LA CONCEPTION, et elles valent d'être connues :
+#
+#   1. `NET_BIND_SERVICE` NE SERT À RIEN ICI. Un conteneur sans AUCUNE
+#      capability écoute très bien sur le port 80, parce que le démon pose
+#      `net.ipv4.ip_unprivileged_port_start = 0` dans le conteneur : tous les
+#      ports y sont « non privilégiés ». Le conseil répandu « tout retirer sauf
+#      NET_BIND_SERVICE » ne retire donc rien d'utile et n'ajoute rien.
+#   2. LA CAPABILITY QUI DISCRIMINE EST `CHOWN`. Mesuré : sans elle, le service
+#      sort en 77 ; avec elle seule, il démarre. `DAC_OVERRIDE` ne suffit pas.
+#      Le service en a besoin parce qu'il ajuste au démarrage le propriétaire
+#      de son répertoire de données, ce qu'une image fait couramment quand ses
+#      données viennent d'un volume dont l'UID ne correspond pas.
+- name: Préparer l'épreuve epreuve-durcir-sans-casser
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    tag_local: lab-durcir:1.0
+    atelier: /opt/lab-durcir
+    etat: /root/.lab-durcir-state.json
+    service: service-expose
+    fournisseur: fournisseur-tiers
+    volume_utile: dsoxlab-durcir-donnees
+    table: lab_durcir
+    port_fournisseur: 19443
+    port_protege: 19444
+  tasks:
+    - name: Noter si le socle public était déjà présent
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ image_epinglee }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-epreuve-durcir-sans-casser.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-epreuve-durcir-sans-casser.socle-a-rendre'
+          docker pull '{{ image_epinglee }}' >/dev/null
+        fi
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs et le pare-feu
+      ansible.builtin.apt:
+        name: [docker-ce, python3, nftables]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Relever l'état du pare-feu AVANT d'y toucher
+      # On compte les tables, et l'on note si la nôtre existait déjà. Le cleanup
+      # ne retire QUE la table du lab, et seulement s'il l'a posée : les règles
+      # de Docker et celles de la machine ne sont jamais touchées.
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          def tables():
+              r = subprocess.run(["nft", "list", "tables"],
+                                 capture_output=True, text=True)
+              return sorted(l.strip() for l in r.stdout.splitlines() if l.strip())
+          avant = tables()
+          Path("{{ etat }}").write_text(json.dumps({
+              "tables_avant": avant,
+              "table_du_lab_existait": any("{{ table }}" in t for t in avant),
+          }, indent=1))
+          PY
+          chmod 0600 '{{ etat }}'
+      changed_when: true
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer les ressources du passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-durcir-sans-casser)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+      changed_when: false
+
+    - name: Déposer l'atelier
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Tirer au sort le secret et la donnée, une fois par passage
+      ansible.builtin.shell:
+        cmd: od -An -tx1 -N8 /dev/urandom | tr -d ' \n'
+      register: tirages
+      loop: [secret, donnee]
+      changed_when: true
+
+    - name: Écrire le service que l'image portera
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/service.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+          case "${ROLE:-service}" in
+            fournisseur)
+              # Le tiers que le service doit joindre. Il repond une valeur, et
+              # c'est cette valeur qui prouve que le flux aboutit.
+              echo 'fournisseur demarre'
+              while true; do
+                printf 'fournisseur=%s\n' "${JETON:-absent}" | nc -l -p 80 || true
+              done
+              ;;
+            service)
+              # LE CHOWN EST LE GESTE QUI EXIGE UNE CAPABILITY. Mesure du
+              # 2026-11-02 : sans `CHOWN`, il echoue et le service sort en 77 ;
+              # avec `CHOWN` seule, il demarre. C'est un geste courant d'image,
+              # dont les donnees viennent d'un volume dont l'UID ne correspond
+              # pas forcement.
+              donnees=/donnees
+              mkdir -p "$donnees"
+              if ! chown 10002:10002 "$donnees" 2>/dev/null; then
+                echo 'service: chown refuse, les donnees ne peuvent pas etre preparees' >&2
+                exit 77
+              fi
+              # LE SECRET EST CHERCHE D'ABORD DANS UN FICHIER, ce qui laisse a
+              # l'apprenant le moyen de le sortir de l'environnement. La
+              # variable reste acceptee, sinon le service livre ne demarrerait
+              # pas et le defaut n'aurait aucun symptome observable.
+              fichier="${SECRET_FICHIER:-/run/secrets/jeton}"
+              secret=''
+              if test -r "$fichier"; then
+                secret=$(tr -d ' \n' < "$fichier")
+              fi
+              if test -z "$secret"; then
+                secret="${SERVICE_SECRET:-}"
+              fi
+              if test -z "$secret"; then
+                echo 'service: aucun secret fourni' >&2
+                exit 78
+              fi
+              # LES ECRITURES PASSENT PAR UN CHEMIN DECLARE. Une racine en
+              # lecture seule refuse le reste, et c'est tout l'objet du
+              # durcissement : le service doit dire ou il ecrit.
+              travail="${TRAVAIL:-/travail}"
+              mkdir -p "$travail"
+              if ! echo "$secret" > "$travail/jeton-en-cours"; then
+                echo 'service: impossible d ecrire dans le repertoire de travail' >&2
+                exit 73
+              fi
+              echo 'service demarre'
+              while true; do
+                printf 'service=%s\ndonnee=%s\n' \
+                  "$(cat "$travail/jeton-en-cours")" \
+                  "$(cat "$donnees/reference" 2>/dev/null || echo absente)" \
+                  | nc -l -p 80 || true
+              done
+              ;;
+          esac
+
+    - name: Écrire l'image du service
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          LABEL dsoxlab.lab="epreuve-durcir-sans-casser"
+          RUN addgroup -g 10002 svc && adduser -D -u 10002 -G svc svc
+          COPY service.sh /usr/local/bin/service.sh
+          ENTRYPOINT ["/usr/local/bin/service.sh"]
+
+    - name: Construire l'image du service
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    - name: Déposer le secret dans un fichier, que l'apprenant pourra monter
+      # LE FICHIER EST FOURNI, et c'est délibéré : le sujet de l'épreuve est de
+      # sortir le secret de l'environnement, pas de deviner où le mettre.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/jeton"
+        mode: "0600"
+        content: "{{ tirages.results[0].stdout }}"
+
+    - name: Créer le volume utile et y poser sa donnée
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker volume inspect '{{ volume_utile }}' >/dev/null 2>&1 \
+            || docker volume create \
+                 --label dsoxlab.lab=epreuve-durcir-sans-casser \
+                 '{{ volume_utile }}' >/dev/null
+          docker run --rm --entrypoint sh -v '{{ volume_utile }}:/donnees' \
+            '{{ tag_local }}' -c \
+            'test -s /donnees/reference || printf "%s" "{{ tirages.results[1].stdout }}" > /donnees/reference'
+      changed_when: true
+
+    - name: Laisser deux volumes jetables, d'un essai que personne n'a nettoyé
+      # Ils portent le label du lab, donc ils se distinguent du volume utile par
+      # leur NOM, que l'énoncé donne. L'apprenant doit retirer ceux-là et garder
+      # l'autre : c'est la même compétence que dans l'épreuve de reprise d'hôte,
+      # et elle se mesure ici sur des noms explicites plutôt que sur des
+      # identifiants anonymes.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for n in 1 2; do
+            docker volume inspect "dsoxlab-durcir-jetable-$n" >/dev/null 2>&1 \
+              || docker volume create \
+                   --label dsoxlab.lab=epreuve-durcir-sans-casser \
+                   "dsoxlab-durcir-jetable-$n" >/dev/null
+          done
+      changed_when: true
+
+    - name: Lancer le fournisseur tiers, sur la boucle locale
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ fournisseur }} --restart unless-stopped
+          -e ROLE=fournisseur -e JETON={{ tirages.results[1].stdout }}
+          -p 127.0.0.1:{{ port_fournisseur }}:80 {{ tag_local }}
+      changed_when: true
+
+    # DÉFAUTS 1, 2 et 3 : tous les droits par défaut, racine inscriptible, et le
+    # secret dans l'environnement.
+    - name: Lancer le service avec les droits par défaut et le secret en clair
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ service }} --restart unless-stopped
+          -e SERVICE_SECRET={{ tirages.results[0].stdout }}
+          -v {{ volume_utile }}:/donnees {{ tag_local }}
+      changed_when: true
+
+    - name: Attendre que les deux services répondent réellement
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for cible in '{{ service }}' '{{ fournisseur }}'; do
+            pret=non
+            for _ in $(seq 1 30); do
+              if docker exec "$cible" nc -w 3 127.0.0.1 80 2>/dev/null | grep -q '='; then
+                pret=oui
+                break
+              fi
+              sleep 1
+            done
+            if test "$pret" != oui; then
+              echo "$cible ne repond pas apres 30 s" >&2
+              exit 1
+            fi
+          done
+      changed_when: false
+
+    # DÉFAUT 4 : le pare-feu bloque le flux vers le fournisseur.
+    #
+    # LA TABLE EST DÉDIÉE AU LAB, et elle ne vise que deux ports de test. Le 22
+    # n'est jamais touché : une règle mal cadrée couperait SSH, et le validateur
+    # perdrait sa cible.
+    - name: Poser la table du pare-feu, avec son blocage et sa protection
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          nft delete table inet {{ table }} 2>/dev/null || true
+          nft add table inet {{ table }}
+          nft "add chain inet {{ table }} sortie { type filter hook output priority 0 ; policy accept ; }"
+          # LA PROTECTION, qui doit survivre au travail de l'apprenant.
+          nft add rule inet {{ table }} sortie tcp dport {{ port_protege }} drop \
+            comment '"protection a conserver"'
+          # LE BLOCAGE, qui est la panne a lever.
+          nft add rule inet {{ table }} sortie tcp dport {{ port_fournisseur }} drop \
+            comment '"blocage du fournisseur"'
+      changed_when: true
+
+    - name: Vérifier que le blocage est réel, plutôt que de le supposer
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if nc -w 3 127.0.0.1 {{ port_fournisseur }} 2>/dev/null | grep -q 'fournisseur='; then
+            echo 'le pare-feu ne bloque pas : le defaut n existe pas' >&2
+            exit 1
+          fi
+      changed_when: false
+
+    - name: Consigner ce que le lab devra vérifier
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          etat = json.loads(Path("{{ etat }}").read_text())
+          etat["secret"] = "{{ tirages.results[0].stdout }}"
+          etat["donnee"] = "{{ tirages.results[1].stdout }}"
+          Path("{{ etat }}").write_text(json.dumps(etat, indent=1))
+          PY
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : durcir sans casser
+
+          Le service `{{ service }}` tourne avec tous les droits par defaut, son
+          secret se lit dans son environnement, et sa racine est inscriptible.
+          Depuis une mise a jour du pare-feu, il ne joint plus le fournisseur
+          `{{ fournisseur }}`.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            1. le service a perdu TOUTES ses capabilities SAUF CELLE QUI LUI EST
+               NECESSAIRE, il porte `no-new-privileges`, et il REPOND toujours ;
+            2. sa racine est en LECTURE SEULE, ses ecritures passent par un
+               chemin declare, tmpfs ou volume, et une ecriture ailleurs est
+               refusee ;
+            3. le secret n apparait NI dans l environnement du conteneur NI dans
+               l image, et le service le recoit quand meme : sa reponse doit
+               rester la bonne. Le fichier `{{ atelier }}/jeton` est fourni ;
+            4. le flux vers le fournisseur ABOUTIT, sur
+               `127.0.0.1:{{ port_fournisseur }}`, le pare-feu reste ACTIF, et
+               sa regle de protection reste en place ;
+            5. le volume `{{ volume_utile }}` est remonte et sa donnee est
+               servie ; les deux volumes `dsoxlab-durcir-jetable-1` et
+               `dsoxlab-durcir-jetable-2` sont retires.
+
+          DEUX FAITS MESURES SUR CE MOTEUR, pour que vous ne cherchiez pas au
+          mauvais endroit :
+
+            - `NET_BIND_SERVICE` ne sert a rien ici. Un conteneur SANS aucune
+              capability ecoute tres bien sur le port 80, parce que le demon
+              pose `net.ipv4.ip_unprivileged_port_start = 0` dans le conteneur.
+              La capability necessaire est ailleurs, et les journaux du service
+              disent quel geste echoue quand elle manque ;
+            - le pare-feu se corrige SANS etre desactive, et sans que sa table
+              soit supprimee. Une regle qui autorise peut primer sur une regle
+              qui bloque, selon leur ORDRE dans la chaine.
+
+          L image `{{ tag_local }}` est fournie : il n y a rien a reconstruire.
+          Le service lit son secret dans un FICHIER avant de regarder son
+          environnement, et le chemin se regle par `SECRET_FICHIER`, dont le
+          defaut est `/run/secrets/jeton`. Son repertoire de travail se regle
+          par `TRAVAIL`, dont le defaut est `/travail`.
+
+          seccomp et AppArmor ne sont pas mesures par cette epreuve.
