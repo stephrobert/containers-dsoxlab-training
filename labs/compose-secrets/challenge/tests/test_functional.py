@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import secrets
 import shlex
 import time
 
@@ -15,7 +14,8 @@ from conftest import lab_host, message
 ROOT = "/opt/lab-compose-secret"
 PROJECT = "dsoxlab-compose-secrets"
 TOKEN = f"{ROOT}/credentials/token.txt"
-BASE = "alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f"
+TOKEN_SUIVANT = f"{ROOT}/credentials/token-next.txt"
+BASE = "alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a"
 
 
 @pytest.fixture
@@ -108,12 +108,17 @@ def test_compose_grants_the_file_secret_only_to_app(host):
 
 def test_secret_is_consumed_without_metadata_or_log_leaks(host):
     services, metadata = _services(host)
+    # LA VALEUR EN SERVICE EST LA SUIVANTE, et non celle du départ. Ce
+    # contrôle exigeait « le jeton fourni INCHANGÉ », ce qui contredisait
+    # frontalement l'épreuve depuis qu'elle demande de le remplacer : le
+    # scénario avait été corrigé, pas celui-ci.
     token = host.file(TOKEN).content_string
-    expected = host.file("/root/.lab-compose-secret.sha256").content_string.strip()
-    assert hashlib.sha256(token.encode()).hexdigest() == expected, message(
-        en="Keep the supplied pedagogical token unchanged.",
-        fr="Gardez le jeton pédagogique fourni inchangé.",
+    suivante = host.file(TOKEN_SUIVANT).content_string
+    assert token == suivante, message(
+        en="the file the secret mounts does not carry the next value.",
+        fr="le fichier monté par le secret ne porte pas la valeur suivante.",
     )
+    expected = hashlib.sha256(suivante.encode()).hexdigest()
     _fingerprint(host, services["app"], expected)
     config = _compose(host, "config", "--format", "json")
     assert config.rc == 0, message(
@@ -130,7 +135,11 @@ def test_secret_is_consumed_without_metadata_or_log_leaks(host):
         "import base64,json,subprocess; from pathlib import Path;"
         f"git=['git','-c','safe.directory={ROOT}','-C','{ROOT}'];"
         f"token=Path({TOKEN!r}).read_bytes().strip();"
-        "variants=[token,base64.b64encode(token),token.hex().encode()];"
+        f"suivant=Path({TOKEN_SUIVANT!r}).read_bytes().strip();"
+        # LES DEUX VALEURS : l'épreuve en manipule deux, et l'ancienne ne doit
+        # pas traîner dans l'historique davantage que la nouvelle.
+        "variants=[v for t in (token,suivant) "
+        "for v in (t,base64.b64encode(t),t.hex().encode())];"
         "objects=subprocess.check_output(git+['rev-list','--objects','--all'],text=True).splitlines();"
         "blobs=[line.split()[0] for line in objects if "
         "subprocess.check_output(git+['cat-file','-t',line.split()[0]],text=True).strip()=='blob'];"
@@ -155,37 +164,72 @@ def test_secret_is_consumed_without_metadata_or_log_leaks(host):
         )
 
 
-def test_recreation_consumes_a_rotated_secret_then_restores_it(host):
+def test_le_service_consomme_la_valeur_suivante_apres_une_recreation(host):
+    """Le REMPLACEMENT est le geste de l'apprenant, et il se lit dans l'état final.
+
+    Ce contrôle jouait lui-même la rotation : il écrivait un jeton neuf,
+    recréait les services, vérifiait, puis restaurait tout. La fiche promettait
+    pourtant de « fournir et remplacer » un secret, et l'apprenant ne
+    remplaçait rien. Un lab ne note pas un geste qu'il a fait à la place de
+    celui qui l'apprend.
+
+    LE LAB POSE DONC UNE VALEUR SUIVANTE, dans `credentials/token-next.txt`, et
+    l'énoncé demande de la mettre en service. Trois faits sont lus, et aucune
+    commande n'est imposée.
+
+    LE TROISIÈME EST CELUI QUI APPREND LA LEÇON. Les deux pièges de C27 sont un
+    `>` qui modifie le fichier monté sans que le service le relise, et un `mv`
+    qui laisse le conteneur sur l'ancien inode. Dans les deux cas l'empreinte
+    reste celle de l'ancienne valeur, et le conteneur est plus VIEUX que la
+    modification du fichier. On lit donc les deux.
+    """
     services, _ = _services(host)
-    original = host.file(TOKEN).content_string
-    rotated = secrets.token_hex(32) + "\n"
-    try:
-        written = host.run("printf %s > %s", rotated, TOKEN)
-        assert written.rc == 0, message(
-            en="Cannot prepare the controlled token rotation.",
-            fr="Impossible de préparer la rotation contrôlée du jeton.",
-        )
-        result = _compose(host, "up", "-d", "--force-recreate", "--no-build", "--pull", "never")
-        assert result.rc == 0, message(
-            en=f"Recreation with the rotated token must succeed: {result.stderr[-500:]}",
-            fr=f"La recréation avec le jeton renouvelé doit réussir : {result.stderr[-500:]}",
-        )
-        after, _ = _services(host)
-        assert services["app"]["Id"] != after["app"]["Id"], message(
-            en="Recreate the consumer to read the rotated token.",
-            fr="Recréez le consommateur pour lire le jeton renouvelé.",
-        )
-        _fingerprint(host, after["app"], hashlib.sha256(rotated.encode()).hexdigest())
-    finally:
-        restored = host.run("printf %s > %s", original, TOKEN)
-        assert restored.rc == 0, message(
-            en="Cannot restore the token file.",
-            fr="Impossible de restaurer le fichier jeton.",
-        )
-        result = _compose(host, "up", "-d", "--force-recreate", "--no-build", "--pull", "never")
-        assert result.rc == 0, message(
-            en="Cannot restart the consumer with the original token.",
-            fr="Impossible de redémarrer le consommateur avec le jeton original.",
-        )
-        after, _ = _services(host)
-        _fingerprint(host, after["app"], hashlib.sha256(original.encode()).hexdigest())
+
+    suivante = host.file(TOKEN_SUIVANT)
+    assert suivante.exists, message(
+        en=f"`{TOKEN_SUIVANT}` is missing: the lab did not prepare the next "
+           "value. Replay `dsoxlab run`.",
+        fr=f"`{TOKEN_SUIVANT}` est absent : le lab n'a pas préparé la valeur "
+           "suivante. Rejouez `dsoxlab run`.",
+    )
+    attendue = suivante.content_string
+
+    monte = host.file(TOKEN).content_string
+    assert monte == attendue, message(
+        en="the file the secret mounts does not carry the next value. The "
+           "brief asks for that value to be put in service; the secret stays "
+           "declared on the same file.",
+        fr="le fichier monté par le secret ne porte pas la valeur suivante. "
+           "L'énoncé demande de mettre cette valeur en service ; le secret "
+           "reste déclaré sur le même fichier.",
+    )
+
+    _fingerprint(host, services["app"], hashlib.sha256(attendue.encode()).hexdigest())
+
+    # LE CONTENEUR EST-IL PLUS JEUNE QUE LE FICHIER ? C'est ce qui distingue un
+    # service qui a RELU d'un service qui tourne encore sur l'ancienne valeur.
+    cree = host.run("docker inspect -f {{.Created}} %s", services["app"]["Id"])
+    assert cree.rc == 0, message(
+        en="Cannot read the consumer's creation date.",
+        fr="Impossible de lire la date de création du consommateur.",
+    )
+    horodatages = host.run(
+        "date -u -d %s +%%s; stat -c %%Y %s", cree.stdout.strip(), TOKEN)
+    valeurs = horodatages.stdout.split()
+    assert horodatages.rc == 0 and len(valeurs) == 2, message(
+        en="Cannot compare the consumer's age with the secret file's.",
+        fr="Impossible de comparer l'âge du consommateur à celui du fichier.",
+    )
+    ne_le, modifie_le = int(valeurs[0]), int(valeurs[1])
+    assert ne_le >= modifie_le, message(
+        en="the consumer is OLDER than the secret file: it is still running on "
+           "the value read at its own start.\n"
+           "Compose does not restart a consumer when a mounted file changes, "
+           "and rewriting the file in place changes nothing for a container "
+           "already running. The consumer has to be recreated.",
+        fr="le consommateur est plus VIEUX que le fichier du secret : il tourne "
+           "encore sur la valeur lue à son propre démarrage.\n"
+           "Compose ne redémarre pas un consommateur quand un fichier monté "
+           "change, et réécrire le fichier en place ne change rien pour un "
+           "conteneur déjà lancé. Il faut recréer le consommateur.",
+    )

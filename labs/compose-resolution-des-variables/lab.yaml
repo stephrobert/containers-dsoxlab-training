@@ -2,14 +2,14 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: compose-resolution-des-variables                      # REQUIS
 title: "Resolve Compose variables without mixing environments"
-level: c3                     # REQUIS
+level: c4                     # REQUIS
 description: "Separate deployment interpolation from container environment and prove shell precedence by recreating a service."
 skills:                       # REQUIS, non vide
   - compose-interpolation
   - container-environment
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/variables-et-environnements/#mettre-en-pratique   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
 runtime:

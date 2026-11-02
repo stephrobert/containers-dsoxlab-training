@@ -3,6 +3,17 @@
   hosts: lab_target
   become: true
   tasks:
+    - name: Rendre le socle public, et seulement si ce lab l'a tire
+      # Voir la tache jumelle du setup.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-compose-dans-une-ci.socle-a-rendre'; then
+          docker image rm -f 'python:3.14.10-alpine3.24@sha256:eb2c62658b8d51bff0acc408504b76521d02030de56a8a3c1e830083e89b89d2' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-compose-dans-une-ci.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Remove lab-labelled resources without pruning shared images
       ansible.builtin.shell:
         executable: /bin/bash

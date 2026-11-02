@@ -2,14 +2,14 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: compose-secrets                      # REQUIS
 title: "Grant a Compose secret only to its consumer"
-level: c3                     # REQUIS
+level: c4                     # REQUIS
 description: "Mount a file-backed secret read-only for one service without leaking it into container metadata or another service."
 skills:                       # REQUIS, non vide
   - compose-secrets
   - least-privilege
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/secrets/#mettre-en-pratique   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
 runtime:

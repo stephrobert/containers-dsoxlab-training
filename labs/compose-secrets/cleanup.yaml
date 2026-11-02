@@ -19,6 +19,16 @@
           images=$(docker image ls -aq --filter label=dsoxlab.lab=compose-secrets)
           if test -n "$images"; then docker image rm -f $images; fi
       changed_when: false
+    - name: Rendre le socle public s'il a ete pose par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '/var/tmp/dsoxlab-compose-secrets.socle-a-rendre'; then
+            docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+            rm -f '/var/tmp/dsoxlab-compose-secrets.socle-a-rendre'
+          fi
+      changed_when: false
     - name: Retirer les fichiers
       ansible.builtin.file:
         path: "{{ item }}"

@@ -5,9 +5,24 @@
   hosts: lab_target
   become: true
   tasks:
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Ce
+      # lab TIRAIT le socle sans jamais le retirer : le validateur comptait
+      # « image laisse », et le lab suivant heritait d'un moteur modifie. Le
+      # marqueur dit au cleanup s'il doit rendre l'image, ou la laisser parce
+      # qu'elle etait deja la.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-compose-isolation-reseau.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-compose-isolation-reseau.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Installer Docker et Compose
       ansible.builtin.apt:
-        name: [docker.io, docker-compose, curl]
+        name: [docker-ce, docker-compose-plugin, curl]
         state: present
         update_cache: true
 
@@ -32,7 +47,7 @@
 
     - name: Tirer Alpine épinglée
       ansible.builtin.command:
-        cmd: docker pull alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+        cmd: docker pull alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
       register: pulled
       changed_when: "'Downloaded newer image' in pulled.stdout"
 
@@ -69,7 +84,7 @@
         dest: "/opt/lab-compose-net/{{ item }}/Dockerfile"
         mode: "0644"
         content: |
-          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
           LABEL dsoxlab.lab="compose-isolation-reseau"
           RUN apk add --no-cache busybox-extras
           COPY www /www
