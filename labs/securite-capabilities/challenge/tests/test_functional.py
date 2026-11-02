@@ -24,7 +24,18 @@ def test_only_bind_service_remains(host):
     info = json.loads(host.run("docker inspect %s", cid).stdout)[0]
     config = info["HostConfig"]
     assert info["Config"]["Labels"].get("dsoxlab.lab") == "securite-capabilities", message(fr="Conserver le label", en="Preserve the label")
-    assert config["CapDrop"] == ["ALL"] and config["CapAdd"] == ["NET_BIND_SERVICE"], message(fr="Retirer ALL et ne garder que NET_BIND_SERVICE", en="Drop ALL and retain only NET_BIND_SERVICE")
+    # Docker 29 NORMALISE les capabilities avec leur prefixe `CAP_` :
+    # `--cap-add NET_BIND_SERVICE` ressort en `[CAP_NET_BIND_SERVICE]`.
+    # On compare donc des noms canoniques, ce qui accepte les deux
+    # ecritures cote apprenant sans rien relacher. `ALL` reste `ALL` :
+    # ce n'est pas une capability, c'est le mot qui les designe toutes.
+    def canonique(noms):
+        return sorted(
+            n if n == "ALL" else "CAP_" + n.removeprefix("CAP_")
+            for n in (noms or [])
+        )
+
+    assert canonique(config["CapDrop"]) == ["ALL"] and canonique(config["CapAdd"]) == ["CAP_NET_BIND_SERVICE"], message(fr="Retirer ALL et ne garder que NET_BIND_SERVICE", en="Drop ALL and retain only NET_BIND_SERVICE")
     status = host.run("docker exec %s cat /proc/1/status", cid)
     effective = next(line.split()[1] for line in status.stdout.splitlines() if line.startswith("CapEff:"))
     assert status.rc == 0 and int(effective, 16) == 1 << 10, message(fr="Le masque effectif doit valoir 0x400", en="Effective mask must be 0x400")

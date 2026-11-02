@@ -55,7 +55,12 @@ def _stack(host):
     image_config = json.loads(image.stdout)[0]
     for role, container in services.items():
         environment = dict(item.split("=", 1) for item in container["Config"]["Env"])
-        assert container["Image"] == image_config["Id"] and environment.get("ROLE") == role and container["Config"]["Entrypoint"] == image_config["Config"]["Entrypoint"] and container["Config"]["Cmd"] == image_config["Config"]["Cmd"] and not container["HostConfig"]["Privileged"] and not container["HostConfig"]["CapAdd"], message(
+        # Docker 29 OMET les cles vides de `Config` dans `docker image inspect` :
+        # une image sans entrypoint ne porte plus de cle `Entrypoint`, la ou 26
+        # rendait `null`. On interroge donc le dictionnaire par `.get`, ce qui fait
+        # se valoir deux absences sans rien relacher du controle : une surcharge
+        # reste un ecart. Le cote CONTENEUR, lui, garde toutes ses cles.
+        assert container["Image"] == image_config["Id"] and environment.get("ROLE") == role and container["Config"].get("Entrypoint") == image_config["Config"].get("Entrypoint") and container["Config"].get("Cmd") == image_config["Config"].get("Cmd") and not container["HostConfig"]["Privileged"] and not container["HostConfig"]["CapAdd"], message(
             en=f"Keep the supplied image, command and ROLE={role}, without privileged mode or extra capabilities.",
             fr=f"Gardez l'image, la commande fournies et ROLE={role}, sans mode privilégié ni capacité supplémentaire.",
         )

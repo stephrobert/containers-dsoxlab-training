@@ -12,7 +12,7 @@
 # POURQUOI DES VERSIONS EPINGLEES. Le pilotage du projet l'impose : la combinaison
 # testee s'epingle, et `latest` est banni des fixtures. Un lab qui installe la
 # version du jour n'est pas reproductible, et son verdict ne dit plus sur quoi il
-# portait. Ces cinq valeurs se relevent dans le fichier `Packages` du depot et se
+# portait. Ces six valeurs se relevent dans le fichier `Packages` du depot et se
 # changent ENSEMBLE, suivies d'une reattestation du catalogue.
 - name: Prepare the Docker baseline on provisioned lab VMs
   hosts: labenv
@@ -24,6 +24,12 @@
       containerd.io: "2.4.2-3~debian.13~trixie"
       docker-buildx-plugin: "0.38.1-1~debian.13~trixie"
       docker-compose-plugin: "5.6.1-1~debian.13~trixie"
+      # MEASURED on 2026-11-02: `docker-ce` does NOT ship `dockerd-rootless.sh`.
+      # The official repository puts it in a separate package, where Debian's
+      # `docker.io` carried it, and `securite-rootless` fails its own setup with
+      # « The installed Docker package has no dockerd-rootless.sh. ». The
+      # launcher is the SUBJECT of that lab, so the baseline must provide it.
+      docker-ce-rootless-extras: "5:29.9.2-1~debian.13~trixie"
   tasks:
     - name: Install the packages needed to fetch a signed repository
       ansible.builtin.apt:

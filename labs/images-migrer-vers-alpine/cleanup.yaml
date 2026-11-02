@@ -39,8 +39,20 @@
         cmd: >
           docker rmi -f appli:legere appli:lourde
           lab-socle-lourd:1.0 lab-socle-leger:1.0
-          {{ socle_lourd }} {{ socle_leger }}
           2>/dev/null || true
+      changed_when: false
+
+    - name: Rendre les deux socles publics seulement si ce lab les a poses
+      # Ils sont retires ICI et plus dans la tache precedente : elle les
+      # effaçait sans condition, y compris sur une machine qui les avait deja.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '/var/tmp/dsoxlab-images-migrer-vers-alpine.socle-socles-a-rendre'; then
+            docker image rm -f 'debian@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4' 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+            rm -f '/var/tmp/dsoxlab-images-migrer-vers-alpine.socle-socles-a-rendre'
+          fi
       changed_when: false
 
     - name: Retirer le cache de construction, qui survivrait aux images

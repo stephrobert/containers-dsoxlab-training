@@ -20,8 +20,8 @@ Renseignez les trois lignes de `/opt/lab-chaine/reponses.txt` :
 
 ```text
 shim=<le PID du processus intermédiaire qui porte CE conteneur>
-parent_du_shim=<le PID du PARENT de ce processus intermédiaire>
-runtime=<le nom du runtime que le moteur emploie>
+pid_du_processus=<le PID du processus du conteneur sur l'hôte>
+shim_bis=<le PID de l'intermédiaire du second conteneur>
 ```
 
 La deuxième réponse surprend, et c'est le but : **regardez-la deux fois avant de

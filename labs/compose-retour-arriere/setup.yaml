@@ -1,10 +1,306 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, et pourquoi dans cet ordre. Trois releases d'un même
+# service, construites ici et épinglées PAR DIGEST, plus un volume de données qui
+# porte déjà un enregistrement. L'apprenant hérite donc d'un service en
+# production, avec de l'état à ne pas perdre : sans cet enregistrement initial,
+# un retour en arrière réussirait par le vide.
+#
+# LES TROIS RELEASES NE DIFFÈRENT QUE PAR UN ARGUMENT DE CONSTRUCTION, et c'est
+# volontaire : un seul fichier source, donc une seule chose à lire pour
+# comprendre ce qui change d'une release à l'autre. La 1.0 et la 2.0 lisent le
+# schéma 1 ; la 3.0 le migre en schéma 2, et ce qui est migré ne revient pas.
+#
+# LE DIGEST EST RELEVÉ DANS `RepoDigests`, et non calculé. Mesuré le 2026-11-02
+# sur Docker 29.9.2 en magasin containerd : une image construite localement
+# porte déjà un `RepoDigests`, sans aucune poussée, et c'est cette référence que
+# Compose sait résoudre avec `--pull never`.
 - name: Préparer le lab compose-retour-arriere
   hosts: lab_target
   become: true
+  vars:
+    atelier: /opt/lab-retour
+    socle: python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
+    depot: lab-retour/service
+    projet: dsoxlab-retour
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Le
+      # marqueur dit au cleanup s'il doit rendre l'image, ou la laisser parce
+      # qu'elle etait deja la.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ socle }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-compose-retour-arriere.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-compose-retour-arriere.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Installer le moteur et Compose
+      ansible.builtin.apt:
+        name: [docker-ce, docker-compose-plugin, python3, curl]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant à parler au moteur
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Refuser d'écraser un atelier existant
+      ansible.builtin.stat:
+        path: "{{ atelier }}"
+      register: existant
+
+    - name: Exiger un atelier propre
+      ansible.builtin.assert:
+        that: not existant.stat.exists
+        fail_msg: "{{ atelier }} existe déjà ; jouez `dsoxlab clean` d'abord."
+
+    - name: Créer l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user | default('ansible') }}"
+      loop:
+        - "{{ atelier }}"
+        - "{{ atelier }}/service"
+
+    - name: Tirer le socle public épinglé
+      ansible.builtin.command:
+        cmd: docker pull {{ socle }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Déposer le service, en une seule source pour les trois releases
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/service/service.py"
+        mode: "0644"
+        content: |
+          """Le service du lab : il garde un etat, et il refuse ce qu'il ne sait
+          pas lire.
+
+          UNE SEULE SOURCE POUR TROIS RELEASES. La release est passee a la
+          construction, et c'est elle qui decide du schema maximum lisible :
+          les 1.0 et 2.0 lisent le schema 1, la 3.0 migre en schema 2. Ce qui
+          est migre ne revient pas, et c'est tout le sujet du lab.
+          """
+          import json
+          import os
+          import pathlib
+          import sys
+          from http.server import BaseHTTPRequestHandler, HTTPServer
+
+          RELEASE = os.environ["RELEASE"]
+          SCHEMA_MAX = 2 if RELEASE == "3.0" else 1
+          ETAT = pathlib.Path("/data/etat.json")
+
+
+          def charger():
+              if not ETAT.exists():
+                  ETAT.parent.mkdir(parents=True, exist_ok=True)
+                  ecrire({"schema": 1, "records": []})
+              return json.loads(ETAT.read_text())
+
+
+          def ecrire(etat):
+              ETAT.write_text(json.dumps(etat, indent=1) + "\n")
+
+
+          def demarrer():
+              etat = charger()
+              if etat["schema"] > SCHEMA_MAX:
+                  # LE REFUS EST EXPLICITE, et il nomme les deux nombres qui
+                  # comptent : une release ne doit pas abimer un etat qu'elle ne
+                  # comprend pas, elle doit s'arreter en le disant.
+                  print(
+                      f"refus: la release {RELEASE} ne sait pas lire le schema "
+                      f"{etat['schema']}, elle lit au plus le schema "
+                      f"{SCHEMA_MAX}",
+                      file=sys.stderr,
+                  )
+                  raise SystemExit(1)
+              if etat["schema"] < SCHEMA_MAX:
+                  # LA MIGRATION EST IRREVERSIBLE : les enregistrements passent
+                  # de chaines a objets, et rien ne garde l'ancienne forme.
+                  etat = {
+                      "schema": SCHEMA_MAX,
+                      "records": [
+                          r if isinstance(r, dict) else {"valeur": r}
+                          for r in etat["records"]
+                      ],
+                  }
+                  ecrire(etat)
+                  print(f"migration: schema {SCHEMA_MAX} par la release {RELEASE}")
+              return etat
+
+
+          class Service(BaseHTTPRequestHandler):
+              def _rendre(self, code, charge):
+                  corps = json.dumps(charge).encode()
+                  self.send_response(code)
+                  self.send_header("Content-Type", "application/json")
+                  self.send_header("Content-Length", str(len(corps)))
+                  self.end_headers()
+                  self.wfile.write(corps)
+
+              def do_GET(self):
+                  if self.path != "/etat":
+                      return self._rendre(404, {"erreur": "chemin inconnu"})
+                  etat = json.loads(ETAT.read_text())
+                  return self._rendre(200, {"release": RELEASE, **etat})
+
+              def do_POST(self):
+                  if not self.path.startswith("/ecrire"):
+                      return self._rendre(404, {"erreur": "chemin inconnu"})
+                  taille = int(self.headers.get("Content-Length") or 0)
+                  valeur = self.rfile.read(taille).decode().strip()
+                  if not valeur:
+                      return self._rendre(400, {"erreur": "valeur vide"})
+                  etat = json.loads(ETAT.read_text())
+                  etat["records"].append(
+                      {"valeur": valeur} if etat["schema"] >= 2 else valeur
+                  )
+                  ecrire(etat)
+                  return self._rendre(201, {"release": RELEASE, **etat})
+
+              def log_message(self, *_):
+                  return
+
+
+          if __name__ == "__main__":
+              demarrer()
+              HTTPServer(("", 8080), Service).serve_forever()
+
+    - name: Déposer le Dockerfile du service
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/service/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ socle }}
+          ARG RELEASE
+          ENV RELEASE=$RELEASE
+          LABEL dsoxlab.lab="compose-retour-arriere"
+          COPY service.py /service.py
+          CMD ["python", "/service.py"]
+
+    - name: Construire les trois releases
+      ansible.builtin.command:
+        cmd: >-
+          docker build --provenance=false --build-arg RELEASE={{ item }}
+          -t {{ depot }}:{{ item }} {{ atelier }}/service
+      loop: ["1.0", "2.0", "3.0"]
+      changed_when: true
+
+    - name: Relever le digest de chaque release
+      ansible.builtin.shell:
+        cmd: >-
+          docker image inspect {{ depot }}:{{ item }}
+          --format '{% raw %}{{index .RepoDigests 0}}{% endraw %}'
+      loop: ["1.0", "2.0", "3.0"]
+      register: digests
+      changed_when: false
+      # Un digest vide signifie que l'image n'en porte pas, et la suite du
+      # setup ecrirait alors une reference inutilisable sans rien dire.
+      failed_when: digests.stdout | default('') | trim | length == 0
+
+    - name: Donner les trois références à l'apprenant
+      # LES TROIS DIGESTS LUI SONT DONNES, et c'est le sujet : on ne lui demande
+      # pas de les deviner, on lui demande de DEPLOYER PAR DIGEST plutot que par
+      # etiquette, ce qui est la seule façon de savoir ce qui tourne.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/releases.json"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        content: "{{ dict(['1.0', '2.0', '3.0'] | zip(digests.results | map(attribute='stdout') | map('trim'))) | to_nice_json }}\n"
+
+    - name: Déposer la mission à côté de l'atelier
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        src: challenge/README.fr.md
+
+    - name: Déployer la 1.0, celle qui tourne déjà en production
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/compose.yaml"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        content: |
+          # La pile TELLE QU'ELLE TOURNE, et c'est a vous de la faire evoluer.
+          # Le service est epingle PAR DIGEST : une etiquette ne dit pas ce qui
+          # tourne, un digest le dit.
+          services:
+            service:
+              image: {{ digests.results[0].stdout | trim }}
+              container_name: dsoxlab-retour-service
+              labels:
+                dsoxlab.lab: compose-retour-arriere
+              ports:
+                - "127.0.0.1:18080:8080"
+              volumes:
+                - donnees:/data
+          volumes:
+            donnees:
+              labels:
+                dsoxlab.lab: compose-retour-arriere
+
+    - name: Lancer la pile
+      ansible.builtin.command:
+        chdir: "{{ atelier }}"
+        cmd: docker compose -p {{ projet }} up -d --pull never
+      changed_when: true
+
+    - name: Attendre que le service réponde
+      ansible.builtin.uri:
+        url: http://127.0.0.1:18080/etat
+        use_proxy: false
+      register: pret
+      until: pret.status == 200
+      retries: 20
+      delay: 2
+
+    - name: Tirer au hasard l'enregistrement que le lab ne doit pas perdre
+      ansible.builtin.set_fact:
+        temoin: "temoin-{{ lookup('ansible.builtin.password', '/dev/null', length=16, chars=['ascii_lowercase', 'digits']) }}"
+
+    - name: Écrire cet enregistrement dans la production
+      # IL EST TIRE AU HASARD A CHAQUE PASSAGE : une valeur en dur se recopierait
+      # d'un passage sur l'autre, et le controle ne prouverait plus que la
+      # DONNEE a survecu, seulement qu'une chaine connue s'y trouve.
+      ansible.builtin.uri:
+        url: http://127.0.0.1:18080/ecrire
+        method: POST
+        body: "{{ temoin }}"
+        body_format: raw
+        status_code: 201
+        use_proxy: false
+      changed_when: true
+
+    - name: Garder le relevé privé du banc
+      ansible.builtin.copy:
+        dest: /root/.lab-retour.json
+        mode: "0600"
+        content: "{{ {'temoin': temoin, 'releases': dict(['1.0', '2.0', '3.0'] | zip(digests.results | map(attribute='stdout') | map('trim')))} | to_json }}"
+
+    - name: Créer le fichier de constat, vide, que la mission demande de remplir
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/constat.txt"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          release_qui_refuse=
+          schema_illisible=
+          code_de_sortie=

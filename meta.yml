@@ -192,6 +192,7 @@ sections:
       - registry-authentification
       - registry-droits-minimaux
       - registry-air-gap
+      - epreuve-livrer-une-image
 
   # ── Niveau c3 : exploiter une application avec Compose ──────────────────
   - id: compose-application
@@ -209,6 +210,7 @@ sections:
       - compose-sante-et-dependances
       - compose-ressources
       - compose-plusieurs-environnements
+      - compose-profils-et-variantes
 
   - id: compose-exploitation
     title: "Operate a Compose application"
@@ -216,9 +218,11 @@ sections:
       Logs and resources, backup and restore, update and roll back, then a
       stack to bring back by oneself.
     labs:
+      - compose-retour-arriere
       - compose-correlation-et-saturation
       - donnees-postgres-sauvegarde
       - compose-capstone
+      - epreuve-restaurer-une-stack
 
   # ── Niveau c4 : fiabiliser, sécuriser et industrialiser ─────────────────
   - id: docker-administration

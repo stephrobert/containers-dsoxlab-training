@@ -74,6 +74,19 @@
           LABEL dsoxlab.lab="images-epingler-par-digest"
           COPY base.txt /base.txt
 
+    - name: Noter si registry etait deja present
+      # Le lab montait son registre d'atelier a partir de cette image
+      # publique sans jamais la rendre : le validateur comptait « image
+      # laisse », et ce marqueur manquait la ou alpine avait le sien.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-images-epingler-par-digest.socle-registry-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-images-epingler-par-digest.socle-registry-a-rendre'
+        fi
+      changed_when: false
+
     - name: Tirer le registre épinglé
       ansible.builtin.command:
         cmd: docker pull registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3

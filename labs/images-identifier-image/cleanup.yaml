@@ -21,6 +21,17 @@
         cmd: docker image prune -f || true
       changed_when: false
 
+    - name: Rendre debian seulement si ce lab l'a pose
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '/var/tmp/dsoxlab-images-identifier-image.socle-debian-a-rendre'; then
+            docker image rm -f 'debian:13' >/dev/null 2>&1 || true
+            rm -f '/var/tmp/dsoxlab-images-identifier-image.socle-debian-a-rendre'
+          fi
+      changed_when: false
+
     - name: Retirer le répertoire de travail et la réponse de l'apprenant
       ansible.builtin.file:
         path: /opt/lab-images

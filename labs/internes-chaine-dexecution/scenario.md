@@ -20,8 +20,8 @@ Fill in the three lines of `/opt/lab-chaine/reponses.txt`:
 
 ```text
 shim=<the PID of the intermediate process that carries THIS container>
-parent_du_shim=<the PID of that intermediate process's PARENT>
-runtime=<the name of the runtime the engine uses>
+pid_du_processus=<the PID of the container's process on the host>
+shim_bis=<the PID of the second container's intermediary>
 ```
 
 The second answer is surprising, and that is the point: **look at it twice

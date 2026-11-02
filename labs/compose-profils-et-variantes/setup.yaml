@@ -1,10 +1,193 @@
 ---
 # Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
 # le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE. Un fichier de base commun, une image qui porte SA
+# propre version, et un répertoire de sources qui en porte une AUTRE. L'écart
+# entre les deux est tout l'appareil de mesure du lab : ce que le service répond
+# dit, sans ambiguïté, s'il lit l'image ou le disque de l'hôte.
+#
+# LES DEUX JETONS SONT TIRÉS AU HASARD À CHAQUE PASSAGE. Des valeurs en dur se
+# recopieraient d'un passage sur l'autre, et le contrôle ne prouverait plus quoi
+# que ce soit sur CE passage.
 - name: Préparer le lab compose-profils-et-variantes
   hosts: lab_target
   become: true
+  vars:
+    atelier: /opt/lab-variantes
+    socle: python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
+    depot: lab-variantes/app
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par la mise en situation."
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ socle }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-compose-profils-et-variantes.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-compose-profils-et-variantes.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Installer le moteur et Compose
+      ansible.builtin.apt:
+        name: [docker-ce, docker-compose-plugin, python3, curl]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant à parler au moteur
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Refuser d'écraser un atelier existant
+      ansible.builtin.stat:
+        path: "{{ atelier }}"
+      register: existant
+
+    - name: Exiger un atelier propre
+      ansible.builtin.assert:
+        that: not existant.stat.exists
+        fail_msg: "{{ atelier }} existe déjà ; jouez `dsoxlab clean` d'abord."
+
+    - name: Tirer au hasard les deux versions, celle de l'image et celle du disque
+      ansible.builtin.set_fact:
+        version_image: "image-{{ lookup('ansible.builtin.password', '/dev/null', length=12, chars=['ascii_lowercase', 'digits']) }}"
+        version_source: "source-{{ lookup('ansible.builtin.password', '/dev/null', length=12, chars=['ascii_lowercase', 'digits']) }}"
+
+    - name: Créer l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user | default('ansible') }}"
+      loop:
+        - "{{ atelier }}"
+        - "{{ atelier }}/src"
+        - "{{ atelier }}/build"
+
+    - name: Tirer le socle public épinglé
+      ansible.builtin.command:
+        cmd: docker pull {{ socle }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Déposer le service
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/build/service.py"
+        mode: "0644"
+        content: |
+          """Le service du lab : il rend la version qu'il LIT, et rien d'autre.
+
+          C'est tout l'appareil de mesure. Si la source est montee depuis
+          l'hote, il rend la version du disque ; sinon, celle que l'image porte.
+          Aucune autre difference de comportement entre les deux variantes.
+          """
+          import pathlib
+          from http.server import BaseHTTPRequestHandler, HTTPServer
+
+          VERSION = pathlib.Path("/app/src/version.txt")
+
+
+          class Service(BaseHTTPRequestHandler):
+              def do_GET(self):
+                  corps = VERSION.read_text().strip().encode()
+                  self.send_response(200)
+                  self.send_header("Content-Type", "text/plain")
+                  self.send_header("Content-Length", str(len(corps)))
+                  self.end_headers()
+                  self.wfile.write(corps)
+
+              def log_message(self, *_):
+                  return
+
+
+          if __name__ == "__main__":
+              HTTPServer(("", 8080), Service).serve_forever()
+
+    - name: Déposer la version QUE L'IMAGE PORTERA
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/build/version.txt"
+        mode: "0644"
+        content: "{{ version_image }}\n"
+
+    - name: Déposer le Dockerfile
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/build/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ socle }}
+          LABEL dsoxlab.lab="compose-profils-et-variantes"
+          COPY service.py /service.py
+          COPY version.txt /app/src/version.txt
+          CMD ["python", "/service.py"]
+
+    - name: Construire l'image
+      ansible.builtin.command:
+        cmd: docker build --provenance=false -t {{ depot }}:1.0 {{ atelier }}/build
+      changed_when: true
+
+    - name: Relever son digest
+      ansible.builtin.shell:
+        cmd: >-
+          docker image inspect {{ depot }}:1.0
+          --format '{% raw %}{{index .RepoDigests 0}}{% endraw %}'
+      register: digest
+      changed_when: false
+      failed_when: digest.stdout | trim | length == 0
+
+    - name: Déposer la version QUE LE DISQUE PORTE, différente de celle de l'image
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/src/version.txt"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        content: "{{ version_source }}\n"
+
+    - name: Déposer le fichier de base, commun aux deux variantes
+      # IL NE PORTE AUCUN MONTAGE, et c'est la règle du lab : un montage de
+      # développement n'a pas sa place dans un fichier que le déploiement lit
+      # aussi. Le service optionnel y est déclaré sous son profil, donc absent
+      # de la configuration effective tant que ce profil n'est pas demandé.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/compose.yaml"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        content: |
+          # LE FICHIER DE BASE, commun aux deux variantes. Il ne porte aucun
+          # montage : c'est ce qui permet de le lire en deploiement sans
+          # surprise. Ne le modifiez pas, derivez-le.
+          services:
+            app:
+              image: {{ digest.stdout | trim }}
+              container_name: dsoxlab-variantes-app
+              labels:
+                dsoxlab.lab: compose-profils-et-variantes
+              ports:
+                - "127.0.0.1:18081:8080"
+            debug:
+              image: {{ digest.stdout | trim }}
+              container_name: dsoxlab-variantes-debug
+              labels:
+                dsoxlab.lab: compose-profils-et-variantes
+              profiles: [debug]
+              command: ["python", "-c", "import time; time.sleep(86400)"]
+
+    - name: Déposer la mission à côté de l'atelier
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        src: challenge/README.fr.md
+
+    - name: Garder le relevé privé du banc
+      ansible.builtin.copy:
+        dest: /root/.lab-variantes.json
+        mode: "0600"
+        content: "{{ {'version_image': version_image, 'version_source': version_source, 'digest': digest.stdout | trim} | to_json }}"

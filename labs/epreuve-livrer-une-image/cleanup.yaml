@@ -1,10 +1,66 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
-- name: Défaire le lab epreuve-livrer-une-image
-  hosts: lab_target
+#
+# DEUX HÔTES À RENDRE, et le client autant que l'autre. Il reçoit une autorité
+# dans la confiance du moteur, une ligne dans `/etc/hosts`, des identifiants et
+# un conteneur : rien de tout cela n'a à survivre à l'épreuve.
+#
+# LE SECRET EST TIRÉ AU HASARD À CHAQUE PASSAGE, donc l'image et le relevé du
+# banc partent avec le reste : un passage qui hériterait de l'image d'un autre
+# aurait son empreinte déjà juste sans rien avoir construit.
+- name: Défaire l'épreuve sur les deux hôtes
+  hosts: lab_target:lab_client
   become: true
   tasks:
-    - name: À remplir
-      ansible.builtin.debug:
-        msg: "Remplacez cette tâche par le retour à l'état initial."
+    - name: Retirer les conteneurs et les images de l'épreuve
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          containers=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-livrer-une-image)
+          if test -n "$containers"; then docker rm -f $containers >/dev/null; fi
+          # PAR LE NOM AUSSI : le conteneur du client porte le label du lab
+          # seulement si l'apprenant l'a repris de l'image, ce que rien
+          # n'impose.
+          docker rm -f dsoxlab-livraison-client >/dev/null 2>&1 || true
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=epreuve-livrer-une-image)
+          if test -n "$images"; then docker image rm -f $images >/dev/null 2>&1 || true; fi
+          docker image rm -f livraison.lab.test:15401/livraison/appli:1.0 >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Rendre les deux images publiques du banc
+      # Elles sont tirées par le `prepare.sh`, donc posées par ce lab.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker image rm -f \
+            registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3 \
+            cesanta/docker_auth@sha256:13c3c325f51fe1b7650356fb3613fd833242d73e249e024d00396b1f16496464 \
+            >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer la confiance installée pour le moteur
+      ansible.builtin.file:
+        path: /etc/docker/certs.d/livraison.lab.test:15401
+        state: absent
+
+    - name: Retirer la résolution du registre
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} dsoxlab-epreuve-livrer-une-image"
+        state: absent
+
+    - name: Retirer l'atelier et le relevé du banc
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/lab-livraison
+        - /root/.lab-livraison.json

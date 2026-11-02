@@ -58,6 +58,19 @@
     # dsoxlab:tag-nu-volontaire : épingler ce tirage écrirait dans le setup la
     # réponse exacte que le test demande à la ligne `base=`. Le lab ne
     # mesurerait plus rien, il se corrigerait lui-même.
+    - name: Noter si debian etait deja present
+      # La mission demande le digest de `debian:13` telle qu'elle est ICI,
+      # donc le lab la tire. Il doit alors la rendre, et ne la rendre que
+      # s'il l'a posee : une machine qui l'avait deja la garde.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'debian:13' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-images-identifier-image.socle-debian-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-images-identifier-image.socle-debian-a-rendre'
+        fi
+      changed_when: false
+
     - name: Tirer l'image de base, que BuildKit ne dépose pas dans le magasin
       ansible.builtin.command:
         cmd: docker pull debian:13

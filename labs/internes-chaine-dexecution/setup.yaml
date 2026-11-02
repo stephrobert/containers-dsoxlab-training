@@ -117,8 +117,8 @@
         content: |
           # Une ligne par entree, sans espace autour du signe egal.
           shim=
-          parent_du_shim=
-          runtime=
+          pid_du_processus=
+          shim_bis=
 
     - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
       ansible.builtin.copy:
@@ -137,8 +137,8 @@
           Renseignez les trois lignes de {{ atelier }}/reponses.txt :
 
             shim=<le PID du processus intermediaire qui porte CE conteneur>
-            parent_du_shim=<le PID du PARENT de ce processus intermediaire>
-            runtime=<le nom du runtime que le moteur emploie>
+            pid_du_processus=<le PID du processus du conteneur sur l hote>
+            shim_bis=<le PID de l intermediaire du second conteneur>
 
           La deuxieme reponse surprend, et c est le but : regardez-la deux fois
           avant de conclure que vous vous etes trompe.

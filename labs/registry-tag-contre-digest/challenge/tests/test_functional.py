@@ -16,6 +16,23 @@ def host():
     return lab_host("docker.lab")
 
 
+def _identifie(manifest, servi, attendu):
+    """L'artefact publié est-il bien l'image attendue ?
+
+    DEUX FORMES, et une seule preuve. Sous le magasin containerd, Docker 29
+    publie un INDEX OCI : il n'a pas de clé `config`, et c'est son propre
+    digest qui vaut l'identifiant local de l'image (mesuré le 2026-11-02).
+    Sous le magasin classique, le registre sert un manifeste d'image, dont la
+    clé `config` porte ce même identifiant.
+
+    `servi` est le digest que le registre annonce pour cette référence, et il
+    est relevé indépendamment de `attendu` : les comparer reste une mesure, pas
+    une tautologie.
+    """
+    if "config" in manifest:
+        return manifest["config"].get("digest") == attendu
+    return bool(manifest.get("manifests")) and servi == attendu
+
 def _original(host):
     expected = json.loads(host.run("sudo cat /root/.lab-registry-digest.json").stdout)
     result = host.run("docker container inspect %s", CONTAINER)
@@ -59,14 +76,26 @@ def test_original_manifest_remains_available_independently(host):
         fr=f"Le digest d'origine n'est pas disponible dans le registre : {result.stderr[-500:]}",
     )
     manifest = json.loads(result.stdout)
-    assert manifest.get("config", {}).get("digest") == expected["image"], message(
-        en="The independently fetched manifest does not identify the original image.",
-        fr="Le manifeste récupéré indépendamment n'identifie pas l'image d'origine.",
+    servi = host.run(
+        "skopeo inspect --tls-verify=false --format %s %s",
+        "{{.Digest}}", f"docker://{expected['reference']}",
+    )
+    assert _identifie(manifest, servi.stdout.strip(), expected["image"]), message(
+        en="The independently fetched artifact does not identify the original image.",
+        fr="L'artefact récupéré indépendamment n'identifie pas l'image d'origine.",
     )
     stable = host.run(
         "skopeo inspect --raw --tls-verify=false docker://127.0.0.1:15002/catalogue/appli:stable"
     )
-    assert stable.rc == 0 and json.loads(stable.stdout).get("config", {}).get("digest") == expected["replacement"], message(
+    stable_servi = host.run(
+        "skopeo inspect --tls-verify=false --format %s %s",
+        "{{.Digest}}",
+        "docker://127.0.0.1:15002/catalogue/appli:stable",
+    )
+    assert stable.rc == 0 and _identifie(
+        json.loads(stable.stdout), stable_servi.stdout.strip(),
+        expected["replacement"],
+    ), message(
         en="Keep stable pointing at its replacement: recover the original digest instead of rewriting the tag.",
         fr="Gardez stable sur son remplacement : retrouvez le digest d'origine au lieu de réécrire le tag.",
     )

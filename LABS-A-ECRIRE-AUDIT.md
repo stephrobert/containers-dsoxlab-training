@@ -1,5 +1,17 @@
 # Les quatre labs que l'audit du 2026-11-01 a nommés
 
+> **ÉCRITS LE 2026-11-02, les quatre.** Ce document reste comme cahier des
+> charges : il dit ce que chaque lab devait prouver, et c'est à lui qu'on
+> revient pour juger si un test dérive de son intention. L'état réel des labs se
+> lit dans `validation-labs.json`, jamais ici.
+>
+> | lab | ce qu'il note | seuil |
+> | --- | --- | --- |
+> | `epreuve-livrer-une-image` | 4 contrôles, deux hôtes | 75 % |
+> | `epreuve-restaurer-une-stack` | 4 contrôles, deux hôtes | 75 % |
+> | `compose-retour-arriere` | 4 contrôles | sans seuil |
+> | `compose-profils-et-variantes` | 4 contrôles | sans seuil |
+
 L'audit du plan de formation a conclu « non, pas encore une formation de
 référence », et quatre de ses douze points demandent un lab neuf. Les voici,
 avec ce que chacun doit **prouver**, et pourquoi il n'existe pas déjà.

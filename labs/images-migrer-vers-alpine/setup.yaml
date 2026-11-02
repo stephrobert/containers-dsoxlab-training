@@ -63,6 +63,21 @@
         groups: docker
         append: true
 
+    - name: Noter si socles etait deja present
+      # CE LAB RETIRAIT UN PREALABLE. Son cleanup effaçait les deux socles
+      # sans condition, donc aussi l'alpine qu'une machine portait deja, et
+      # les labs suivants heritaient d'un moteur ampute. Le marqueur ne
+      # regarde que l'alpine : les deux socles sont tires ensemble, donc
+      # absents ou presents ensemble.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-images-migrer-vers-alpine.socle-socles-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-images-migrer-vers-alpine.socle-socles-a-rendre'
+        fi
+      changed_when: false
+
     - name: Tirer les deux socles, par leur digest
       ansible.builtin.command:
         cmd: docker pull {{ item }}

@@ -1,4 +1,14 @@
-# Quatre labs cassent le jour où la VM passe en Docker 29
+# Le champ `IPAddress` a disparu, et la forme portable qui le remplace
+
+> **TRAITÉ LE 2026-11-01.** Les quatre labs nommés plus bas sont corrigés, et
+> les cinq lectures du champ disparu, solutions chiffrées comprises, emploient
+> la forme portable. Ce document reste pour la MESURE qu'il porte : c'est elle
+> qu'on relit quand un gabarit Go échoue sans dire pourquoi, et elle vaut pour
+> tout le catalogue, pas seulement pour ces quatre labs.
+>
+> La forme portable passe par `argv` dans un playbook : elle contient un
+> espace, et Ansible découpe sinon le gabarit en deux arguments, ce qui rend un
+> `unclosed action` parfaitement illisible.
 
 Mesuré le 2026-11-01, sur un poste en **Docker Engine 29.1.3** (store containerd).
 

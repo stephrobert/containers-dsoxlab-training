@@ -13,7 +13,46 @@ openssl x509 -req -in certs/server.csr -CA certs/ca.crt -CAkey certs/ca.key \
   -CAcreateserial -out certs/server.crt -days 2 -extfile certs/extensions.cnf
 chmod 644 certs/ca.crt certs/server.crt
 python3 - <<'PY'
-import json, secrets, subprocess, pathlib
+import base64, hashlib, json, secrets, subprocess, pathlib
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.x509 import load_pem_x509_certificate
+
+
+# LE JWKS QUE REGISTRY 3 EXIGE. Mesuré le 2026-11-02 sur registry 3.1.2 : sans
+# `auth.token.jwks`, le registre refuse tout jeton par « token signed by
+# untrusted key with ID », et l'identifiant cité est pourtant celui de la clé du
+# certificat déclaré en `rootcertbundle`. Registry 2 vérifiait contre cette clé,
+# la 3 ne regarde plus que le JWKS (distribution/distribution#4470).
+#
+# L'IDENTIFIANT DE CLÉ NE SE CHOISIT PAS. Le registre compare le `kid` du jeton
+# à ceux du JWKS, et le serveur de jetons calcule le sien à la façon de
+# libtrust : SHA-256 du DER de la clé publique, 240 premiers bits, base32, par
+# groupes de quatre séparés par deux-points. Reproduire ce calcul est tout
+# l'enjeu : un JWKS valide mais au mauvais `kid` est refusé de la même façon,
+# sans que le message change d'un mot.
+def _b64u(n):
+    brut = n.to_bytes((n.bit_length() + 7) // 8, "big")
+    return base64.urlsafe_b64encode(brut).rstrip(b"=").decode()
+
+
+publique = load_pem_x509_certificate(
+    pathlib.Path("certs/server.crt").read_bytes()).public_key()
+der = publique.public_bytes(
+    encoding=serialization.Encoding.DER,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo,
+)
+b32 = base64.b32encode(hashlib.sha256(der).digest()[:30]).decode()
+kid = ":".join(b32[i:i + 4] for i in range(0, len(b32), 4))
+nombres = publique.public_numbers()
+pathlib.Path("certs/jwks.json").write_text(json.dumps({
+    "keys": [{
+        "kty": "RSA", "alg": "RS256", "use": "sig", "kid": kid,
+        "n": _b64u(nombres.n), "e": _b64u(nombres.e),
+    }]
+}, indent=2) + "\n")
+pathlib.Path("certs/jwks.json").chmod(0o644)
+
 users = {name: secrets.token_hex(24) for name in ("publisher", "reader")}
 pathlib.Path("credentials.json").write_text(json.dumps(users))
 hashes = {}

@@ -5,6 +5,17 @@
   hosts: lab_target
   become: true
   tasks:
+    - name: Rendre registry seulement si ce lab l'a pose
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '/var/tmp/dsoxlab-images-epingler-par-digest.socle-registry-a-rendre'; then
+            docker image rm -f 'registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3' >/dev/null 2>&1 || true
+            rm -f '/var/tmp/dsoxlab-images-epingler-par-digest.socle-registry-a-rendre'
+          fi
+      changed_when: false
+
     - name: Rendre le socle public, et seulement si ce lab l'a tire
       # Voir la tache jumelle du setup.
       ansible.builtin.shell: |

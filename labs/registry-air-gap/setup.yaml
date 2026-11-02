@@ -118,10 +118,25 @@
       register: image
       changed_when: false
 
+    - name: Relever les couches de l'image publiée
+      # LES COUCHES, PARCE QUE L'IDENTIFIANT A CHANGÉ DE SENS. Mesuré le
+      # 2026-11-02 : sous le magasin containerd, l'`Id` est le digest de
+      # l'index de l'image, et plus celui de sa configuration. Une archive
+      # `docker-archive` ne porte qu'un manifeste de plateforme, donc l'image
+      # rechargée depuis la livraison ressort avec un `Id` DIFFÉRENT, sans que
+      # rien soit perdu. Les couches, elles, sont identiques de part en part :
+      # c'est la même arborescence, et c'est ce que la livraison doit prouver.
+      ansible.builtin.command:
+        cmd: >-
+          docker image inspect 127.0.0.1:15006/catalogue/appli:1.0
+          --format '{% raw %}{{range .RootFS.Layers}}{{println .}}{{end}}{% endraw %}'
+      register: couches
+      changed_when: false
+
     - name: Garder le relevé privé du banc
       ansible.builtin.copy:
         dest: /root/.lab-air-gap.json
-        content: "{{ {'image': image.stdout | trim, 'release': release} | to_json }}"
+        content: "{{ {'image': image.stdout | trim, 'release': release, 'couches': couches.stdout.split()} | to_json }}"
         mode: "0600"
 
     - name: Retirer le produit local pour laisser le registre comme seule source

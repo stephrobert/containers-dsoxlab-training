@@ -10,6 +10,27 @@
         name: [docker-ce, docker-compose-plugin, git, python3]
         state: present
         update_cache: true
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose.
+      # Le marqueur dit au cleanup s'il doit rendre l'image, ou la laisser
+      # parce qu'elle etait deja la.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-compose-secrets.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-compose-secrets.socle-a-rendre'
+        fi
+      changed_when: false
+    - name: Tirer le socle public epingle
+      # MESURE le 2026-11-02 : sous le magasin containerd, la base d'un `FROM`
+      # reste dans le cache de buildkit et n'entre PAS dans le magasin du
+      # moteur. La construction de l'image du lab ne suffit donc plus a rendre
+      # alpine lançable, et la solution la lance en service avec `--pull never`.
+      ansible.builtin.command:
+        cmd: docker pull alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+      register: socle_tire
+      changed_when: "'Downloaded newer image' in socle_tire.stdout"
     - name: Démarrer Docker
       ansible.builtin.systemd_service:
         name: docker
