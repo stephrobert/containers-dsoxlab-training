@@ -1,0 +1,42 @@
+# Épreuve epreuve-relier-deux-conteneurs. Les champs marqués REQUIS sont exigés par le
+# validator : sans eux, le lab est refusé, ou pire, disparaît du catalogue sans
+# un mot.
+#
+# `lab_type: challenge` et non `lab` : c'est ce qui autorise
+# `exam_passing_score`, et ce qui dit à l'apprenant que cette épreuve ÉVALUE.
+# Rien n'y est réexpliqué : les leçons du module l'ont enseigné, à savoir
+# publier un port, le réseau par défaut face à un réseau à soi, les alias et
+# l'isolement d'un conteneur.
+id: epreuve-relier-deux-conteneurs                      # REQUIS
+title: "Exam: expose an application without exposing its database"
+level: c1                     # REQUIS
+description: "Publish the front end on the one interface asked for, make the database answer to a service name, put it on a network with no way out, leave no published port on it, and still get the business answer end to end."
+skills:                       # REQUIS, non vide
+  - docker
+  - reseau
+  - dns
+  - exposition
+  - diagnostic
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/
+lab_type: challenge
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense, et que le moteur applique
+  # depuis dsoxlab 0.7.0 : un echec ici refuse l'epreuve quel que soit
+  # le score. Avant, quatre controles sur cinq donnaient 80, et 80
+  # passait ce seuil de 75 : l'epreuve etait recue alors que son
+  # exigence critique avait echoue.
+  - test_l_inventaire_ne_publie_aucun_port
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

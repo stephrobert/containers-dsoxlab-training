@@ -13,3 +13,11 @@ auth:
     service: dsoxlab-registry
     issuer: dsoxlab-rights
     rootcertbundle: /certs/server.crt
+    # LE JWKS EST OBLIGATOIRE DEPUIS REGISTRY 3, et le `rootcertbundle` ne
+    # suffit plus. Mesuré le 2026-11-02 sur registry 3.1.2 : sans cette ligne,
+    # tout jeton est refusé par « token signed by untrusted key with ID », et
+    # l'identifiant cité est pourtant bien celui de la clé du certificat
+    # ci-dessus. Registry 2 vérifiait contre cette clé ; la 3 ne regarde plus
+    # que le JWKS. Comportement rapporté dans distribution/distribution#4470.
+    # `prepare.sh` fabrique le fichier depuis ce même certificat.
+    jwks: /certs/jwks.json

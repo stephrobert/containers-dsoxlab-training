@@ -1,0 +1,45 @@
+# Épreuve epreuve-reconstruire-une-image-pour-deux-architectures. Les champs
+# marqués REQUIS sont exigés par le validator : sans eux, le lab est refusé, ou
+# pire, disparaît du catalogue sans un mot.
+#
+# `lab_type: challenge` autorise `exam_passing_score` et dit à l'apprenant que
+# cette épreuve ÉVALUE.
+#
+# C'EST L'ÉPREUVE D'ENCHAÎNEMENT du parcours des images, et son recouvrement
+# avec quatre labs d'entraînement est ASSUMÉ, décidé le 2026-11-02. Chacun de ces
+# quatre mesure un geste ; aucun ne mesure qu'une SEULE image les réunit tous. Or
+# une image légère dont le secret a fui ne vaut rien, et une image propre qui ne
+# sert qu'une architecture ne se déploie pas.
+id: epreuve-reconstruire-une-image-pour-deux-architectures   # REQUIS
+title: "One image, four demands, two architectures"          # REQUIS
+level: c4                     # REQUIS
+description: "Rebuild a heavy single-stage image so that one single image is multi-stage without its compiler, under a measured size threshold, free of its build token in the layers and the history, and served for two architectures that both run, with the index's digest recorded."
+skills:                       # REQUIS, non vide
+  - docker
+  - images
+  - buildkit
+  - multi-architecture
+  - securite
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/
+lab_type: challenge
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense, et que le moteur applique
+  # depuis dsoxlab 0.7.0 : un echec ici refuse l'epreuve quel que soit
+  # le score. Avant, quatre controles sur cinq donnaient 80, et 80
+  # passait ce seuil de 75 : l'epreuve etait recue alors que son
+  # exigence critique avait echoue.
+  - test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches
+estimated_time: 60m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

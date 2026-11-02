@@ -135,7 +135,7 @@ def _attendu(host, cle: str) -> str:
     if cle == "adresse":
         res = host.run(
             "docker container inspect %s --format %s",
-            CONTENEUR, "{{.NetworkSettings.IPAddress}}",
+            CONTENEUR, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
         )
         return res.stdout.strip()
     res = host.run("docker port %s 80/tcp", CONTENEUR)

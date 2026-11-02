@@ -4,8 +4,18 @@ level: c4
 description: "Build and deploy by digest, recover incidents, restore on a second VM, refuse incompatible rollback and maintain without losing live reads or data."
 skills: [buildkit, multi-stage, sbom, registry, digest, compose, postgresql, secrets, hardening, recovery, backup, rollback, maintenance]
 distros: [debian13]
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/
 lab_type: capstone
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense, appliquee par le
+  # moteur depuis dsoxlab 0.7.0. Chaque nom a ete verifie sur
+  # ce que le controle AFFIRME, et non sur son intitule.
+  - test_data_survives_database_and_api_container_replacement
+  - test_buildkit_multistage_secret_receipt_and_runtime_minimisation
+  - test_network_isolation_and_postgresql_real_write
+  - test_runtime_nonroot_secret_limits_and_health_dependency
+  - test_registry_manifest_digest_pull_and_deployed_identity
 estimated_time: 180m
 runtime:
   type: vm

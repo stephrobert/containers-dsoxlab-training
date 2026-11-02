@@ -1,0 +1,325 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# CE QUE LE SETUP POSE : un traitement par lots qui tourne SANS AUCUNE LIMITE,
+# et un volume qui porte déjà des résultats. Les deux comptent autant l'un que
+# l'autre, et c'est le piège de l'épreuve : poser des limites exige de RECRÉER
+# le conteneur, et c'est là qu'on perd un volume qu'on a oublié de remonter.
+#
+# LA POINTE EST BORNÉE, ET C'EST UNE DÉCISION DE SÛRETÉ. Le programme gourmand
+# alloue par doublement jusqu'à dépasser une cible, puis rend la main : mesuré
+# sur cette VM le 2026-11-02, cela plafonne à 512 Mo et l'hôte garde 1,4 Go
+# libre. Un `tail /dev/zero`, qui alloue sans fin, aurait fait tuer sshd ou le
+# démon par l'OOM de l'hôte au premier passage sans limite : une épreuve ne doit
+# pas pouvoir emporter la machine qui la mesure.
+#
+# CE QUE LA MESURE A MONTRÉ, et qui fonde les contrôles :
+#   sans limite    l'allocation réussit, 536 870 912 octets, l'hôte tient ;
+#   avec 128 Mo    le cgroup tue l'ENFANT gourmand, `oom_kill 1`, le PID 1
+#                  survit et le conteneur reste `running`.
+# Le contrôle de la pointe lit donc `memory.peak` et `memory.events` : la limite
+# a mordu, et le service a survécu.
+- name: Préparer l'épreuve epreuve-contenir-un-conteneur-gourmand
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    tag_local: lab-gourmand:1.0
+    atelier: /opt/lab-gourmand
+    volume: dsoxlab-gourmand-resultats
+    conteneur: traitement
+    etat: /root/.lab-gourmand-state.json
+    # 200 Mo demandés : le doublement plafonne alors à 256 Mo, ce qui dépasse
+    # largement la limite que l'apprenant posera, sans inquiéter l'hôte.
+    pointe_mo: 200
+  tasks:
+    - name: Noter si le socle public était déjà présent
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ image_epinglee }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-epreuve-contenir-un-conteneur-gourmand.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-epreuve-contenir-un-conteneur-gourmand.socle-a-rendre'
+          docker pull '{{ image_epinglee }}' >/dev/null
+        fi
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: [docker-ce, python3]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Refuser de démarrer si un autre propriétaire tient les noms réservés
+      # Le volume est le point sensible : il porte des résultats, et un homonyme
+      # appartenant à quelqu'un d'autre ne se nettoie pas en silence.
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess, sys
+          lab = "epreuve-contenir-un-conteneur-gourmand"
+          def etiquette(genre, nom):
+              r = subprocess.run([ "docker", genre, "inspect", nom],
+                                 capture_output=True, text=True)
+              if r.returncode != 0:
+                  return None
+              objet = json.loads(r.stdout)[0]
+              labels = objet.get("Labels") or (objet.get("Config") or {}).get("Labels") or {}
+              return labels.get("dsoxlab.lab")
+          for genre, nom in (("volume", "{{ volume }}"),
+                             ("container", "{{ conteneur }}"),
+                             ("image", "{{ tag_local }}")):
+              porte = etiquette(genre, nom)
+              if porte is not None and porte != lab:
+                  sys.exit(f"Reserved {genre} {nom} belongs to another owner")
+          PY
+      changed_when: false
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer le conteneur et le volume du passage précédent
+      # LE VOLUME EST RETIRÉ ICI, et c'est volontaire : il porte des résultats
+      # de référence que le setup va réécrire, dont il connaît l'empreinte. Le
+      # garder d'un passage à l'autre ferait passer le contrôle des résultats
+      # sans que l'apprenant ait rien fait.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-contenir-un-conteneur-gourmand)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+          docker volume rm -f '{{ volume }}' >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Déposer l'atelier
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer le relevé d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/releve.txt"
+        state: absent
+
+    - name: Écrire le traitement par lots que l'image portera
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/service.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+          resultats=/resultats
+          mkdir -p "$resultats"
+
+          # CHAQUE RÉSULTAT S'ÉCRIT DE FAÇON ATOMIQUE : un temporaire, puis un
+          # renommage. C'est ce qui garantit qu'un fichier de `$resultats` est
+          # soit absent, soit complet, et jamais à moitié écrit. Le contrôle
+          # exige qu'aucun fichier ne soit tronqué : sans cette discipline, le
+          # programme lui-même en produirait au premier arrêt brutal, et
+          # l'épreuve punirait l'apprenant pour un défaut qui n'est pas le sien.
+          ecrire_resultat() {
+            numero="$1"
+            temporaire="$resultats/.lot-$numero.part"
+            {
+              printf 'lot=%s\n' "$numero"
+              printf 'contenu=%s\n' "$(od -An -tx1 -N6 /dev/urandom | tr -d ' \n')"
+              printf 'fin du lot\n'
+            } > "$temporaire"
+            mv "$temporaire" "$resultats/lot-$numero.txt"
+          }
+
+          # LA POINTE EST BORNÉE : l'allocation double jusqu'à dépasser la
+          # cible, puis rend la main. Mesuré sur cette machine : cela plafonne à
+          # 256 Mo pour une cible de 200, et l'hôte n'est jamais en danger.
+          # L'allocation se fait dans un ENFANT, pour que le cgroup puisse le
+          # tuer sans emporter le service.
+          pointe() {
+            awk -v cible="$(( ${POINTE_MO:-200} * 1000 * 1000 ))" 'BEGIN {
+              s = "x"
+              while (length(s) < cible) { s = s s }
+              printf "alloue %d octets\n", length(s)
+            }' || echo 'la pointe a ete contenue' >&2
+          }
+
+          numero=0
+          echo 'traitement demarre'
+          while true; do
+            if test -e /tmp/pointe; then
+              rm -f /tmp/pointe
+              echo 'pointe demandee' >&2
+              pointe &
+              wait $! || true
+              echo 'pointe terminee' >&2
+            fi
+            printf 'traitement=pret\n' | nc -l -p 80 || true
+            numero=$(( numero + 1 ))
+            if test "$numero" -le 3; then
+              ecrire_resultat "courant-$numero"
+            fi
+          done
+
+    - name: Écrire l'image du traitement
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          LABEL dsoxlab.lab="epreuve-contenir-un-conteneur-gourmand"
+          COPY service.sh /usr/local/bin/service.sh
+          ENTRYPOINT ["/usr/local/bin/service.sh"]
+
+    - name: Construire l'image du traitement
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    - name: Créer le volume des résultats
+      ansible.builtin.command:
+        cmd: >
+          docker volume create
+          --label dsoxlab.lab=epreuve-contenir-un-conteneur-gourmand {{ volume }}
+      changed_when: true
+
+    - name: Déposer les résultats antérieurs, dont l'épreuve exige la survie
+      # Écrits DANS le volume, par un conteneur jetable : c'est le seul moyen de
+      # garnir un volume nommé sans supposer où le pilote le stocke sur l'hôte.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          # `--entrypoint sh` EST NÉCESSAIRE : l'image déclare le traitement en
+          # point d'entrée, et il tourne en boucle sans fin. Un `docker run`
+          # sans écraser l'entrée ne rendrait jamais la main, et le setup
+          # resterait suspendu.
+          docker run --rm --entrypoint sh -v '{{ volume }}:/resultats' \
+            '{{ tag_local }}' -c '
+              set -eu
+              for n in 1 2 3; do
+                {
+                  printf "lot=anterieur-%s\n" "$n"
+                  printf "contenu=%s\n" "$(od -An -tx1 -N6 /dev/urandom | tr -d " \n")"
+                  printf "fin du lot\n"
+                } > "/resultats/lot-anterieur-$n.txt"
+              done
+              # UN FICHIER INCOMPLET, laisse par le dernier arret brutal. Le
+              # scenario l annonce, et l enonce demande qu aucun fichier ne
+              # reste tronque : il est donc a retirer.
+              #
+              # IL EXISTE POUR UNE RAISON DE CONCEPTION : sans lui, le controle
+              # des resultats passait AVANT tout travail, puisque l etat initial
+              # etait deja bon. Un controle qui ne distingue pas le depart de
+              # l arrivee ne mesure rien.
+              printf "lot=interrompu-1\ncontenu=" > /resultats/lot-interrompu-1.txt
+            '
+      changed_when: true
+
+    - name: Relever l'empreinte des résultats antérieurs
+      # L'empreinte, et non la seule liste : le contrôle doit distinguer « les
+      # fichiers sont là » de « les fichiers sont intacts ». Un volume recréé
+      # vide, puis regarni par le traitement, porterait des fichiers de même nom
+      # et un contenu différent.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          # LES EMPREINTES PASSENT PAR UN FICHIER, et non par une variable
+          # interpolée dans un heredoc Python : une sortie multi-ligne glissée
+          # entre triple-guillemets casse au premier caractère inattendu, et le
+          # diagnostic coûte alors plus cher que le fichier qu'on voulait
+          # s'épargner.
+          docker run --rm --entrypoint sh -v '{{ volume }}:/resultats' \
+            '{{ tag_local }}' -c 'cd /resultats && sha256sum lot-anterieur-*.txt | sort' \
+            > /root/.lab-gourmand-empreintes.txt
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          lignes = Path("/root/.lab-gourmand-empreintes.txt").read_text().splitlines()
+          Path("{{ etat }}").write_text(json.dumps({
+              "anterieurs": {l.split()[1]: l.split()[0] for l in lignes if l.strip()},
+              "pointe_mo": {{ pointe_mo }},
+          }, indent=1))
+          PY
+          rm -f /root/.lab-gourmand-empreintes.txt
+          chmod 0600 '{{ etat }}'
+      changed_when: true
+
+    - name: Lancer le traitement SANS aucune limite, comme il tourne aujourd'hui
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ conteneur }}
+          -e POINTE_MO={{ pointe_mo }}
+          -v {{ volume }}:/resultats {{ tag_local }}
+      changed_when: true
+
+    - name: Attendre que le traitement réponde réellement
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for _ in $(seq 1 30); do
+            if docker exec '{{ conteneur }}' nc -w 3 127.0.0.1 80 2>/dev/null \
+                 | grep -q 'traitement=pret'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'le traitement ne repond pas apres 30 s' >&2
+          exit 1
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : contenir un conteneur gourmand
+
+          Le conteneur `{{ conteneur }}` execute un traitement par lots. Il
+          s emballe la nuit, ralentit toute la machine, finit par se faire tuer,
+          et laisse derriere lui des fichiers incomplets.
+
+          Il ecrit ses resultats dans `/resultats`, qui est porte par le volume
+          `{{ volume }}`. CE VOLUME CONTIENT DEJA DES RESULTATS, et ils ne se
+          reproduisent pas.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            1. le conteneur porte TROIS limites, visibles dans son inspection
+               comme dans son cgroup : la memoire, le processeur, et le nombre
+               de processus ;
+            2. quand la pointe est declenchee, elle est CONTENUE par la limite :
+               le conteneur ne depasse pas sa propre limite memoire, et aucun
+               processus de l hote n est tue ;
+            3. le traitement REPOND ENCORE apres la pointe ;
+            4. les resultats anterieurs sont INTACTS, et aucun fichier de
+               `/resultats` n est tronque : chacun porte sa ligne de fin ;
+            5. le fichier `{{ atelier }}/releve.txt` consigne deux faits, sous
+               cette forme exacte, une ligne chacun :
+
+                   pid_hote=<le PID, sur l HOTE, du processus PID 1 du conteneur>
+                   runtime=<le runtime par defaut du moteur>
+
+          POUR DECLENCHER LA POINTE : creez le fichier `/tmp/pointe` DANS le
+          conteneur, puis adressez-lui une requete. Le traitement l evalue
+          apres chaque requete servie. C est un outil du lab, pas une enigme.
+
+          L image `{{ tag_local }}` est fournie : il n y a rien a reconstruire.
+          Le conteneur garde son nom.

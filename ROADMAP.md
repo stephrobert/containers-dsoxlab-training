@@ -133,7 +133,7 @@ vers un parcours distinct.
 | `reseau-bridge-dedie` | lab | f | `moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation` |
 | `reseau-publication-de-ports` | lab | f+s | `moteurs-conteneurs/docker/network/#bonnes-pratiques-réseau` |
 | `reseau-interne` | lab | f+s | `moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale` |
-| `reseau-diagnostic-dns` | challenge | f | `moteurs-conteneurs/docker/network/#dépannage-réseau-docker` |
+| `remettre-un-conteneur-en-service` | challenge | f | `moteurs-conteneurs/docker/network/#dépannage-réseau-docker` |
 | `donnees-volumes-et-montages` | lab | f | `moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes` |
 | `donnees-permissions-uid-gid` | lab | f | `moteurs-conteneurs/docker/volumes/#les-volumes-standards` |
 
@@ -193,12 +193,19 @@ incidents qui touchent l'hôte, eux, sont au niveau c4.
 | `buildkit-cache-monte` | lab | f | `images-conteneurs/build/buildkit/#cache-avancé` |
 | `buildkit-secret-de-build` | challenge | f+s | `moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build` |
 
-`images-identifier-image` est **le seul lab écrit** de ce catalogue, attesté
-`VALIDE` le 2026-10-28. Il réalise le contrat `conteneurs-11` du pilotage. Son
-scénario remplace une image sous le même tag et lit ce que le moteur déclare,
-donc il lui faut un moteur à lui : il a été écrit en `vm` avant que la règle du
-catalogue ne le soit, et c'est en le validant que la contradiction est
-apparue.
+`images-identifier-image` a été **le premier lab écrit** de ce catalogue,
+attesté `VALIDE` le 2026-10-28. Il réalise le contrat `conteneurs-11` du
+pilotage. Son scénario remplace une image sous le même tag et lit ce que le
+moteur déclare, donc il lui faut un moteur à lui : il a été écrit en `vm` avant
+que la règle du catalogue ne le soit, et c'est en le validant que la
+contradiction est apparue.
+
+> **Cette phrase disait « le seul lab écrit », et c'était vrai le 2026-10-28.**
+> Le catalogue en porte 90, dont 90 attestés VALIDE au
+> 2026-11-02. C'est la dérive propre à un document de feuille de route : il
+> décrit un instant, et rien ne l'avertit quand cet instant est passé. Ce qui
+> fait foi sur l'état réel est `validation-labs.json`, et le tableau de backlog
+> ci-dessus reste ce qu'il est, un backlog, et non un inventaire.
 
 `images-non-root` est marqué `security: true` et ce n'est pas décoratif :
 l'audit a trouvé l'ancien TP annonçant l'utilisateur non-root comme
@@ -264,7 +271,7 @@ ce module en huit leçons.
 | id | type | val | prér. | doc_url ancré |
 | --- | --- | --- | --- | --- |
 | `donnees-postgres-sauvegarde` | challenge | f | - | `moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker` |
-| `compose-capstone` | capstone | f+s | les labs de `compose-application` | `orchestrateurs/docker-compose/` |
+| `epreuve-remettre-une-stack-en-service` | capstone | f+s | les labs de `compose-application` | `orchestrateurs/docker-compose/` |
 
 **Ce module est le trou que le reclassement a mis au jour.** Il annonce quatre
 leçons et ne reçoit que deux labs : la sauvegarde est couverte, le capstone

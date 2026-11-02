@@ -9,19 +9,26 @@ It then stays running. No containers run initially.
 
 Write `/opt/lab-compose-secret/compose.yaml`, project `dsoxlab-compose-secrets`.
 Run services `app` and `observer`. Use the supplied app image and unchanged command;
-observer uses the supplied pinned Alpine reference and `sleep infinity`.
+observer uses the supplied pinned Alpine reference, the one in the `FROM` of
+`image/Dockerfile`, and `sleep infinity`.
 Declare a top-level file-backed secret `api_token` pointing to the token file.
 Grant it only to app; it must appear read-only at `/run/secrets/api_token`.
 Do not use replacement mounts, entrypoints or environment-variable copies.
 Observer must have no mounts and must not see the secret.
 
-Keep the token unchanged. It must not appear in container metadata, rendered
+Then **put the next value in service**. `credentials/token-next.txt` carries
+the token that must replace the current one: make `app` consume it, without
+touching the secret declaration, which stays on `credentials/token.txt`. Mind
+this: Compose does not restart a consumer when a mounted file changes, so
+rewriting the file is not enough.
+
+Neither value must appear in container metadata, rendered
 configuration, logs or Git history. The prepared repository ignores `credentials/`;
 never add the token even temporarily before deleting it from a later commit.
 Checks inspect actual reachable Git blobs without printing the credential.
 The startup fingerprint must match the file's actual bytes.
-The check briefly rotates the pedagogical token and force-recreates the services,
-then restores the original file and deployment.
+The fingerprint must match the bytes of the value put in service, and the
+container must be younger than the file.
 
 Standalone Compose file secrets are bind-mounted host files, not an encrypted
 Swarm secret store. Host root and Docker administrators can still read them.

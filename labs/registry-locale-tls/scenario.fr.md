@@ -7,7 +7,7 @@ registre tant que TLS et sa confiance ne sont pas configurés.
 
 L'atelier `/opt/lab-registry-tls` contient :
 
-- `config.yml`, monté dans `/etc/docker/registry/config.yml` du conteneur ;
+- `config.yml`, monté dans `/etc/distribution/config.yml` du conteneur ;
 - `certs/server.crt` et `certs/server.key`, montés dans `/certs` ;
 - `certs/ca.crt`, l'autorité privée qui a signé le certificat ;
 - `data/`, le stockage existant, à conserver.

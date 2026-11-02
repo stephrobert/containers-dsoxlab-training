@@ -53,8 +53,10 @@ nothing.
 
 ## A word on tooling
 
-You have to be root to read a container's cgroup files. That is normal, and it
-is not the lab's subject.
+A container's cgroup files are **readable without privilege**: measured on this
+machine, they are `r--r--r--` or `rw-r--r--`, and an ordinary account opens them
+without `sudo`. **Writing** them does require one, and that is what separates
+observing from tuning.
 
 And if you prefer to look from the inside: a container sees **its own limit** in
 its `/sys/fs/cgroup/memory.max`. That is how a well-behaved application tunes

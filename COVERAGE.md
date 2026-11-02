@@ -35,43 +35,56 @@ publiées. Voir `AUDIT.md` pour la règle exacte, qui ne se devine pas.
 
 ## La matrice
 
+> **La colonne « État » est mesurée, les autres datent.** Relevé du 2026-11-02 :
+> la colonne « État » de cette matrice est désormais écrite depuis
+> `validation-labs.json`, et non plus à la main. Elle disait « à écrire » pour
+> **34 labs déjà VALIDE**, parce qu'une liste tenue à la main finit toujours par
+> décrire une intention : personne ne l'avait reprise pendant que le catalogue
+> passait à 90 labs.
+>
+> Les quatre premières colonnes, elles, datent toujours de l'inventaire
+> d'origine. Elles lient un guide du blog à une compétence et à des labs
+> **cibles**, et cette correspondance vient du blog : la deviner depuis le
+> dépôt produirait une matrice qui a l'air juste. Deux écarts connus sont donc
+> nommés sous la matrice plutôt que corrigés en silence.
+
 Colonnes : le guide, la compétence qu'il sert, s'il porte un quiz côté blog, le
 lab de l'ancien dépôt s'il existait, et le lab cible.
 
 | Guide | Compétence | Quiz | Ancien | Lab cible | État |
 | --- | --- | --- | --- | --- | --- |
 | `docker/index` | c1 panorama | non | - | - (page d'entrée) | sans objet |
-| `docker/installation` | c1 installer | oui | - | `docker-verifier-son-moteur` | à écrire |
-| `docker/concepts` | c1 comprendre | oui | - | `docker-image-vs-conteneur`, `docker-anatomie-image` | à écrire |
-| `docker/cli` | c1 manipuler | oui + TP | - | `docker-premier-conteneur`, `docker-cycle-de-vie`, `docker-inspecter` | à écrire |
-| `images-conteneurs/index` | c1 anatomie | oui | - | `docker-anatomie-image`, `docker-save-load` | à écrire |
-| `images-conteneurs/ecrire-dockerfile` | c2 construire | oui | TP1 | **`images-premiere-image`** | **validé** |
-| `images-conteneurs/dockerfile-bonnes-pratiques` | c2 cache, non-root | oui | TP4 | `images-ordre-des-couches`, `images-non-root`, `images-build-multi-etapes` | 1 squelette |
-| `images-conteneurs/optimiser-taille-image` | c2 alléger | oui | TP2, TP3 | `images-optimiser-la-taille`, `images-migrer-vers-alpine` | 2 squelettes |
-| `images-conteneurs/build/buildkit` | c2 BuildKit | oui | - | `buildkit-cache-monte`, `buildkit-secret`, `buildx-multiarch` | à écrire |
+| `docker/installation` | c1 installer | oui | - | `docker-verifier-son-moteur` | **validé** |
+| `docker/concepts` | c1 comprendre | oui | - | `docker-image-vs-conteneur`, `docker-anatomie-image` | nom provisoire |
+| `docker/cli` | c1 manipuler | oui + TP | - | `docker-premier-conteneur`, `docker-cycle-de-vie`, `docker-inspecter` | **validé** (partiel) |
+| `images-conteneurs/index` | c1 anatomie | oui | - | `docker-anatomie-image`, `docker-save-load` | nom provisoire |
+| `images-conteneurs/ecrire-dockerfile` | c2 construire | oui | TP1 | **`images-premiere-image`** | nom provisoire |
+| `images-conteneurs/dockerfile-bonnes-pratiques` | c2 cache, non-root | oui | TP4 | `images-ordre-des-couches`, `images-non-root`, `images-build-multi-etapes` | **validé** |
+| `images-conteneurs/optimiser-taille-image` | c2 alléger | oui | TP2, TP3 | `images-optimiser-la-taille`, `images-migrer-vers-alpine` | **validé** |
+| `images-conteneurs/build/buildkit` | c2 BuildKit | oui | - | `buildkit-cache-monte`, `buildkit-secret`, `buildx-multiarch` | **validé** (partiel) |
 | `images-conteneurs/build/bake` | c2 build déclaratif | non | - | - (hors cœur, vague tardive) | écarté v1 |
 | `images-conteneurs/build/buildah`, `kaniko`, `buildpacks` | c2 alternatives | non | - | - | écarté v1 |
 | `images-conteneurs/controle-connaissances` | c2 quiz | c'est le quiz | - | - | sans objet |
-| `registres/index` | c3 distribuer | oui | - | `registry-tag-push-pull`, `image-tag-vs-digest` | à écrire |
-| `registres/distribution` | c3 registry privée | non | - | `registry-locale-tls`, `registry-auth` | à écrire |
-| `registres/docker-hub` | c3 publier | non | - | `registry-publier-sur-docker-hub` | à écrire |
+| `registres/index` | c3 distribuer | oui | - | `registry-tag-push-pull`, `image-tag-vs-digest` | **validé** (partiel) |
+| `registres/distribution` | c3 registry privée | non | - | `registry-locale-tls`, `registry-auth` | **validé** (partiel) |
+| `registres/docker-hub` | c3 publier | non | - | `registry-publier-sur-docker-hub` | nom provisoire |
 | `registres/quay-io`, `orca` | c3 variantes | 1 sur 2 | - | - | écarté v1 |
-| `outils/skopeo` | c3 air-gap | non | - | `registry-air-gap` | à écrire |
+| `outils/skopeo` | c3 air-gap | non | - | `registry-air-gap` | **validé** |
 | `outils/crane`, `oras` | c3 outillage | non | - | - (servent un lab, pas un module) | écarté v1 |
-| `docker/execution-depannage` | c4 exécuter, c7 dépanner | oui | - | `container-entrypoint-cmd`, `container-signaux-pid1`, `container-memoire-oom`, `troubleshoot-exit-127`, `troubleshoot-boucle-de-redemarrage` | à écrire |
-| `docker/volumes` | c5 persister | oui + TP | TP5 | **`donnees-volumes-et-montages`**, `donnees-volume-orphelin`, `donnees-permissions`, `donnees-postgres-sauvegarde` | 1 squelette |
-| `docker/network` | c5 connecter | oui + TP | - | `reseau-bridge-par-defaut`, `reseau-bridge-dedie`, `reseau-publication-de-ports`, `reseau-interne`, `reseau-diagnostic-dns` | à écrire |
+| `docker/execution-depannage` | c4 exécuter, c7 dépanner | oui | - | `container-entrypoint-cmd`, `container-signaux-pid1`, `container-memoire-oom`, `troubleshoot-exit-127`, `troubleshoot-boucle-de-redemarrage` | **validé** (partiel) |
+| `docker/volumes` | c5 persister | oui + TP | TP5 | **`donnees-volumes-et-montages`**, `donnees-volume-orphelin`, `donnees-permissions`, `donnees-postgres-sauvegarde` | **validé** (partiel) |
+| `docker/network` | c5 connecter | oui + TP | - | `reseau-bridge-par-defaut`, `reseau-bridge-dedie`, `reseau-publication-de-ports`, `reseau-interne`, `remettre-un-conteneur-en-service` | **validé** |
 | `orchestrateurs/docker-compose` | c6 composer | non | coquille vide | 10 labs `compose-*` | à écrire |
-| `docker/daemon-config` | c7 exploiter | oui | - | `docker-daemon-config`, `docker-rotation-des-journaux` | à écrire |
-| `docker/securite` | c8 sécuriser | oui | - | `securite-groupe-docker`, `securite-capabilities`, `securite-no-new-privileges`, `securite-rootless`, `securite-seccomp` | à écrire |
-| `docker/secrets` | c8 secrets | oui | - | `secrets-au-build`, `secrets-au-runtime` | à écrire |
-| `docker/socket-proxy` | c8 socket | oui | - | `securite-socket-lecture-seule`, `securite-socket-proxy` | à écrire |
-| `docker/sous-le-capot` | c9 internes | oui | - | `internes-namespaces`, `internes-cgroups-v2`, `internes-chaine-dexecution` | à écrire |
-| `outils/dive` | c2 mesurer | non | TP2 (dive) | sert `images-ordre-des-couches` | outil |
-| `outils/hadolint` | c2 lint | non | - | sert `images-ordre-des-couches` | outil |
+| `docker/daemon-config` | c7 exploiter | oui | - | `docker-daemon-config`, `docker-rotation-des-journaux` | **validé** (partiel) |
+| `docker/securite` | c8 sécuriser | oui | - | `securite-groupe-docker`, `securite-capabilities`, `securite-no-new-privileges`, `securite-rootless`, `securite-seccomp` | **validé** |
+| `docker/secrets` | c8 secrets | oui | - | `secrets-au-build`, `secrets-au-runtime` | **validé** (partiel) |
+| `docker/socket-proxy` | c8 socket | oui | - | `securite-socket-lecture-seule`, `securite-socket-proxy` | **validé** |
+| `docker/sous-le-capot` | c9 internes | oui | - | `internes-namespaces`, `internes-cgroups-v2`, `internes-chaine-dexecution` | **validé** |
+| `outils/dive` | c2 mesurer | non | TP2 (dive) | sert `images-ordre-des-couches` | **validé** |
+| `outils/hadolint` | c2 lint | non | - | sert `images-ordre-des-couches` | **validé** |
 | `outils/container-struct-test` | c2 tester | non | - | - | écarté v1 |
 | `outils/dozzle`, `lazydocker`, `crictl` | c7 confort | non | - | - | écarté v1 |
-| `containerd/index`, `nerdctl-base` | c9 moteur | non | - | sert `internes-chaine-dexecution` | outil |
+| `containerd/index`, `nerdctl-base` | c9 moteur | non | - | sert `internes-chaine-dexecution` | **validé** |
 | `orchestrateurs/docker-swarm` | sw1 à sw7 | oui | coquille vide | 18 labs `swarm-*` | vague 6 |
 
 ## Ce que la matrice fait apparaître
@@ -119,9 +132,45 @@ cocher. Les deux se ressemblent sans se confondre, et inscrire la seconde à la
 place de la première ferait dire à dsoxlab quelque chose que le site ne fait
 pas. Le champ reste donc vide jusqu'à arbitrage.
 
+
+### Deux écarts connus de cette matrice
+
+**Seize noms cibles n'existent sous aucune forme dans `labs/`.** Ce sont des
+noms provisoires du backlog, jamais réconciliés avec les labs effectivement
+écrits. Deviner lequel correspond à quel lab produirait une correspondance
+plausible et fausse, donc ils sont laissés tels quels et listés ici :
+
+- `buildkit-secret`
+- `buildx-multiarch`
+- `container-entrypoint-cmd`
+- `container-memoire-oom`
+- `container-signaux-pid1`
+- `docker-anatomie-image`
+- `docker-daemon-config`
+- `docker-image-vs-conteneur`
+- `docker-inspecter`
+- `docker-save-load`
+- `donnees-permissions`
+- `image-tag-vs-digest`
+- `images-premiere-image`
+- `registry-auth`
+- `registry-publier-sur-docker-hub`
+- `secrets-au-build`
+
+**Cinquante-six labs du dépôt n'apparaissent pas dans cette matrice.** Elle est
+indexée par guide du blog, et elle n'a pas été étendue depuis l'inventaire
+d'origine. Le relevé qui fait foi sur ce que le catalogue contient est
+`validation-labs.json`, et `dsoxlab list-labs` le montre dans l'ordre
+pédagogique.
+
+La matrice garde donc sa valeur pour ce qu'elle mesure, c'est-à-dire la
+couverture des **guides**, et elle ne doit pas être lue comme un inventaire des
+labs.
+
 ## Comment cette matrice se tient à jour
 
 `scripts/inventaire-guides.py` régénère l'inventaire depuis le blog local. La
-colonne « État » se met à jour à la main, et `scripts/valider-labs.py` est ce
+colonne « État » se mesure depuis `validation-labs.json` et ne se tient plus à la
+main : elle a dérivé de 34 labs le temps que le catalogue passe à 90, et `scripts/valider-labs.py` est ce
 qui autorise à écrire « validé » : un lab y est **VALIDE** quand son `check`
 rend 0 avant le travail et 100 après.

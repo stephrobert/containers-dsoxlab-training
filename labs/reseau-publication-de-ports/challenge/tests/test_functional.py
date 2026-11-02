@@ -289,7 +289,7 @@ def test_le_service_interne_ne_publie_rien_et_reste_joignable(host) -> None:
 
     res = host.run(
         "docker container inspect %s --format %s",
-        INTERNE, "{{.NetworkSettings.IPAddress}}",
+        INTERNE, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
     )
     adresse = res.stdout.strip()
     assert adresse, message(

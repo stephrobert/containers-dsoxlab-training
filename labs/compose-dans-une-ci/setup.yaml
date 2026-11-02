@@ -3,9 +3,24 @@
   hosts: lab_target
   become: true
   tasks:
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Ce
+      # lab TIRAIT le socle sans jamais le retirer : le validateur comptait
+      # « image laisse », et le lab suivant heritait d'un moteur modifie. Le
+      # marqueur dit au cleanup s'il doit rendre l'image, ou la laisser parce
+      # qu'elle etait deja la.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'python:3.14.10-alpine3.24@sha256:eb2c62658b8d51bff0acc408504b76521d02030de56a8a3c1e830083e89b89d2' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-compose-dans-une-ci.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-compose-dans-une-ci.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Install runtime
       ansible.builtin.apt:
-        name: [docker.io, docker-buildx, docker-compose, python3, coreutils, git]
+        name: [docker-ce, docker-buildx-plugin, docker-compose-plugin, python3, coreutils, git]
         state: present
         update_cache: true
     - name: Start Docker
@@ -44,8 +59,7 @@
           cd /opt/lab-compose-ci/source
           git add .
           git -c user.name=DSOxLab -c user.email=fixture@invalid commit -q \
-            -m "Prepared training source" \
-            -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            -m "Prepared training source"
       when: ci_source_repository.changed
       changed_when: true
     - name: Record preexisting base images
@@ -54,7 +68,7 @@
       changed_when: false
     - name: Seed pinned runtime before offline CI
       ansible.builtin.command:
-        cmd: docker pull python:3.13.8-alpine3.22@sha256:3a77fbbb5bc88c0f63cc2692a13b011547f25ee93536e991544c452801856226
+        cmd: docker pull python:3.14.10-alpine3.24@sha256:eb2c62658b8d51bff0acc408504b76521d02030de56a8a3c1e830083e89b89d2
       changed_when: true
     - name: Copy mission
       ansible.builtin.copy:

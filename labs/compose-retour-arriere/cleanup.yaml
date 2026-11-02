@@ -1,0 +1,77 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# LE VOLUME PART AVEC LE RESTE, et ce n'est pas un détail. Il porte l'état
+# migré en schéma 2 : le laisser derrière ferait démarrer le passage suivant sur
+# un état que la 1.0 refuse, et le lab serait injouable sans que rien ne le
+# dise. Son témoin est de plus tiré au hasard à chaque passage, donc un volume
+# survivant ferait comparer le témoin d'un passage aux données d'un autre.
+- name: Défaire le lab compose-retour-arriere
+  hosts: lab_target
+  become: true
+  vars:
+    atelier: /opt/lab-retour
+    socle: python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
+    depot: lab-retour/service
+    projet: dsoxlab-retour
+  tasks:
+    - name: Retirer la pile, ses conteneurs, son réseau et son volume
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '{{ atelier }}/compose.yaml'; then
+            cd '{{ atelier }}'
+            docker compose -p '{{ projet }}' down --volumes --remove-orphans >/dev/null 2>&1 || true
+          fi
+          # PAR LES ETIQUETTES AUSSI, et pas seulement par le projet : un
+          # apprenant qui a renomme le projet dans son fichier laisserait
+          # sinon ses conteneurs derriere lui.
+          containers=$(docker ps -aq --filter label=dsoxlab.lab=compose-retour-arriere)
+          if test -n "$containers"; then docker rm -f $containers >/dev/null; fi
+          volumes=$(docker volume ls -q --filter label=dsoxlab.lab=compose-retour-arriere)
+          if test -n "$volumes"; then docker volume rm -f $volumes >/dev/null; fi
+          reseaux=$(docker network ls -q --filter label=com.docker.compose.project={{ projet }})
+          if test -n "$reseaux"; then docker network rm $reseaux >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer le conteneur d'essai du quatrième contrôle
+      # Il est jetable (`--rm`), mais un controle interrompu en laisserait un.
+      ansible.builtin.shell:
+        cmd: docker rm -f dsoxlab-retour-essai >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer les trois releases construites par le lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=compose-retour-arriere)
+          if test -n "$images"; then docker image rm -f $images >/dev/null 2>&1 || true; fi
+          docker image rm -f '{{ depot }}:1.0' '{{ depot }}:2.0' '{{ depot }}:3.0' >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Rendre le socle public s'il a été posé par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '/var/tmp/dsoxlab-compose-retour-arriere.socle-a-rendre'; then
+            docker image rm -f '{{ socle }}' >/dev/null 2>&1 || true
+            rm -f '/var/tmp/dsoxlab-compose-retour-arriere.socle-a-rendre'
+          fi
+      changed_when: false
+
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer l'atelier et le relevé du banc
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /root/.lab-retour.json

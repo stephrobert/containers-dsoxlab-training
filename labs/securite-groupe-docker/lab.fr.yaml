@@ -1,2 +1,2 @@
-title: "Remove an unnecessary Docker grant"
+title: "Retirer un accès Docker qui ne se justifie plus"
 description: "Remove only docker-group membership from the synthetic audit account."

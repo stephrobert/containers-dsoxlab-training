@@ -1,0 +1,5 @@
+# Surcharge française de l'épreuve. Elle ne porte QUE `title` et `description` :
+# tout autre champ y est ignoré en silence, parce que le contrat ne se traduit
+# pas.
+title: "Une seule image, quatre exigences, deux architectures"
+description: "Reconstruire une image lourde en une seule étape pour qu'une seule image soit à la fois multi-étapes sans son compilateur, sous un seuil de taille mesuré, sans son jeton de construction dans les couches ni dans l'historique, et servie pour deux architectures qui s'exécutent toutes les deux, avec le digest de l'index consigné."

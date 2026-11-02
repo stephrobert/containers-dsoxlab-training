@@ -1,0 +1,203 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# DEUX HÔTES, ET DEUX RÔLES QUI NE SE RESSEMBLENT PAS. `docker.lab` construit et
+# publie ; `docker-client.lab` est un client NU : il reçoit la confiance de
+# l'autorité du lab et un compte en LECTURE SEULE, rien d'autre. Toute l'épreuve
+# consiste à livrer quelque chose qu'il puisse réellement exécuter.
+#
+# LE SECRET DE CONSTRUCTION EST TIRÉ AU HASARD, et l'épreuve attend son
+# empreinte : c'est ce qui force à l'employer VRAIMENT pendant la construction,
+# au lieu d'écrire une valeur plausible. Il ne doit survivre dans aucune couche.
+- name: Préparer les deux moteurs de l'épreuve
+  hosts: lab_target:lab_client
+  become: true
+  tasks:
+    - name: Installer les outils bornés
+      # `python3-cryptography` est DÉCLARÉ : `prepare.sh` lit la clé publique du
+      # certificat pour en fabriquer le JWKS que registry 3 exige. Il était
+      # présent par transitivité sur la machine de mesure, ce qui est exactement
+      # le genre de hasard qui casse chez le lecteur.
+      ansible.builtin.apt:
+        name: [docker-ce, docker-buildx-plugin, openssl, curl, apache2-utils,
+               python3, python3-cryptography, skopeo]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant à parler au moteur
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Résoudre le registre sur l'adresse privée réelle
+      # AVANT TOUTE ATTENTE SUR CE NOM, et c'est un ordre, pas un detail.
+      # Mesure du 2026-11-02 : pose dans un play ulterieur, l'attente HTTPS du
+      # play de montage echouait sur « Name or service not known ». Un defaut
+      # d'ordre qui se presente comme un defaut de DNS coute une heure.
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} dsoxlab-epreuve-livrer-une-image"
+        block: "{{ hostvars[groups['lab_target'][0]].ansible_host }} livraison.lab.test"
+        create: true
+        mode: "0644"
+
+    - name: Refuser d'écraser un atelier existant
+      ansible.builtin.stat:
+        path: /opt/lab-livraison
+      register: existant
+
+    - name: Exiger un atelier propre
+      ansible.builtin.assert:
+        that: not existant.stat.exists
+        fail_msg: "/opt/lab-livraison existe déjà ; jouez `dsoxlab clean` d'abord."
+
+    - name: Créer l'atelier et son contexte de construction
+      # LE SOUS-REPERTOIRE EST CREE ICI, et pas seulement par `prepare.sh` :
+      # la copie du contexte le precede, et `copy` ne cree pas le repertoire
+      # de destination. Premier passage du 2026-11-02 : « Destination
+      # directory /opt/lab-livraison/build does not exist ».
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user | default('ansible') }}"
+      loop:
+        - /opt/lab-livraison
+        - /opt/lab-livraison/build
+
+- name: Monter le registre et ses deux comptes sur l'hôte de publication
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Déposer le script de préparation du banc
+      ansible.builtin.copy:
+        src: fixtures/prepare.sh
+        dest: /opt/lab-livraison/prepare.sh
+        mode: "0755"
+
+    - name: Déposer le contexte de construction
+      ansible.builtin.copy:
+        src: "fixtures/build/{{ item }}"
+        dest: "/opt/lab-livraison/build/{{ item }}"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+      loop: [service.py, Dockerfile]
+
+    - name: Poser TLS, les comptes, le serveur de jetons et le registre
+      ansible.builtin.command:
+        cmd: bash /opt/lab-livraison/prepare.sh {{ ansible_host }}
+      changed_when: true
+      no_log: true
+
+    - name: Attendre le challenge HTTPS vérifié
+      ansible.builtin.uri:
+        url: https://livraison.lab.test:15401/v2/
+        ca_path: /opt/lab-livraison/certs/ca.crt
+        status_code: 401
+        use_proxy: false
+      register: pret
+      until: pret.status == 401
+      retries: 20
+      delay: 1
+
+    - name: Lire l'autorité publique du lab
+      ansible.builtin.slurp:
+        src: /opt/lab-livraison/certs/ca.crt
+      register: autorite
+
+    - name: Lire les deux comptes
+      ansible.builtin.slurp:
+        src: /opt/lab-livraison/comptes.json
+      register: comptes_bruts
+      no_log: true
+
+- name: Installer la confiance et le compte EN LECTURE SEULE sur les deux hôtes
+  hosts: lab_target:lab_client
+  become: true
+  tasks:
+    - name: Créer le répertoire de confiance du moteur
+      ansible.builtin.file:
+        path: /etc/docker/certs.d/livraison.lab.test:15401
+        state: directory
+        mode: "0755"
+
+    - name: Installer l'autorité du lab pour le moteur
+      ansible.builtin.copy:
+        dest: /etc/docker/certs.d/livraison.lab.test:15401/ca.crt
+        content: "{{ hostvars[groups['lab_target'][0]].autorite.content | b64decode }}"
+        mode: "0644"
+
+    - name: Créer le répertoire de confiance des clients en ligne de commande
+      # UN REPERTOIRE QUI NE PORTE QUE LA CA, et c'est une contrainte de
+      # skopeo, mesuree le 2026-11-02 : son `--cert-dir` lit tout le
+      # repertoire et apparie `*.key` avec `*.cert`. Pointe sur `certs/`, qui
+      # porte `ca.key` et `server.key` sans `.cert` en face, il refuse AVANT
+      # de se connecter : « missing client certificate ca.cert for key
+      # ca.key ». Le message ne parle alors ni du registre ni des
+      # identifiants.
+      ansible.builtin.file:
+        path: /opt/lab-livraison/confiance
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user | default('ansible') }}"
+
+    - name: Installer l'autorité du lab pour les clients en ligne de commande
+      ansible.builtin.copy:
+        dest: "{{ item }}"
+        content: "{{ hostvars[groups['lab_target'][0]].autorite.content | b64decode }}"
+        mode: "0644"
+      loop:
+        - /opt/lab-livraison/ca.crt
+        - /opt/lab-livraison/confiance/ca.crt
+
+- name: Donner au client NU ce qu'il a, et rien de plus
+  hosts: lab_client
+  become: true
+  tasks:
+    - name: Déposer les identifiants EN LECTURE SEULE, et eux seuls
+      # LE CLIENT NE REÇOIT PAS LE COMPTE DE PUBLICATION. C'est le sujet de
+      # l'épreuve : prouver qu'un client nu peut tirer et exécuter, et qu'il ne
+      # peut PAS publier.
+      ansible.builtin.copy:
+        dest: /opt/lab-livraison/identifiants-lecture.json
+        content: "{{ {'compte': 'client', 'mot_de_passe': (hostvars[groups['lab_target'][0]].comptes_bruts.content | b64decode | from_json)['client']} | to_json }}\n"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+      no_log: true
+
+- name: Déposer la mission sur l'hôte de publication
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Déposer la mission à côté de l'atelier
+      ansible.builtin.copy:
+        src: challenge/README.fr.md
+        dest: /opt/lab-livraison/MISSION.md
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+
+    - name: Déposer les identifiants de publication, sur CET hôte seulement
+      ansible.builtin.copy:
+        dest: /opt/lab-livraison/identifiants-publication.json
+        content: "{{ {'compte': 'publisher', 'mot_de_passe': (comptes_bruts.content | b64decode | from_json)['publisher']} | to_json }}\n"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+      no_log: true
+
+    - name: Créer le fichier de livraison, vide, que la mission demande de remplir
+      ansible.builtin.copy:
+        dest: /opt/lab-livraison/livraison.txt
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        content: |
+          # Une ligne par entree, sans espace autour du signe egal.
+          reference_par_digest=
+          empreinte_du_secret=

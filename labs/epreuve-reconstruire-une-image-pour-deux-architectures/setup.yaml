@@ -1,0 +1,379 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# C'EST L'ÉPREUVE D'ENCHAÎNEMENT du parcours des images, et c'est ce qui la
+# justifie malgré un recouvrement assumé avec quatre labs d'entraînement. Chacun
+# de ces quatre mesure un geste ; aucun ne mesure qu'une SEULE image les réunit
+# tous. Or une image légère dont le secret a fui ne vaut rien, et une image
+# propre qui ne sert qu'une architecture ne se déploie pas.
+#
+# CE QUE LE BANC A ÉTABLI AVANT L'ÉCRITURE, le 2026-11-02 :
+#   - `--build-arg` laisse le jeton dans `docker history --no-trunc` : DEUX
+#     occurrences mesurées. C'est le défaut livré ;
+#   - `--mount=type=secret` n'en laisse AUCUNE, ni dans l'historique ni dans les
+#     couches, et la dépendance est bien produite. C'est la correction ;
+#   - `buildx` pousse un index OCI, et les deux architectures s'exécutent par
+#     émulation sur cette VM amd64 ;
+#   - l'index porte quatre manifestes et non deux : buildx y ajoute ses
+#     attestations de provenance, qui se présentent comme des plateformes
+#     `unknown`. Le contrôle cherche donc amd64 et arm64 PARMI les manifestes,
+#     au lieu d'en exiger exactement deux.
+#
+# POURQUOI LA DÉPENDANCE PRIVÉE EST LE CONDENSAT DU JETON. Un vrai dépôt privé
+# demanderait un service réseau de plus, et le banc a montré qu'un `RUN` de
+# build peut le joindre. Mais ce qui est MESURÉ ne changerait pas d'un iota :
+# que le secret ait SERVI, et qu'il n'ait pas FUI. Le condensat prouve les deux
+# sans ajouter de pièce, et l'énoncé le dit franchement plutôt que de faire
+# semblant.
+- name: Préparer l'épreuve epreuve-reconstruire-une-image-pour-deux-architectures
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    image_registre: >-
+      registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
+    atelier: /opt/lab-deux-arch
+    etat: /root/.lab-deux-arch-state.json
+    registre_conteneur: registre-deux-arch
+    port_registre: 15002
+    depot: deux-arch
+    version: "1.0"
+    # La marge au-dessus de la référence multi-étapes. Large à dessein :
+    # l'épreuve mesure « n'a pas livré son compilateur », pas « a optimisé au
+    # mégaoctet », qui est le sujet d'un lab d'entraînement.
+    marge_mo: 20
+  tasks:
+    - name: Noter si les socles publics étaient déjà présents
+      ansible.builtin.shell: |
+        set -eu
+        for couple in 'alpine:{{ image_epinglee }}' 'registre:{{ image_registre }}'; do
+          nom=${couple%%:*}
+          ref=${couple#*:}
+          marqueur="/var/tmp/dsoxlab-epreuve-reconstruire-une-image-pour-deux-architectures.socle-$nom"
+          if docker image inspect "$ref" >/dev/null 2>&1; then
+            rm -f "$marqueur"
+          else
+            : > "$marqueur"
+          fi
+        done
+      changed_when: false
+
+    - name: Installer le moteur, buildx et l'émulation
+      # L'ÉMULATION EST POSÉE PAR LE LAB, et c'est ce qui rend l'épreuve
+      # jouable sur une machine amd64. La recette est celle de
+      # `images-multi-architecture`, déjà attestée : les paquets de Debian, et
+      # non une image privilégiée.
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-buildx-plugin
+          - qemu-user
+          - qemu-user-binfmt
+          - binfmt-support
+          - python3
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Activer les interpréteurs d'architectures étrangères
+      ansible.builtin.systemd_service:
+        name: systemd-binfmt
+        state: restarted
+        enabled: true
+
+    - name: Vérifier que l'émulation aarch64 est réellement en place
+      # ON MESURE, on ne suppose pas : sans cet interpréteur, le contrôle de
+      # l'exécution arm64 échouerait pour une raison étrangère au travail de
+      # l'apprenant.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          test -e /proc/sys/fs/binfmt_misc/qemu-aarch64
+      changed_when: false
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer les deux images, par leur digest
+      ansible.builtin.command:
+        cmd: docker pull {{ item }}
+      loop:
+        - "{{ image_epinglee }}"
+        - "{{ image_registre }}"
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer les ressources du passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-reconstruire-une-image-pour-deux-architectures)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+          for ref in '{{ depot }}:{{ version }}' \
+                     '127.0.0.1:{{ port_registre }}/{{ depot }}:{{ version }}' \
+                     'reference-deux-arch:mesure'; do
+            docker image rm -f "$ref" >/dev/null 2>&1 || true
+          done
+          docker buildx rm lab-deux-arch >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Déposer l'atelier
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Retirer les livrables d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ atelier }}/{{ item }}"
+        state: absent
+      loop:
+        - digest.txt
+        - Dockerfile.multi
+
+    - name: Tirer au sort le jeton du dépôt privé, une fois par passage
+      ansible.builtin.shell:
+        cmd: od -An -tx1 -N8 /dev/urandom | tr -d ' \n'
+      register: tirage_jeton
+      changed_when: true
+
+    - name: Déposer le jeton dans un fichier, que l'apprenant pourra monter
+      # LE FICHIER EST FOURNI : le sujet est de s'en servir sans qu'il fuie, pas
+      # de deviner où le mettre.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/jeton"
+        mode: "0600"
+        content: "{{ tirage_jeton.stdout }}"
+
+    - name: Écrire le programme que l'image doit porter
+      # EN C, et compilé : c'est ce qui donne un sens au multi-étapes. Le
+      # compilateur et son gestionnaire de paquets n'ont rien à faire dans une
+      # image livrée, et ils pèsent assez pour que la taille le dise.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/charge.c"
+        mode: "0644"
+        content: |
+          /* La charge metier. Elle lit la dependance privee et l annonce, avec
+             l architecture pour laquelle elle a ete compilee. */
+          #include <stdio.h>
+          #include <stdlib.h>
+
+          int main(void) {
+              FILE *f = fopen("/dependance.txt", "r");
+              char ligne[128] = "absente";
+              if (f) {
+                  if (fgets(ligne, sizeof(ligne), f)) {
+                      char *fin = ligne;
+                      while (*fin && *fin != '\n') { fin++; }
+                      *fin = '\0';
+                  }
+                  fclose(f);
+              }
+              printf("charge=ok\n");
+              printf("dependance=%s\n", ligne);
+          #if defined(__aarch64__)
+              printf("architecture=arm64\n");
+          #elif defined(__x86_64__)
+              printf("architecture=amd64\n");
+          #else
+              printf("architecture=inconnue\n");
+          #endif
+              return 0;
+          }
+
+    - name: Écrire le Dockerfile tel qu'il a été laissé, avec ses trois défauts
+      # TROIS DÉFAUTS DANS UN SEUL FICHIER, et ils se tiennent :
+      #   1. UNE SEULE ÉTAPE : le compilateur et son gestionnaire de paquets
+      #      restent dans l'image livrée, qui pèse pour rien ;
+      #   2. le jeton passe par `ARG`, donc il reste dans l'historique. Mesuré :
+      #      deux occurrences ;
+      #   3. rien ne prévoit une seconde architecture.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          # L image de la charge metier. Elle marche, et elle pese 200 Mo.
+          FROM {{ image_epinglee }}
+
+          # Le compilateur, dont l image livree n a aucun besoin.
+          RUN apk add --no-cache gcc musl-dev
+
+          # LE JETON PASSE PAR UN ARG : il reste donc dans l historique de
+          # l image, ou quiconque la tire peut le relire.
+          ARG DEPOT_JETON
+          RUN printf '%s' "$DEPOT_JETON" | sha256sum | cut -c1-16 > /dependance.txt
+
+          COPY charge.c /charge.c
+          RUN gcc -static -o /usr/local/bin/charge /charge.c
+
+          ENTRYPOINT ["/usr/local/bin/charge"]
+
+    - name: Lancer le registre du lab, sur la boucle locale
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ registre_conteneur }}
+          --label dsoxlab.lab=epreuve-reconstruire-une-image-pour-deux-architectures
+          -p 127.0.0.1:{{ port_registre }}:5000 {{ image_registre }}
+      changed_when: true
+
+    - name: Attendre que le registre réponde réellement
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for _ in $(seq 1 30); do
+            if curl -sS -f -o /dev/null 'http://127.0.0.1:{{ port_registre }}/v2/'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'le registre ne repond pas apres 30 s' >&2
+          exit 1
+      changed_when: false
+
+    - name: Construire l'image livrée, avec ses défauts, pour que l'état parle
+      # ELLE EST CONSTRUITE EN LOCAL et non poussée : l'épreuve demande de
+      # publier, et publier l'image fautive ferait passer une partie des
+      # contrôles avant tout travail.
+      ansible.builtin.command:
+        cmd: >
+          docker build -q --build-arg DEPOT_JETON={{ tirage_jeton.stdout }}
+          -t {{ depot }}:{{ version }} {{ atelier }}
+      changed_when: true
+
+    - name: Vérifier que le défaut livré est bien un défaut
+      # LE JETON DOIT ÊTRE VISIBLE dans l'historique de l'image livrée, sans
+      # quoi l'exigence critique n'a pas d'objet et le lab noterait un travail
+      # qui n'a pas eu lieu.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          compte=$(docker history --no-trunc '{{ depot }}:{{ version }}' \
+            | grep -c '{{ tirage_jeton.stdout }}' || true)
+          if test "$compte" = 0; then
+            echo 'le jeton n apparait pas dans l historique : le defaut est absent' >&2
+            exit 1
+          fi
+      changed_when: false
+
+    - name: Mesurer la taille de référence d'une image multi-étapes
+      # LE SEUIL EST MESURÉ SUR CETTE MACHINE, et consigné. Une taille écrite en
+      # dur dans un test périme à la première mise à jour de l'image de base, et
+      # le lab se mettrait alors à refuser du travail juste.
+      #
+      # Le Dockerfile de référence vit dans `/root` et est effacé juste après :
+      # il porte la réponse de l'épreuve.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cat > /root/reference-deux-arch.Dockerfile <<'REF'
+          FROM {{ image_epinglee }} AS constructeur
+          RUN apk add --no-cache gcc musl-dev
+          COPY charge.c /charge.c
+          RUN --mount=type=secret,id=jeton \
+              printf '%s' "$(cat /run/secrets/jeton)" | sha256sum | cut -c1-16 > /dependance.txt
+          RUN gcc -static -o /charge /charge.c
+
+          FROM {{ image_epinglee }}
+          COPY --from=constructeur /charge /usr/local/bin/charge
+          COPY --from=constructeur /dependance.txt /dependance.txt
+          ENTRYPOINT ["/usr/local/bin/charge"]
+          REF
+          docker build -q --secret id=jeton,src='{{ atelier }}/jeton' \
+            -f /root/reference-deux-arch.Dockerfile \
+            -t reference-deux-arch:mesure '{{ atelier }}' >/dev/null
+          taille=$(docker image inspect reference-deux-arch:mesure \
+            --format '{% raw %}{{.Size}}{% endraw %}')
+          livree=$(docker image inspect '{{ depot }}:{{ version }}' \
+            --format '{% raw %}{{.Size}}{% endraw %}')
+          docker image rm -f reference-deux-arch:mesure >/dev/null
+          rm -f /root/reference-deux-arch.Dockerfile
+          python3 - "$taille" "$livree" <<'PY'
+          import json, sys
+          from pathlib import Path
+          reference, livree = int(sys.argv[1]), int(sys.argv[2])
+          Path("{{ etat }}").write_text(json.dumps({
+              "reference_octets": reference,
+              "livree_octets": livree,
+              "seuil_octets": reference + {{ marge_mo }} * 1000 * 1000,
+              "jeton": "{{ tirage_jeton.stdout }}",
+              "dependance_attendue": None,
+          }, indent=1))
+          PY
+          chmod 0600 '{{ etat }}'
+      changed_when: true
+
+    - name: Consigner la dépendance que le jeton doit produire
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          attendue=$(printf '%s' '{{ tirage_jeton.stdout }}' | sha256sum | cut -c1-16)
+          python3 - "$attendue" <<'PY'
+          import json, sys
+          from pathlib import Path
+          etat = json.loads(Path("{{ etat }}").read_text())
+          etat["dependance_attendue"] = sys.argv[1]
+          Path("{{ etat }}").write_text(json.dumps(etat, indent=1))
+          PY
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : reconstruire une image pour deux architectures
+
+          L image `{{ depot }}:{{ version }}` marche. Elle pese environ 200 Mo,
+          son `Dockerfile` tient en une seule etape, le jeton du depot prive y
+          passe par un `ARG`, et elle n existe que pour une architecture.
+
+          C est une epreuve d ENCHAINEMENT : les quatre gestes ont ete vus
+          separement, et il s agit ici de les reunir dans UNE SEULE image.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            1. l image publiee ne contient NI le compilateur NI le gestionnaire
+               de paquets de l image de base, et son execution rend la charge
+               metier ;
+            2. sa taille reste sous le seuil que ce lab a mesure sur cette
+               machine, en construisant lui-meme une reference multi-etapes ;
+            3. le jeton n apparait NI dans les couches NI dans
+               `docker history --no-trunc`, et la dependance privee est bien
+               presente dans l image ;
+            4. le registre du lab, sur `127.0.0.1:{{ port_registre }}`, sert un
+               INDEX qui porte `linux/amd64` ET `linux/arm64`, et CHACUNE des
+               deux s execute ;
+            5. le digest de l INDEX est consigne dans
+               `{{ atelier }}/digest.txt`, sur une seule ligne, sous la forme
+               `sha256:...`.
+
+          L emulation des architectures etrangeres est DEJA EN PLACE : ce lab
+          l a posee. Vous n avez pas a l installer.
+
+          DEUX PRECISIONS POUR NE PAS CHERCHER AU MAUVAIS ENDROIT :
+
+            - le jeton du depot prive sert a produire la dependance, et dans ce
+              lab la dependance EST le condensat du jeton, ses seize premiers
+              caracteres. C est dit franchement : un vrai depot reseau ne
+              changerait rien a ce qui est mesure, qui est que le secret ait
+              SERVI et qu il n ait pas FUI ;
+            - l index publie par l outil de construction porte plus de deux
+              entrees : il y ajoute ses attestations, qui se presentent comme
+              des plateformes `unknown`. C est normal, et le controle cherche
+              les deux architectures PARMI les entrees.
+
+          Le nom du depot et la version ne changent pas :
+          `{{ depot }}:{{ version }}`.

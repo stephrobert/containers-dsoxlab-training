@@ -1,0 +1,45 @@
+# Épreuve epreuve-reprendre-un-hote-docker. Les champs marqués REQUIS sont exigés par le
+# validator : sans eux, le lab est refusé, ou pire, disparaît du catalogue sans
+# un mot.
+#
+# `lab_type: challenge` autorise `exam_passing_score` et dit à l'apprenant que
+# cette épreuve ÉVALUE. Rien n'y est réexpliqué : les leçons du module l'ont
+# enseigné, à savoir configurer le démon, nettoyer sans détruire, et savoir qui
+# peut parler au moteur.
+#
+# `persistence_after_reboot: true` : la rotation des journaux et la fermeture de
+# l'API TCP ne valent que si elles survivent au prochain démarrage, et c'est ce
+# que les contrôles vérifient en lisant la ligne de commande effective du démon.
+id: epreuve-reprendre-un-hote-docker                      # REQUIS
+title: "Take over a Docker host nobody has maintained"  # REQUIS
+level: c4                     # REQUIS
+description: "Recover a neglected Docker host: impose log rotation and restart the daemon, give back the space taken for nothing without losing the application's volume, settle who may still talk to the engine, put a read-only proxy in front of the socket, and close the TCP API."
+skills:                       # REQUIS, non vide
+  - docker
+  - exploitation
+  - securite
+  - demon
+  - disque
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/reprendre-un-hote-docker/
+lab_type: challenge
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense, et que le moteur applique
+  # depuis dsoxlab 0.7.0 : un echec ici refuse l'epreuve quel que soit
+  # le score. Avant, quatre controles sur cinq donnaient 80, et 80
+  # passait ce seuil de 75 : l'epreuve etait recue alors que son
+  # exigence critique avait echoue.
+  - test_la_place_est_rendue_et_le_volume_utile_est_intact
+estimated_time: 60m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: true

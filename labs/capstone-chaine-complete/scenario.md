@@ -84,3 +84,5 @@ and free loopback ports 15088/18088 on the source and 18089 on the second VM.
 Compose must support `!override` when used to replace the API publication.
 The bundled driver wheel requires amd64
 and CPython 3.13 with glibc. Public training tokens are not real credentials.
+
+**Five requirements are made up for by no total**, and each one fails the test on its own: data loss, a disclosed secret, access outside the perimeter, a protection removed to make a check pass, and a deployed artefact different from the one that was accepted.

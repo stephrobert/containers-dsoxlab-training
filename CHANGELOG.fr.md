@@ -17,6 +17,176 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Ajouté
 
+- **Un garde-fou sur les exigences critiques**
+  (`tests/test_exigence_critique_declaree.py`, câblé en hook). Une promesse
+  « aucun total ne compense » écrite dans un énoncé doit avoir sa déclaration
+  `exam_blocking_checks`, sinon le moteur ne l'applique pas et l'épreuve est
+  reçue avec son exigence critique en échec. Il refuse aussi un nom déclaré
+  qui ne correspond à aucun test, parce qu'un test renommé désarmerait
+  l'exigence en silence. Il porte un cas qui l'éprouve lui-même, sur un lab
+  fabriqué pour échouer.
+
+- **Les quatorze épreuves déclarent leur contrôle bloquant.** dsoxlab 0.7.0
+  sait le faire respecter : un échec sur ce contrôle refuse l'épreuve quel que
+  soit le total. Mesuré sur les quatorze, avec leur seul contrôle bloquant en
+  échec : toutes recalées ; au même score avec un échec ordinaire : toutes
+  reçues, sauf les deux dont le score passe sous le seuil.
+
+- **Neuf épreuves de fin de module** portent le catalogue à 90 labs, et le
+  nombre d'épreuves à douze : mettre un service en marche, relier deux
+  conteneurs, remettre trois conteneurs en service, livrer une première image,
+  fiabiliser une stack, contenir un conteneur gourmand, reprendre un hôte
+  Docker, durcir sans casser, et reconstruire une image pour deux
+  architectures. Chacune porte cinq contrôles de poids égal, un seuil de 75,
+  quatre indices payants et une exigence critique qu'aucun total ne compense.
+  Toutes attestées le 2026-11-02 sur Docker 29.9.2, magasin containerd.
+- **Un contrôle de l'épinglage des versions** (`tests/test_paquets_epingles.py`,
+  câblé en hook) : il exige que `infra/bootstrap.yaml` déclare une version
+  exacte pour les cinq paquets décisifs, qu'il les mette en `hold`, et que
+  la version ne soit recopiée dans aucun `setup.yaml`. Les 75 setups
+  installent `docker-ce` en `state: present`, et c'est volontaire : la valeur
+  vit à un seul endroit, parce qu'une valeur qu'il faut penser à recopier
+  finit toujours par mentir. Les quatre contrôles ont été éprouvés par
+  sabotage, et chacun échoue quand il doit échouer.
+
+### Modifié
+
+- **`epreuve-relier-deux-conteneurs` est recentrée sur son module.** Quatre de
+  ses cinq contrôles redisaient le lab d'une leçon antérieure, et le troisième
+  enseignement du module, l'isolement, n'était mesuré nulle part dans le
+  catalogue. Elle note désormais la publication sur une interface choisie, un
+  **alias** de service distinct du nom du conteneur, un réseau **sans issue**,
+  l'absence de port publié sur la base, et la requête métier qui aboutit
+  malgré l'isolement. Nouveau titre : « Épreuve : exposer une application sans
+  exposer sa base ».
+
+- **`epreuve-remettre-une-stack-en-service` est réécrite.** Elle exigeait une
+  sonde de santé et un `depends_on: service_completed_successfully`, tous deux
+  enseignés au module suivant. La pile devient un frontal et un service de
+  données joints **par leur nom de service**, et le frontal fourni réessaie son
+  amont : l'ordre de démarrage est indifférent, donc rien n'est emprunté au
+  module suivant.
+
+- **`compose-secrets` fait faire la rotation à l'apprenant.** Le contrôle la
+  jouait lui-même, écrivait un jeton neuf, recréait les services et restaurait
+  tout : la fiche promettait de « remplacer » un secret et personne ne
+  remplaçait rien. Le lab pose désormais la valeur suivante, et le contrôle lit
+  l'état final, dont la date de création du conteneur comparée à celle du
+  fichier, ce qui attrape les deux pièges de la leçon.
+
+- `reseau-diagnostic-dns` devient `remettre-un-conteneur-en-service`, et
+  `compose-capstone` devient `epreuve-remettre-une-stack-en-service`, qui passe
+  en `lab_type: challenge` avec un seuil de 75. Les deux attestations ont été
+  **retirées** du relevé plutôt que renommées : elle est indexée par
+  identifiant, et la renommer ferait passer pour attestée une mesure faite sur
+  un autre lab. Les deux labs ont été réattestés sous leur nouveau nom.
+- Dix-neuf `doc_url` repointés sur les pages et les ancres qui existent, chaque
+  cible vérifiée sur le disque du site avant écriture.
+- La promesse d'un fil rouge FastAPI est retirée des deux `meta` : le plan de
+  formation ne la prévoit plus.
+
+### Corrigé
+
+- **`epreuve-mettre-un-service-en-marche` ne note plus `docker.socket`.** Le
+  contrôle était impassable avec ce que la leçon enseigne :
+  `docker.service` porte `Requires=docker.socket`, donc la socket devient
+  active d'elle-même mais reste **désactivée**, et `is-enabled` refusait le
+  geste exact que la leçon montre.
+
+- **`compose-persistance` n'exige plus de racine en lecture seule**, enseignée
+  bien plus loin. Elle se cachait à deux endroits, dont un contrôle qui jouait
+  `! touch /tmp/unauthorized` et se lisait comme un cloisonnement : mesuré,
+  `/tmp` est en 1777 dans l'image, donc ce `touch` réussit sous n'importe quel
+  UID et n'échoue **qu'**avec une racine en lecture seule.
+
+- **La « donnée perdue » de `epreuve-remettre-trois-conteneurs-en-service` se
+  perd vraiment.** Son rapport ne portait que deux lignes fixes : un scribe
+  détruit puis recréé rendait un fichier identique, et l'exigence critique ne
+  mesurait rien. Une référence tirée au hasard y est désormais écrite depuis
+  l'hôte, et elle part avec le conteneur.
+
+- **Cinq répertoires de travail appartiennent à l'apprenant.** Ils étaient
+  `root:root` en 0755, donc rendre son travail exigeait `sudo` : ces labs
+  mesurent Docker et Compose, pas la permission d'écrire un fichier.
+
+- **Quatre `doc_url` et quatre niveaux** repointés sur les pages et les ancres
+  qui existent, vérifiées avant d'y pointer.
+
+- **Toute mention d'outil d'IA retirée** des commits que l'apprenant voit dans
+  `git log`, dans deux labs et non un seul.
+
+- `container-ulimits-et-shm` : les deux scénarios annonçaient **1024**
+  descripteurs là où le contrôle en exige **256**. Quiconque suivait l'énoncé
+  échouait, pendant que l'attestation restait verte puisque la solution posait
+  256. Et tout le discours sur une valeur « qui surprend par sa taille » était
+  un vestige de Docker 26 : mesuré sur 29.9.2, `ulimit -n` vaut 1024, et c'est
+  l'écart avec le plafond dur de 524288 qui est instructif.
+- `internes-cgroups-v2`, `container-limite-cpu` et `container-ulimits-et-shm`
+  affirmaient qu'il faut être root pour lire les fichiers d'un cgroup. Mesuré
+  depuis un compte ordinaire sans `sudo` : les six fichiers se lisent, zéro
+  refus. Les **écrire** demande un privilège, et c'est ce qui sépare
+  l'observation du réglage.
+- `registry-tag-contre-digest` opposait « le digest du manifeste » et « l'ID de
+  configuration » comme deux identités distinctes. Mesuré sur 29.9.2, magasin
+  containerd : `.Id` vaut le digest poussé, et le manifeste servi est un index
+  OCI sans clé de configuration. L'énoncé demandait d'éviter une valeur qui
+  n'existe pas et qui se trouve être la bonne ; ce qui est contrôlé est la
+  référence de démarrage.
+- Neuf messages d'assertion des nouvelles épreuves passent en bilingue, et un
+  marqueur de tag nu manquant est posé sur la seconde tâche de
+  `images-identifier-image`.
+
+### Mesuré
+
+- **un `prune` sans `-a` ne retire pas un volume NOMMÉ** : `docker volume
+  prune` et `docker system prune --volumes` laissent intact un volume nommé non
+  monté, et seul `docker volume prune -a` le retire. Le moteur le dit lui-même
+  dans son avertissement, « anonymous » sans `-a`, « all » avec. Trois textes
+  nommaient la mauvaise commande ;
+
+- **Compose 5.6.1 applique `deploy.resources.limits.memory`** : cette forme et
+  `mem_limit` donnent toutes deux `HostConfig.Memory = 67108864` pour 64M,
+  confirmé par le cgroup. Deux indices affirmaient le contraire ;
+
+- **le constructeur par défaut construit et pousse du multi-plateforme** :
+  index à quatre manifestes publié depuis le pilote `docker`, sans
+  constructeur dédié. Un indice en exigeait un ;
+
+- **un conteneur sur un réseau interne n'a aucune route par défaut**, là où un
+  conteneur ordinaire en a une, et le nom comme l'alias y résolvent quand même.
+  Un conteneur rattaché aux deux réseaux garde sa route et résout l'alias :
+  sans ce fait, l'épreuve recentrée serait injouable ;
+
+- **`docker cp` fonctionne dans les deux sens sur un conteneur arrêté**, et le
+  fichier copié survit à son démarrage.
+
+Faits établis sur Docker 29.9.2, magasin containerd, qui ont changé la
+conception de plusieurs labs :
+
+- **les images pendantes n'existent plus** : trois builds sur le même tag puis
+  le retrait du tag laissent zéro image pendante, une image sans référence
+  étant ramassée aussitôt ;
+- **`docker kill` ne déclenche pas la politique de redémarrage** : un conteneur
+  sous `unless-stopped` reste `exited`, compteur à zéro, sur dix lectures en
+  trente secondes. Le noyau protège par ailleurs le PID 1 d'un namespace contre
+  un `kill -9` venu de l'intérieur ;
+- **`NET_BIND_SERVICE` ne sert à rien dans un conteneur** : le démon y pose
+  `net.ipv4.ip_unprivileged_port_start = 0`, donc un conteneur sans aucune
+  capability écoute sur le port 80 ;
+- **`docker run --platform` n'honore pas la plateforme** si une image locale
+  correspond déjà à la référence : il faut un `docker pull --platform`
+  explicite, sans quoi l'autre architecture n'est jamais exécutée ;
+- **un index publié par buildx porte quatre manifestes et non deux**, à cause
+  des attestations de provenance, qui se présentent comme des plateformes
+  `unknown` ;
+- **`--build-arg` laisse un secret dans l'historique** (deux occurrences) là où
+  `--mount=type=secret` n'en laisse aucune, ni dans l'historique ni dans les
+  couches ;
+- **l'image `registry:3.1.2` déclare un `VOLUME`** : chaque conteneur de
+  registre crée un volume anonyme, et `docker rm` sans `-v` le laisse.
+
+### Ajouté
+
 - Six labs portent le catalogue à 77 : arrêt transactionnel, exécution
   AMD64/ARM64 (QEMU dans la VM pour ARM64), ACL de registre TLS, identité de
   signature approuvée, saturation CPU corrélée et réparation ciblée de

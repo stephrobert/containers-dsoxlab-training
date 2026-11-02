@@ -126,7 +126,7 @@ def _adresse_de_l_ecouteur(host) -> str:
     """L'adresse que le moteur a donnée à `arriere`."""
     res = host.run(
         "docker container inspect %s --format %s",
-        ECOUTEUR, "{{.NetworkSettings.IPAddress}}",
+        ECOUTEUR, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
     )
     return res.stdout.strip() if res.rc == 0 else ""
 

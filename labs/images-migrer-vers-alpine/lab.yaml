@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - socle-d-image
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/choisir-une-image-de-base/
 lab_type: lab
 estimated_time: 30m
 runtime:

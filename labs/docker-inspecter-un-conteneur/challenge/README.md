@@ -31,9 +31,10 @@ for.
 The container's `80` is published on a port of the **host**, and the engine
 chose it on its own. Write that port on the `port=` line.
 
-Careful: what is expected is the **host's** port, the left-hand side of the
-mapping. The `80` is the container's port, the only value you already knew on
-arrival.
+Careful: what is expected is the **host's** port, the one that follows the
+arrow. The mapping reads `80/tcp -> 0.0.0.0:32768`: on the left the container's
+port, the only value you already knew on arrival, on the right the host's
+address and port.
 
 An answer of the form `0.0.0.0:32768` is accepted: it does name the right port.
 

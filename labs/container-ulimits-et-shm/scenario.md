@@ -32,12 +32,14 @@ shm_defaut_mo=<the default size of /dev/shm, IN MEGABYTES, with no unit>
 nofile_defaut=<the default file descriptor limit, as the container declares it>
 ```
 
-The second answer is **surprising by its size**. It is not a reading error.
+The second answer is **more modest than you would expect**: the soft limit is
+low, while the hard ceiling is very high. The gap between the two is what makes
+the question worth asking.
 
 Then start a container named `etroit` with **two** settings:
 
 ```text
-a /dev/shm of 256 Mo, and a limit of 1024 file descriptors
+a /dev/shm of 256 Mo, and a limit of 256 file descriptors
 ```
 
 Finally, write **128 Mo** into its `/dev/shm`, and see what that does to its

@@ -9,19 +9,26 @@ hors du contexte de construction. L'image `dsoxlab-compose-secret:app` lit
 
 Écrivez `/opt/lab-compose-secret/compose.yaml`, projet `dsoxlab-compose-secrets`.
 Exécutez `app` et `observer`. Gardez l'image et la commande app fournies ;
-observer utilise la référence Alpine épinglée fournie et `sleep infinity`.
+observer utilise la référence Alpine épinglée fournie, celle du `FROM` de
+`image/Dockerfile`, et `sleep infinity`.
 Déclarez un secret fichier `api_token` au premier niveau, pointant vers le jeton.
 Accordez-le seulement à app, en lecture seule sur `/run/secrets/api_token`.
 N'utilisez ni montages de remplacement, entrypoints ni copies dans l'environnement.
 Observer ne doit avoir aucun montage et ne doit pas voir le secret.
 
-Gardez le jeton inchangé. Il ne doit apparaître ni dans les métadonnées des conteneurs,
+Puis **mettez en service la valeur suivante**. `credentials/token-next.txt`
+porte le jeton qui doit remplacer celui en cours : faites-le consommer par
+`app`, sans toucher à la déclaration du secret, qui reste sur
+`credentials/token.txt`. Attention, Compose ne redémarre pas un consommateur
+quand un fichier monté change : réécrire le fichier ne suffit pas.
+
+Aucune des deux valeurs ne doit apparaître ni dans les métadonnées des conteneurs,
 ni dans la configuration rendue, ni dans les journaux ou l'historique Git.
 Le dépôt préparé ignore `credentials/` ; n'ajoutez jamais le jeton, même
 brièvement avant de l'effacer d'un commit. Les contrôles parcourent les vrais
 blobs accessibles, sans imprimer le secret. L'empreinte au démarrage
-doit correspondre aux octets du fichier. Le contrôle renouvelle brièvement le jeton
-pédagogique, recrée les services, puis restaure le fichier et le déploiement originaux.
+doit correspondre aux octets du fichier. L'empreinte doit correspondre aux octets de la valeur
+mise en service, et le conteneur doit être plus jeune que le fichier.
 
 Les secrets fichiers de Compose autonome sont des fichiers hôte montés par bind,
 pas un stockage Swarm chiffré. Root sur l'hôte et les administrateurs Docker

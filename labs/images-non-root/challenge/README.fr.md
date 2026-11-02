@@ -52,9 +52,16 @@ Le contrôle accepte `10001` comme `10001:10001`, et refuse `appli`.
 ## Une croyance que ce lab ne note pas
 
 **Un non-root écoute sur le port 80** dans un conteneur, mesuré sur cette
-machine. On lit souvent qu'il faut être root sous 1024 ; le moteur accorde la
-capacité par défaut. Aucun contrôle ne porte donc sur les ports : ce serait
-mesurer une croyance plutôt qu'un état.
+machine. On lit souvent qu'il faut être root sous 1024, et l'explication
+habituelle est fausse : ce n'est pas une capacité. Les capacités effectives d'un
+processus lancé en `--user 10001:10001` sont **nulles**, et il écoute encore sous
+`--cap-drop ALL`. Le moteur abaisse le seuil lui-même, dans l'espace de noms
+réseau du conteneur : `net.ipv4.ip_unprivileged_port_start` y vaut `0`. Remontez-le
+à `1024` et le même conteneur répond `nc: bind: Permission denied`.
+
+La nuance compte : qui croit à une capacité cherchera `--cap-add NET_BIND_SERVICE`
+pour un problème que ce drapeau ne résout pas. Aucun contrôle ne porte donc sur
+les ports : ce serait mesurer une croyance plutôt qu'un état.
 
 ## Ce qui n'est pas noté
 

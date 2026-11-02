@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - image-distribution
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/#docker-push--envoyer-une-image-vers-la-registry   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/#mettre-en-pratique
 lab_type: lab
 estimated_time: 30m
 runtime:

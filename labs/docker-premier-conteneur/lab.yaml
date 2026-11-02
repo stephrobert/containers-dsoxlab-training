@@ -21,7 +21,7 @@ skills:                       # REQUIS, non vide
   - cycle-de-vie
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/#lancer-et-gérer-les-conteneurs-docker   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/#comment-lister-arrêter-et-supprimer-un-conteneur-
 lab_type: lab
 # Mesuré : la solution de référence s'applique en quelques secondes, et les
 # trois gestes attendus sont trois commandes. Le quart d'heure annoncé est du

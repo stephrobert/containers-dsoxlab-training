@@ -35,7 +35,7 @@ def _run(host, *, fail=False, dirty=False):
             "set -eu; cp %s/source/.dockerignore %s/source/; "
             "git -C %s/source init -q; git -C %s/source add .; "
             "git -C %s/source -c user.name=DSOxLab -c user.email=fixture@invalid commit -q "
-            "-m 'Isolated CI trial' -m 'Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>'; "
+            "-m 'Isolated CI trial'; "
             "git -C %s/source rev-parse HEAD",
             ROOT, trial, trial, trial, trial, trial,
         )

@@ -1,0 +1,6 @@
+# Surcharge francaise : `title` et `description` SEULEMENT, tout autre champ y est
+# ignore par le parseur.
+title: Livrer une image qu'un client vierge exécute vraiment
+description: Construire, publier, puis tirer une image par son digest depuis un second hôte vierge
+  avec un compte en lecture seule, prouver qu'elle répond là-bas, et prouver que le secret de
+  build n'a survécu dans aucune couche.

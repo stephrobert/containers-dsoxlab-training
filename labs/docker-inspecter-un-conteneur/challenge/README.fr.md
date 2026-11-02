@@ -31,9 +31,10 @@ pas : elle se demande.
 Le `80` du conteneur est publié sur un port de **l'hôte**, et c'est le moteur
 qui l'a choisi tout seul. Écrivez ce port à la ligne `port=`.
 
-Attention : ce qui est attendu est le port de l'**hôte**, celui de gauche dans
-la correspondance. Le `80` est le port du conteneur, la seule valeur que vous
-connaissiez déjà en arrivant.
+Attention : ce qui est attendu est le port de l'**hôte**, celui qui suit la
+flèche. La correspondance se lit `80/tcp -> 0.0.0.0:32768` : à gauche le port du
+conteneur, la seule valeur que vous connaissiez déjà en arrivant, à droite
+l'adresse et le port de l'hôte.
 
 Une réponse de la forme `0.0.0.0:32768` est acceptée : elle désigne bien le bon
 port.

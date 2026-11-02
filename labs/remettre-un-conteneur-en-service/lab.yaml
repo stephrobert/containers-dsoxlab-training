@@ -1,0 +1,39 @@
+# Challenge remettre-un-conteneur-en-service. Les champs marqués REQUIS sont exigés par le validator :
+# sans eux, le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+#
+# `lab_type: challenge` et non `lab` : c'est ce qui autorise
+# `exam_passing_score`, et ce qui dit à l'apprenant que cette épreuve ÉVALUE.
+# Rien n'y est réexpliqué : les labs réseau du parcours l'ont enseigné.
+id: remettre-un-conteneur-en-service                      # REQUIS
+title: "The shop cannot find its catalogue"            # REQUIS
+level: c1                     # REQUIS
+description: "Repair real name resolution, access and exposure faults, then recreate the catalogue without losing a fresh persistent business value."
+skills:                       # REQUIS, non vide
+  - docker
+  - reseau
+  - dns
+  - diagnostic
+  - persistence
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/
+lab_type: challenge
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense, et que le moteur applique
+  # depuis dsoxlab 0.7.0 : un echec ici refuse l'epreuve quel que soit
+  # le score. Avant, quatre controles sur cinq donnaient 80, et 80
+  # passait ce seuil de 75 : l'epreuve etait recue alors que son
+  # exigence critique avait echoue.
+  - test_la_recreation_conserve_la_donnee_et_la_reponse_metier
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

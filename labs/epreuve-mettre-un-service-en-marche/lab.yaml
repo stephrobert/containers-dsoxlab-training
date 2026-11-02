@@ -1,0 +1,42 @@
+# Épreuve epreuve-mettre-un-service-en-marche. Les champs marqués REQUIS sont exigés par
+# le validator : sans eux, le lab est refusé, ou pire, disparaît du catalogue
+# sans un mot.
+#
+# `lab_type: challenge` et non `lab` : c'est ce qui autorise
+# `exam_passing_score`, et ce qui dit à l'apprenant que cette épreuve ÉVALUE.
+# Rien n'y est réexpliqué : les leçons du module l'ont enseigné, à savoir
+# vérifier un moteur, lancer un conteneur nommé, lire ses journaux, et
+# distinguer ce qu'un ENTRYPOINT garde de ce qu'un argument remplace.
+id: epreuve-mettre-un-service-en-marche                      # REQUIS
+title: "Nothing runs on this host"                     # REQUIS
+level: c1                     # REQUIS
+description: "Bring a stopped and disabled engine back, make the account talk to it, run the named service with its configuration, and keep the witness container untouched."
+skills:                       # REQUIS, non vide
+  - docker
+  - systemd
+  - exploitation
+  - journaux
+  - diagnostic
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/mettre-un-service-en-marche/
+lab_type: challenge
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense, et que le moteur applique
+  # depuis dsoxlab 0.7.0 : un echec ici refuse l'epreuve quel que soit
+  # le score. Avant, quatre controles sur cinq donnaient 80, et 80
+  # passait ce seuil de 75 : l'epreuve etait recue alors que son
+  # exigence critique avait echoue.
+  - test_le_temoin_est_conserve_arrete_et_ses_journaux_lisibles
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: false
+  persistence_after_reboot: true

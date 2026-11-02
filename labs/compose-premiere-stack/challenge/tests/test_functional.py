@@ -47,7 +47,12 @@ def _services(host):
         )
         original = json.loads(image.stdout)[0]
         assert container["Image"] == original["Id"] and not container["Mounts"] and all(
-            container["Config"][key] == original["Config"][key] for key in ("Cmd", "Entrypoint")
+            # Docker 29 OMET les cles vides de `Config` dans `docker image inspect` :
+            # une image sans entrypoint ne porte plus de cle `Entrypoint`, la ou 26
+            # rendait `null`. On interroge donc le dictionnaire par `.get`, ce qui fait
+            # se valoir deux absences sans rien relacher du controle : une surcharge
+            # reste un ecart. Le cote CONTENEUR, lui, garde toutes ses cles.
+            container["Config"].get(key) == original["Config"].get(key) for key in ("Cmd", "Entrypoint")
         ), message(
             en=f"Service {name} must run its supplied image without overriding the product.",
             fr=f"Le service {name} doit exécuter son image fournie sans remplacer le produit.",

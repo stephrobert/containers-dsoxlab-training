@@ -3,9 +3,24 @@
   hosts: lab_target
   become: true
   tasks:
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Ce
+      # lab TIRAIT le socle sans jamais le retirer : le validateur comptait
+      # « image laisse », et le lab suivant heritait d'un moteur modifie. Le
+      # marqueur dit au cleanup s'il doit rendre l'image, ou la laisser parce
+      # qu'elle etait deja la.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-capstone-chaine-complete.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-capstone-chaine-complete.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Install runtime
       ansible.builtin.apt:
-        name: [docker.io, docker-buildx, docker-compose, python3, coreutils, iproute2]
+        name: [docker-ce, docker-buildx-plugin, docker-compose-plugin, python3, coreutils, iproute2]
         state: present
         update_cache: true
     - name: Start Docker
@@ -48,9 +63,9 @@
       ansible.builtin.command:
         cmd: docker pull {{ item }}
       loop:
-        - python:3.13.8-slim-bookworm@sha256:61169c2bdb8e6bb44a8dfad33f569d324d52f079fded9a204b322a6fb9c9f799
-        - postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
-        - registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+        - python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
+        - postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+        - registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
       changed_when: true
     - name: Start lab-only loopback registry
       ansible.builtin.command:
@@ -59,7 +74,7 @@
           --label dsoxlab.lab=capstone-chaine-complete
           -p 127.0.0.1:15088:5000
           -v /opt/lab-delivery/registry:/var/lib/registry
-          registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+          registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
       changed_when: true
     - name: Copy mission
       ansible.builtin.copy:
@@ -141,5 +156,5 @@
       changed_when: false
     - name: Seed only the pinned PostgreSQL restore runtime
       ansible.builtin.command:
-        cmd: docker pull postgres:17.6-alpine3.22@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+        cmd: docker pull postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
       changed_when: true

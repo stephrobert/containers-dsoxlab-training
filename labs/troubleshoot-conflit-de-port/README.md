@@ -12,7 +12,12 @@ On `docker.lab`, on 2026-10-30:
 | Culprit | Engine's message | `docker ps` sees it | `ss` sees it |
 | --- | --- | --- | --- |
 | a container | "port is already allocated" | **yes** | yes, `docker-proxy` |
-| a host process | "Error starting userland proxy: listen" | **no** | yes, the program |
+| a host process | "failed to bind host port ... address already in use" | **no** | yes, the program |
+
+> Both wordings above are Docker 29's, measured on 2026-11-01. Docker 26 wrote
+> `Error starting userland proxy: listen tcp4 ...` in the second case. Do not
+> memorise the string, memorise the criterion: the engine talks about a
+> reservation it made itself, the system talks about a refused listen.
 
 The two messages differ, and that is the key. The first comes from the
 **engine**, which knows what it has already reserved; the second comes from the

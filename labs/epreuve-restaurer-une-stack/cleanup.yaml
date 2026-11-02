@@ -1,0 +1,83 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# LES DEUX HÔTES, et le client surtout : c'est lui qui porte la pile restaurée à
+# la fin de l'épreuve. L'hôte d'origine, lui, n'en garde que le relevé du banc,
+# le setup ayant détruit la pile avant de rendre la main.
+#
+# LE TÉMOIN EST TIRÉ AU HASARD À CHAQUE PASSAGE : le volume et le relevé partent
+# donc avec le reste, sinon un passage servirait le témoin d'un autre et
+# réussirait sans rien restaurer.
+- name: Défaire l'épreuve sur les deux hôtes
+  hosts: lab_target:lab_client
+  become: true
+  vars:
+    atelier: /opt/lab-restauration
+    socle: python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
+  tasks:
+    - name: Retirer la pile, par son projet puis par les étiquettes
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '{{ atelier }}/compose.yaml'; then
+            cd '{{ atelier }}'
+            docker compose -p dsoxlab-restauration down --volumes --remove-orphans >/dev/null 2>&1 || true
+          fi
+          # PAR LES ETIQUETTES AUSSI : un candidat qui a renomme le projet
+          # laisserait sinon ses conteneurs, ses volumes et ses reseaux.
+          containers=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-restaurer-une-stack)
+          if test -n "$containers"; then docker rm -f $containers >/dev/null; fi
+          volumes=$(docker volume ls -q --filter label=dsoxlab.lab=epreuve-restaurer-une-stack)
+          if test -n "$volumes"; then docker volume rm -f $volumes >/dev/null 2>&1 || true; fi
+          reseaux=$(docker network ls -q --filter label=dsoxlab.lab=epreuve-restaurer-une-stack)
+          if test -n "$reseaux"; then docker network rm $reseaux >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer les volumes et réseaux du projet, quel que soit leur nom
+      # Le projet Compose les nomme `<projet>_<nom>` : un candidat qui n'a pas
+      # repris les etiquettes du fichier fourni laisserait sinon les siens.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          volumes=$(docker volume ls -q --filter label=com.docker.compose.project=dsoxlab-restauration)
+          if test -n "$volumes"; then docker volume rm -f $volumes >/dev/null 2>&1 || true; fi
+          reseaux=$(docker network ls -q --filter label=com.docker.compose.project=dsoxlab-restauration)
+          if test -n "$reseaux"; then docker network rm $reseaux >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer l'image du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=epreuve-restaurer-une-stack)
+          if test -n "$images"; then docker image rm -f $images >/dev/null 2>&1 || true; fi
+          docker image rm -f lab-restauration/service:1.0 >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Rendre le socle public s'il a été posé par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if test -f '/var/tmp/dsoxlab-epreuve-restaurer-une-stack.socle-a-rendre'; then
+            docker image rm -f '{{ socle }}' >/dev/null 2>&1 || true
+            rm -f '/var/tmp/dsoxlab-epreuve-restaurer-une-stack.socle-a-rendre'
+          fi
+      changed_when: false
+
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer l'atelier et le relevé du banc
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - /root/.lab-restauration.json

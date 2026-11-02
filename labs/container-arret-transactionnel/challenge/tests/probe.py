@@ -81,7 +81,7 @@ def main():
         fr="Utilisez un stockage durable pour la base métier",
     )
     app = next(m for m in original["Mounts"] if m["Destination"] == "/app")
-    pinned = "python:3.13.8-slim-bookworm@sha256:61169c2bdb8e6bb44a8dfad33f569d324d52f079fded9a204b322a6fb9c9f799"
+    pinned = "python:3.14.10-slim-trixie@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999"
     assert original["Image"] == docker(
         "image", "inspect", pinned, "--format", "{{.Id}}"
     )

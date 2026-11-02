@@ -1,0 +1,58 @@
+# La pile TELLE QU'ELLE TOURNAIT, et c'est votre point de depart.
+#
+# TROIS ETAGES ET DEUX RESEAUX. `front` est publie et ne voit que `api` ;
+# `api` voit les deux cotes ; `db` n'est QUE sur le reseau de donnees, qui est
+# declare `internal: true`. Un reseau interne n'a pas de passerelle : rien n'y
+# entre et rien n'en sort.
+#
+# NE RETIREZ PAS CET ISOLEMENT pour faire marcher la restauration. C'est une
+# exigence de l'epreuve, et elle est mesuree : une pile restauree a plat, tout
+# sur un reseau, est refusee meme si elle repond.
+services:
+  front:
+    image: lab-restauration/service:1.0
+    container_name: dsoxlab-restauration-front
+    labels:
+      dsoxlab.lab: epreuve-restaurer-une-stack
+    environment:
+      ROLE: front
+    ports:
+      - "127.0.0.1:18090:8080"
+    networks: [public]
+
+  api:
+    image: lab-restauration/service:1.0
+    container_name: dsoxlab-restauration-api
+    labels:
+      dsoxlab.lab: epreuve-restaurer-une-stack
+    environment:
+      ROLE: api
+    networks: [public, donnees]
+
+  db:
+    image: lab-restauration/service:1.0
+    container_name: dsoxlab-restauration-db
+    labels:
+      dsoxlab.lab: epreuve-restaurer-une-stack
+    environment:
+      ROLE: db
+    networks: [donnees]
+    volumes:
+      - donnees:/var/lib/donnees
+
+networks:
+  public:
+    labels:
+      dsoxlab.lab: epreuve-restaurer-une-stack
+  donnees:
+    # LE RESEAU DE DONNEES EST INTERNE : aucune passerelle, donc aucun acces
+    # depuis l'hote ni vers l'extérieur. C'est ce qui empeche d'atteindre `db`
+    # autrement qu'en passant par `api`.
+    internal: true
+    labels:
+      dsoxlab.lab: epreuve-restaurer-une-stack
+
+volumes:
+  donnees:
+    labels:
+      dsoxlab.lab: epreuve-restaurer-une-stack

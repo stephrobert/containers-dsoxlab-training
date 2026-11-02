@@ -5,9 +5,24 @@
   hosts: lab_target
   become: true
   tasks:
+    - name: Noter si le socle public etait deja present
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Ce
+      # lab TIRAIT le socle sans jamais le retirer : le validateur comptait
+      # « image laisse », et le lab suivant heritait d'un moteur modifie. Le
+      # marqueur dit au cleanup s'il doit rendre l'image, ou la laisser parce
+      # qu'elle etait deja la.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-registry-air-gap.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-registry-air-gap.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Installer les outils
       ansible.builtin.apt:
-        name: [docker.io, skopeo, curl]
+        name: [docker-ce, skopeo, curl]
         state: present
         update_cache: true
 
@@ -48,8 +63,8 @@
       ansible.builtin.command:
         cmd: docker pull {{ item }}
       loop:
-        - registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
-        - alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+        - registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
+        - alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
       register: pulls
       changed_when: "'Downloaded newer image' in pulls.stdout"
 
@@ -58,7 +73,7 @@
         cmd: >-
           docker run -d --name dsoxlab-air-gap-registry -p 127.0.0.1:15006:5000
           -v /opt/lab-air-gap/data:/var/lib/registry
-          registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+          registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
       changed_when: true
 
     - name: Attendre le registre d'origine
@@ -84,7 +99,7 @@
         dest: /opt/lab-air-gap/appli/Dockerfile
         mode: "0644"
         content: |
-          FROM alpine@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+          FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
           LABEL dsoxlab.lab="registry-air-gap"
           COPY release.txt /release.txt
           CMD ["cat", "/release.txt"]
@@ -103,10 +118,25 @@
       register: image
       changed_when: false
 
+    - name: Relever les couches de l'image publiée
+      # LES COUCHES, PARCE QUE L'IDENTIFIANT A CHANGÉ DE SENS. Mesuré le
+      # 2026-11-02 : sous le magasin containerd, l'`Id` est le digest de
+      # l'index de l'image, et plus celui de sa configuration. Une archive
+      # `docker-archive` ne porte qu'un manifeste de plateforme, donc l'image
+      # rechargée depuis la livraison ressort avec un `Id` DIFFÉRENT, sans que
+      # rien soit perdu. Les couches, elles, sont identiques de part en part :
+      # c'est la même arborescence, et c'est ce que la livraison doit prouver.
+      ansible.builtin.command:
+        cmd: >-
+          docker image inspect 127.0.0.1:15006/catalogue/appli:1.0
+          --format '{% raw %}{{range .RootFS.Layers}}{{println .}}{{end}}{% endraw %}'
+      register: couches
+      changed_when: false
+
     - name: Garder le relevé privé du banc
       ansible.builtin.copy:
         dest: /root/.lab-air-gap.json
-        content: "{{ {'image': image.stdout | trim, 'release': release} | to_json }}"
+        content: "{{ {'image': image.stdout | trim, 'release': release, 'couches': couches.stdout.split()} | to_json }}"
         mode: "0600"
 
     - name: Retirer le produit local pour laisser le registre comme seule source

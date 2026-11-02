@@ -1,0 +1,150 @@
+---
+# Joué par `dsoxlab clean`. C'est le cleanup le plus important du catalogue,
+# parce que son setup est le seul qui touche le SERVICE et les GROUPES de la
+# machine, et non de simples conteneurs.
+#
+# CE QU'IL DOIT RENDRE, dans cet ordre, et pourquoi l'ordre compte :
+#
+#   1. LE MOTEUR EN MARCHE, d'abord. Tout le reste a besoin de lui parler, et
+#      surtout : le cycle de validation photographie images et conteneurs APRÈS
+#      le nettoyage. Un démon muet à ce moment-là ne donne pas un écart, il
+#      donne une absence de mesure, et un lab qui laisse la machine dans cet
+#      état rend tous les suivants inattestables.
+#   2. L'ÉTAT « ACTIVÉ » TEL QU'IL ÉTAIT, et non « activé » tout court. Le
+#      relevé du setup garde la chaîne exacte rendue par `systemctl
+#      is-enabled`, parce que `static` et `masked` ne se traitent pas comme
+#      `disabled` : réactiver aveuglément changerait la machine dans l'autre
+#      sens.
+#   3. LE GROUPE `docker` tel qu'il était. Si le compte n'y était pas au
+#      départ, il n'y est pas remis : le lab rend ce qu'il a trouvé, pas ce
+#      qu'il juge souhaitable.
+#   4. Les conteneurs, l'image, les fichiers.
+#
+# SI LE RELEVÉ MANQUE, le cleanup remet le moteur en marche et s'arrête là, en
+# le disant. C'est le seul cas où il devine, et il devine dans le sens qui ne
+# casse rien : un moteur qui tourne.
+- name: Rendre la machine telle que l'épreuve l'a trouvée
+  hosts: lab_target
+  become: true
+  vars:
+    tag_local: lab-mise-en-marche:1.0
+    atelier: /opt/lab-mise-en-marche
+    etat: /root/.lab-mise-en-marche-state.json
+  tasks:
+    - name: Remettre le moteur en marche, avant toute autre chose
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Lire le relevé pris par le setup
+      ansible.builtin.slurp:
+        src: "{{ etat }}"
+      register: releve
+      failed_when: false
+
+    - name: Annoncer qu'aucun relevé n'a été trouvé
+      # Un cleanup qui ne peut pas rendre l'état doit le DIRE. Il a déjà remis
+      # le moteur en marche, ce qui est le minimum pour que la machine reste
+      # utilisable, mais il ne peut rien affirmer sur « activé » ni sur le
+      # groupe.
+      ansible.builtin.debug:
+        msg: >-
+          Aucun relevé dans {{ etat }} : le moteur a été remis en marche, mais
+          l'état « activé » et le groupe docker n'ont pas pu être restitués.
+      when: releve.content is not defined
+
+    - name: Restituer l'état « activé » de chaque unité, tel qu'il était
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          unite='{{ item.key }}'
+          avant='{{ item.value }}'
+          case "$avant" in
+            enabled|enabled-runtime)
+              systemctl is-enabled "$unite" >/dev/null 2>&1 || systemctl enable "$unite" >/dev/null
+              ;;
+            disabled)
+              if systemctl is-enabled "$unite" >/dev/null 2>&1; then
+                systemctl disable "$unite" >/dev/null
+              fi
+              ;;
+            *)
+              # `static`, `masked`, `unknown` : on ne touche pas. Aucune de ces
+              # valeurs ne se restitue par `enable` ou `disable`, et deviner
+              # ferait plus de dégâts que de ne rien faire.
+              echo "unite $unite laissee telle quelle (etat releve : $avant)"
+              ;;
+          esac
+      loop: >-
+        {{ ((releve.content | b64decode | from_json).enabled | default({}))
+           | dict2items }}
+      when: releve.content is defined
+      changed_when: false
+
+    - name: Restituer l'appartenance au groupe docker, telle qu'elle était
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          compte='{{ ansible_user | default("ansible") }}'
+          # LE TEST EST FAIT ICI, dans l'expression même, et non via une
+          # variable intermédiaire. Un `vars:` écrit en bloc `>-` rend une
+          # CHAÎNE, et la chaîne « False » est vraie pour Jinja : le compte
+          # aurait été remis dans le groupe même s'il n'y était pas, et le lab
+          # aurait rendu une machine plus permissive qu'il ne l'a trouvée.
+          etait='{{ "oui"
+                    if (ansible_user | default("ansible"))
+                       in ((releve.content | b64decode | from_json).docker_group
+                           | default([]))
+                    else "non" }}'
+          est='non'
+          if id -nG "$compte" | tr ' ' '\n' | grep -qx docker; then est='oui'; fi
+          if test "$etait" = oui && test "$est" = non; then
+            usermod -aG docker "$compte"
+          fi
+          if test "$etait" = non && test "$est" = oui; then
+            gpasswd -d "$compte" docker >/dev/null
+          fi
+      when: releve.content is defined
+      changed_when: false
+
+    - name: Retirer les conteneurs du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-mettre-un-service-en-marche)
+          if test -n "$ids"; then docker rm -f $ids; fi
+      changed_when: false
+
+    - name: Retirer l'image de service, construite par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if docker image inspect '{{ tag_local }}' >/dev/null 2>&1; then
+            docker image rm -f '{{ tag_local }}' >/dev/null
+          fi
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-mettre-un-service-en-marche)
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Rendre le socle public, et seulement si ce lab l'a tiré
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-epreuve-mettre-un-service-en-marche.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-epreuve-mettre-un-service-en-marche.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer seulement les fichiers préparés
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - "{{ etat }}"

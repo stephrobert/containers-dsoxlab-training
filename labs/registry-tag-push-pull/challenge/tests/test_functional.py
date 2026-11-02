@@ -12,7 +12,16 @@ from conftest import lab_host, message
 REMOTE = "127.0.0.1:15000/catalogue/appli:1.0"
 CONSUMER = "dsoxlab-registry:consumer"
 CONTAINER = "dsoxlab-registry-consumer"
-ACCEPT = "application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.manifest.v1+json"
+# LES TYPES D'INDEX SONT DANS L'ACCEPT, et ce n'est pas optionnel :
+# mesuré le 2026-11-02, le registre rend 404 quand l'artefact stocké est
+# un index OCI et que le client ne l'accepte pas. Docker 29 en magasin
+# containerd publie toujours un index.
+ACCEPT = ",".join((
+    "application/vnd.oci.image.index.v1+json",
+    "application/vnd.docker.distribution.manifest.list.v2+json",
+    "application/vnd.docker.distribution.manifest.v2+json",
+    "application/vnd.oci.image.manifest.v1+json",
+))
 
 
 @pytest.fixture(scope="module")
@@ -20,11 +29,28 @@ def host():
     return lab_host("docker.lab")
 
 
+def _identifie(manifest, servi, attendu):
+    """L'artefact publié est-il bien l'image attendue ?
+
+    DEUX FORMES, et une seule preuve. Sous le magasin containerd, Docker 29
+    publie un INDEX OCI : il n'a pas de clé `config`, et c'est son propre
+    digest qui vaut l'identifiant local de l'image (mesuré le 2026-11-02).
+    Sous le magasin classique, le registre sert un manifeste d'image, dont la
+    clé `config` porte ce même identifiant.
+
+    `servi` est le digest que le registre annonce pour cette référence, et il
+    est relevé indépendamment de `attendu` : les comparer reste une mesure, pas
+    une tautologie.
+    """
+    if "config" in manifest:
+        return manifest["config"].get("digest") == attendu
+    return bool(manifest.get("manifests")) and servi == attendu
+
 def _publication(host):
     expected = json.loads(host.run("sudo cat /root/.lab-registry-push.json").stdout)
     result = host.run(
-        "curl --fail --silent --show-error --max-time 8 -H %s %s",
-        f"Accept: {ACCEPT}",
+        "curl --fail --silent --show-error --max-time 8 -H %s -D %s %s",
+        f"Accept: {ACCEPT}", "/tmp/dsoxlab-push-pull.headers",  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
         "http://127.0.0.1:15000/v2/catalogue/appli/manifests/1.0",
     )
     assert result.rc == 0, message(
@@ -32,15 +58,36 @@ def _publication(host):
         fr=f"Le registre ne sert pas catalogue/appli:1.0. Étiquetez et poussez la release locale : {result.stderr}",
     )
     manifest = json.loads(result.stdout)
-    assert manifest.get("config", {}).get("digest") == expected["image"], message(
-        en="The published manifest does not identify the supplied release image.",
-        fr="Le manifeste publié n'identifie pas l'image de release fournie.",
+    entetes = host.run("cat %s", "/tmp/dsoxlab-push-pull.headers")  # noqa: S108 -- le fichier vit sur la machine du lab, jamais sur un poste partagé
+    servi = next(
+        (ligne.split(":", 1)[1].strip() for ligne in entetes.stdout.splitlines()
+         if ligne.lower().startswith("docker-content-digest:")),
+        "",
+    )
+    assert _identifie(manifest, servi, expected["image"]), message(
+        en="The published artifact does not identify the supplied release image.",
+        fr="L'artefact publié n'identifie pas l'image de release fournie.",
     )
     return expected, manifest
 
 
 def test_registry_serves_the_exact_release(host):
     _, manifest = _publication(host)
+    # UN INDEX NE PORTE PAS `layers`, il porte des manifestes. On descend
+    # d'un cran, ce qu'un client fait pour choisir sa plateforme, et on
+    # pèse les couches là où elles sont vraiment.
+    if "layers" not in manifest:
+        plateforme = manifest["manifests"][0]["digest"]
+        descendu = host.run(
+            "curl --fail --silent --show-error --max-time 8 -H %s %s",
+            f"Accept: {ACCEPT}",
+            f"http://127.0.0.1:15000/v2/catalogue/appli/manifests/{plateforme}",
+        )
+        assert descendu.rc == 0, message(
+            en="The index entry does not resolve to a platform manifest.",
+            fr="L'entrée de l'index ne résout aucun manifeste de plateforme.",
+        )
+        manifest = json.loads(descendu.stdout)
     assert manifest.get("layers"), message(
         en="The published image has no layers.",
         fr="L'image publiée n'a aucune couche.",
@@ -73,10 +120,24 @@ def test_an_independent_client_can_recover_and_run_it(host):
             en=f"The downloaded archive cannot be loaded: {loaded.stderr}",
             fr=f"L'archive téléchargée ne peut pas être chargée : {loaded.stderr}",
         )
-        identity = host.run("docker image inspect %s --format %s", CONSUMER, "{{.Id}}")
-        assert identity.rc == 0 and identity.stdout.strip() == expected["image"], message(
-            en="The recovered image is not identical to the supplied release.",
-            fr="L'image récupérée n'est pas identique à la release fournie.",
+        # SES COUCHES, ET PLUS SON `Id`. Mesuré le 2026-11-02 : une archive
+        # `docker-archive` ne porte qu'un manifeste de plateforme, donc
+        # `docker load` rend un identifiant DIFFERENT de l'index publié,
+        # fatalement. `.RootFS.Layers`, lui, est identique de part en part :
+        # c'est la même arborescence, et c'est elle qu'il faut prouver.
+        identity = host.run(
+            "docker image inspect %s --format %s", CONSUMER,
+            "{{range .RootFS.Layers}}{{println .}}{{end}}",
+        )
+        attendues = host.run(
+            "docker image inspect %s --format %s", expected["image"],
+            "{{range .RootFS.Layers}}{{println .}}{{end}}",
+        )
+        assert identity.rc == attendues.rc == 0 and identity.stdout.split() and (
+            identity.stdout.split() == attendues.stdout.split()
+        ), message(
+            en="The recovered image does not carry the supplied release layers.",
+            fr="L'image récupérée ne porte pas les couches de la release fournie.",
         )
         product = host.run("docker run --name %s --network none %s", CONTAINER, CONSUMER)
         assert product.rc == 0 and product.stdout == expected["release"] + "\n", message(

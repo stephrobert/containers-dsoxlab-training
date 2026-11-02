@@ -1,0 +1,5 @@
+# Surcharge française de l'épreuve epreuve-relier-deux-conteneurs. Elle ne porte QUE
+# `title` et `description` : tout autre champ y est ignoré en silence, parce que
+# le contrat ne se traduit pas.
+title: "Épreuve : exposer une application sans exposer sa base"
+description: "Publier le frontal sur la seule interface demandée, faire répondre la base à un nom de service, la poser sur un réseau sans issue, ne lui laisser aucun port publié, et obtenir quand même la réponse métier de bout en bout."

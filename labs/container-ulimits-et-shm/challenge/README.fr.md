@@ -24,8 +24,8 @@ partagée, sans aucun rapport apparent avec un conteneur.
 
 À la ligne `nofile_defaut=`, telle que le conteneur la déclare.
 
-Le même conteneur y répond. **La valeur surprend par sa taille : ce n'est pas une
-erreur de lecture.**
+Le même conteneur y répond. **La limite souple est basse, et son plafond dur très
+haut : c'est l'écart entre les deux qui compte.**
 
 La limite de descripteurs n'est pas le problème des conteneurs modernes. C'est
 son **abaissement** qui en est un, et savoir d'où l'on part est ce qui permet de
@@ -36,7 +36,7 @@ reconnaître un réglage hérité d'un autre temps.
 Lancez-le avec :
 
 ```text
-/dev/shm de 256 Mo, et une limite de 1024 descripteurs de fichiers
+/dev/shm de 256 Mo, et une limite de 256 descripteurs de fichiers
 ```
 
 Les deux sont vérifiés **dans** le conteneur, et c'est délibéré : c'est le seul
@@ -63,7 +63,10 @@ monteraient. Écrivez de vrais octets.
 
 ## Un conseil d'outillage
 
-Il faut être root pour lire les fichiers du cgroup d'un conteneur.
+Les fichiers du cgroup d'un conteneur se **lisent sans privilège** : mesuré sur
+cette machine, ils sont en `r--r--r--` ou `rw-r--r--`, et un compte ordinaire les
+ouvre sans `sudo`. Les **écrire** en demande un, et c'est ce qui sépare
+l'observation du réglage.
 
 Et si vos deux premières mesures vous semblent étranges, relancez-les : elles
 sont justes, et elles sont remesurées de la même façon au moment de la notation.
