@@ -47,19 +47,28 @@ def _app(host):
     )
     original = json.loads(image.stdout)[0]
     assert app["State"]["Running"] and app["Config"]["Labels"].get("com.docker.compose.service") == "app" and app["Image"] == original["Id"] and all(
-        app["Config"][key] == original["Config"][key] for key in ("Cmd", "Entrypoint")
+        # Docker 29 OMET les cles vides de `Config` dans `docker image inspect` :
+        # une image sans entrypoint ne porte plus de cle `Entrypoint`, la ou 26
+        # rendait `null`. On interroge donc le dictionnaire par `.get`, ce qui fait
+        # se valoir deux absences sans rien relacher du controle : une surcharge
+        # reste un ecart. Le cote CONTENEUR, lui, garde toutes ses cles.
+        app["Config"].get(key) == original["Config"].get(key) for key in ("Cmd", "Entrypoint")
     ), message(
         en="Run the supplied app image and command as a Compose service.",
         fr="Exécutez l'image et la commande app fournies comme service Compose.",
     )
     identity = host.run("docker exec %s id -u", app["Id"])
     rights = host.run("docker exec %s stat -c %s /data", app["Id"], "%u:%g:%a")
+    # LA RACINE EN LECTURE SEULE N'EST PLUS EXIGÉE, et c'est une correction
+    # d'alignement au programme. Ce contrôle réclamait
+    # `app["HostConfig"]["ReadonlyRootfs"]`, qui s'enseigne en C38c, bien après
+    # la leçon dont ce lab est la mise en pratique. Un lab d'entraînement doit
+    # se jouer avec ce qui vient d'être appris, sinon il n'entraîne pas.
     assert identity.rc == rights.rc == 0 and identity.stdout.strip() == "10001" and (
         rights.stdout.strip() == "10001:10001:700"
-        and app["HostConfig"]["ReadonlyRootfs"]
     ), message(
-        en="Run UID 10001 with read-only rootfs and /data owned by UID/GID 10001, mode 0700.",
-        fr="Exécutez sous UID 10001, racine en lecture seule et /data appartenant à UID/GID 10001, mode 0700.",
+        en="Run UID 10001 with /data owned by UID/GID 10001, mode 0700.",
+        fr="Exécutez sous UID 10001 avec /data appartenant à UID/GID 10001, mode 0700.",
     )
     mounts = app["Mounts"]
     assert len(mounts) == 1 and mounts[0]["Type"] == "volume" and mounts[0]["Destination"] == "/data" and mounts[0]["RW"], message(
@@ -85,13 +94,25 @@ def _denied_access(host, app):
         "test ! -r /data/value.txt && test ! -w /data/value.txt "
         "&& ! cat /data/value.txt && ! touch /data/unauthorized",
     )
-    outside = host.run(
-        "docker exec %s sh -c %s", app["Id"],
-        "! touch /tmp/unauthorized",
-    )
-    assert denied.rc == outside.rc == 0, message(
-        en="Another UID must neither read nor write application data; the app cannot write outside /data.",
-        fr="Un autre UID ne doit ni lire ni écrire les données ; l'application ne doit pas écrire hors de /data.",
+    # LA SECONDE MOITIÉ DE CE CONTRÔLE A ÉTÉ RETIRÉE, et elle méritait de
+    # l'être deux fois.
+    #
+    # Elle jouait `! touch /tmp/unauthorized` sous l'UID de l'application, et se
+    # lisait comme un contrôle de cloisonnement. Elle n'en était pas un. Mesuré
+    # le 2026-11-02 : `/tmp` est en 1777 dans toute image alpine, donc ce
+    # `touch` RÉUSSIT sous n'importe quel UID, et il n'échoue que si la racine
+    # est montée en lecture seule.
+    #
+    # C'était donc l'exigence de racine en lecture seule sous un autre nom, plus
+    # trompeuse que l'autre puisque son message parlait de cloisonnement, et
+    # elle est enseignée bien plus loin que ce lab.
+    #
+    # Ce qui reste mesure vraiment quelque chose : un AUTRE UID ne peut ni lire
+    # ni écrire les données, et cela tient aux droits de `/data`, que la leçon
+    # enseigne.
+    assert denied.rc == 0, message(
+        en="Another UID must neither read nor write the application data.",
+        fr="Un autre UID ne doit ni lire ni écrire les données de l'application.",
     )
 
 

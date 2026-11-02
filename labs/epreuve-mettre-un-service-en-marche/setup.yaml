@@ -1,0 +1,283 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# CE SETUP EST LE PLUS INTRUSIF DU CATALOGUE, et c'est inhérent au sujet : une
+# épreuve de mise en marche doit trouver un moteur à l'arrêt. Il touche donc le
+# SERVICE et les GROUPES de la machine, pas seulement des conteneurs.
+#
+# D'OÙ LA RÈGLE QUI GOUVERNE CE FICHIER : tout ce qu'il change, il l'ENREGISTRE
+# avant, dans `/root/.lab-mise-en-marche-state.json`, et le cleanup le remet
+# comme il l'a trouvé. Un lab qui laisse un démon arrêté ne casse pas seulement
+# le suivant : il casse la PHOTOGRAPHIE du cycle de validation, qui interroge le
+# moteur après le nettoyage et ne peut rien conclure d'un moteur muet.
+#
+# LES QUATRE OBSTACLES POSÉS, et aucun n'est dit dans l'énoncé :
+#   1. `docker.service` et `docker.socket` sont arrêtés ET désactivés. Au
+#      prochain démarrage de la machine, rien ne reviendrait : « démarré » et
+#      « activé » sont deux faits distincts, et l'épreuve exige les deux.
+#   2. le compte de l'apprenant n'est plus dans le groupe `docker`. Toute
+#      commande sans `sudo` répond que le démon est injoignable, ce qui ressemble
+#      à une panne du démon alors que c'est un refus de permission.
+#   3. un conteneur ARRÊTÉ occupe déjà le nom demandé. Le `docker run` attendu
+#      échoue sur un conflit de nom, qui est le message que tout le monde
+#      rencontre un jour sans savoir qu'un conteneur arrêté garde son nom.
+#   4. un conteneur témoin, arrêté lui aussi, porte des journaux. Il ressemble à
+#      l'obstacle n°3 et il ne faut surtout pas y toucher : c'est l'EXIGENCE
+#      CRITIQUE. Distinguer « ce qui gêne » de « ce qui ressemble à ce qui
+#      gêne » est la compétence que ce contrôle mesure.
+- name: Préparer l'épreuve epreuve-mettre-un-service-en-marche
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    tag_local: lab-mise-en-marche:1.0
+    atelier: /opt/lab-mise-en-marche
+    service: annuaire
+    temoin: journal-de-bord
+    # La valeur de configuration que le service doit rendre. Tirée au sort plus
+    # bas : un mot figé dans un dépôt public est une réponse publiée.
+    etat: /root/.lab-mise-en-marche-state.json
+  tasks:
+    - name: Noter si le socle public était déjà présent
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ image_epinglee }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-epreuve-mettre-un-service-en-marche.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-epreuve-mettre-un-service-en-marche.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: [docker-ce, python3]
+        state: present
+        update_cache: true
+
+    # Le moteur est démarré POUR PRÉPARER, et arrêté en toute fin de ce fichier :
+    # on ne peut pas poser des conteneurs sur un démon mort.
+    - name: Démarrer le moteur, le temps de la préparation
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Relever l'état de la machine AVANT d'y toucher
+      # C'est ce relevé qui permet au cleanup de rendre la machine telle quelle.
+      # `is-enabled` peut répondre `enabled`, `disabled`, `static` ou `masked` :
+      # on garde la chaîne exacte, et non un booléen, parce que `static` ne se
+      # réactive pas comme `disabled`.
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, grp, subprocess
+          from pathlib import Path
+          def etat(unite):
+              r = subprocess.run(["systemctl", "is-enabled", unite],
+                                 capture_output=True, text=True)
+              return r.stdout.strip() or "unknown"
+          try:
+              membres = grp.getgrnam("docker").gr_mem
+          except KeyError:
+              membres = []
+          images = subprocess.check_output(
+              ["docker", "image", "ls", "-aq", "--no-trunc"], text=True).split()
+          Path("{{ etat }}").write_text(json.dumps({
+              "enabled": {u: etat(u) for u in ("docker.service", "docker.socket")},
+              "docker_group": sorted(membres),
+              "images": images,
+          }, indent=1))
+          PY
+      changed_when: true
+
+    - name: Refuser de démarrer si un autre propriétaire tient les noms réservés
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess, sys
+          lab = "epreuve-mettre-un-service-en-marche"
+          def inspecte(genre, nom):
+              r = subprocess.run(["docker", genre, "inspect", nom],
+                                 capture_output=True, text=True)
+              return json.loads(r.stdout)[0] if r.returncode == 0 else None
+          image = inspecte("image", "{{ tag_local }}")
+          if image and (image["Config"]["Labels"] or {}).get("dsoxlab.lab") != lab:
+              sys.exit("Reserved image tag {{ tag_local }} belongs to another owner")
+          for nom in ("{{ service }}", "{{ temoin }}"):
+              c = inspecte("container", nom)
+              if c and (c["Config"]["Labels"] or {}).get("dsoxlab.lab") != lab:
+                  sys.exit(f"Reserved container name {nom} belongs to another owner")
+          PY
+      changed_when: false
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer seulement les ressources identifiées du passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-mettre-un-service-en-marche)
+          if test -n "$ids"; then docker rm -f $ids; fi
+      changed_when: false
+
+    - name: Déposer le répertoire de travail
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: directory
+        mode: "0755"
+
+    - name: Tirer au sort la valeur de configuration attendue
+      ansible.builtin.shell:
+        cmd: od -An -tx1 -N4 /dev/urandom | tr -d ' \n'
+      register: tirage_salle
+      changed_when: true
+
+    - name: Écrire le service que l'image portera
+      # ENTRYPOINT et CMD sont SÉPARÉS à dessein : le cinquième contrôle demande
+      # de prédire `.Path` et `.Args` d'un `docker run` qui passe un argument,
+      # et c'est cette séparation qui rend la prédiction instructive. Le
+      # programme reste celui de l'ENTRYPOINT, et l'argument de la ligne de
+      # commande remplace le CMD, il ne s'y ajoute pas.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/annuaire.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # LE SHEBANG EST NÉCESSAIRE, et son absence a fait échouer ce lab à sa
+          # première mesure. `ENTRYPOINT ["/usr/local/bin/annuaire.sh"]` exécute
+          # le fichier DIRECTEMENT : sans ligne d'interpréteur, le noyau refuse
+          # de le lancer, le conteneur meurt aussitôt, et `docker run -d`
+          # réussit quand même puisqu'il ne rend compte que du lancement.
+          #
+          # C'est aussi ce qui rend la prédiction du contrôle 5 lisible : avec
+          # le shebang, `.Path` est le script lui-même. Un
+          # `ENTRYPOINT ["sh", "..."]` aurait donné `.Path` = `sh`, ce qui est
+          # vrai mais bien moins parlant.
+          set -eu
+          mode="${1:---discret}"
+          echo "annuaire demarre en mode ${mode}"
+          while true; do
+            printf 'salle=%s\n' "${SALLE:-absente}" | nc -l -p 80 || true
+          done
+
+    - name: Écrire l'image de service de l'épreuve
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          LABEL dsoxlab.lab="epreuve-mettre-un-service-en-marche"
+          LABEL dsoxlab.salle="{{ tirage_salle.stdout }}"
+          COPY annuaire.sh /usr/local/bin/annuaire.sh
+          ENTRYPOINT ["/usr/local/bin/annuaire.sh"]
+          CMD ["--discret"]
+
+    - name: Construire l'image de service
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    # OBSTACLE 4 : le témoin, qui porte des journaux et qu'il ne faut pas
+    # toucher. Il est créé AVANT l'homonyme pour que son `created` soit plus
+    # ancien : un apprenant qui trierait par date trouverait d'abord le témoin,
+    # ce qui est précisément le piège que le contrôle critique mesure.
+    - name: Lancer le témoin, le laisser écrire, puis l'arrêter
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker run -d --name {{ temoin }} -e SALLE=archive {{ tag_local }} --verbeux >/dev/null
+          for _ in $(seq 1 20); do
+            if docker logs {{ temoin }} 2>&1 | grep -q 'annuaire demarre'; then break; fi
+            sleep 1
+          done
+          docker logs {{ temoin }} 2>&1 | grep -q 'annuaire demarre'
+          docker stop {{ temoin }} >/dev/null
+      changed_when: true
+
+    # OBSTACLE 3 : un conteneur arrêté occupe le nom demandé.
+    - name: Laisser un ancien conteneur arrêté sur le nom du service
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker create --name {{ service }} -e SALLE=perimee {{ tag_local }} >/dev/null
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : mettre un service en marche
+
+          Ce poste a ete « installe » par quelqu un d autre. Rien ne tourne, et
+          la commande `docker ps` ne repond pas comme elle devrait.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            1. le moteur est EN MARCHE et le restera au prochain demarrage de
+               la machine ;
+            2. votre compte parle au moteur SANS `sudo` ;
+            3. un conteneur nomme `{{ service }}` tourne, a partir de l image
+               `{{ tag_local }}`, et sa reponse porte la valeur de
+               configuration suivante, passee par VARIABLE D ENVIRONNEMENT
+               `SALLE` :
+
+                   {{ tirage_salle.stdout }}
+
+            4. le conteneur `{{ temoin }}` est CONSERVE tel quel : il doit
+               rester present, ARRETE, et ses journaux doivent rester lisibles.
+               Il porte la trace d un incident que l exploitation doit pouvoir
+               relire ;
+            5. le fichier `{{ atelier }}/prediction.txt` annonce ce que le
+               moteur retiendra comme programme et comme arguments pour cette
+               commande, SANS la jouer :
+
+                   docker run --rm {{ tag_local }} --verbeux
+
+               Deux lignes, exactement sous cette forme :
+
+                   path=<le programme effectif>
+                   args=<les arguments effectifs, separes par une espace>
+
+               Ecrivez `args=` sans rien apres s il n y en a aucun.
+
+          Ni construction d image, ni volume, ni port publie : ce n est pas le
+          sujet.
+
+    - name: Déposer le formulaire vide de la prédiction
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/prediction.txt"
+        mode: "0666"
+        content: |
+          path=
+          args=
+
+    # OBSTACLE 2 : le compte n'est plus dans le groupe docker.
+    - name: Retirer l'apprenant du groupe docker
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          compte='{{ ansible_user | default("ansible") }}'
+          if id -nG "$compte" | tr ' ' '\n' | grep -qx docker; then
+            gpasswd -d "$compte" docker >/dev/null
+          fi
+      changed_when: true
+
+    # OBSTACLE 1 : le moteur est arrêté ET désactivé. En dernier, parce que tout
+    # ce qui précède en avait besoin.
+    - name: Arrêter et désactiver le moteur
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      loop:
+        - docker
+        - docker.socket

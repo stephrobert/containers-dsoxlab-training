@@ -2,14 +2,14 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: compose-persistance                      # REQUIS
 title: "Keep application data across Compose recreation"
-level: c3                     # REQUIS
+level: c4                     # REQUIS
 description: "Use a named volume and prove that new writes survive container replacement and Compose down/up."
 skills:                       # REQUIS, non vide
   - compose-volumes
   - data-persistence
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#concepts-clés   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/donnees-persistantes/#mettre-en-pratique   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
 runtime:
