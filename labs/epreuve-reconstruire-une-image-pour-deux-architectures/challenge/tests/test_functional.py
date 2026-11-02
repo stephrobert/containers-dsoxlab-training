@@ -35,7 +35,7 @@ import uuid
 
 import pytest
 
-from conftest import lab_host, message
+from conftest import fuites_dans_l_image, lab_host, message
 
 DEPOT = "deux-arch"
 VERSION = "1.0"
@@ -259,15 +259,17 @@ def test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches(
            "Aucun total ne la compense.",
     )
 
-    couches = host.run("docker save %s | grep -a -c %s || true", REFERENCE, jeton)
-    dans_couches = couches.stdout.strip() or "0"
-    assert dans_couches == "0", message(
-        en=f"the token is present in the image's layers ({dans_couches} "
-           "occurrence(s)).\n"
+    # PAS un `docker save | grep` : il est AVEUGLE. Voir `fuites_dans_l_image`.
+    surfaces = fuites_dans_l_image(host, REFERENCE, jeton)
+    assert not surfaces, message(
+        en="the token is present in the image, which `docker save | grep` "
+           "could never see:\n"
+           + "\n".join(f"  {s}" for s in surfaces) + "\n"
            "Writing it to a file then deleting it does not help: the layer that "
            "carried it travels with the image.",
-        fr=f"le jeton est présent dans les couches de l'image ({dans_couches} "
-           "occurrence(s)).\n"
+        fr="le jeton est présent dans l'image, là où un `docker save | grep` ne "
+           "pouvait pas le voir :\n"
+           + "\n".join(f"  {s}" for s in surfaces) + "\n"
            "L'écrire dans un fichier puis l'effacer n'y change rien : la couche "
            "qui le portait voyage avec l'image.",
     )

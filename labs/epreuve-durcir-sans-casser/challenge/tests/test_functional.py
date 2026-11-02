@@ -31,7 +31,7 @@ import json
 
 import pytest
 
-from conftest import lab_host, message
+from conftest import fuites_dans_l_image, lab_host, message
 
 SERVICE = "service-expose"
 FOURNISSEUR = "fournisseur-tiers"
@@ -259,15 +259,17 @@ def test_le_secret_n_est_ni_dans_l_environnement_ni_dans_l_image(
            "quiconque parle au démon. Aucun total ne le compense.",
     )
 
-    dans_image = host.run("docker save %s | grep -a -c %s || true", IMAGE, secret)
-    compte = dans_image.stdout.strip() or "0"
-    assert compte == "0", message(
-        en=f"the secret is present in the image's layers ({compte} "
-           "occurrence(s)).\n"
+    # PAS un `docker save | grep` : il est AVEUGLE. Voir `fuites_dans_l_image`.
+    surfaces = fuites_dans_l_image(host, IMAGE, secret)
+    assert not surfaces, message(
+        en="the secret is present in the image, which `docker save | grep` "
+           "could never see:\n"
+           + "\n".join(f"  {s}" for s in surfaces) + "\n"
            "Moving a secret from the environment into the image moves it from "
            "readable to published.",
-        fr=f"le secret est présent dans les couches de l'image ({compte} "
-           "occurrence(s)).\n"
+        fr="le secret est présent dans l'image, là où un `docker save | grep` "
+           "ne pouvait pas le voir :\n"
+           + "\n".join(f"  {s}" for s in surfaces) + "\n"
            "Déplacer un secret de l'environnement vers l'image, c'est le faire "
            "passer de lisible à publié.",
     )

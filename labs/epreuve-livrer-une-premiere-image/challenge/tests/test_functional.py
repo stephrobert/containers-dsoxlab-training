@@ -33,7 +33,7 @@ import re
 
 import pytest
 
-from conftest import lab_host, message
+from conftest import fuites_dans_l_image, lab_host, message
 
 TAG = "premiere-livraison:1.0"
 DEPOT = "/opt/lab-premiere-livraison"
@@ -199,9 +199,16 @@ def test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche(
     toujours avec l'image. Chercher dans le conteneur ne verrait rien, et
     déclarerait propre une image qui ne l'est pas.
 
-    `docker save` rend toutes les couches, non compressées, et l'on y cherche la
-    VALEUR du jeton. Chercher la valeur plutôt que le nom du fichier est
-    délibéré : renommer le fichier ne change rien au fait que le secret voyage.
+    ON NE PEUT PAS SE CONTENTER D'UN `grep` SUR LE FLUX, et c'est une mesure
+    qui le dit, pas une préférence. Le 2026-11-02, sur Docker 29.9.2 avec le
+    magasin containerd, `docker save` écrit une disposition OCI dont les
+    couches sont des blobs GZIP : un `docker save | grep -a -c <jeton>` rend
+    **0** sur une image portant le jeton en clair dans une couche. Ce contrôle
+    était donc aveugle, et il n'avait jamais échoué pour la bonne raison.
+    `fuites_dans_l_image` ouvre et décompresse chaque couche.
+
+    On y cherche la VALEUR du jeton, et non le nom du fichier : renommer le
+    fichier ne change rien au fait que le secret voyage.
 
     Le répertoire de travail est cherché par le nom de ses fichiers, qui est
     propre au lab : il n'a aucune raison d'apparaître dans une image, et sa
@@ -214,37 +221,33 @@ def test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche(
         fr="la mesure prise par le lab ne porte pas de jeton. Elle est faite pendant `dsoxlab run` : rejouez-le.",
     )
 
-    # `grep -c` sur le flux de `docker save` : l'archive n'est pas compressée,
-    # donc le texte des couches y est lisible. `-a` traite le flux comme du
-    # texte, ce qu'un tar n'est pas.
-    trouve = host.run(
-        "docker save %s | grep -a -c %s || true", TAG, jeton
-    )
-    occurrences = trouve.stdout.strip() or "0"
-    assert occurrences == "0", message(
-        en=f"the private repository token is present in the image's layers "
-           f"({occurrences} occurrence(s)).\n"
+    # PAS un `docker save | grep`, qui est AVEUGLE : les couches sont des blobs
+    # GZIP et le texte n'y est pas lisible. Mesuré, ce contrôle rendait 0 sur
+    # une image portant le jeton en clair. Voir `fuites_dans_l_image`.
+    surfaces = fuites_dans_l_image(host, TAG, jeton)
+    assert not surfaces, message(
+        en="the private repository token is present in the image, which "
+           "`docker save | grep` could never see:\n"
+           + "\n".join(f"  {s}" for s in surfaces) + "\n"
            "A `RUN rm` at a later step does not remove it: the layer that "
            "carried it travels with the image. A secret delivered in an image "
            "is a published secret, and no total makes up for it.",
-        fr=f"le jeton du dépôt privé est présent dans les couches de l'image "
-           f"({occurrences} occurrence(s)).\n"
+        fr="le jeton du dépôt privé est présent dans l'image, là où un "
+           "`docker save | grep` ne pouvait pas le voir :\n"
+           + "\n".join(f"  {s}" for s in surfaces) + "\n"
            "Un `RUN rm` à une étape ultérieure ne l'enlève pas : la couche qui "
            "le portait voyage avec l'image. Un secret livré dans une image est "
            "un secret publié, et aucun total ne le compense.",
     )
 
-    present = host.run(
-        "docker save %s | grep -a -c %s || true", TAG, "extrait-1.bin"
-    )
-    compte = present.stdout.strip() or "0"
-    assert compte == "0", message(
-        en=f"the working directory was delivered in the image "
-           f"({compte} occurrence(s) of its files).\n"
+    livres = fuites_dans_l_image(host, TAG, "extrait-1.bin")
+    assert not livres, message(
+        en="the working directory was delivered in the image:\n"
+           + "\n".join(f"  {s}" for s in livres) + "\n"
            "Work files have no reason to be in an image: they make it heavier "
            "for everyone who pulls it, forever.",
-        fr=f"le répertoire de travail a été livré dans l'image "
-           f"({compte} occurrence(s) de ses fichiers).\n"
+        fr="le répertoire de travail a été livré dans l'image :\n"
+           + "\n".join(f"  {s}" for s in livres) + "\n"
            "Des fichiers de travail n'ont aucune raison d'être dans une image : "
            "ils l'alourdissent pour tous ceux qui la tirent, définitivement.",
     )
