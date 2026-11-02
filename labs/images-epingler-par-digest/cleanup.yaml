@@ -1,10 +1,29 @@
 ---
 # Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
 # posé, pour que le lab se rejoue à l'identique.
+#
+# L'ORDRE DE CES TACHES EST UNE CONTRAINTE, pas un style. Les conteneurs partent
+# D'ABORD, les images ENSUITE : une image qu'un conteneur tient encore ne se
+# retire pas, et le `|| true` qui tolere son absence avale aussi cet echec. La
+# campagne du 2026-11-02 a releve « image laissé : registry » pour cette seule
+# raison, le registre d'atelier tournant encore quand on tentait de rendre son
+# image.
 - name: Défaire le lab images-epingler-par-digest
   hosts: lab_target
   become: true
   tasks:
+    - name: Retirer uniquement les objets Docker du lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if docker container inspect dsoxlab-pin-registry >/dev/null 2>&1; then
+            docker rm -f dsoxlab-pin-registry
+          fi
+          images=$(docker image ls -aq --filter label=dsoxlab.lab=images-epingler-par-digest)
+          if test -n "$images"; then docker image rm -f $images; fi
+      changed_when: false
+
     - name: Rendre registry seulement si ce lab l'a pose
       ansible.builtin.shell:
         cmd: |
@@ -25,18 +44,6 @@
           docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
           rm -f '/var/tmp/dsoxlab-images-epingler-par-digest.socle-a-rendre'
         fi
-      changed_when: false
-
-    - name: Retirer uniquement les objets Docker du lab
-      ansible.builtin.shell:
-        cmd: |
-          set -eu
-          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
-          if docker container inspect dsoxlab-pin-registry >/dev/null 2>&1; then
-            docker rm -f dsoxlab-pin-registry
-          fi
-          images=$(docker image ls -aq --filter label=dsoxlab.lab=images-epingler-par-digest)
-          if test -n "$images"; then docker image rm -f $images; fi
       changed_when: false
 
     - name: Retirer l'atelier, le relevé et la mission

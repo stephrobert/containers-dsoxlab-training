@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - cycle-de-vie
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#comment-arrêter-une-boucle-de-redémarrage-
 lab_type: lab
 estimated_time: 30m
 runtime:

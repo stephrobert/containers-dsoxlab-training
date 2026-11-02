@@ -47,8 +47,10 @@ tous : un intermédiaire unique ferait de sa chute la chute de tous.
 
 On conclut volontiers que les conteneurs survivent donc au redémarrage du démon.
 **C'est faux par défaut**, et cela a été mesuré sur cette machine : sans le
-réglage `live-restore`, le démon arrête ses conteneurs en partant et les
-relance, avec un PID neuf.
+réglage `live-restore`, un conteneur sans politique de redémarrage ressort
+`exited`, PID 0, code 137, et il ne repart **pas**. Seule une politique le
+relance, et il a alors un PID neuf : `--restart always` et
+`--restart unless-stopped` le font, aucune autre.
 
 Le détachement rend la survie **possible**, il ne la **produit** pas. C'est le
 genre de nuance qui distingue une architecture comprise d'une architecture

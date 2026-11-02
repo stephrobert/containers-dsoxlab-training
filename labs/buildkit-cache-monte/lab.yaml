@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - cache-mount
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#cache-avancé   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#mettre-en-pratique
 lab_type: lab
 estimated_time: 30m
 runtime:

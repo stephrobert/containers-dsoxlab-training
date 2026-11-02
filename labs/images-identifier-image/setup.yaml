@@ -71,6 +71,11 @@
         fi
       changed_when: false
 
+    # dsoxlab:tag-nu-volontaire : même raison que pour la tâche précédente, et
+    # le marqueur doit être répété parce que sa portée s'arrête à la ligne vide.
+    # Épingler ce tirage écrirait dans le setup la réponse exacte que le test
+    # demande à la ligne `base=` : le lab ne mesurerait plus rien, il se
+    # corrigerait lui-même.
     - name: Tirer l'image de base, que BuildKit ne dépose pas dans le magasin
       ansible.builtin.command:
         cmd: docker pull debian:13

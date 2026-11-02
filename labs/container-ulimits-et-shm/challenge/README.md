@@ -24,8 +24,8 @@ with no apparent connection to a container.
 
 On the `nofile_defaut=` line, as the container declares it.
 
-The same container answers it. **The value is surprising by its size: it is not
-a reading error.**
+The same container answers it. **The soft limit is low, and its hard ceiling very
+high: the gap between the two is what counts.**
 
 The descriptor limit is not modern containers' problem. Its **lowering** is, and
 knowing where you start from is what lets you recognise a setting inherited from
@@ -63,7 +63,10 @@ real bytes.
 
 ## A word on tooling
 
-You have to be root to read a container's cgroup files.
+A container's cgroup files are **readable without privilege**: measured on this
+machine, they are `r--r--r--` or `rw-r--r--`, and an ordinary account opens them
+without `sudo`. **Writing** them does require one, and that is what separates
+observing from tuning.
 
 And if your first two measurements look odd, take them again: they are right,
 and they are remeasured the same way at grading time.

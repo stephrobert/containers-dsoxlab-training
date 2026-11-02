@@ -52,7 +52,10 @@ sous le plafond sans jamais le toucher, et le compteur resterait à zéro.
 
 ## Un conseil d'outillage
 
-Il faut être root pour lire les fichiers du cgroup d'un conteneur.
+Les fichiers du cgroup d'un conteneur se **lisent sans privilège** : mesuré sur
+cette machine, ils sont en `r--r--r--` ou `rw-r--r--`, et un compte ordinaire les
+ouvre sans `sudo`. Les **écrire** en demande un, et c'est ce qui sépare
+l'observation du réglage.
 
 Et si vous arrêtez votre charge avec `pkill -f`, sachez que le motif peut
 correspondre au shell qui porte votre commande : il se tue lui-même, et le code

@@ -47,8 +47,10 @@ for all: a single intermediary would make its fall everyone's fall.
 
 It is tempting to conclude that containers therefore survive a daemon restart.
 **That is false by default**, and it was measured on this machine: without the
-`live-restore` setting, the daemon stops its containers on the way out and
-restarts them, with a fresh PID.
+`live-restore` setting, a container with no restart policy comes back `exited`,
+PID 0, code 137, and it does **not** start again. Only a policy restarts it, and
+it then has a fresh PID: `--restart always` and `--restart unless-stopped` do,
+no other.
 
 The detachment makes survival **possible**, it does not **produce** it. That is
 the kind of nuance that separates an understood architecture from a recited one.

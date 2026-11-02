@@ -70,6 +70,21 @@
         path: "{{ atelier }}/reponses.txt"
         state: absent
 
+    - name: Noter si l'image de base etait deja presente
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose.
+      # Ce lab EFFACAIT l'image de base sans condition, donc aussi celle
+      # qu'une machine portait deja : la campagne du 2026-11-02 a releve
+      # « image préexistant supprimé : debian:13 ». Le marqueur dit au cleanup
+      # s'il doit la rendre, ou la laisser parce qu'elle etait deja la.
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ base_epinglee }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-docker-anatomie-dune-image.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-docker-anatomie-dune-image.socle-a-rendre'
+        fi
+      changed_when: false
+
     - name: Tirer l'image de base, par son digest
       ansible.builtin.command:
         cmd: docker pull {{ base_epinglee }}

@@ -55,8 +55,10 @@ changerait rien.
 
 ## Un conseil d'outillage
 
-Il faut être root pour lire les fichiers du cgroup d'un conteneur. C'est normal,
-et ce n'est pas le sujet du lab.
+Les fichiers du cgroup d'un conteneur se **lisent sans privilège** : mesuré sur
+cette machine, ils sont en `r--r--r--` ou `rw-r--r--`, et un compte ordinaire les
+ouvre sans `sudo`. Les **écrire** en demande un, et c'est ce qui sépare
+l'observation du réglage.
 
 Et si vous préférez regarder depuis l'intérieur : un conteneur voit **sa propre
 limite** dans son `/sys/fs/cgroup/memory.max`. C'est ainsi qu'une application

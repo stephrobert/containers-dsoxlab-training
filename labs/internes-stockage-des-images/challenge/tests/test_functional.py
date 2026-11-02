@@ -202,26 +202,34 @@ def test_la_reponse_nomme_la_couche_d_ecriture(host, couche) -> None:
     peut ouvrir, et dont le chemin est donné par l'inspection du conteneur.
     """
     annonce = _lire_reponses(host).get("ecriture", "")
+    # LE MESSAGE NE PROMET PLUS QUATRE CHEMINS. Il décrivait l'inspection du
+    # magasin CLASSIQUE, où `GraphDriver.Data` en déclare quatre. Sur le
+    # magasin containerd, mesuré le 2026-11-02, `GraphDriver` vaut `null` : la
+    # couche se trouve par le point de montage, et un message qui annonce un
+    # état impossible envoie chercher ce qui n'existe pas.
     assert annonce, message(
-        en="the `ecriture=` line is empty. The container's inspection gives "
-           "four paths, and one of them is where its writes go.",
-        fr="la ligne `ecriture=` est vide. L'inspection du conteneur donne "
-           "quatre chemins, et l'un d'eux est celui où vont ses écritures.",
+        en="the `ecriture=` line is empty. Find where this container's writes "
+           "land: what the engine declares depends on its image store, so look "
+           "at what it declares before looking for a path.",
+        fr="la ligne `ecriture=` est vide. Trouvez où atterrissent les "
+           "écritures de ce conteneur : ce que le moteur déclare dépend de son "
+           "magasin d'images, donc regardez ce qu'il déclare avant de chercher "
+           "un chemin.",
     )
     assert annonce.rstrip("/") == couche.rstrip("/"), message(
         en=f"the announced path is not `{CONTENEUR}`'s write layer.\n"
            f"  you wrote : {annonce}\n"
-           "Four paths are declared, and they do not have the same role: one "
-           "holds the image's read-only layers, one is the merged view, one is "
-           "a working directory, and one receives the writes. Only the last "
-           "one is asked for.",
+           "The path depends on the image store. With the classic store the "
+           "inspection declares several, and only the one that receives the "
+           "writes is asked for; with the containerd store it declares none, "
+           "and the layer is found through the mount.",
         fr=f"le chemin annoncé n'est pas la couche d'écriture de "
            f"`{CONTENEUR}`.\n"
            f"  vous avez écrit : {annonce}\n"
-           "Quatre chemins sont déclarés, et ils n'ont pas le même rôle : l'un "
-           "porte les couches en lecture seule de l'image, l'un est la vue "
-           "fusionnée, l'un est un répertoire de travail, et l'un reçoit les "
-           "écritures. Seul le dernier est demandé.",
+           "Le chemin dépend du magasin d'images. Avec le magasin classique "
+           "l'inspection en déclare plusieurs, et seul celui qui reçoit les "
+           "écritures est demandé ; avec le magasin containerd elle n'en "
+           "déclare aucun, et la couche se trouve par le point de montage.",
     )
 
 

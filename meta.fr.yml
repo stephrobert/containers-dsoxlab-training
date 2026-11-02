@@ -17,9 +17,8 @@ repo:
     l'utilisateur qui l'exécute, les montages d'un conteneur, ce que
     l'application répond. Le blog enseigne, ce catalogue éprouve.
 
-    Une même application FastAPI traverse tout le parcours et devient
-    progressivement plus correcte. L'apprenant n'a pas besoin de savoir
-    programmer : le code est fourni, il travaille l'image, l'exécution, le
+    L'apprenant n'a pas besoin de savoir programmer : chaque lab fournit le
+    code dont il a besoin, et le travail porte sur l'image, l'exécution, le
     réseau, le stockage, la distribution et le durcissement.
 
 # Les `id` sont ceux des modules du programme cible de

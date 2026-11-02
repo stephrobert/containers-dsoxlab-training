@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - bridge
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/
 lab_type: lab
 estimated_time: 30m
 runtime:
