@@ -1,4 +1,4 @@
-# Test: expose an application without exposing its database
+# Expose an application without exposing its database
 
 Two containers run on this machine. `vitrine` is the page customers see,
 `inventaire` is the service that holds the articles.
