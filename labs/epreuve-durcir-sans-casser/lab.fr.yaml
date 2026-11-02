@@ -1,0 +1,5 @@
+# Surcharge française de l'épreuve epreuve-durcir-sans-casser. Elle ne porte QUE
+# `title` et `description` : tout autre champ y est ignoré en silence, parce que
+# le contrat ne se traduit pas.
+title: "Durcir un service sans le casser"
+description: "Retirer à un service les droits dont il n'a pas besoin, poser une racine en lecture seule avec des chemins d'écriture déclarés, sortir son secret de l'environnement sans le perdre, rétablir un flux bloqué sans désactiver le pare-feu, et garder le seul volume qui compte."

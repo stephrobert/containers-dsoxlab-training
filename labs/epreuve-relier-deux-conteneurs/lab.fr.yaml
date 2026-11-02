@@ -1,0 +1,5 @@
+# Surcharge française de l'épreuve epreuve-relier-deux-conteneurs. Elle ne porte QUE
+# `title` et `description` : tout autre champ y est ignoré en silence, parce que
+# le contrat ne se traduit pas.
+title: "La vitrine ne joint plus son inventaire"
+description: "Poser deux conteneurs sur un réseau à eux pour que l'un joigne l'autre par son nom, ne publier que le frontal et seulement là où c'est demandé, et laisser la base sans port publié."

@@ -1,0 +1,53 @@
+---
+# Joué par `dsoxlab clean`, et ce qu'il retire est exactement ce que le setup a
+# posé. Rien de plus : aucun `prune`, aucun filtre large.
+#
+# L'ORDRE N'EST PAS LIBRE : les conteneurs d'abord, l'image ensuite. Une image
+# dont un conteneur descend ne se retire pas, et deux labs de ce catalogue
+# avaient été ROUGE sur cette seule inversion.
+#
+# LE `rm -f` EST ICI UNE NÉCESSITÉ, pas une facilité : l'un des conteneurs du
+# lab porte `--restart always`, et un conteneur sous cette politique repart
+# aussitôt qu'on l'arrête. Seul le retrait forcé en vient à bout.
+- name: Retirer seulement les ressources de l'épreuve des trois pannes
+  hosts: lab_target
+  become: true
+  vars:
+    tag_local: lab-trois-pannes:1.0
+    atelier: /opt/lab-trois-pannes
+  tasks:
+    - name: Retirer les conteneurs du lab, politique de redémarrage comprise
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-remettre-trois-conteneurs-en-service)
+          if test -n "$ids"; then docker rm -f $ids; fi
+      changed_when: false
+
+    - name: Retirer l'image de service, construite par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          if docker image inspect '{{ tag_local }}' >/dev/null 2>&1; then
+            docker image rm -f '{{ tag_local }}' >/dev/null
+          fi
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-remettre-trois-conteneurs-en-service)
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Rendre le socle public, et seulement si ce lab l'a tiré
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-epreuve-remettre-trois-conteneurs-en-service.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-epreuve-remettre-trois-conteneurs-en-service.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer seulement les fichiers préparés
+      ansible.builtin.file:
+        path: "{{ atelier }}"
+        state: absent

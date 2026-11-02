@@ -1,0 +1,5 @@
+# Surcharge française de l'épreuve epreuve-mettre-un-service-en-marche. Elle ne porte
+# QUE `title` et `description` : tout autre champ y est ignoré en silence, parce
+# que le contrat ne se traduit pas.
+title: "Rien ne tourne sur ce poste"
+description: "Remettre un moteur arrêté et désactivé, faire parler le compte avec lui, lancer le service nommé avec sa configuration, et conserver le conteneur témoin intact."

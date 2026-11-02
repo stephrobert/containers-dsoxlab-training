@@ -1,0 +1,69 @@
+---
+# Joué par `dsoxlab clean`, et ce qu'il retire est exactement ce que le setup a
+# posé. L'ordre n'est pas libre : le conteneur d'abord, puis le volume qu'il
+# monte, puis l'image dont il descend. Chacun refuse de partir tant que le
+# précédent le retient.
+#
+# LE VOLUME EST RETIRÉ, et c'est la bonne décision ici, contrairement à ce qu'un
+# réflexe de prudence suggérerait. Il porte les résultats que le SETUP a écrits,
+# et dont il connaît l'empreinte : ce ne sont pas des données de l'apprenant,
+# ce sont des données du lab. Le garder d'un passage à l'autre ferait passer le
+# contrôle des résultats antérieurs sans que personne ait rien fait, et c'est
+# exactement le défaut que le cycle de validation appelle « un test qui passe
+# avant le travail ».
+- name: Retirer seulement les ressources de l'épreuve du conteneur gourmand
+  hosts: lab_target
+  become: true
+  vars:
+    atelier: /opt/lab-gourmand
+    volume: dsoxlab-gourmand-resultats
+    tag_local: lab-gourmand:1.0
+    etat: /root/.lab-gourmand-state.json
+  tasks:
+    - name: Retirer les conteneurs du lab, volumes anonymes compris
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-contenir-un-conteneur-gourmand)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+      changed_when: false
+
+    - name: Retirer le volume des résultats, qui appartient au lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker volume rm -f '{{ volume }}' >/dev/null 2>&1 || true
+          ids=$(docker volume ls -q --filter label=dsoxlab.lab=epreuve-contenir-un-conteneur-gourmand)
+          if test -n "$ids"; then docker volume rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer l'image du traitement, construite par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker image rm -f '{{ tag_local }}' >/dev/null 2>&1 || true
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-contenir-un-conteneur-gourmand)
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Rendre le socle public, et seulement si ce lab l'a tiré
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-epreuve-contenir-un-conteneur-gourmand.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-epreuve-contenir-un-conteneur-gourmand.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer seulement les fichiers préparés
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - "{{ etat }}"
+        - /root/.lab-gourmand-empreintes.txt

@@ -1,0 +1,39 @@
+# Épreuve epreuve-durcir-sans-casser. Les champs marqués REQUIS sont exigés par le
+# validator : sans eux, le lab est refusé, ou pire, disparaît du catalogue sans
+# un mot.
+#
+# `lab_type: challenge` autorise `exam_passing_score` et dit à l'apprenant que
+# cette épreuve ÉVALUE. Rien n'y est réexpliqué : les leçons du module l'ont
+# enseigné, à savoir les capabilities, la racine en lecture seule, les secrets,
+# et le fait qu'un pare-feu se corrige sans se désactiver.
+#
+# DEUX EXIGENCES CRITIQUES, et c'est la seule épreuve du catalogue à en porter
+# deux : le secret dans l'environnement et le pare-feu désactivé. Les deux sont
+# des portes ouvertes, et une porte ouverte ne se compense pas par du travail
+# fait ailleurs.
+id: epreuve-durcir-sans-casser                      # REQUIS
+title: "Harden a service without breaking it"       # REQUIS
+level: c4                     # REQUIS
+description: "Strip a service of the rights it does not need, make its root read-only with declared writable paths, take its secret out of the environment without losing it, restore a blocked flow without disabling the firewall, and keep the one volume that matters."
+skills:                       # REQUIS, non vide
+  - docker
+  - securite
+  - capabilities
+  - secrets
+  - pare-feu
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/
+lab_type: challenge
+exam_passing_score: 75
+estimated_time: 60m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

@@ -1,0 +1,226 @@
+---
+# Joué par `dsoxlab clean`. C'est le cleanup le plus lourd du catalogue, parce
+# que son setup est le seul qui touche à la fois le DÉMON, SYSTEMD et les
+# COMPTES de la machine.
+#
+# CE QU'IL DOIT RENDRE, dans cet ordre, et pourquoi l'ordre compte :
+#
+#   1. LA CONFIGURATION, d'abord : la surcharge systemd du lab est retirée, et
+#      `daemon.json` est remis dans l'état relevé, qu'il ait existé ou non. Un
+#      `daemon.json` laissé par le lab changerait le comportement du moteur pour
+#      tous les labs suivants, et un `hosts` oublié empêcherait même le démon de
+#      démarrer.
+#   2. LE DÉMON, ensuite, redémarré sur cette configuration rendue. C'est le
+#      point critique : le cycle de validation interroge le moteur APRÈS le
+#      nettoyage, et un démon muet ne donne pas un écart, il donne une absence
+#      de mesure.
+#   3. LES COMPTES, que le lab a créés, et le groupe `docker` tel qu'il était.
+#   4. Les conteneurs, les images, le volume, les fichiers.
+#
+# SI LE RELEVÉ MANQUE, le cleanup retire ce qu'il sait être à lui, remet le
+# démon en marche, et le dit. C'est le seul cas où il devine, et il devine dans
+# le sens qui ne casse rien.
+- name: Rendre l'hôte tel que l'épreuve l'a trouvé
+  hosts: lab_target
+  become: true
+  vars:
+    tag_service: lab-reprise:1.0
+    tag_proxy: lab-reprise-proxy:1.0
+    atelier: /opt/lab-reprise
+    etat: /root/.lab-reprise-state.json
+    volume: dsoxlab-reprise-donnees
+    volume_sauvegardes: dsoxlab-reprise-sauvegardes
+    surcharge: /etc/systemd/system/docker.service.d/zz-lab-reprise-tcp.conf
+    stagiaire: stagiaire-parti
+    exploitant: exploitant
+  tasks:
+    - name: Lire le relevé pris par le setup
+      ansible.builtin.slurp:
+        src: "{{ etat }}"
+      register: releve
+      failed_when: false
+
+    - name: Annoncer qu'aucun relevé n'a été trouvé
+      ansible.builtin.debug:
+        msg: >-
+          Aucun relevé dans {{ etat }} : la surcharge du lab et ses comptes sont
+          retirés, le démon est remis en marche, mais l'état d'origine de
+          `daemon.json` et du groupe docker n'a pas pu être restitué.
+      when: releve.content is not defined
+
+    - name: Retirer la surcharge systemd que ce lab a posée
+      # Elle porte le nom du lab : on ne retire que la sienne, jamais une
+      # surcharge que l'administrateur aurait écrite.
+      ansible.builtin.file:
+        path: "{{ surcharge }}"
+        state: absent
+
+    - name: Retirer le répertoire des surcharges s'il n'existait pas avant
+      # `rmdir` et non `rm -rf` : il ne part que s'il est vide, donc jamais s'il
+      # porte la surcharge de quelqu'un d'autre.
+      ansible.builtin.shell:
+        cmd: rmdir /etc/systemd/system/docker.service.d 2>/dev/null || true
+      when: >-
+        releve.content is defined
+        and not (releve.content | b64decode | from_json).repertoire_surcharges_existait
+      changed_when: false
+
+    - name: Restituer le daemon.json tel qu'il était
+      # DEUX CAS, et ils ne se traitent pas de la même façon : le fichier
+      # existait et il faut rendre son contenu exact, ou il n'existait pas et il
+      # faut qu'il n'existe plus. Laisser celui du lab changerait le moteur pour
+      # tous les labs suivants.
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        content: "{{ (releve.content | b64decode | from_json).daemon_json }}"
+        mode: "0644"
+      when: >-
+        releve.content is defined
+        and (releve.content | b64decode | from_json).daemon_json_existait
+
+    - name: Retirer le daemon.json s'il n'existait pas avant
+      ansible.builtin.file:
+        path: /etc/docker/daemon.json
+        state: absent
+      when: >-
+        releve.content is defined
+        and not (releve.content | b64decode | from_json).daemon_json_existait
+
+    - name: Redémarrer le démon sur la configuration rendue
+      # APRÈS la restauration de la configuration, et avant tout le reste : rien
+      # de ce qui suit ne peut se faire sans un démon qui répond.
+      ansible.builtin.systemd_service:
+        name: docker
+        state: restarted
+        daemon_reload: true
+
+    - name: Attendre que le démon réponde réellement
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for _ in $(seq 1 30); do
+            if docker version --format '{% raw %}{{.Server.Version}}{% endraw %}' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'le demon ne repond pas apres 30 s' >&2
+          exit 1
+      changed_when: false
+
+    - name: Retirer les conteneurs du lab, volumes anonymes compris
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-reprendre-un-hote-docker)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+      changed_when: false
+
+    - name: Retirer les volumes du lab, les sauvegardes comprises
+      # DEUX VOLUMES NOMMÉS, et le second est celui des sauvegardes, que
+      # personne ne monte : c'est l'exigence critique de l'épreuve, donc il
+      # existe forcément à la fin d'un passage réussi. Le laisser ferait échouer
+      # la photographie du lab suivant.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker volume rm -f '{{ volume }}' >/dev/null 2>&1 || true
+          docker volume rm -f '{{ volume_sauvegardes }}' >/dev/null 2>&1 || true
+          ids=$(docker volume ls -q --filter label=dsoxlab.lab=epreuve-reprendre-un-hote-docker)
+          if test -n "$ids"; then docker volume rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer les volumes anonymes que ce lab a fait naître
+      # NOMMÉMENT, d'après le relevé du setup : un volume anonyme ne porte aucun
+      # label, donc il ne se retrouve pas par étiquette. Les retirer par un
+      # `volume prune` emporterait ceux de quelqu'un d'autre, et ce lab ne rend
+      # que ce qu'il a posé.
+      #
+      # Un apprenant qui a fait son travail les a déjà retirés : le `|| true`
+      # couvre ce cas, qui est le cas normal d'un passage réussi.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for v in "" {{ ((releve.content | b64decode | from_json).volumes_orphelins
+                           | default([])) | map('quote') | join(' ') }}; do
+            test -n "$v" || continue
+            docker volume rm -f "$v" >/dev/null 2>&1 || true
+          done
+      when: releve.content is defined
+      changed_when: false
+
+    - name: Retirer les images du lab, y compris celles restées pendantes
+      # LES PENDANTES AUSSI : le setup en pose délibérément, et un apprenant qui
+      # n'aurait pas fini laisse les siennes. Elles portent le label du lab,
+      # donc elles se retrouvent nommément.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for ref in '{{ tag_service }}' '{{ tag_proxy }}' \
+                     'lab-reprise-pendante:encours'; do
+            docker image rm -f "$ref" >/dev/null 2>&1 || true
+          done
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-reprendre-un-hote-docker)
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer le cache de build que ce lab a produit
+      # Le cache n'est pas étiquetable, et le setup en crée en construisant trois
+      # images pendantes. Le purger est le seul moyen de rendre le disque, et
+      # c'est sans dommage : un cache se reconstruit, c'est sa nature.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker builder prune -af >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer les deux comptes que ce lab a créés
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: absent
+        remove: false
+      loop:
+        - "{{ stagiaire }}"
+        - "{{ exploitant }}"
+
+    - name: Restituer le groupe docker tel qu'il était
+      # Après le retrait des comptes du lab, on remet ceux que le relevé avait
+      # vus et qui auraient disparu. Le cas visé est celui d'un apprenant qui
+      # retire un compte du socle en nettoyant trop large : le lab rend ce qu'il
+      # a trouvé.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for compte in {{ ((releve.content | b64decode | from_json).docker_group
+                             | default([])) | map('quote') | join(' ') }}; do
+            if ! getent passwd "$compte" >/dev/null 2>&1; then continue; fi
+            if ! id -nG "$compte" | tr ' ' '\n' | grep -qx docker; then
+              usermod -aG docker "$compte"
+            fi
+          done
+      when: releve.content is defined
+      changed_when: false
+
+    - name: Rendre le socle public, et seulement si ce lab l'a tiré
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-epreuve-reprendre-un-hote-docker.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-epreuve-reprendre-un-hote-docker.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer seulement les fichiers préparés
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - "{{ etat }}"
+        - /root/.lab-reprise-donnee.txt

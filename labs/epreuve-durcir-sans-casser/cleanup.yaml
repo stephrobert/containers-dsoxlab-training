@@ -1,0 +1,110 @@
+---
+# Joué par `dsoxlab clean`, et ce qu'il retire est exactement ce que le setup a
+# posé, pare-feu compris.
+#
+# LA TABLE DU PARE-FEU EST RETIRÉE PAR SON NOM, et seulement si le setup l'a
+# posée. C'est le point sensible de ce cleanup : `nft delete table` ne touche
+# qu'une table, là où un `nft flush ruleset` emporterait les règles de Docker et
+# celles de SSH. La machine serait alors sans réseau de conteneurs et sans accès.
+#
+# L'ORDRE : le pare-feu d'abord, parce qu'il ne dépend de rien ; puis les
+# conteneurs, les volumes, l'image.
+- name: Retirer seulement les ressources de l'épreuve de durcissement
+  hosts: lab_target
+  become: true
+  vars:
+    atelier: /opt/lab-durcir
+    etat: /root/.lab-durcir-state.json
+    tag_local: lab-durcir:1.0
+    table: lab_durcir
+    volume_utile: dsoxlab-durcir-donnees
+  tasks:
+    - name: Lire le relevé pris par le setup
+      ansible.builtin.slurp:
+        src: "{{ etat }}"
+      register: releve
+      failed_when: false
+
+    - name: Retirer la table du pare-feu que ce lab a posée
+      # PAR SON NOM, et jamais par un `flush` : les règles de Docker vivent dans
+      # d'autres tables, et les emporter couperait le réseau des conteneurs.
+      #
+      # Si le relevé dit que la table existait AVANT, on ne la touche pas : elle
+      # n'est pas à nous. C'est improbable, et c'est précisément pour les cas
+      # improbables qu'un relevé existe.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v nft >/dev/null 2>&1; then exit 0; fi
+          nft delete table inet {{ table }} 2>/dev/null || true
+      when: >-
+        releve.content is not defined
+        or not (releve.content | b64decode | from_json).table_du_lab_existait
+      changed_when: false
+
+    - name: Retirer les conteneurs du lab, volumes anonymes compris
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-durcir-sans-casser)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+      changed_when: false
+
+    - name: Retirer les volumes du lab, l'utile comme les jetables
+      # TOUS, y compris le volume utile : il porte une donnée que le SETUP a
+      # écrite et dont il connaît la valeur, pas une donnée de l'apprenant. Le
+      # garder d'un passage à l'autre ferait passer le contrôle sans travail.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker volume rm -f '{{ volume_utile }}' >/dev/null 2>&1 || true
+          for n in 1 2; do
+            docker volume rm -f "dsoxlab-durcir-jetable-$n" >/dev/null 2>&1 || true
+          done
+          ids=$(docker volume ls -q --filter label=dsoxlab.lab=epreuve-durcir-sans-casser)
+          if test -n "$ids"; then docker volume rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer l'image du service, construite par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker image rm -f '{{ tag_local }}' >/dev/null 2>&1 || true
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-durcir-sans-casser)
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Rendre le socle public, et seulement si ce lab l'a tiré
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-epreuve-durcir-sans-casser.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-epreuve-durcir-sans-casser.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Vérifier que le pare-feu est rendu, et le dire sinon
+      # UN CLEANUP QUI NE PEUT PAS RENDRE L'ÉTAT DOIT LE DIRE. Celui-ci ne peut
+      # pas échouer sur ce point sans laisser la machine filtrée, ce qui casserait
+      # les labs suivants en silence.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v nft >/dev/null 2>&1; then exit 0; fi
+          if nft list table inet {{ table }} >/dev/null 2>&1; then
+            echo 'la table du lab subsiste : la machine reste filtree' >&2
+            exit 1
+          fi
+      changed_when: false
+
+    - name: Retirer seulement les fichiers préparés
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - "{{ etat }}"

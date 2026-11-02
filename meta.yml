@@ -28,10 +28,9 @@ repo:
     size, the user that runs it, a container's mounts, what the application
     answers. The blog teaches, this catalogue proves.
 
-    One and the same FastAPI application runs through the whole path and
-    becomes progressively more correct. The learner does not need to know
-    how to program: the code is provided, and the work is on the image, the
-    runtime, networking, storage, distribution and hardening.
+    The learner does not need to know how to program: every lab provides the
+    code it needs, and the work is on the image, the runtime, networking,
+    storage, distribution and hardening.
 
 # `learning.portal_url` reste vide, et c'est une décision en attente, pas un
 # oubli. Le blog porte bien une page de parcours à cocher
@@ -132,15 +131,18 @@ sections:
       - container-entrypoint-et-cmd
       - container-signaux-et-pid-1
       - docker-inspecter-un-conteneur
+      - epreuve-mettre-un-service-en-marche
       - docker-anatomie-dune-image
       - reseau-bridge-par-defaut
       - reseau-bridge-dedie
       - reseau-publication-de-ports
       - reseau-interne
+      - epreuve-relier-deux-conteneurs
       - donnees-volumes-et-montages
       - donnees-permissions-uid-gid
       - container-arret-transactionnel
-      - reseau-diagnostic-dns
+      - epreuve-remettre-trois-conteneurs-en-service
+      - remettre-un-conteneur-en-service
 
   - id: conteneurs-isolation
     title: "Measure isolation, and put a container back in service"
@@ -159,6 +161,7 @@ sections:
       - troubleshoot-conflit-de-port
       - troubleshoot-permission-refusee
       - troubleshoot-boucle-de-redemarrage
+      - epreuve-contenir-un-conteneur-gourmand
 
   # ── Niveau c2 : construire et distribuer ses images ─────────────────────
   - id: images-construction
@@ -178,6 +181,7 @@ sections:
       - buildkit-cache-monte
       - buildkit-secret-de-build
       - images-multi-architecture
+      - epreuve-livrer-une-premiere-image
 
   - id: images-distribution
     title: "Distribute images"
@@ -193,6 +197,7 @@ sections:
       - registry-droits-minimaux
       - registry-air-gap
       - epreuve-livrer-une-image
+      - epreuve-reconstruire-une-image-pour-deux-architectures
 
   # ── Niveau c3 : exploiter une application avec Compose ──────────────────
   - id: compose-application
@@ -211,6 +216,7 @@ sections:
       - compose-ressources
       - compose-plusieurs-environnements
       - compose-profils-et-variantes
+      - epreuve-fiabiliser-une-stack
 
   - id: compose-exploitation
     title: "Operate a Compose application"
@@ -221,7 +227,7 @@ sections:
       - compose-retour-arriere
       - compose-correlation-et-saturation
       - donnees-postgres-sauvegarde
-      - compose-capstone
+      - epreuve-remettre-une-stack-en-service
       - epreuve-restaurer-une-stack
 
   # ── Niveau c4 : fiabiliser, sécuriser et industrialiser ─────────────────
@@ -250,6 +256,7 @@ sections:
       - container-memoire-et-oom
       - troubleshoot-disque-plein
       - donnees-volume-orphelin
+      - epreuve-reprendre-un-hote-docker
 
   - id: docker-industrialisation
     title: "Industrialise the delivery chain"
@@ -262,6 +269,7 @@ sections:
       - image-scan-de-vulnerabilites
       - images-signature-identite
       - capstone-chaine-complete
+      - epreuve-durcir-sans-casser
 
   # ── Hors tronc de la formation, et déclaré comme tel ────────────────────
   #

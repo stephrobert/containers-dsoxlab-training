@@ -1,0 +1,35 @@
+# Épreuve epreuve-relier-deux-conteneurs. Les champs marqués REQUIS sont exigés par le
+# validator : sans eux, le lab est refusé, ou pire, disparaît du catalogue sans
+# un mot.
+#
+# `lab_type: challenge` et non `lab` : c'est ce qui autorise
+# `exam_passing_score`, et ce qui dit à l'apprenant que cette épreuve ÉVALUE.
+# Rien n'y est réexpliqué : les leçons du module l'ont enseigné, à savoir
+# publier un port, le réseau par défaut face à un réseau à soi, les alias et
+# l'isolement d'un conteneur.
+id: epreuve-relier-deux-conteneurs                      # REQUIS
+title: "The shop window cannot reach its inventory"     # REQUIS
+level: c1                     # REQUIS
+description: "Put two containers on a network of their own so that one reaches the other by name, publish only the front end and only where it is asked, and leave the database unexposed."
+skills:                       # REQUIS, non vide
+  - docker
+  - reseau
+  - dns
+  - exposition
+  - diagnostic
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/
+lab_type: challenge
+exam_passing_score: 75
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

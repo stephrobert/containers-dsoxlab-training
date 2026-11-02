@@ -1,0 +1,97 @@
+---
+# Joué par `dsoxlab clean`, et ce qu'il retire est exactement ce que le setup a
+# posé, plus ce que l'apprenant a construit en suivant l'énoncé.
+#
+# LE CONSTRUCTEUR BUILDX EST RETIRÉ LUI AUSSI, et c'est particulier à ce lab :
+# un constructeur `docker-container` est un CONTENEUR, qui porte le cache de
+# build de toutes les plateformes. Le laisser occuperait plusieurs centaines de
+# mégaoctets, et la photographie du lab suivant le verrait.
+#
+# L'ÉMULATION N'EST PAS RETIRÉE, et c'est délibéré. Elle vient de paquets Debian
+# et d'une unité systemd, pas d'un objet du moteur : la désinstaller toucherait
+# la machine plus profondément que le lab ne l'a fait, et `images-multi-architecture`
+# en a besoin aussi. Un lab rend ce qu'il a posé, et il n'a posé que son
+# activation, qui est sans effet quand personne ne construit pour une autre
+# architecture.
+- name: Retirer seulement les ressources de l'épreuve multi-architecture
+  hosts: lab_target
+  become: true
+  vars:
+    atelier: /opt/lab-deux-arch
+    etat: /root/.lab-deux-arch-state.json
+    depot: deux-arch
+    version: "1.0"
+    port_registre: 15002
+  tasks:
+    - name: Retirer le constructeur buildx du lab, et son cache
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker buildx rm lab-deux-arch >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer les conteneurs du lab, volumes anonymes compris
+      # Le registre en fait partie, et son image déclare un `VOLUME` : sans
+      # `-v`, chaque passage laisserait un volume anonyme derrière lui.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-reconstruire-une-image-pour-deux-architectures)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+      changed_when: false
+
+    - name: Retirer les images que l'énoncé fait produire
+      # Y COMPRIS LES VARIANTES D'ARCHITECTURE : un `docker pull --platform`
+      # laisse une image par plateforme tirée, et chacune occupe sa place.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for ref in '{{ depot }}:{{ version }}' \
+                     '127.0.0.1:{{ port_registre }}/{{ depot }}:{{ version }}' \
+                     'reference-deux-arch:mesure'; do
+            docker image rm -f "$ref" >/dev/null 2>&1 || true
+          done
+          # Les images tirees par digest, que le controle d execution laisse.
+          ids=$(docker image ls -q --filter reference='127.0.0.1:{{ port_registre }}/*')
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-reconstruire-une-image-pour-deux-architectures)
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Purger le cache de build, que les deux architectures ont rempli
+      # Construire pour deux plateformes produit un cache important, et il n'est
+      # pas étiquetable. Le purger est sans dommage : un cache se reconstruit,
+      # c'est sa nature.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker builder prune -af >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Rendre les socles publics, et seulement ceux que ce lab a tirés
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        base='/var/tmp/dsoxlab-epreuve-reconstruire-une-image-pour-deux-architectures.socle-'
+        if test -e "${base}alpine"; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f "${base}alpine"
+        fi
+        if test -e "${base}registre"; then
+          docker image rm -f 'registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3' >/dev/null 2>&1 || true
+          rm -f "${base}registre"
+        fi
+      changed_when: false
+
+    - name: Retirer seulement les fichiers préparés
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - "{{ etat }}"
+        - /root/reference-deux-arch.Dockerfile

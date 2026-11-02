@@ -1,0 +1,330 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# C'EST UNE ÉPREUVE, et la stack livrée MARCHE, ou presque. C'est ce qui la rend
+# réaliste : personne ne laisse en production une stack qui ne démarre jamais,
+# on laisse celle qui démarre « quand on la relance deux fois ». Les quatre
+# défauts ci-dessous sont ceux qu'on trouve dans un `compose.yaml` écrit vite.
+#
+# LES QUATRE DÉFAUTS, et aucun n'est dit dans l'énoncé :
+#   1. `api` démarre sans attendre que `coffre` soit PRÊT. `depends_on` seul ne
+#      regarde que le démarrage du conteneur, pas la disponibilité du service :
+#      l'API interroge un coffre qui n'écoute pas encore, et sort. D'où « il
+#      faut relancer deux fois », puisqu'au second passage le coffre est debout.
+#   2. LE MOT DE PASSE EST DANS `environment`. Il se lit donc dans
+#      `docker inspect`, dans `docker compose config`, dans les journaux de qui
+#      a lancé la commande, et dans le fichier versionné. C'est l'EXIGENCE
+#      CRITIQUE.
+#   3. Aucune limite mémoire. Un service qui fuit emporte alors l'hôte, et c'est
+#      le voisin qui est tué, pas le fautif.
+#   4. Le montage du code source, qui a sa place en développement, est resté
+#      dans le fichier de déploiement.
+#
+# CE QUE LE SETUP NE FAIT PAS : il ne lance PAS la stack. L'énoncé demande de la
+# rendre fiable au démarrage, donc c'est le contrôle qui la démarrera, à froid.
+# La lancer ici masquerait précisément le défaut n°1, puisque le second
+# démarrage réussit.
+- name: Préparer l'épreuve epreuve-fiabiliser-une-stack
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    tag_local: lab-stack-fiable:1.0
+    atelier: /opt/lab-stack-fiable
+    projet: stack-fiable
+    etat: /root/.lab-stack-fiable-state.json
+  tasks:
+    - name: Noter si le socle public était déjà présent
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ image_epinglee }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-epreuve-fiabiliser-une-stack.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-epreuve-fiabiliser-une-stack.socle-a-rendre'
+          docker pull '{{ image_epinglee }}' >/dev/null
+        fi
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs et son greffon Compose
+      ansible.builtin.apt:
+        name: [docker-ce, docker-compose-plugin, python3]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ image_epinglee }}
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer la stack et les ressources du passage précédent
+      # `down -v` : la stack peut avoir créé des volumes, et les laisser ferait
+      # échouer la photographie du lab suivant. `--remove-orphans` retire un
+      # service supprimé du fichier entre deux passages.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if test -f '{{ atelier }}/compose.yaml'; then
+            docker compose -p '{{ projet }}' -f '{{ atelier }}/compose.yaml' \
+              down -v --remove-orphans >/dev/null 2>&1 || true
+          fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-fiabiliser-une-stack)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+      changed_when: false
+
+    - name: Déposer l'atelier et son répertoire de source
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ atelier }}/src"
+
+    - name: Retirer les livrables d'un passage précédent
+      # Sans cela, le contrôle des deux variantes passerait avant tout travail.
+      ansible.builtin.file:
+        path: "{{ atelier }}/{{ item }}"
+        state: absent
+      loop:
+        - compose.dev.yaml
+        - mot_de_passe
+
+    - name: Tirer au sort le mot de passe, une fois par passage
+      # Tiré ICI : un mot de passe figé dans un dépôt public est un secret
+      # publié, même pour un lab.
+      ansible.builtin.shell:
+        cmd: od -An -tx1 -N8 /dev/urandom | tr -d ' \n'
+      register: tirage_mdp
+      changed_when: true
+
+    - name: Écrire le service que l'image portera, dans ses deux rôles
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/service.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+
+          # UNE PANNE PROVOCABLE, et elle existe pour une raison mesurée.
+          #
+          # Une politique de redemarrage ne se verifie qu'en faisant mourir le
+          # service. Or, MESURE SUR 29.9.2 LE 2026-11-02, les deux facons
+          # evidentes ne marchent pas :
+          #
+          #   docker kill <id>        le moteur traite cela comme un arret
+          #                           VOULU : le conteneur reste `exited`, et
+          #                           `restart: unless-stopped` ne le relance
+          #                           pas. Verifie sur dix lectures en 30 s.
+          #   docker exec <id> kill -9 1
+          #                           sans effet : le noyau protege le PID 1
+          #                           d'un namespace contre les signaux envoyes
+          #                           DEPUIS ce namespace, SIGKILL compris.
+          #
+          # Ce qu'une politique couvre vraiment, c'est un processus qui MEURT DE
+          # LUI-MEME. Le service porte donc un declencheur : si le fichier
+          # `/tmp/panne-provoquee` existe, il sort en 70 au tour suivant, apres
+          # avoir retire le fichier pour ne pas boucler indefiniment.
+          #
+          # Ce declencheur est un OUTIL du lab, pas une enigme : l'enonce le
+          # nomme.
+          _panne_provoquee() {
+            if test -e /tmp/panne-provoquee; then
+              rm -f /tmp/panne-provoquee
+              echo 'panne provoquee : le service sort' >&2
+              exit 70
+            fi
+          }
+
+          case "${ROLE:-}" in
+            coffre)
+              # LE MOT DE PASSE EST CHERCHÉ D'ABORD DANS UN FICHIER, et c'est
+              # ce qui laisse à l'apprenant le moyen de le sortir de
+              # l'environnement. La variable reste acceptée, sinon la stack
+              # livrée ne démarrerait pas du tout et le défaut n'aurait aucun
+              # symptôme observable.
+              fichier="${COFFRE_MDP_FICHIER:-/run/secrets/mot_de_passe}"
+              mdp=''
+              if test -r "$fichier"; then
+                mdp=$(tr -d ' \n' < "$fichier")
+              fi
+              if test -z "$mdp"; then
+                mdp="${COFFRE_MDP:-}"
+              fi
+              if test -z "$mdp"; then
+                echo 'coffre: aucun mot de passe fourni' >&2
+                exit 78
+              fi
+              derive=$(printf '%s' "$mdp" | sha256sum | cut -c1-16)
+              # LE COFFRE CHARGE SES DONNÉES AVANT D'OUVRIR SON PORT, et ce
+              # délai est ce qui rend le défaut d'ordre de démarrage
+              # DÉTERMINISTE. Sans lui, mesuré le 2026-11-02 : le coffre est
+              # prêt en moins d'une seconde, l'API le joint du premier coup, et
+              # le contrôle du démarrage à froid passait AVANT tout travail. Le
+              # lab notait alors une stack fragile comme fiable.
+              #
+              # C'est aussi plus fidèle au réel : ce qu'on attend au démarrage
+              # d'une stack, c'est une base qui ouvre ses fichiers, pas un
+              # processus qui se lance.
+              sleep "${COFFRE_DELAI:-8}"
+              echo 'coffre demarre'
+              while true; do
+                printf 'secret=%s\n' "$derive" | nc -l -p 80 || true
+                _panne_provoquee
+              done
+              ;;
+            api)
+              # ELLE N'INTERROGE LE COFFRE QU'UNE FOIS, au démarrage, et sort
+              # s'il ne répond pas. C'est délibéré : c'est ce qui rend visible
+              # un ordre de démarrage qui ne tient pas compte de la santé du
+              # service dont on dépend. Un client qui réessaierait masquerait le
+              # défaut, ce que fait d'ailleurs la plupart des applications
+              # réelles, et c'est pourquoi la panne est si souvent découverte
+              # trop tard.
+              valeur=$(nc -w 3 "${COFFRE_HOTE:-coffre}" 80 2>/dev/null || true)
+              case "$valeur" in
+                secret=*) ;;
+                *)
+                  echo 'api: le coffre ne repond pas' >&2
+                  exit 69
+                  ;;
+              esac
+              echo 'api demarre'
+              while true; do
+                printf 'api=%s\n' "${valeur#secret=}" | nc -l -p 80 || true
+                _panne_provoquee
+              done
+              ;;
+            *)
+              echo "ROLE inconnu: ${ROLE:-aucun}" >&2
+              exit 64
+              ;;
+          esac
+
+    - name: Écrire l'image de la stack
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/Dockerfile"
+        mode: "0644"
+        content: |
+          FROM {{ image_epinglee }}
+          LABEL dsoxlab.lab="epreuve-fiabiliser-une-stack"
+          COPY service.sh /usr/local/bin/service.sh
+          ENTRYPOINT ["/usr/local/bin/service.sh"]
+
+    - name: Construire l'image de la stack
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ tag_local }} {{ atelier }}
+      changed_when: true
+
+    - name: Déposer le code source que le montage de développement expose
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/src/version.txt"
+        mode: "0644"
+        content: |
+          source de developpement, monte en direct pendant le travail
+
+    - name: Écrire le compose.yaml tel qu'il a été laissé, avec ses quatre défauts
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/compose.yaml"
+        mode: "0644"
+        content: |
+          # Stack de l application. Elle marche, « en relancant deux fois ».
+          services:
+            coffre:
+              image: {{ tag_local }}
+              environment:
+                ROLE: coffre
+                COFFRE_MDP: {{ tirage_mdp.stdout }}
+
+            api:
+              image: {{ tag_local }}
+              depends_on:
+                - coffre
+              environment:
+                ROLE: api
+                COFFRE_HOTE: coffre
+                COFFRE_MDP: {{ tirage_mdp.stdout }}
+              ports:
+                - "127.0.0.1:18420:80"
+              volumes:
+                - ./src:/app/src
+
+    - name: Consigner ce que le lab devra vérifier
+      # Le mot de passe attendu et son dérivé : le contrôle prouve que le secret
+      # est bien ARRIVÉ au service, et pas seulement qu'il a disparu de
+      # l'environnement. Retirer un secret sans le remplacer serait une fausse
+      # correction, et elle doit être détectée.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          mdp='{{ tirage_mdp.stdout }}'
+          derive=$(printf '%s' "$mdp" | sha256sum | cut -c1-16)
+          python3 - "$mdp" "$derive" <<'PY'
+          import json, sys
+          from pathlib import Path
+          Path("{{ etat }}").write_text(json.dumps({
+              "mot_de_passe": sys.argv[1],
+              "derive": sys.argv[2],
+          }, indent=1))
+          PY
+          chmod 0600 '{{ etat }}'
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : fiabiliser une stack
+
+          Cette stack marche, « en relancant deux fois ». Elle est dans
+          `{{ atelier }}/compose.yaml`, et son projet se nomme `{{ projet }}`.
+
+          Elle a deux services : `coffre`, qui detient une valeur derivee d un
+          mot de passe, et `api`, qui l interroge AU DEMARRAGE et la sert
+          ensuite sur `127.0.0.1:18420`.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            1. un `docker compose down` suivi d un `docker compose up -d`
+               rend une stack qui REPOND DU PREMIER COUP, sans qu aucun service
+               ait eu besoin de redemarrer ;
+            2. le mot de passe n apparait NI dans l environnement des
+               conteneurs, NI dans l image, et le coffre le recoit quand meme :
+               la valeur servie doit rester la bonne ;
+            3. chaque service porte une LIMITE MEMOIRE, visible dans
+               l inspection du conteneur comme dans son cgroup ;
+            4. chaque service porte une POLITIQUE DE REDEMARRAGE : si un
+               conteneur est tue, il repart seul ;
+            5. il existe DEUX variantes :
+                 - `compose.yaml`, le deploiement, qui ne monte PAS le code
+                   source ;
+                 - `compose.dev.yaml`, le developpement, qui le monte.
+               Le second se superpose au premier :
+               `docker compose -f compose.yaml -f compose.dev.yaml config`
+               doit montrer le montage, et `-f compose.yaml` seul ne doit pas
+               le montrer.
+
+          Le projet garde son nom `{{ projet }}`, et l API garde son port.
+          L image `{{ tag_local }}` est fournie : il n y a rien a reconstruire.
+          Le service lit son mot de passe dans un FICHIER avant de regarder son
+          environnement, et le chemin de ce fichier se regle par la variable
+          `COFFRE_MDP_FICHIER`, dont le defaut est
+          `/run/secrets/mot_de_passe`.

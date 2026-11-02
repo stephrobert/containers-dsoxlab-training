@@ -1,0 +1,5 @@
+# Surcharge française de l'épreuve epreuve-remettre-trois-conteneurs-en-service. Elle ne
+# porte QUE `title` et `description` : tout autre champ y est ignoré en silence,
+# parce que le contrat ne se traduit pas.
+title: "Trois conteneurs en panne, trois causes différentes"
+description: "Diagnostiquer trois pannes indépendantes par leurs codes de sortie, leurs journaux et leurs signaux, conserver la politique de redémarrage qui rendait l'une d'elles visible, et récupérer un rapport qui se faisait tronquer."

@@ -1,0 +1,38 @@
+# Épreuve epreuve-fiabiliser-une-stack. Les champs marqués REQUIS sont exigés par le
+# validator : sans eux, le lab est refusé, ou pire, disparaît du catalogue sans
+# un mot.
+#
+# `lab_type: challenge` autorise `exam_passing_score` et dit à l'apprenant que
+# cette épreuve ÉVALUE. Rien n'y est réexpliqué : les leçons du module l'ont
+# enseigné, à savoir conditionner un démarrage à la santé d'un service, injecter
+# un secret sans l'environnement, poser une limite, et superposer deux fichiers.
+#
+# ELLE NE DOUBLE PAS `epreuve-restaurer-une-stack`, qui mesure une restauration
+# sur un SECOND hôte, sauvegarde comprise. Celle-ci reste sur un seul hôte et
+# mesure quatre points de fiabilité.
+id: epreuve-fiabiliser-une-stack                      # REQUIS
+title: "The stack that only works on the second try"   # REQUIS
+level: c3                     # REQUIS
+description: "Make a Compose stack start correctly the first time: wait for the service it depends on, take the password out of the environment without losing it, apply a memory limit, keep a restart policy, and split deployment from development."
+skills:                       # REQUIS, non vide
+  - docker
+  - compose
+  - secrets
+  - fiabilite
+  - exploitation
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/fiabiliser-une-stack/
+lab_type: challenge
+exam_passing_score: 75
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

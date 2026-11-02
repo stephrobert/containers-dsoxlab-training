@@ -1,0 +1,34 @@
+# Épreuve epreuve-contenir-un-conteneur-gourmand. Les champs marqués REQUIS sont exigés
+# par le validator : sans eux, le lab est refusé, ou pire, disparaît du
+# catalogue sans un mot.
+#
+# `lab_type: challenge` autorise `exam_passing_score` et dit à l'apprenant que
+# cette épreuve ÉVALUE. Rien n'y est réexpliqué : les leçons du module l'ont
+# enseigné, à savoir les cgroups, les limites, et la jointure entre le PID 1 d'un
+# conteneur et son PID sur l'hôte.
+id: epreuve-contenir-un-conteneur-gourmand                      # REQUIS
+title: "The batch job that takes the host down with it"  # REQUIS
+level: c4                     # REQUIS
+description: "Contain a runaway batch job with memory, CPU and process limits, prove that the limit actually holds during a pointe, keep the service answering, and lose none of the earlier results."
+skills:                       # REQUIS, non vide
+  - docker
+  - cgroups
+  - limites
+  - exploitation
+  - internes
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/contenir-un-conteneur-gourmand/
+lab_type: challenge
+exam_passing_score: 75
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: false
+  persistence_after_reboot: false
