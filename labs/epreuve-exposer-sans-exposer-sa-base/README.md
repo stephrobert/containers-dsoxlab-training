@@ -2,77 +2,87 @@
 
 ## What this test measures
 
-Making two containers talk to each other by name, and opening to the outside
-only what has to be open. It closes the module's lessons and re-explains
-nothing: what you need to know was taught there, this measures it.
+Exposing an application without exposing what it holds. It closes the module's
+lessons and explains nothing anew: what you need was taught there, this one
+measures it.
 
-Its `lab_type: challenge` is what allows its `exam_passing_score`, set to **75**.
-The five checks are of equal weight, and one of them is critical.
+Its `lab_type: challenge` is what allows its `exam_passing_score`, set to
+**75**. The five checks carry equal weight, and one of them is critical.
 
-## The fault that was planted, stated nowhere in the brief
+## Why it was refocused
 
-| Fault | Visible symptom | What it teaches |
-| --- | --- | --- |
-| both containers on the **default** network | no name resolves, although the addresses do reach each other | the default network gives a route, not a resolver |
-| the shop window queries `stock`, which nobody carries | the expected name does not resolve, even on a network of its own | that is what network aliases are for |
-| `inventaire` publishes a port on every interface | the audit reports it | nothing removes a `-p` from an existing container |
-| `vitrine` publishes on every interface | the audit reports it too | a publication binds to an address, not only to a port |
+It restated an earlier lesson's lab: four of its five checks were about name
+resolution, while the module's third teaching, **isolation**, was measured
+nowhere in the catalog.
 
-All four are independent, and they are exactly the ones you commit when
-starting two containers by hand without thinking about the network. The first is
-the most instructive: it "works" by IP address, so the network is not suspected.
+An end-of-module test grades the **combination** of what the module teaches,
+not what an earlier lesson has already proven.
 
-## Four symptoms, two moves
+## The three teachings, and the combination
 
-Create a network of your own, then recreate both containers on it: one with its
-alias and no publication, the other published on the one interface that is
-asked for. **Two moves settle all four faults**, and that is what makes the test
-worth taking: diagnosis comes before action.
+| Check | What it measures |
+| --- | --- |
+| the front end publishes on the requested interface only | a publication binds to an **address** as much as to a port |
+| the database answers to an **alias** distinct from its name | a service name survives the container's replacement, a rename does not |
+| the database sits on a network with **no way out** | what lives there resolves names and no longer gets out |
+| the database publishes no port | **the critical requirement** |
+| the business request succeeds **despite** the isolation | the combination, and it is what this test exists for |
 
-Fixing fault by fault works too, in four moves. The tests grade the final state,
-so both paths earn the same mark.
+The first two requirements work against the third: isolating the database cuts
+it off from everything, while publishing the front end calls for a way out.
+Holding both takes putting the front end on **both** networks, which no check
+says.
 
-## Why the real name is required as well as the queried one
+## How isolation is proven, and why not otherwise
 
-Without that requirement, renaming the container to `stock` would satisfy the
-other checks, and the learner would have learned nothing about aliases. It is
-**stated in the brief**, so it is not a trap, and it describes the real
-situation: the application has its own name, written in a configuration you
-cannot change, and operations keeps theirs, the one in the logs and the
-inventories.
+Two facts, and only the second is proof. All of the database's networks are
+declared **internal**, and above all the database has **no default route**,
+which is read inside the container.
 
-Measured in this repository: an alias set on a network leaves the real name
-resolving. Both requirements can therefore be met together, and only a rename
-puts them in conflict.
+We do **not** attempt a connection to the outside. Measured on 2026-11-02: a
+container on an internal network has no default route, where an ordinary
+container has one. An attempted connection would instead pass on a machine with
+no outbound access, so for the wrong reason, and would keep passing the day the
+isolation disappeared.
+
+Also measured, and without which the test would be unplayable: a container
+attached to **both** networks keeps its default route **and** resolves the
+alias.
 
 ## The critical requirement
 
-**A port published on the inventory fails the test**, even at 80 points. A
+**A published port on the inventory fails the test**, even at 80 points. A
 database reachable from the company network is the fault this test exists to
-eliminate: making up for it with good marks elsewhere would mean issuing a
+eliminate: offsetting it with good points elsewhere would mean issuing a
 certificate on an exposed installation.
+
+It is about **that single fact**. It used to mix two, the published port and the
+network attachment, so a learner who got the network wrong lost their critical
+requirement for a reason the brief does not announce.
 
 ## Where the witness value lives, and why in the image
 
 The value only the inventory holds is carried by an **image label**, not by a
-file on the host and not by a volume. Two reasons:
+host file nor by a volume. Two reasons:
 
-- the test asks for the containers to be **recreated**, and a value carried by
-  the image survives that: the traversal check therefore does not punish the
-  right way of going about it;
-- volumes are not on this module's syllabus. Introducing them here would add a
+- the test asks you to **recreate** the containers, and a value carried by the
+  image survives their recreation: the traversal check therefore does not
+  punish the right way of going about it;
+- volumes are not in this module's syllabus. Introducing them here would add a
   notion the learner has not seen.
 
-It is **drawn at random on every run**: a number frozen into a public repository
-is a published answer.
+It is **drawn at random on every run**: a number frozen into a public
+repository is a published answer.
 
 ## What the test does not measure
 
-The network's name, and the path taken. It grades the final state. A learner who
-names their network differently, or who takes four moves, has fixed the fault.
+Network names, and the path taken. It grades the final state. A learner who
+names their networks otherwise, or who proceeds in several steps, has fixed the
+outage.
 
 ## After the test
 
-`dsoxlab clean` removes everything the lab set up, **including the network you
-created**: it is found through the lab's containers attached to it, since the
-test imposes no name. The engine's default network is never touched.
+`dsoxlab clean` removes everything the lab put in place, **including the
+networks you created**: they are found through the lab's containers attached to
+them, since the test imposes no name. The engine's default network is never
+touched.

@@ -2,47 +2,51 @@
 
 ## Ce que cette épreuve éprouve
 
-Faire se parler deux conteneurs par leurs noms, et n'ouvrir vers l'extérieur
-que ce qui doit l'être. Elle clôt les leçons du module et ne réexplique rien :
-ce qu'il faut savoir y a été enseigné, celle-ci le mesure.
+Exposer une application sans exposer ce qu'elle détient. Elle clôt les leçons
+du module et ne réexplique rien : ce qu'il faut savoir y a été enseigné,
+celle-ci le mesure.
 
 Son `lab_type: challenge` autorise son `exam_passing_score`, fixé à **75**. Les
 cinq contrôles sont de poids égal, et l'un d'eux est critique.
 
-## La panne posée, et elle n'est dite nulle part dans l'énoncé
+## Pourquoi elle a été recentrée
 
-| Faute | Symptôme visible | Ce qu'elle enseigne |
-| --- | --- | --- |
-| les deux conteneurs sur le réseau **par défaut** | aucun nom ne résout, alors que les adresses se joignent | le réseau par défaut donne une route, pas un résolveur |
-| la vitrine interroge `stock`, que personne ne porte | le nom attendu ne résout pas, même sur un réseau à soi | les alias réseau existent pour ça |
-| `inventaire` publie un port sur toutes les interfaces | l'audit le signale | rien ne retire un `-p` sur un conteneur existant |
-| `vitrine` publie sur toutes les interfaces | l'audit le signale aussi | une publication se lie à une adresse, pas seulement à un port |
+Elle redisait le lab d'une leçon antérieure : quatre de ses cinq contrôles
+portaient sur la résolution de noms, pendant que le troisième enseignement du
+module, l'**isolement**, n'était mesuré nulle part dans le catalogue.
 
-Les quatre sont indépendantes, et ce sont exactement celles que l'on commet en
-lançant deux conteneurs à la main sans penser au réseau. La première est la plus
-instructive : « ça marche » par adresse IP, donc on ne soupçonne pas le réseau.
+Une épreuve de fin de module note la **combinaison** de ce que le module
+enseigne, pas ce qu'une leçon d'avant a déjà prouvé.
 
-## Quatre symptômes, deux gestes
+## Les trois enseignements, et la combinaison
 
-Créer un réseau à soi, puis recréer les deux conteneurs dessus : l'un avec son
-alias et sans publication, l'autre publié sur la seule interface demandée.
-**Deux gestes règlent les quatre fautes**, et c'est ce qui fait la valeur de
-l'épreuve : le diagnostic précède la main.
+| Contrôle | Ce qu'il mesure |
+| --- | --- |
+| le frontal ne publie que sur l'interface demandée | une publication se lie à une **adresse** autant qu'à un port |
+| la base répond à un **alias** distinct de son nom | un nom de service survit au remplacement du conteneur, un renommage non |
+| la base est sur un réseau **sans issue** | ce qui y vit résout les noms et ne sort plus |
+| la base ne publie aucun port | **l'exigence critique** |
+| la requête métier aboutit **malgré** l'isolement | la combinaison, et c'est pour elle que l'épreuve existe |
 
-Corriger faute par faute fonctionne aussi, en quatre fois. Les tests notent
-l'état final, donc les deux chemins valent la même note.
+Les deux premières exigences se contrarient avec la troisième : isoler la base
+la coupe de tout, publier le frontal demande au contraire une issue. Les tenir
+ensemble demande de poser le frontal sur les **deux** réseaux, ce qu'aucun
+contrôle ne dit.
 
-## Pourquoi le nom réel est exigé en plus du nom cherché
+## Comment l'isolement est prouvé, et pourquoi pas autrement
 
-Sans cette exigence, renommer le conteneur en `stock` satisferait les autres
-contrôles, et l'apprenant n'aurait rien appris des alias. Elle est **annoncée
-dans l'énoncé**, donc ce n'est pas un piège, et elle décrit la situation réelle :
-l'application a son nom à elle, écrit dans une configuration qu'on ne peut pas
-changer, et l'exploitation garde le sien, celui des journaux et des inventaires.
+Deux faits, et le second seul fait preuve. Tous les réseaux de la base sont
+déclarés **internes**, et surtout la base **n'a aucune route par défaut**, ce
+qui se lit dans le conteneur.
 
-Mesuré dans ce dépôt : un alias posé sur un réseau laisse le vrai nom résoudre.
-Les deux exigences sont donc satisfiables ensemble, et seul un renommage les
-oppose.
+On ne tente **pas** une connexion vers l'extérieur. Mesuré le 2026-11-02 : un
+conteneur sur un réseau interne n'a aucune route par défaut, là où un conteneur
+ordinaire en a une. Une tentative de connexion, elle, passerait au vert sur une
+machine privée d'accès sortant, donc pour la mauvaise raison, et le resterait le
+jour où l'isolement disparaîtrait.
+
+Mesuré aussi, et sans quoi l'épreuve serait injouable : un conteneur rattaché
+aux **deux** réseaux garde sa route par défaut **et** résout l'alias.
 
 ## L'exigence critique
 
@@ -50,6 +54,10 @@ oppose.
 Une base joignable depuis le réseau de l'entreprise est le défaut que cette
 épreuve existe pour éliminer : le compenser par de bons points ailleurs
 reviendrait à délivrer une attestation sur une installation exposée.
+
+Elle porte sur **ce seul fait**. Elle en mêlait deux, le port publié et le
+réseau d'attache, si bien qu'un apprenant qui ratait le réseau perdait son
+exigence critique pour une raison qui n'est pas celle que l'énoncé annonce.
 
 ## Où vit la donnée témoin, et pourquoi dans l'image
 
@@ -67,12 +75,13 @@ public est une réponse publiée.
 
 ## Ce que l'épreuve ne mesure pas
 
-Le nom du réseau, et le chemin suivi. Elle note l'état final. Un apprenant qui
-nomme son réseau autrement, ou qui s'y prend en quatre gestes, a réglé la panne.
+Le nom des réseaux, et le chemin suivi. Elle note l'état final. Un apprenant
+qui nomme ses réseaux autrement, ou qui s'y prend en plusieurs gestes, a réglé
+la panne.
 
 ## Après l'épreuve
 
-`dsoxlab clean` retire tout ce que le lab a posé, **y compris le réseau que vous
-avez créé** : il est retrouvé par les conteneurs du lab qui y sont attachés,
-puisque l'épreuve n'impose aucun nom. Le réseau par défaut du moteur n'est
-jamais touché.
+`dsoxlab clean` retire tout ce que le lab a posé, **y compris les réseaux que
+vous avez créés** : ils sont retrouvés par les conteneurs du lab qui y sont
+attachés, puisque l'épreuve n'impose aucun nom. Le réseau par défaut du moteur
+n'est jamais touché.

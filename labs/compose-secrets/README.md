@@ -2,6 +2,8 @@
 
 Three checks measure the Compose grant, actual read-only mount and observer
 denial, metadata/log leakage and consumption after rotation. Tokens are random
-pedagogical values, never external credentials. Tests restore the file and consumer.
+pedagogical values, never external credentials. The rotation is the learner's
+move, not the tests': the lab lays down the next value, and the checks read the
+final state.
 The supplied image contains no token; cleanup removes only this project's resources.
 Standalone file secrets do not claim encrypted storage or protection from host root.
