@@ -1,0 +1,48 @@
+# Épreuve epreuve-livrer-une-premiere-image. Les champs marqués REQUIS sont exigés par le
+# validator : sans eux, le lab est refusé, ou pire, disparaît du catalogue sans
+# un mot.
+#
+# `lab_type: challenge` autorise `exam_passing_score` et dit à l'apprenant que
+# cette épreuve ÉVALUE. Rien n'y est réexpliqué : les leçons du module l'ont
+# enseigné, à savoir écrire un Dockerfile, choisir son contexte de build,
+# déclarer un utilisateur, et pousser dans un registre.
+#
+# ELLE NE DOUBLE PAS `epreuve-livrer-une-image`, qui clôt un module plus tardif :
+# celle-là mesure une livraison vers un client nu, sur deux machines, avec un
+# compte en lecture seule. Celle-ci mesure la PREMIÈRE livraison, sur une seule
+# machine. Les deux partagent une exigence, le secret absent des couches, et
+# c'est délibéré : c'est la faute la plus coûteuse du métier, et elle se mesure
+# à chaque fois qu'on construit.
+id: epreuve-livrer-une-premiere-image                      # REQUIS
+title: "Deliver a first image worth publishing"        # REQUIS
+level: c2                     # REQUIS
+description: "Write the Dockerfile for a provided application: it must answer with no identity option, run under a numeric non-zero UID that owns its data, leave credentials and work files out of every layer, stay under a measured size threshold, and be published by digest."
+skills:                       # REQUIS, non vide
+  - docker
+  - images
+  - dockerfile
+  - registre
+  - securite
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-premiere-image/
+lab_type: challenge
+exam_passing_score: 75
+exam_blocking_checks:
+  # L'exigence qu'aucun total ne compense, et que le moteur applique
+  # depuis dsoxlab 0.7.0 : un echec ici refuse l'epreuve quel que soit
+  # le score. Avant, quatre controles sur cinq donnaient 80, et 80
+  # passait ce seuil de 75 : l'epreuve etait recue alors que son
+  # exigence critique avait echoue.
+  - test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche
+estimated_time: 45m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab          # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  security: true
+  persistence_after_reboot: false

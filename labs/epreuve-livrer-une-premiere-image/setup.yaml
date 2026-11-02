@@ -1,0 +1,305 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# C'EST UNE ÉPREUVE DE CONSTRUCTION, et non de diagnostic : il n'y a pas de
+# panne à trouver, il y a une image à livrer correctement. Le setup pose donc un
+# DÉPÔT, et c'est tout ce qu'il pose. L'apprenant écrit le Dockerfile.
+#
+# CE QUE LE DÉPÔT CONTIENT, et chaque pièce a sa raison :
+#   - `app.sh` et `donnees/reference` : l'application et sa dépendance, qui
+#     doivent entrer dans l'image, sans quoi elle ne répond rien ;
+#   - `.identifiants` : un jeton de dépôt privé. Il ne doit PAS entrer dans
+#     l'image, et c'est l'EXIGENCE CRITIQUE ;
+#   - `travail/` : quarante mégaoctets de fichiers de travail, incompressibles.
+#     Les inclure fait dépasser le seuil de taille, ce qui est la façon mesurée
+#     de prouver qu'on ne livre pas son répertoire de travail.
+#
+# LE SEUIL DE TAILLE EST MESURÉ, PAS ÉCRIT. Le setup construit une image de
+# RÉFÉRENCE, relève sa taille réelle, la supprime, et consigne le seuil dans un
+# fichier de l'hôte lisible par root seul. C'est la seule façon honnête : une
+# taille écrite en dur dans un test périme à la première mise à jour de l'image
+# de base, et le lab se mettrait alors à refuser du travail juste.
+#
+# LE DOCKERFILE DE RÉFÉRENCE VIT DANS `/root`, et il est supprimé après la
+# mesure : il porte la réponse de l'épreuve.
+- name: Préparer l'épreuve epreuve-livrer-une-premiere-image
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    # Le registre est épinglé sur la même version que les autres labs du
+    # catalogue : une épreuve ne découvre pas une version que les leçons n'ont
+    # pas montrée.
+    image_registre: >-
+      registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
+    depot: /opt/lab-premiere-livraison
+    etat: /root/.lab-premiere-livraison-state.json
+    registre: registre-livraison
+    port_registre: 5000
+    tag_attendu: premiere-livraison:1.0
+    # 40 Mo de données incompressibles : leur inclusion se voit dans la taille.
+    travail_mo: 40
+    # La marge au-dessus de la référence. Elle est large à dessein : l'épreuve
+    # mesure « n'a pas livré son répertoire de travail », pas « a optimisé au
+    # mégaoctet », ce qui est le sujet d'une autre épreuve.
+    marge_mo: 15
+  tasks:
+    - name: Noter si les socles publics étaient déjà présents
+      # DEUX socles ici, et chacun son marqueur : un lab ne rend que ce qu'il a
+      # tiré. Sept labs du catalogue avaient été ROUGE sur ce seul motif.
+      ansible.builtin.shell: |
+        set -eu
+        for couple in 'alpine:{{ image_epinglee }}' 'registre:{{ image_registre }}'; do
+          nom=${couple%%:*}
+          ref=${couple#*:}
+          marqueur="/var/tmp/dsoxlab-epreuve-livrer-une-premiere-image.socle-$nom"
+          if docker image inspect "$ref" >/dev/null 2>&1; then
+            rm -f "$marqueur"
+          else
+            : > "$marqueur"
+          fi
+        done
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: [docker-ce, python3]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Autoriser l'apprenant à parler au moteur sans sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Refuser de démarrer si un autre propriétaire tient les noms réservés
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json, subprocess, sys
+          lab = "epreuve-livrer-une-premiere-image"
+          r = subprocess.run(["docker", "container", "inspect", "{{ registre }}"],
+                             capture_output=True, text=True)
+          if r.returncode == 0:
+              c = json.loads(r.stdout)[0]
+              if (c["Config"]["Labels"] or {}).get("dsoxlab.lab") != lab:
+                  sys.exit("Reserved container name {{ registre }} belongs to another owner")
+          PY
+      changed_when: false
+
+    - name: Tirer les deux images, par leur digest
+      ansible.builtin.command:
+        cmd: docker pull {{ item }}
+      loop:
+        - "{{ image_epinglee }}"
+        - "{{ image_registre }}"
+      register: tirage
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Retirer seulement les ressources identifiées du passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          # `-v` : le registre crée un volume ANONYME, puisque son image déclare
+          # `VOLUME /var/lib/registry`. Sans lui, chaque passage en laisse un.
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-livrer-une-premiere-image)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+          # L'image que l'apprenant construira, si elle traîne d'un passage
+          # précédent : la laisser ferait passer des contrôles avant tout travail.
+          docker image rm -f '{{ tag_attendu }}' >/dev/null 2>&1 || true
+          docker image rm -f '127.0.0.1:{{ port_registre }}/{{ tag_attendu }}' >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Déposer le dépôt de l'application
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ depot }}"
+        - "{{ depot }}/donnees"
+        - "{{ depot }}/travail"
+
+    - name: Retirer les livrables d'un passage précédent
+      # Même raison que pour l'image : un `digest.txt` laissé ferait passer le
+      # contrôle de la publication avant tout travail.
+      ansible.builtin.file:
+        path: "{{ depot }}/{{ item }}"
+        state: absent
+      loop:
+        - digest.txt
+        - Dockerfile
+        - .dockerignore
+
+    - name: Tirer au sort la donnée métier et le jeton, une fois par passage
+      # Les deux sont tirés ICI et non écrits en dur : un chiffre figé dans un
+      # dépôt public est une réponse publiée, et un jeton figé serait un secret
+      # publié.
+      ansible.builtin.shell:
+        cmd: od -An -tx1 -N8 /dev/urandom | tr -d ' \n'
+      register: tirages
+      loop: [metier, jeton]
+      changed_when: true
+
+    - name: Écrire l'application, qui lit sa dépendance
+      ansible.builtin.copy:
+        dest: "{{ depot }}/app.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          # LE SHEBANG EST NÉCESSAIRE : une image qui déclare ce fichier en
+          # ENTRYPOINT l'exécute directement, et sans ligne d'interpréteur le
+          # noyau refuse de le lancer. Mesuré dans ce catalogue.
+          set -eu
+          reference=/opt/app/donnees/reference
+          if ! test -r "$reference"; then
+            echo "app: la dependance ${reference} est absente de l image" >&2
+            exit 78
+          fi
+          printf 'inventaire=%s\n' "$(cat "$reference")"
+
+    - name: Écrire la dépendance de l'application
+      ansible.builtin.copy:
+        dest: "{{ depot }}/donnees/reference"
+        mode: "0644"
+        content: "{{ tirages.results[0].stdout }}"
+
+    - name: Écrire le fichier d'identifiants, qui ne doit pas être livré
+      ansible.builtin.copy:
+        dest: "{{ depot }}/.identifiants"
+        mode: "0600"
+        content: |
+          # Jeton du depot prive. Il sert a construire, il ne se livre jamais.
+          DEPOT_JETON={{ tirages.results[1].stdout }}
+
+    - name: Remplir le répertoire de travail, incompressible
+      # `/dev/urandom` et non des zéros : une image qui embarquerait des zéros
+      # se compresserait, et le contrôle de taille ne mesurerait plus rien.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for n in $(seq 1 4); do
+            dd if=/dev/urandom of='{{ depot }}/travail/extrait-'"$n"'.bin' \
+              bs=1M count=$(( {{ travail_mo }} / 4 )) status=none
+          done
+          chmod 0644 '{{ depot }}/travail/'*.bin
+      changed_when: true
+
+    - name: Écrire le Dockerfile de référence, hors de portée de l'apprenant
+      # Dans `/root`, et supprimé juste après la mesure : il porte la réponse.
+      ansible.builtin.copy:
+        dest: /root/reference.Dockerfile
+        mode: "0600"
+        content: |
+          FROM {{ image_epinglee }}
+          RUN addgroup -g 10001 app && adduser -D -u 10001 -G app app
+          COPY app.sh /usr/local/bin/app.sh
+          COPY donnees /opt/app/donnees
+          RUN chown -R 10001:10001 /opt/app/donnees \
+            && chmod -R go-w /opt/app/donnees
+          USER 10001
+          ENTRYPOINT ["/usr/local/bin/app.sh"]
+
+    - name: Mesurer la taille de référence, puis retirer l'image de référence
+      # LE SEUIL EST MESURÉ SUR CETTE MACHINE, et consigné. Une taille écrite en
+      # dur dans un test périme à la première mise à jour de l'image de base, et
+      # le lab se mettrait alors à refuser du travail juste.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker build -q -f /root/reference.Dockerfile \
+            -t reference-livraison:mesure '{{ depot }}' >/dev/null
+          taille=$(docker image inspect reference-livraison:mesure \
+            --format '{% raw %}{{.Size}}{% endraw %}')
+          docker image rm -f reference-livraison:mesure >/dev/null
+          rm -f /root/reference.Dockerfile
+          python3 - "$taille" <<'PY'
+          import json, sys
+          from pathlib import Path
+          reference = int(sys.argv[1])
+          seuil = reference + {{ marge_mo }} * 1000 * 1000
+          Path("{{ etat }}").write_text(json.dumps({
+              "reference_octets": reference,
+              "seuil_octets": seuil,
+              "metier": "{{ tirages.results[0].stdout }}",
+              "jeton": "{{ tirages.results[1].stdout }}",
+          }, indent=1))
+          PY
+          chmod 0600 '{{ etat }}'
+      changed_when: true
+
+    - name: Lancer le registre du lab, sur la boucle locale
+      # `127.0.0.1` et non une adresse routable : Docker traite la boucle locale
+      # comme un registre non sécurisé par défaut, donc aucune configuration du
+      # démon n'est nécessaire. Une épreuve ne demande pas de toucher au démon
+      # quand ce n'est pas son sujet.
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ registre }}
+          --label dsoxlab.lab=epreuve-livrer-une-premiere-image
+          -p 127.0.0.1:{{ port_registre }}:5000 {{ image_registre }}
+      changed_when: true
+
+    - name: Attendre que le registre réponde réellement
+      # On lit la RÉPONSE de son API, pas la connexion : le proxy de Docker
+      # accepte dès le `run`, avant que le service écoute.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for _ in $(seq 1 30); do
+            if curl -sS -f -o /dev/null 'http://127.0.0.1:{{ port_registre }}/v2/'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'le registre ne repond pas apres 30 s' >&2
+          exit 1
+      changed_when: false
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ depot }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : livrer une premiere image
+
+          Ce depot porte une petite application, sa dependance, un fichier d
+          identifiants et un repertoire de travail. Il n y a pas de Dockerfile :
+          c est a vous de l ecrire.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            1. l image `{{ tag_attendu }}` existe, et un
+               `docker run --rm {{ tag_attendu }}` SANS option d identite rend
+               la ligne `inventaire=` suivie de la donnee du fichier
+               `donnees/reference` ;
+            2. l image ne tourne PAS en root : son utilisateur declare est un
+               UID NUMERIQUE non nul, et le repertoire des donnees dans l image
+               lui appartient, sans etre inscriptible par tous ;
+            3. ni le fichier `.identifiants`, ni son jeton, ni le contenu de
+               `travail/` ne se trouvent dans AUCUNE couche de l image ;
+            4. la taille de l image reste sous le seuil que ce lab a mesure sur
+               cette machine : vous le lisez avec
+               `dsoxlab hint` si besoin, mais il suffit de ne pas livrer ce qui
+               n a rien a faire dans une image ;
+            5. l image est publiee dans le registre du lab, sur
+               `127.0.0.1:{{ port_registre }}`, et le digest que le registre
+               sert est consigne dans `{{ depot }}/digest.txt`, sur une seule
+               ligne, sous la forme `sha256:...`.
+
+          Le registre du lab est deja en marche et accepte le HTTP, parce qu il
+          ecoute sur la boucle locale : il n y a rien a configurer sur le demon.
+
+          L UID a employer est libre, pourvu qu il soit numerique et non nul.

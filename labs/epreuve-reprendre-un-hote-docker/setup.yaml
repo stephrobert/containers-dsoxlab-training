@@ -1,0 +1,581 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que le
+# scénario décrit.
+#
+# C'EST LE SETUP LE PLUS INTRUSIF DU CATALOGUE, et cela se justifie par le
+# sujet : une épreuve de reprise d'hôte doit trouver un hôte à reprendre. Il
+# touche le DÉMON, les COMPTES et la CONFIGURATION SYSTEMD, pas seulement des
+# conteneurs.
+#
+# D'OÙ LA RÈGLE QUI GOUVERNE CE FICHIER : tout ce qu'il change, il l'ENREGISTRE
+# avant, dans `/root/.lab-reprise-state.json`, et le cleanup le remet comme il
+# l'a trouvé. Un lab qui laisse un démon mal configuré ne casse pas seulement le
+# suivant : il casse la photographie du cycle de validation, qui interroge le
+# moteur après le nettoyage et ne peut rien conclure d'un moteur muet.
+#
+# CES DEUX GESTES ONT ÉTÉ ÉPROUVÉS SÉPARÉMENT AVANT D'ÊTRE ÉCRITS ICI, sur un
+# banc qui les posait puis les retirait : l'ouverture d'une API TCP par surcharge
+# systemd, et le filtrage d'un proxy par méthode HTTP. Le banc a conclu, et
+# c'est à cette condition que l'épreuve existe.
+#
+# LES QUATRE DÉFAUTS POSÉS, et aucun n'est dit dans l'énoncé :
+#   1. aucune ROTATION des journaux : `daemon.json` est absent, donc le pilote
+#      `json-file` écrit sans limite. Un conteneur bavard remplit alors le
+#      disque, et personne ne sait lequel ;
+#   2. du REBUT qui occupe la place : des conteneurs arrêtés, des volumes
+#      anonymes orphelins, un cache de build. Et un VOLUME DE SAUVEGARDE que
+#      personne ne monte, qui est ce qu'un `prune` emporte ;
+#   3. un ancien stagiaire encore dans le groupe `docker`, et un OUTIL qui monte
+#      le socket du démon en écriture ;
+#   4. l'API du démon ouverte en TCP SANS TLS.
+#
+# L'ORDRE DES TÂCHES N'EST PAS LIBRE. La surcharge systemd est posée et le démon
+# redémarré AVANT que les conteneurs soient lancés : sans `live-restore`, un
+# redémarrage du démon arrête les conteneurs sans politique et ne les relance
+# pas, ce qui est mesuré dans ce catalogue. Les lancer avant les perdrait.
+- name: Préparer l'épreuve epreuve-reprendre-un-hote-docker
+  hosts: lab_target
+  become: true
+  vars:
+    image_epinglee: >-
+      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    tag_service: lab-reprise:1.0
+    tag_proxy: lab-reprise-proxy:1.0
+    atelier: /opt/lab-reprise
+    etat: /root/.lab-reprise-state.json
+    volume: dsoxlab-reprise-donnees
+    volume_sauvegardes: dsoxlab-reprise-sauvegardes
+    application: application
+    outil: inventaire-outil
+    surcharge: /etc/systemd/system/docker.service.d/zz-lab-reprise-tcp.conf
+    port_api: 2375
+    stagiaire: stagiaire-parti
+    exploitant: exploitant
+  tasks:
+    - name: Noter si le socle public était déjà présent
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ image_epinglee }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-epreuve-reprendre-un-hote-docker.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-epreuve-reprendre-un-hote-docker.socle-a-rendre'
+          docker pull '{{ image_epinglee }}' >/dev/null
+        fi
+      changed_when: false
+
+    - name: Installer le moteur de conteneurs
+      ansible.builtin.apt:
+        name: [docker-ce, python3]
+        state: present
+        update_cache: true
+
+    - name: Démarrer le moteur et l'activer
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker.socket
+        - docker
+
+    - name: Relever l'état de la machine AVANT d'y toucher
+      # C'est ce relevé qui permet au cleanup de rendre la machine telle quelle.
+      # On garde le CONTENU du `daemon.json` s'il existe, et le fait qu'il
+      # n'existait pas sinon : les deux cas se restituent différemment.
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import grp, json, os
+          from pathlib import Path
+          conf = Path("/etc/docker/daemon.json")
+          surcharges = Path("/etc/systemd/system/docker.service.d")
+          try:
+              membres = sorted(grp.getgrnam("docker").gr_mem)
+          except KeyError:
+              membres = []
+          Path("{{ etat }}").write_text(json.dumps({
+              "daemon_json_existait": conf.is_file(),
+              "daemon_json": conf.read_text() if conf.is_file() else None,
+              "surcharges": sorted(p.name for p in surcharges.glob("*.conf"))
+                            if surcharges.is_dir() else [],
+              "repertoire_surcharges_existait": surcharges.is_dir(),
+              "docker_group": membres,
+          }, indent=1))
+          PY
+          chmod 0600 '{{ etat }}'
+      changed_when: true
+
+    - name: Créer les deux comptes de l'épreuve
+      # DES COMPTES À ELLE, et non les comptes du socle : l'épreuve fait retirer
+      # quelqu'un du groupe `docker`, et toucher au compte qui pilote la machine
+      # casserait tout ce qui vient après. `ansible` n'est donc jamais visé.
+      ansible.builtin.user:
+        name: "{{ item }}"
+        shell: /usr/sbin/nologin
+        create_home: false
+        state: present
+      loop:
+        - "{{ stagiaire }}"
+        - "{{ exploitant }}"
+
+    - name: Mettre les deux comptes dans le groupe docker
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop:
+        - "{{ stagiaire }}"
+        - "{{ exploitant }}"
+
+    # DÉFAUT 4 : l'API en TCP sans TLS, par surcharge systemd.
+    #
+    # PAR SURCHARGE, ET NON PAR `daemon.json` : un `hosts` dans le fichier de
+    # configuration alors que systemd passe déjà `-H fd://` fait REFUSER le
+    # démarrage au démon. C'est le piège classique, et il casserait la machine
+    # au lieu de poser un défaut.
+    - name: Créer le répertoire des surcharges systemd s'il manque
+      # IL N'EXISTE PAS SUR CETTE MACHINE, et `copy` ne crée pas le répertoire
+      # parent de sa destination : le setup échouait sur « Destination directory
+      # does not exist ». Le relevé note s'il existait avant, et le cleanup ne
+      # le retire que dans le cas contraire.
+      ansible.builtin.file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+        mode: "0755"
+
+    - name: Déposer la surcharge qui ouvre l'API en TCP
+      ansible.builtin.copy:
+        dest: "{{ surcharge }}"
+        mode: "0644"
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/bin/dockerd -H fd:// -H tcp://127.0.0.1:{{ port_api }} --containerd=/run/containerd/containerd.sock
+
+    - name: Redémarrer le démon pour ouvrir l'API, AVANT de lancer quoi que ce soit
+      # Sans `live-restore`, un redémarrage du démon arrête les conteneurs sans
+      # politique et ne les relance pas : mesuré dans ce catalogue. Tout ce qui
+      # tourne doit donc être lancé APRÈS ce point.
+      ansible.builtin.systemd_service:
+        name: docker
+        state: restarted
+        daemon_reload: true
+
+    - name: Attendre que l'API TCP réponde réellement
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for _ in $(seq 1 30); do
+            if curl -sS -f -o /dev/null 'http://127.0.0.1:{{ port_api }}/_ping'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'l API TCP ne repond pas apres 30 s' >&2
+          exit 1
+      changed_when: false
+
+    - name: Déposer l'atelier
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ atelier }}/proxy"
+
+    - name: Écrire l'application et son service
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/service.sh"
+        mode: "0755"
+        content: |
+          #!/bin/sh
+          set -eu
+          donnees=/donnees/reference
+          case "${ROLE:-application}" in
+            application)
+              if ! test -r "$donnees"; then
+                echo 'application: la donnee de reference est absente' >&2
+                exit 78
+              fi
+              echo 'application demarree'
+              while true; do
+                printf 'application=%s\n' "$(cat "$donnees")" | nc -l -p 80 || true
+              done
+              ;;
+            bavard)
+              # Le conteneur qui remplit le disque faute de rotation. Il ecrit
+              # vite et sans fin : c'est exactement le defaut que l'absence de
+              # rotation rend dangereux.
+              i=0
+              while test "$i" -lt "${LIGNES:-20000}"; do
+                echo "journal sans rotation, ligne $i, remplissage du disque"
+                i=$(( i + 1 ))
+              done
+              echo 'bavard a fini'
+              sleep 3600
+              ;;
+            outil)
+              # L'outil d'inventaire. Il interroge le demon, et il le fait par
+              # le socket qu'on lui a monte, ce qui lui donne TOUS les droits.
+              echo 'outil demarre'
+              while true; do
+                if test -n "${DOCKER_HOST:-}"; then
+                  cible="${DOCKER_HOST#tcp://}"
+                  reponse=$(wget -q -O - "http://${cible}/containers/json" 2>/dev/null || echo '[]')
+                else
+                  reponse='socket direct'
+                fi
+                printf 'outil=%s\n' "$(printf '%s' "$reponse" | wc -c)" | nc -l -p 80 || true
+              done
+              ;;
+          esac
+
+    - name: Écrire le proxy de socket que l'épreuve fournit
+      # IL EST FOURNI, et non à écrire : le sujet de l'épreuve est de s'en
+      # servir, pas d'écrire un proxy HTTP. Il n'autorise que les méthodes de
+      # LECTURE et refuse les autres en 403.
+      #
+      # MONTER LE SOCKET EN LECTURE SEULE NE PROTÈGE DE RIEN : un socket n'est
+      # pas un fichier, et le `:ro` ne porte que sur l'inode. Tout ce qui parle
+      # au socket peut tout faire, d'où la nécessité d'un intermédiaire qui lise
+      # la requête.
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/proxy/proxy.py"
+        mode: "0644"
+        content: |
+          """Proxy de lecture seule devant le socket du demon."""
+          import http.server
+          import socket
+
+          SOCKET = "/var/run/docker.sock"
+
+
+          class Garde(http.server.BaseHTTPRequestHandler):
+              protocol_version = "HTTP/1.1"
+
+              def _refuser(self):
+                  corps = b'{"message":"refuse par le proxy: lecture seule"}'
+                  self.send_response(403)
+                  self.send_header("Content-Type", "application/json")
+                  self.send_header("Content-Length", str(len(corps)))
+                  self.end_headers()
+                  self.wfile.write(corps)
+
+              def _transmettre(self):
+                  s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                  try:
+                      s.connect(SOCKET)
+                      requete = (
+                          f"{self.command} {self.path} HTTP/1.0\r\n"
+                          "Host: docker\r\n\r\n"
+                      )
+                      s.sendall(requete.encode())
+                      morceaux = []
+                      while True:
+                          bloc = s.recv(65536)
+                          if not bloc:
+                              break
+                          morceaux.append(bloc)
+                  finally:
+                      s.close()
+                  brut = b"".join(morceaux)
+                  coupe = brut.find(b"\r\n\r\n")
+                  corps = brut[coupe + 4:] if coupe >= 0 else brut
+                  self.send_response(200)
+                  self.send_header("Content-Type", "application/json")
+                  self.send_header("Content-Length", str(len(corps)))
+                  self.end_headers()
+                  self.wfile.write(corps)
+
+              def do_GET(self):
+                  self._transmettre()
+
+              def do_HEAD(self):
+                  self._transmettre()
+
+              def do_POST(self):
+                  self._refuser()
+
+              def do_PUT(self):
+                  self._refuser()
+
+              def do_DELETE(self):
+                  self._refuser()
+
+              def log_message(self, *a):
+                  pass
+
+
+          http.server.HTTPServer(("0.0.0.0", 2375), Garde).serve_forever()
+
+    - name: Écrire les deux Dockerfile
+      ansible.builtin.copy:
+        dest: "{{ item.dest }}"
+        mode: "0644"
+        content: "{{ item.content }}"
+      loop:
+        - dest: "{{ atelier }}/Dockerfile"
+          content: |
+            FROM {{ image_epinglee }}
+            LABEL dsoxlab.lab="epreuve-reprendre-un-hote-docker"
+            COPY service.sh /usr/local/bin/service.sh
+            ENTRYPOINT ["/usr/local/bin/service.sh"]
+        - dest: "{{ atelier }}/proxy/Dockerfile"
+          content: |
+            FROM {{ image_epinglee }}
+            LABEL dsoxlab.lab="epreuve-reprendre-un-hote-docker"
+            RUN apk add --no-cache python3
+            COPY proxy.py /usr/local/bin/proxy.py
+            ENTRYPOINT ["python3", "/usr/local/bin/proxy.py"]
+
+    - name: Construire les deux images de l'épreuve
+      ansible.builtin.command:
+        cmd: docker build -q -t {{ item.tag }} {{ item.contexte }}
+      loop:
+        - { tag: "{{ tag_service }}", contexte: "{{ atelier }}" }
+        - { tag: "{{ tag_proxy }}", contexte: "{{ atelier }}/proxy" }
+      changed_when: true
+
+    - name: Créer le volume de l'application et y poser sa donnée
+      # LE VOLUME EST LA DONNÉE QUI NE SE REPRODUIT PAS, et c'est l'exigence
+      # critique de l'épreuve : un `prune` trop large l'emporte.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker volume inspect '{{ volume }}' >/dev/null 2>&1 \
+            || docker volume create \
+                 --label dsoxlab.lab=epreuve-reprendre-un-hote-docker \
+                 '{{ volume }}' >/dev/null
+          docker run --rm --entrypoint sh -v '{{ volume }}:/donnees' \
+            '{{ tag_service }}' -c \
+            'test -s /donnees/reference || od -An -tx1 -N8 /dev/urandom | tr -d " \n" > /donnees/reference'
+          docker run --rm --entrypoint sh -v '{{ volume }}:/donnees' \
+            '{{ tag_service }}' -c 'cat /donnees/reference' \
+            > /root/.lab-reprise-donnee.txt
+          chmod 0600 /root/.lab-reprise-donnee.txt
+      changed_when: true
+
+    - name: Consigner la donnée de référence dans le relevé
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          etat = json.loads(Path("{{ etat }}").read_text())
+          etat["donnee"] = Path("/root/.lab-reprise-donnee.txt").read_text().strip()
+          Path("{{ etat }}").write_text(json.dumps(etat, indent=1))
+          PY
+          rm -f /root/.lab-reprise-donnee.txt
+      changed_when: true
+
+    - name: Retirer les conteneurs d'un passage précédent
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-reprendre-un-hote-docker)
+          if test -n "$ids"; then docker rm -f $ids; fi
+      changed_when: false
+
+    - name: Lancer l'application, avec son volume
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ application }} --restart unless-stopped
+          -v {{ volume }}:/donnees {{ tag_service }}
+      changed_when: true
+
+    # DÉFAUT 3 : l'outil monte le socket du démon en écriture.
+    - name: Lancer l'outil d'inventaire, avec le socket monté
+      ansible.builtin.command:
+        cmd: >
+          docker run -d --name {{ outil }} --restart unless-stopped
+          -e ROLE=outil
+          -v /var/run/docker.sock:/var/run/docker.sock {{ tag_service }}
+      changed_when: true
+
+    # DÉFAUT 1 : un conteneur bavard, et aucune rotation pour le contenir.
+    - name: Faire écrire un conteneur bavard, sans rotation pour le contenir
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker rm -f lab-reprise-bavard >/dev/null 2>&1 || true
+          docker run -d --name lab-reprise-bavard -e ROLE=bavard -e LIGNES=20000 \
+            '{{ tag_service }}' >/dev/null
+          for _ in $(seq 1 60); do
+            if docker logs lab-reprise-bavard 2>&1 | grep -q 'bavard a fini'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'le conteneur bavard n a pas fini d ecrire' >&2
+          exit 1
+      changed_when: true
+
+    # DÉFAUT 2 : du rebut qui occupe la place, et un volume de sauvegarde que
+    # personne ne monte.
+    #
+    # PAS D'IMAGES PENDANTES, et c'est une mesure qui l'impose. Sur le magasin
+    # containerd de cette version, trois builds sur le même tag puis le retrait
+    # du tag laissent ZÉRO image pendante : une image sans référence est
+    # ramassée aussitôt. La notion vient du magasin classique et n'a plus
+    # d'objet ici. Le défaut était donc inapplicable, et le contrôle de la place
+    # passait avant tout travail faute de trouver quoi que ce soit à reprocher.
+    #
+    # CE QUI OCCUPE VRAIMENT LA PLACE d'un hôte non suivi : des conteneurs
+    # arrêtés, qui gardent leur couche d'écriture, et des volumes anonymes dont
+    # plus personne ne sait à quoi ils servaient.
+    - name: Laisser du rebut qui occupe la place
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for n in 1 2 3; do
+            nom="lab-reprise-rebut-$n"
+            docker rm -f "$nom" >/dev/null 2>&1 || true
+            # Chaque conteneur ecrit dans sa couche, puis sort : il reste
+            # `exited`, avec sa couche et son volume anonyme.
+            docker run --name "$nom" --entrypoint sh \
+              -v /donnees-jetables \
+              '{{ tag_service }}' -c 'dd if=/dev/urandom of=/rebut.bin bs=1M count=8 status=none' \
+              >/dev/null
+          done
+      changed_when: true
+
+    - name: Laisser des volumes anonymes orphelins, comme un hôte non suivi
+      # Les conteneurs sont retirés SANS `-v` : leurs volumes anonymes restent,
+      # et personne ne sait plus à quoi ils servaient. C'est exactement ce que
+      # produit un `docker rm` répété pendant des mois.
+      #
+      # LEURS IDENTIFIANTS SONT RELEVÉS, et c'est indispensable : un volume
+      # ANONYME ne porte aucun label, donc le cleanup, qui retrouve tout le
+      # reste par l'étiquette du lab, ne pourrait pas les voir. Mesuré : sans ce
+      # relevé, chaque passage en laissait deux de plus, et la photographie du
+      # cycle suivant trouvait un moteur sale qu'elle n'avait pas sali.
+      #
+      # On relève AVANT et APRÈS, et l'on garde la différence : le cleanup
+      # retire exactement ceux qu'il a fait naître, et jamais le volume anonyme
+      # de quelqu'un d'autre.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker volume ls -q | sort > /root/.lab-reprise-volumes-avant.txt
+          for n in 1 2; do
+            nom="lab-reprise-orphelin-$n"
+            docker rm -f "$nom" >/dev/null 2>&1 || true
+            docker run --name "$nom" --entrypoint sh -v /sans-maitre \
+              '{{ tag_service }}' -c 'true' >/dev/null
+            docker rm "$nom" >/dev/null
+          done
+          docker volume ls -q | sort > /root/.lab-reprise-volumes-apres.txt
+          comm -13 /root/.lab-reprise-volumes-avant.txt \
+                   /root/.lab-reprise-volumes-apres.txt \
+            > /root/.lab-reprise-orphelins.txt
+      changed_when: true
+
+    - name: Consigner les volumes orphelins posés, pour que le cleanup les rende
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          etat = json.loads(Path("{{ etat }}").read_text())
+          poses = Path("/root/.lab-reprise-orphelins.txt").read_text().split()
+          etat["volumes_orphelins"] = sorted(poses)
+          # ET CEUX QUI PREEXISTAIENT, pour que le lab ne reproche ni ne
+          # detruise un volume qu'il n'a pas cree. Mesure : sans cette liste,
+          # le controle de la place exigeait la suppression d'un volume anonyme
+          # etranger, et la solution l'emportait. Un volume anonyme peut porter
+          # la donnee de quelqu'un d'autre, et rien ne la ramene.
+          etat["volumes_preexistants"] = sorted(
+              Path("/root/.lab-reprise-volumes-avant.txt").read_text().split())
+          Path("{{ etat }}").write_text(json.dumps(etat, indent=1))
+          PY
+          rm -f /root/.lab-reprise-volumes-apres.txt \
+                /root/.lab-reprise-orphelins.txt
+      changed_when: true
+
+    - name: Créer le volume des sauvegardes, que personne ne monte
+      # C'EST LUI L'EXIGENCE CRITIQUE, et c'est ce qui rend le piège véritable :
+      # un `prune` épargne un volume MONTÉ, donc celui de l'application ne
+      # risquait rien tant qu'elle tournait. Un volume de sauvegarde, lui, n'est
+      # monté que lors des sauvegardes : `docker system prune --volumes`
+      # l'emporte, et c'est la perte qu'on voit en production.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker volume inspect '{{ volume_sauvegardes }}' >/dev/null 2>&1 \
+            || docker volume create \
+                 --label dsoxlab.lab=epreuve-reprendre-un-hote-docker \
+                 '{{ volume_sauvegardes }}' >/dev/null
+          docker run --rm --entrypoint sh \
+            -v '{{ volume_sauvegardes }}:/sauvegardes' '{{ tag_service }}' -c '
+              set -eu
+              for n in 1 2; do
+                test -s "/sauvegardes/sauvegarde-$n.txt" && continue
+                {
+                  printf "sauvegarde=%s\n" "$n"
+                  printf "contenu=%s\n" "$(od -An -tx1 -N6 /dev/urandom | tr -d " \n")"
+                } > "/sauvegardes/sauvegarde-$n.txt"
+              done
+            '
+          docker run --rm --entrypoint sh \
+            -v '{{ volume_sauvegardes }}:/sauvegardes' '{{ tag_service }}' -c \
+            'cd /sauvegardes && sha256sum sauvegarde-*.txt | sort' \
+            > /root/.lab-reprise-sauvegardes.txt
+      changed_when: true
+
+    - name: Consigner les empreintes des sauvegardes dans le relevé
+      ansible.builtin.shell:
+        cmd: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          etat = json.loads(Path("{{ etat }}").read_text())
+          lignes = Path("/root/.lab-reprise-sauvegardes.txt").read_text().splitlines()
+          etat["sauvegardes"] = {
+              l.split()[1]: l.split()[0] for l in lignes if l.strip()
+          }
+          Path("{{ etat }}").write_text(json.dumps(etat, indent=1))
+          PY
+          rm -f /root/.lab-reprise-sauvegardes.txt
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0644"
+        content: |
+          # Epreuve : reprendre un hote Docker
+
+          Cet hote n a pas ete suivi. Le disque se remplit, la configuration du
+          demon n a jamais ete ecrite, et personne ne sait qui peut encore lui
+          parler.
+
+          CE QUI EST ATTENDU A LA FIN :
+
+            1. `/etc/docker/daemon.json` est VALIDE et impose une ROTATION des
+               journaux ; le demon a ete redemarre pour la prendre ; un
+               conteneur cree ENSUITE porte bien cette rotation ; et
+               l application `{{ application }}` tourne toujours ;
+            2. la place occupee pour rien est rendue : plus aucun CONTENEUR
+               ARRETE de ce projet, plus aucun VOLUME ANONYME orphelin, et le
+               cache de build purge. LES DEUX VOLUMES NOMMES SONT INTACTS,
+               avec leurs donnees : celui de l application, `{{ volume }}`,
+               et celui des sauvegardes, `{{ volume_sauvegardes }}`, que
+               PERSONNE NE MONTE ;
+            3. le compte `{{ stagiaire }}` n est plus dans le groupe `docker`,
+               le compte `{{ exploitant }}` y est toujours, et personne d autre
+               n a ete ni ajoute ni retire ;
+            4. l outil `{{ outil }}` ne monte PLUS le socket du demon : il
+               passe par le proxy de lecture seule que ce lab fournit,
+               l image `{{ tag_proxy }}`. A travers ce proxy, une requete de
+               LECTURE passe et une requete d ARRET recoit un refus ;
+            5. le demon n ecoute plus AUCUN socket TCP sans TLS.
+
+          CE QUI EST FOURNI : les deux images, `{{ tag_service }}` et
+          `{{ tag_proxy }}`. Il n y a rien a ecrire ni a reconstruire. Le proxy
+          ecoute sur le port 2375 DANS son conteneur, et il a besoin du socket
+          du demon pour travailler.
+
+          UN AVERTISSEMENT QUI N EN EST PAS UN : `docker system prune` a des
+          options qui emportent les volumes. Le volume de l application porte
+          une donnee qui ne se reproduit pas.

@@ -1,0 +1,5 @@
+# Surcharge française de l'épreuve epreuve-fiabiliser-une-stack. Elle ne porte QUE
+# `title` et `description` : tout autre champ y est ignoré en silence, parce que
+# le contrat ne se traduit pas.
+title: "La stack qui ne marche qu'à la deuxième tentative"
+description: "Faire démarrer une stack Compose correctement du premier coup : attendre le service dont elle dépend, sortir le mot de passe de l'environnement sans le perdre, appliquer une limite mémoire, garder une politique de redémarrage, et séparer le déploiement du développement."

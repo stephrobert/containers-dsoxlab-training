@@ -1,0 +1,84 @@
+---
+# Joué par `dsoxlab clean`, et ce qu'il retire est exactement ce que le setup a
+# posé, plus ce que la stack a fait naître.
+#
+# `docker compose down -v --remove-orphans` D'ABORD, et par le fichier de
+# déploiement : c'est lui qui connaît le projet, ses conteneurs, son réseau et
+# ses volumes. Le faire à la main par étiquette laisserait le réseau que Compose
+# crée pour le projet, qui ne porte pas le label de l'image.
+#
+# `-v` retire les volumes du projet, y compris ceux qu'un `secrets:` ou un
+# service ajouté aurait créés. `--remove-orphans` retire un conteneur dont le
+# service a disparu du fichier entre deux passages, ce qui arrive précisément
+# quand un apprenant réécrit la stack.
+- name: Retirer seulement les ressources de l'épreuve de fiabilisation
+  hosts: lab_target
+  become: true
+  vars:
+    atelier: /opt/lab-stack-fiable
+    projet: stack-fiable
+    tag_local: lab-stack-fiable:1.0
+    etat: /root/.lab-stack-fiable-state.json
+  tasks:
+    - name: Démonter la stack par Compose, variantes comprises
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          cd '{{ atelier }}' 2>/dev/null || exit 0
+          for fichiers in '-f compose.yaml -f compose.dev.yaml' '-f compose.yaml'; do
+            # Les deux formes sont tentées : si l'apprenant a écrit la variante
+            # de développement, le projet peut avoir été monté avec elle, et
+            # Compose veut la même composition de fichiers pour tout retrouver.
+            # shellcheck disable=SC2086
+            docker compose -p '{{ projet }}' $fichiers down -v --remove-orphans \
+              >/dev/null 2>&1 || true
+          done
+      changed_when: false
+
+    - name: Retirer ce que Compose aurait laissé, par étiquette de projet
+      # Ceinture et bretelles, et ce n'est pas du zèle : un `compose.yaml`
+      # réécrit par l'apprenant peut être invalide au moment du nettoyage, et
+      # Compose refuse alors de démonter ce qu'il a monté. L'étiquette que
+      # Compose pose sur tout ce qu'il crée reste, elle, exacte.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          ids=$(docker ps -aq --filter label=com.docker.compose.project={{ projet }})
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-fiabiliser-une-stack)
+          if test -n "$ids"; then docker rm -f -v $ids; fi
+          ids=$(docker network ls -q --filter label=com.docker.compose.project={{ projet }})
+          if test -n "$ids"; then docker network rm $ids >/dev/null 2>&1 || true; fi
+          ids=$(docker volume ls -q --filter label=com.docker.compose.project={{ projet }})
+          if test -n "$ids"; then docker volume rm $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Retirer l'image de la stack, construite par ce lab
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker image rm -f '{{ tag_local }}' >/dev/null 2>&1 || true
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-fiabiliser-une-stack)
+          if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
+      changed_when: false
+
+    - name: Rendre le socle public, et seulement si ce lab l'a tiré
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-epreuve-fiabiliser-une-stack.socle-a-rendre'; then
+          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-epreuve-fiabiliser-une-stack.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer seulement les fichiers préparés
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - "{{ etat }}"
