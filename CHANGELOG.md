@@ -18,6 +18,84 @@ of the Docker engine and in which storage mode. That is what
 
 ### Added
 
+- **Nine end-of-module tests** bring the catalogue to 90 labs, and the number of
+  tests to twelve: bring a service into service, connect two containers, bring
+  three containers back into service, deliver a first image, make a stack
+  reliable, contain a greedy container, take over a Docker host, harden without
+  breaking, and rebuild an image for two architectures. Each carries five checks
+  of equal weight, a pass mark of 75, four paid hints and one critical
+  requirement that no total makes up for. All attested on 2026-11-02 on Docker
+  29.9.2, containerd store.
+- **A check on version pinning** (`tests/test_paquets_epingles.py`, wired as a
+  hook): it requires `infra/bootstrap.yaml` to declare an exact version for the
+  five decisive packages, to put them on `hold`, and the version not to be
+  copied into any `setup.yaml`. The 75 setups install `docker-ce` with
+  `state: present`, and that is deliberate: the value lives in one place only,
+  because a value you have to remember to copy always ends up lying. The four
+  checks were bench-tested by sabotage, and each fails when it must.
+
+### Changed
+
+- `reseau-diagnostic-dns` becomes `remettre-un-conteneur-en-service`, and
+  `compose-capstone` becomes `epreuve-remettre-une-stack-en-service`, which
+  moves to `lab_type: challenge` with a pass mark of 75. Both attestations were
+  **removed** from the record rather than renamed: it is indexed by identifier,
+  and renaming it would pass off as attested a measurement made on another lab.
+  Both labs were re-attested under their new names.
+- Nineteen `doc_url` repointed at pages and anchors that exist, every target
+  verified on the site's disk before writing.
+- The promise of a single FastAPI application running through the whole path is
+  removed from both `meta` files: the training plan no longer provides for it.
+
+### Fixed
+
+- `container-ulimits-et-shm`: both scenarios announced **1024** descriptors
+  where the check requires **256**. Anyone following the brief failed, while the
+  attestation stayed green since the solution set 256. And the whole discourse
+  about a value "surprisingly large" was a leftover from Docker 26: measured on
+  29.9.2, `ulimit -n` is 1024, and it is the gap with the 524288 hard ceiling
+  that is instructive.
+- `internes-cgroups-v2`, `container-limite-cpu` and `container-ulimits-et-shm`
+  claimed you have to be root to read a container's cgroup files. Measured from
+  an ordinary account without `sudo`: all six files read, zero refusals.
+  **Writing** them does require a privilege, and that is what separates
+  observing from tuning.
+- `registry-tag-contre-digest` opposed "the manifest digest" and "the
+  configuration ID" as two distinct identities. Measured on 29.9.2, containerd
+  store: `.Id` is the pushed digest, and the manifest served is an OCI index
+  with no configuration key. The brief asked to avoid a value that does not
+  exist and happens to be the right one; what is checked is the startup
+  reference.
+- Nine assertion messages in the new tests become bilingual, and a missing
+  bare-tag marker is placed on the second task of `images-identifier-image`.
+
+### Measured
+
+Facts established on Docker 29.9.2, containerd store, which changed the design
+of several labs:
+
+- **dangling images no longer exist**: three builds on the same tag then
+  removing the tag leave zero dangling images, an image without a reference
+  being collected at once;
+- **`docker kill` does not trigger the restart policy**: a container under
+  `unless-stopped` stays `exited`, counter at zero, over ten readings in thirty
+  seconds. The kernel also protects a namespace's PID 1 against a `kill -9` sent
+  from inside it;
+- **`NET_BIND_SERVICE` is useless in a container**: the daemon sets
+  `net.ipv4.ip_unprivileged_port_start = 0` there, so a container with no
+  capability at all listens on port 80;
+- **`docker run --platform` does not honour the platform** if a local image
+  already matches the reference: an explicit `docker pull --platform` is needed,
+  without which the other architecture is never executed;
+- **an index published by buildx carries four manifests, not two**, because of
+  the provenance attestations, which appear as `unknown` platforms;
+- **`--build-arg` leaves a secret in the history** (two occurrences) where
+  `--mount=type=secret` leaves none, neither in the history nor in the layers;
+- **the `registry:3.1.2` image declares a `VOLUME`**: each registry container
+  creates an anonymous volume, and `docker rm` without `-v` leaves it behind.
+
+### Added
+
 - Six labs extend the catalogue to 77: transactional shutdown,
   AMD64/ARM64 execution (VM-local QEMU for ARM64), TLS registry ACLs,
   trusted signing identity, correlated CPU saturation and targeted firewall

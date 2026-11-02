@@ -17,6 +17,88 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Ajouté
 
+- **Neuf épreuves de fin de module** portent le catalogue à 90 labs, et le
+  nombre d'épreuves à douze : mettre un service en marche, relier deux
+  conteneurs, remettre trois conteneurs en service, livrer une première image,
+  fiabiliser une stack, contenir un conteneur gourmand, reprendre un hôte
+  Docker, durcir sans casser, et reconstruire une image pour deux
+  architectures. Chacune porte cinq contrôles de poids égal, un seuil de 75,
+  quatre indices payants et une exigence critique qu'aucun total ne compense.
+  Toutes attestées le 2026-11-02 sur Docker 29.9.2, magasin containerd.
+- **Un contrôle de l'épinglage des versions** (`tests/test_paquets_epingles.py`,
+  câblé en hook) : il exige que `infra/bootstrap.yaml` déclare une version
+  exacte pour les cinq paquets décisifs, qu'il les mette en `hold`, et que
+  la version ne soit recopiée dans aucun `setup.yaml`. Les 75 setups
+  installent `docker-ce` en `state: present`, et c'est volontaire : la valeur
+  vit à un seul endroit, parce qu'une valeur qu'il faut penser à recopier
+  finit toujours par mentir. Les quatre contrôles ont été éprouvés par
+  sabotage, et chacun échoue quand il doit échouer.
+
+### Modifié
+
+- `reseau-diagnostic-dns` devient `remettre-un-conteneur-en-service`, et
+  `compose-capstone` devient `epreuve-remettre-une-stack-en-service`, qui passe
+  en `lab_type: challenge` avec un seuil de 75. Les deux attestations ont été
+  **retirées** du relevé plutôt que renommées : elle est indexée par
+  identifiant, et la renommer ferait passer pour attestée une mesure faite sur
+  un autre lab. Les deux labs ont été réattestés sous leur nouveau nom.
+- Dix-neuf `doc_url` repointés sur les pages et les ancres qui existent, chaque
+  cible vérifiée sur le disque du site avant écriture.
+- La promesse d'un fil rouge FastAPI est retirée des deux `meta` : le plan de
+  formation ne la prévoit plus.
+
+### Corrigé
+
+- `container-ulimits-et-shm` : les deux scénarios annonçaient **1024**
+  descripteurs là où le contrôle en exige **256**. Quiconque suivait l'énoncé
+  échouait, pendant que l'attestation restait verte puisque la solution posait
+  256. Et tout le discours sur une valeur « qui surprend par sa taille » était
+  un vestige de Docker 26 : mesuré sur 29.9.2, `ulimit -n` vaut 1024, et c'est
+  l'écart avec le plafond dur de 524288 qui est instructif.
+- `internes-cgroups-v2`, `container-limite-cpu` et `container-ulimits-et-shm`
+  affirmaient qu'il faut être root pour lire les fichiers d'un cgroup. Mesuré
+  depuis un compte ordinaire sans `sudo` : les six fichiers se lisent, zéro
+  refus. Les **écrire** demande un privilège, et c'est ce qui sépare
+  l'observation du réglage.
+- `registry-tag-contre-digest` opposait « le digest du manifeste » et « l'ID de
+  configuration » comme deux identités distinctes. Mesuré sur 29.9.2, magasin
+  containerd : `.Id` vaut le digest poussé, et le manifeste servi est un index
+  OCI sans clé de configuration. L'énoncé demandait d'éviter une valeur qui
+  n'existe pas et qui se trouve être la bonne ; ce qui est contrôlé est la
+  référence de démarrage.
+- Neuf messages d'assertion des nouvelles épreuves passent en bilingue, et un
+  marqueur de tag nu manquant est posé sur la seconde tâche de
+  `images-identifier-image`.
+
+### Mesuré
+
+Faits établis sur Docker 29.9.2, magasin containerd, qui ont changé la
+conception de plusieurs labs :
+
+- **les images pendantes n'existent plus** : trois builds sur le même tag puis
+  le retrait du tag laissent zéro image pendante, une image sans référence
+  étant ramassée aussitôt ;
+- **`docker kill` ne déclenche pas la politique de redémarrage** : un conteneur
+  sous `unless-stopped` reste `exited`, compteur à zéro, sur dix lectures en
+  trente secondes. Le noyau protège par ailleurs le PID 1 d'un namespace contre
+  un `kill -9` venu de l'intérieur ;
+- **`NET_BIND_SERVICE` ne sert à rien dans un conteneur** : le démon y pose
+  `net.ipv4.ip_unprivileged_port_start = 0`, donc un conteneur sans aucune
+  capability écoute sur le port 80 ;
+- **`docker run --platform` n'honore pas la plateforme** si une image locale
+  correspond déjà à la référence : il faut un `docker pull --platform`
+  explicite, sans quoi l'autre architecture n'est jamais exécutée ;
+- **un index publié par buildx porte quatre manifestes et non deux**, à cause
+  des attestations de provenance, qui se présentent comme des plateformes
+  `unknown` ;
+- **`--build-arg` laisse un secret dans l'historique** (deux occurrences) là où
+  `--mount=type=secret` n'en laisse aucune, ni dans l'historique ni dans les
+  couches ;
+- **l'image `registry:3.1.2` déclare un `VOLUME`** : chaque conteneur de
+  registre crée un volume anonyme, et `docker rm` sans `-v` le laisse.
+
+### Ajouté
+
 - Six labs portent le catalogue à 77 : arrêt transactionnel, exécution
   AMD64/ARM64 (QEMU dans la VM pour ARM64), ACL de registre TLS, identité de
   signature approuvée, saturation CPU corrélée et réparation ciblée de
