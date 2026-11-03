@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: registry-locale-tls                      # REQUIS
 title: "Serve a trusted registry and pull without disabling TLS checks"
-level: c2                     # REQUIS
+level: c5                     # REQUIS
 description: "Enable registry TLS, install its private CA for Docker, and prove that a real pull verifies the certificate without an insecure-registry exception."
 skills:                       # REQUIS, non vide
   - docker

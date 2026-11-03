@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-healthcheck                      # REQUIS
 title: "'Up' says nothing about the service"   # REQUIS
-level: c2                     # REQUIS
+level: c5                     # REQUIS
 description: "Probe the work rather than the process: write a health check that sees a service going quiet without dying, that reports its recovery, and whose bounds do not stack up."
 skills:                       # REQUIS, non vide
   - docker
