@@ -18,6 +18,9 @@ TRIAL_IMAGE = "dsoxlab-secret:test"
 BUILDER = "dsoxlab-secret-test"
 BUILDKIT = "moby/buildkit@sha256:99368f3e46177c6405b9740e4461d91cee004128daeecca78d4ceac50ec1da5c"
 INSPECTOR = (Path(__file__).resolve().parents[2] / "fixtures/inspect-image.py").read_text()
+CONTEXT_INSPECTOR = (
+    Path(__file__).resolve().parents[2] / "fixtures/inspect-context.py"
+).read_text()
 
 
 @pytest.fixture(scope="module")
@@ -50,6 +53,51 @@ def test_product_and_secret_absent_from_image(host):
     assert report["clean"], message(
         en=f"The secret is still in {report.get('surface')}. Runtime deletion does not remove saved layers or history.",
         fr=f"Le secret reste dans {report.get('surface')}. Une suppression ne retire ni les couches sauvegardées ni l'historique.",
+    )
+
+
+def test_secret_never_enters_the_build_context(host):
+    """Le scenario l'exige deux fois, et rien ne le mesurait.
+
+    « Le secret pedagogique est dans /opt/lab-buildkit-secret/depot.token, hors
+    du contexte de build », puis « il ne doit pas etre copie dans le contexte ».
+    Les trois autres controles inspectent l'IMAGE, et un fichier present dans le
+    contexte mais jamais `COPY` n'entre dans aucune couche : l'exigence etait
+    donc invisible, et l'apprenant la croyait notee.
+
+    Ce controle porte sur le REPERTOIRE, sans exception pour `.dockerignore`.
+    Un secret exclu ne part pas au demon, mais il reste sur le disque, dans ce
+    qu'on versionne, et une exclusion s'oublie. Le message le dit a l'apprenant
+    plutot que de le laisser deviner.
+    """
+    _require_product(host)
+    result = host.run("sudo python3 -c %s %s %s",
+                      CONTEXT_INSPECTOR, f"{WORK}/appli", f"{WORK}/depot.token")
+    assert result.rc == 0, message(
+        en=f"Build context inspection failed: {result.stderr[-500:]}",
+        fr=f"L'inspection du contexte a échoué : {result.stderr[-500:]}",
+    )
+    report = json.loads(result.stdout)
+    # UNE SURFACE NON LUE N'EST PAS UNE SURFACE PROPRE : on leve plutot que de
+    # noter l'apprenant sur ce qu'on n'a pas regarde.
+    assert not report["illisibles"], message(
+        en="Could not read inside the build context: "
+           + ", ".join(report["illisibles"]),
+        fr="Impossible de lire dans le contexte de build : "
+           + ", ".join(report["illisibles"]),
+    )
+    surfaces = ", ".join(f"{f['chemin']} ({f['ou']})" for f in report["fuites"])
+    assert report["propre"], message(
+        en=f"The credential file must stay OUT of the build context directory, "
+           f"even excluded by .dockerignore: an exclusion gets forgotten, and the "
+           f"secret then follows the tree. Found in {surfaces}. Pass it with "
+           f"--secret id=depot,src={WORK}/depot.token, whose path is outside "
+           f"{WORK}/appli.",
+        fr=f"Le fichier d'identifiant doit rester HORS du répertoire de contexte, "
+           f"même exclu par .dockerignore : une exclusion s'oublie, et le secret "
+           f"suit alors l'arborescence. Trouvé dans {surfaces}. Passez-le par "
+           f"--secret id=depot,src={WORK}/depot.token, dont le chemin est en "
+           f"dehors de {WORK}/appli.",
     )
 
 

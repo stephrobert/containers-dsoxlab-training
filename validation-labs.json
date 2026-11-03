@@ -62,33 +62,34 @@
  "buildkit-secret-de-build": {
   "apres": {
    "echecs": [],
-   "passed": 3,
+   "passed": 4,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 3
+   "total": 4
   },
   "avant": {
    "echecs": [
-    "test_product_and_secret_absent_from_image"
+    "test_product_and_secret_absent_from_image",
+    "test_secret_never_enters_the_build_context"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 3
+   "total": 4
   },
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 77,
+  "duree_s": 69,
   "ecarts": [],
   "etapes": [
-   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/3",
-   "après la solution : 3/3",
-   "après clean et run : 0/3",
+   "état photographié : 13 image(s), 0 conteneur(s), 3 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -103,14 +104,15 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_product_and_secret_absent_from_image"
+    "test_product_and_secret_absent_from_image",
+    "test_secret_never_enters_the_build_context"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 3
+   "total": 4
   },
   "store": "containerd",
   "verdict": "VALIDE"

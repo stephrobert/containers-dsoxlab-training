@@ -18,6 +18,7 @@ Fix the Dockerfile and build `dsoxlab-secret:finale`.
 - No secret appears in configuration, history or saved layers.
 - A new identity supplied through `--secret id=depot,src=...` rebuilds successfully.
 - Missing or incorrect secrets fail a build executed without layer caching.
+- The credential file does not sit inside the build context directory.
 
 The repository and its state are measurement instruments: do not modify them.
 HTTP is restricted here to the isolated lab network; repository TLS is not
@@ -32,7 +33,14 @@ docker buildx create --name dsoxlab-secret-work --driver docker-container \
 
 Supply `DEPOT_URL=http://<docker.lab-address>:18083/artifact` as a build argument,
 and the credentials file as a BuildKit secret. It is not a `DEPOT_SECRET`
-argument, and must not be copied into the context.
+argument, and must not be copied into the context: the checks verify that the
+`appli` directory does not hold it, even when excluded by a `.dockerignore`.
+
+A `docker-container` builder does not place the image in the local store: it
+keeps it in its own cache. Without `--load` the build succeeds, then `docker
+run` answers "Unable to find image ... locally" followed by a "may require
+'docker login'" that has nothing to do with your problem. So build with
+`--load`, since the checks read the image from the local store.
 
 Checks read your image, then rebuild a context copy with a fresh product and
 identity. They restore the repository after trials. Cleanup removes only this
