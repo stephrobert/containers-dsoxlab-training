@@ -59,6 +59,11 @@ COMMANDE_A_PREDIRE = "--verbeux"
 # L'hôte du `meta.yml`, et le même que `runtime.targets[].host` du lab.yaml.
 TARGET_HOST = "docker.lab"
 
+# Le relevé que le setup prend AVANT le travail de l'apprenant. Il porte
+# l'empreinte de démarrage du témoin, sans laquelle le contrôle bloquant ne
+# peut pas voir un conteneur relancé puis rearrêté.
+ETAT = "/root/.lab-mise-en-marche-state.json"
+
 
 @pytest.fixture(scope="module")
 def host():
@@ -70,6 +75,25 @@ def host():
     modifier.
     """
     return lab_host(TARGET_HOST)
+
+
+@pytest.fixture(scope="module")
+def releve(host) -> dict:
+    """Ce que le lab a mesuré AVANT le travail, et qui rend une triche visible.
+
+    Un contrôle qui lit l'état final sans point de comparaison ne mesure que
+    cet état. Le témoin en est l'exemple : arrêté au départ, arrêté à
+    l'arrivée, et pourtant relancé entre les deux.
+    """
+    lu = host.run("cat %s", ETAT)
+    if lu.rc != 0:
+        pytest.fail(message(
+            en=f"the lab's own measurement is missing from `{ETAT}`. It is "
+               "taken during `dsoxlab run`: replay it.",
+            fr=f"la mesure que le lab a prise manque dans `{ETAT}`. Elle est "
+               "faite pendant `dsoxlab run` : rejouez-le.",
+        ))
+    return json.loads(lu.stdout)
 
 
 @pytest.fixture(scope="module")
@@ -244,7 +268,9 @@ def test_l_ancien_conteneur_homonyme_a_disparu(host) -> None:
     )
 
 
-def test_le_temoin_est_conserve_arrete_et_ses_journaux_lisibles(host) -> None:
+def test_le_temoin_est_conserve_arrete_et_ses_journaux_lisibles(
+    host, releve
+) -> None:
     """L'EXIGENCE CRITIQUE : elle n'est compensée par aucun total.
 
     Le témoin ressemble à l'obstacle à s'y tromper : un conteneur arrêté, issu
@@ -272,7 +298,8 @@ def test_le_temoin_est_conserve_arrete_et_ses_journaux_lisibles(host) -> None:
            "incident que l'exploitation doit pouvoir relire. Aucun total ne "
            "compense sa perte.",
     )
-    statut = res.stdout.split()[0] if res.stdout.split() else ""
+    champs = res.stdout.split()
+    statut = champs[0] if champs else ""
     assert statut == "exited", message(
         en=f"the witness container `{TEMOIN}` is `{statut}`, not `exited`.\n"
            "The brief asks for it as it is, and it was stopped. Restarting it "
@@ -281,6 +308,50 @@ def test_le_temoin_est_conserve_arrete_et_ses_journaux_lisibles(host) -> None:
         fr=f"le conteneur témoin `{TEMOIN}` est `{statut}`, et non `exited`.\n"
            "L'énoncé le demande tel quel, et il était arrêté. Le relancer n'est "
            "pas anodin : un conteneur qui repart peut écraser ce qu'il portait.",
+    )
+
+    # LE STATUT NE SUFFIT PAS, et sans ce qui suit ce contrôle bloquant ne
+    # pouvait PAS échouer sur ce qu'il prétend mesurer : un `docker start`
+    # suivi d'un `docker stop` repasse à `exited`. Il lisait déjà `StartedAt`
+    # et `RestartCount` dans son format, et ne les comparait à rien.
+    #
+    # `StartedAt` est l'horodatage du DERNIER démarrage : tout redémarrage le
+    # change. Le setup l'a relevé juste après avoir arrêté le témoin.
+    demarre = champs[1] if len(champs) > 1 else ""
+    attendu = releve.get("temoin_demarre_a")
+    assert attendu, message(
+        en="the lab's own measurement of the witness container's start is "
+           "missing. It is taken during `dsoxlab run`: replay it.",
+        fr="la mesure que le lab a prise du démarrage du témoin manque. Elle "
+           "est faite pendant `dsoxlab run` : rejouez-le.",
+    )
+    assert demarre == attendu, message(
+        en=f"the witness container `{TEMOIN}` was restarted.\n"
+           f"  it started at : {demarre}\n"
+           f"  the lab left it at: {attendu}\n"
+           "It is stopped again, so its status says nothing. But `StartedAt` "
+           "is the timestamp of the LAST start, and it moved. The brief asks "
+           "for the container as it is, because a container that runs again can "
+           "overwrite what it carried. No total makes up for that.",
+        fr=f"le conteneur témoin `{TEMOIN}` a été relancé.\n"
+           f"  il a démarré à      : {demarre}\n"
+           f"  le lab l'avait laissé à : {attendu}\n"
+           "Il est arrêté de nouveau, donc son statut ne dit rien. Mais "
+           "`StartedAt` est l'horodatage du DERNIER démarrage, et il a bougé. "
+           "L'énoncé demande le conteneur tel quel, parce qu'un conteneur qui "
+           "repart peut écraser ce qu'il portait. Aucun total ne le compense.",
+    )
+
+    # Et le compteur de redémarrages, qui attrape le cas où la politique du
+    # moteur a relancé le conteneur sans qu'on le lui demande.
+    redemarrages = int(champs[2]) if len(champs) > 2 and champs[2].isdigit() else 0
+    assert redemarrages == int(releve.get("temoin_redemarrages", 0)), message(
+        en=f"the witness container's restart counter moved: "
+           f"{releve.get('temoin_redemarrages', 0)} -> {redemarrages}.\n"
+           "Something restarted it, and the brief asks for it as it is.",
+        fr=f"le compteur de redémarrages du témoin a bougé : "
+           f"{releve.get('temoin_redemarrages', 0)} -> {redemarrages}.\n"
+           "Quelque chose l'a relancé, et l'énoncé le demande tel quel.",
     )
     journaux = host.run("docker logs %s", TEMOIN)
     assert journaux.rc == 0 and "annuaire demarre" in (
@@ -385,8 +456,11 @@ def _interroge(host, nom: str) -> str:
     """Ce que le service répond, lu depuis un voisin de son réseau.
 
     La réponse est lue, jamais la seule connexion. Et l'interrogation se fait
-    par `docker exec` DANS le conteneur lui-même, sur son propre port : l'épreuve
-    interdit le port publié, donc l'hôte n'a aucun chemin vers lui.
+    par `docker exec` DANS le conteneur lui-même, sur son propre port, parce que
+    l'épreuve ne DEMANDE aucun port publié : elle ne l'interdit pas non plus, et
+    ce n'est pas son sujet. Interroger depuis l'intérieur marche donc dans les
+    deux cas, qu'un port soit publié ou non, et ne note pas un choix que
+    l'énoncé laisse libre.
     """
     dernier = ""
     for _ in range(5):

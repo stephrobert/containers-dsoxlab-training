@@ -225,13 +225,24 @@
             --format '{% raw %}{{.Size}}{% endraw %}')
           docker image rm -f reference-livraison:mesure >/dev/null
           rm -f /root/reference.Dockerfile
-          python3 - "$taille" <<'PY'
+          base=$(docker image inspect '{{ image_epinglee }}' \
+            --format '{% raw %}{{.Size}}{% endraw %}')
+          python3 - "$taille" "$base" <<'PY'
           import json, sys
           from pathlib import Path
           reference = int(sys.argv[1])
+          base = int(sys.argv[2])
+          # LE DELTA, et c est lui qui fait foi. Le seuil absolu reste consigne
+          # pour les messages, mais le controle compare ce que la reference
+          # AJOUTE a sa base avec ce que l apprenant ajoute a la SIENNE : aucune
+          # base n est imposee par l enonce, et un seuil absolu calcule sur
+          # alpine recalait une image propre batie sur debian:13-slim.
           seuil = reference + {{ marge_mo }} * 1000 * 1000
           Path("{{ etat }}").write_text(json.dumps({
               "reference_octets": reference,
+              "base_reference_octets": base,
+              "delta_reference_octets": reference - base,
+              "marge_octets": {{ marge_mo }} * 1000 * 1000,
               "seuil_octets": seuil,
               "metier": "{{ tirages.results[0].stdout }}",
               "jeton": "{{ tirages.results[1].stdout }}",
@@ -290,10 +301,12 @@
                lui appartient, sans etre inscriptible par tous ;
             3. ni le fichier `.identifiants`, ni son jeton, ni le contenu de
                `travail/` ne se trouvent dans AUCUNE couche de l image ;
-            4. la taille de l image reste sous le seuil que ce lab a mesure sur
-               cette machine : vous le lisez avec
-               `dsoxlab hint` si besoin, mais il suffit de ne pas livrer ce qui
-               n a rien a faire dans une image ;
+            4. ce que l image AJOUTE a sa base reste sous un budget que ce lab a
+               mesure sur cette machine : {{ marge_mo }} megaoctets au-dessus de
+               ce qu ajoute une image de reference. La base que vous choisissez
+               n entre pas en compte, seule compte ce que vous posez dessus, et
+               il suffit de ne pas livrer ce qui n a rien a faire dans une
+               image. Un `RUN rm` a une etape ulterieure ne rend pas la place ;
             5. l image est publiee dans le registre du lab, sur
                `127.0.0.1:{{ port_registre }}`, et le digest que le registre
                sert est consigne dans `{{ depot }}/digest.txt`, sur une seule

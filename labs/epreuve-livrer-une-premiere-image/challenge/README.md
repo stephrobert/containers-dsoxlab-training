@@ -3,7 +3,7 @@
 A repository holds an application, its dependency, a credentials file and a
 working directory. **There is no Dockerfile**: writing it is your job.
 
-## The five checks
+## The six checks
 
 They are of equal weight, and each rests on a verifiable fact.
 
@@ -24,7 +24,7 @@ Declaring a non-root user and leaving them a directory they do not own delivers
 an image that fails on its first write; making it world-writable fixes the
 symptom by cancelling the benefit.
 
-### 3. Neither the token nor the work files in any layer
+### 3. The token in no layer
 
 **This is the critical requirement: no total makes up for it.**
 
@@ -37,17 +37,30 @@ not.
 And it is the **value** of the token that is searched for, not the file's name:
 renaming changes nothing about the secret travelling.
 
-### 4. Size under the measured threshold
+It is about **that single fact**. A published secret cannot be taken back, and
+it is the fault this test exists to eliminate.
 
-The threshold comes from a **reference build made on this machine** during
-`dsoxlab run`. It is not written into the test: a hard-coded size would expire
-at the first update of the base image, and the lab would start rejecting correct
-work.
+### 4. The working directory is not delivered
+
+Waste, not a breach: this check is graded and it **can be made up for**. Work
+files weigh down the image for everyone who pulls it, forever, which is a fault,
+but one that can be redeemed.
+
+### 5. What the image adds to its base
+
+**No base is imposed**, and yours does not count: the check compares what you
+put **on top** with what a reference image puts on top of its own, plus a
+margin.
+
+Measured on this machine: the same application content adds 0.1 MB to
+`alpine:3.22` and to `debian:13-slim` alike, and delivering the working
+directory adds 80. That gap is what the check sees, not the size of your base.
 
 The margin is generous. The test measures "did not deliver what has no business
-being in an image", not "optimised to the megabyte".
+being in an image", not "optimised to the megabyte", which is the subject of
+another test in the path.
 
-### 5. Published, and the recorded digest is the one served
+### 6. Published, and the recorded digest is the one served
 
 The digest is **asked of the registry**, then compared with yours. A tag can be
 rewritten: two `push` of the same tag serve two different images. The digest is
