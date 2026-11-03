@@ -237,17 +237,36 @@ def test_le_mot_de_passe_n_est_ni_dans_l_environnement_ni_dans_l_image(
     # suffirait, et la stack servirait une valeur fausse en silence.
     recu = _interroge_l_api(host)
     attendu = f"api={releve['derive']}"
+
+    # DEUX SITUATIONS, DEUX CAUSES, et les confondre envoyait l'apprenant au
+    # mauvais endroit. `_interroge_l_api` rend une chaîne VIDE quand l'API ne
+    # répond pas : le message disait alors « le mot de passe n'arrive plus au
+    # coffre », donc il accusait le secret alors que le service était mort.
+    #
+    # Un message ne devine pas une cause : « rien » veut dire « rien », et on le
+    # dit. C'est la même règle que le moteur applique à ses propres verdicts.
+    assert recu.strip(), message(
+        en="the API answers nothing at all on the published interface.\n"
+           "That is not a secret problem: the service is down, or its port is "
+           "closed. Look at what the stack is doing before looking at what it "
+           "serves.",
+        fr="l'API ne répond rien du tout sur l'interface publiée.\n"
+           "Ce n'est pas un problème de secret : le service est arrêté, ou son "
+           "port est fermé. Regardez ce que fait la stack avant de regarder ce "
+           "qu'elle sert.",
+    )
     assert attendu in recu, message(
         en=f"the password no longer reaches the vault.\n"
-           f"  what the API serves: {recu.strip()[:200] or '(nothing)'}\n"
+           f"  what the API serves: {recu.strip()[:200]}\n"
            f"  expected           : {attendu}\n"
-           "Removing a secret without replacing it is not a fix: the stack is "
-           "clean and wrong.",
+           "The API does answer, and it serves another value: removing a secret "
+           "without replacing it is not a fix, the stack is clean and wrong.",
         fr=f"le mot de passe n'arrive plus au coffre.\n"
-           f"  ce que l'API sert : {recu.strip()[:200] or '(rien)'}\n"
+           f"  ce que l'API sert : {recu.strip()[:200]}\n"
            f"  attendu           : {attendu}\n"
-           "Retirer un secret sans le remplacer n'est pas une correction : la "
-           "stack est propre et fausse.",
+           "L'API répond bien, et elle sert une autre valeur : retirer un "
+           "secret sans le remplacer n'est pas une correction, la stack est "
+           "propre et fausse.",
     )
 
 

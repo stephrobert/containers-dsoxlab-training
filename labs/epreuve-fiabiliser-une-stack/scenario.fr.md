@@ -18,8 +18,8 @@ montage du code source qui servait en développement est encore là.
    qui **répond du premier coup**, sans qu'aucun service ait eu besoin de
    redémarrer.
 2. Le mot de passe n'apparaît **ni dans l'environnement** des conteneurs, **ni
-   dans l'image**, et le coffre le reçoit quand même : la valeur servie doit
-   rester la bonne.
+   dans l'image**, ni dans ce que rend `docker compose config`, et le coffre le
+   reçoit quand même : la valeur servie doit rester la bonne.
 3. Chaque service porte une **limite mémoire**, visible dans l'inspection du
    conteneur comme dans son cgroup.
 4. Chaque service porte une **politique de redémarrage** : un conteneur tué
@@ -50,9 +50,14 @@ n'est imposée : deux façons d'obtenir le même comportement reçoivent la mêm
 note.
 
 Le seuil est de **75 sur 100**. Une exigence ne se compense par aucun total :
-**le mot de passe lisible dans l'environnement fait échouer l'épreuve**, même
-avec tout le reste en place. Une variable d'environnement se lit par
-`docker inspect`, par `docker compose config`, et par quiconque parle au démon.
+**un mot de passe lisible fait échouer l'épreuve**, même avec tout le reste en
+place. Et il est cherché à **quatre** endroits, pas un : l'environnement des
+conteneurs, les **couches de l'image**, ce que rend `docker compose config`, et
+la **valeur servie** par l'API.
+
+Le sortir de l'environnement pour le mettre dans l'image n'est donc pas une
+correction, c'est une aggravation : une variable se lit par `docker inspect` et
+par quiconque parle au démon, mais une image **se publie**.
 
 Attention à la fausse correction : retirer le mot de passe **sans le remplacer**
 donne une stack propre et fausse. Le contrôle compare la valeur servie à celle
