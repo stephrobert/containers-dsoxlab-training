@@ -8,9 +8,21 @@ d'approvisionnement, et c'est celui qui manque le plus souvent, parce qu'un
 tag a l'air d'une identité.
 
 Il est noté sur le **contenu d'un fichier de réponse**, jamais sur les
-commandes tapées. `docker image inspect`, `skopeo inspect` ou une lecture du
-magasin d'images mènent au même état : noter la commande reviendrait à noter
-un style.
+commandes tapées : noter la commande reviendrait à noter un style.
+
+**Attention toutefois, et c'est mesuré :** `docker image inspect` et une lecture
+du magasin donnent la même empreinte, mais `skopeo inspect docker-daemon:` en
+donne une **autre**. Il recalcule le digest d'un manifeste qu'il reconstruit, et
+ce n'est donc pas l'identité que le démon attribue à l'image. Relevé le
+2026-11-03 sur Docker 29.9.2 avec le magasin containerd :
+
+```text
+docker .Id      sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4
+skopeo Digest   sha256:b53484268bcb57337956b584fd7459645b35d6e28be2358053884b9fb40a8237
+```
+
+Le lab attend l'empreinte du **démon**. `skopeo` reste utile pour lire une image
+sans passer par lui, dans un registre par exemple, mais pas pour répondre ici.
 
 ## Le piège, et il est construit
 

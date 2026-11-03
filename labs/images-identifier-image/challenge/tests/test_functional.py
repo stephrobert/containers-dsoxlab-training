@@ -8,9 +8,18 @@ Les deux premiers se mesurent ici ; le troisième ne se teste pas et reste hors
 de ce fichier, comme le contrat le prévoit.
 
 CE QU'ON NE MESURE PAS, ET POURQUOI. On ne vérifie jamais QUELLE commande
-l'apprenant a tapée. `docker inspect`, `skopeo inspect`, une lecture du
-répertoire de `containerd` : tous ces chemins mènent au même état, et un lab
-qui noterait la commande noterait un style, pas une compétence. On lit donc
+l'apprenant a tapée : un lab qui noterait la commande noterait un style, pas
+une compétence.
+
+MAIS TOUS LES CHEMINS NE MÈNENT PAS AU MÊME ÉTAT, et le lab l'affirmait à tort.
+Mesuré le 2026-11-03 sur Docker 29.9.2 avec le magasin containerd et skopeo
+1.18.0 : `docker image inspect` et une lecture du magasin donnent la même
+empreinte, et `skopeo inspect docker-daemon:` en donne une AUTRE, parce qu'il
+recalcule le digest d'un manifeste qu'il reconstruit. Un apprenant qui suivait
+cette phrase écrivait la valeur de skopeo et échouait, sur une affirmation du
+lab lui-même.
+
+L'empreinte attendue est celle du DÉMON. On lit donc
 `/opt/lab-images/reponse.txt`, et on confronte CE QU'IL AFFIRME à ce que la
 machine porte réellement.
 
@@ -79,6 +88,22 @@ def _lire_reponse(host) -> dict[str, str]:
         cle, _, valeur = ligne.partition("=")
         paires[cle.strip().lower()] = valeur.strip()
     return paires
+
+
+def _empreinte(valeur: str) -> str:
+    """La partie empreinte d'une référence, quelle que soit sa forme.
+
+    DEUX FORMES PORTENT LA MÊME EMPREINTE, et refuser l'une des deux noterait la
+    frappe plutôt que l'état. Mesuré le 2026-11-03 :
+
+        .Id              sha256:f6b08b09a05725f943...
+        .RepoDigests[0]  debian@sha256:f6b08b09a05725f943...
+
+    Un apprenant qui suit la leçon sur le registre écrit la seconde, qui est la
+    forme portable d'une image venue d'un registre. Il a donc le bon digest dans
+    une autre forme, et il échouait.
+    """
+    return valeur.rsplit("@", 1)[-1].strip()
 
 
 def _digest_reel(host, reference: str) -> str:
@@ -160,7 +185,9 @@ def test_la_reponse_nomme_le_digest_de_l_image_de_base(host) -> None:
         fr="la ligne `base=` manque : c'est le digest de l'image debian:13 locale.",
     )
     reel = _digest_reel(host, "debian:13")
-    assert annonce == reel, message(
+    # LES DEUX FORMES PASSENT : `sha256:...` et `nom@sha256:...` portent la même
+    # empreinte, et seule l'empreinte dit quelle image c'est.
+    assert _empreinte(annonce) == _empreinte(reel), message(
         en=f"the base digest you state is not debian:13 on this machine.\n"
            f"  stated : {annonce}\n  actual : {reel}",
         fr=f"le digest de base annoncé ne correspond pas à debian:13 sur cette machine.\n"
