@@ -223,6 +223,21 @@ repos:
         pass_filenames: false
         stages: [pre-push]
 
+      # Le contrôle d'ancres ci-dessous TOLÈRE deux cas depuis le 2026-11-03 :
+      # une page injoignable, et une ancre déclarée dans
+      # `scripts/ancres-en-attente.yml`. Une tolérance non éprouvée est une
+      # porte ouverte : ce test provoque chaque refus, et vérifie surtout que
+      # la liste d'attente se vide (une entrée dont l'ancre résout désormais,
+      # ou qui ne correspond plus à aucun `doc_url`, fait échouer le contrôle).
+      # Aucun réseau : il remplace la sonde par une table, donc il mesure le
+      # code et non le déploiement du jour.
+      - id: ancres-trois-issues
+        name: le contrôle d'ancres sait encore refuser
+        entry: uv run --no-sync pytest tests/test_ancres_trois_issues.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: ancres-des-doc-url
         name: chaque doc_url ancré pointe une section qui existe
         # Réseau : `validate-structure --check-urls` contrôle le code HTTP de
