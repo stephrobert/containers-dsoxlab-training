@@ -61,15 +61,20 @@ Aucun contrôle n'attend donc un arrêt : ce serait mesurer une croyance.
 
 ## Les bornes ne sont pas des détails
 
-Le quatrième contrôle exige trois choses, chacune pour une raison :
+Le quatrième contrôle exige deux choses, chacune pour une raison :
 
-- le **délai d'attente sous l'intervalle**, sans quoi une sonde lente est
-  encore en cours quand la suivante démarre, et le moteur les empile sur un
-  service qui va déjà mal ;
 - **au moins deux tentatives**, sans quoi un hoquet d'une seconde déclare
   malade un service qui va bien ;
 - une **période de démarrage**, sans quoi un service qui prend du temps à se
   préparer est jugé avant d'avoir commencé.
+
+Le **délai d'attente** n'est pas contrôlé, et c'est mesuré : l'intervalle se
+compte après la **fin** d'une sonde, jamais entre deux départs. Une sonde qui
+dure six secondes sous un intervalle de deux secondes ne produit donc aucun
+empilement. Relevé sur Docker Engine 29.1.3 : une seule sonde en vol à tout
+instant, et deux secondes pile entre la fin d'une sonde et le départ de la
+suivante. Le délai d'attente sert à autre chose : il borne une sonde qui ne rend
+pas la main, et se choisit juste au-dessus de la durée normale de la sonde.
 
 ## Ce qui est noté
 

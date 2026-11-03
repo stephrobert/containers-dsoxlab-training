@@ -3,7 +3,7 @@
 id: images-healthcheck                      # REQUIS
 title: "'Up' says nothing about the service"   # REQUIS
 level: c5                     # REQUIS
-description: "Probe the work rather than the process: write a health check that sees a service going quiet without dying, that reports its recovery, and whose bounds do not stack up."
+description: "Probe the work rather than the process: write a health check that sees a service going quiet without dying, that reports its recovery, and whose bounds give a slow service the time to get ready."
 skills:                       # REQUIS, non vide
   - docker
   - dockerfile

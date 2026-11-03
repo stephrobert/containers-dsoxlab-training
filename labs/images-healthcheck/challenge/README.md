@@ -46,10 +46,12 @@ unhealthy, and stay there for ever.
 ## 4. The declared bounds must be coherent
 
 ```text
-timeout < interval       otherwise the probes stack up
 at least 2 retries       otherwise a hiccup declares it sick
 a start period           otherwise a slow service is judged before it begins
 ```
+
+The timeout, however, is not checked: the interval counts from the end of a
+probe, so nothing stacks up. Measured on Docker Engine 29.1.3.
 
 ## A surprise, and what the lab does not make of it
 

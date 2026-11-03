@@ -46,10 +46,12 @@ puis au malade, et y resterait pour toujours.
 ## 4. Les bornes déclarées doivent être cohérentes
 
 ```text
-délai d'attente < intervalle    sinon les sondes s'empilent
 au moins 2 tentatives           sinon un hoquet déclare malade
 une période de démarrage        sinon un service lent est jugé avant de commencer
 ```
+
+En revanche, le délai d'attente n'est pas contrôlé : l'intervalle se compte après
+la fin d'une sonde, donc rien ne s'empile. Mesuré sur Docker Engine 29.1.3.
 
 ## Une surprise, et ce que le lab n'en fait pas
 

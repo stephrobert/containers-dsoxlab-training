@@ -288,10 +288,15 @@ def test_le_conteneur_revient_sain_quand_le_service_repart(host) -> None:
 def test_les_bornes_declarees_sont_coherentes(host) -> None:
     """Les quatre bornes, et ce qu'une valeur par défaut coûte.
 
-    TROIS EXIGENCES, chacune pour une raison mesurable :
-
-    le DÉLAI D'ATTENTE sous l'INTERVALLE, sans quoi une sonde lente est encore
-    en cours quand la suivante démarre, et le moteur les empile ;
+    DEUX EXIGENCES, chacune pour une raison mesurable. Le DÉLAI D'ATTENTE n'en
+    fait PAS partie, et son absence est un choix mesuré : l'intervalle se compte
+    après la FIN d'une sonde, jamais entre deux départs. Relevé le 2026-11-03 sur
+    Docker Engine 29.1.3, avec une sonde de six secondes sous un intervalle de
+    deux : une seule sonde en vol à tout instant, zéro départ pendant qu'une
+    sonde tourne, et deux secondes pile entre une fin et le départ suivant. Un
+    délai d'attente supérieur à l'intervalle n'empile donc rien, et la leçon
+    elle-même écrit « l'intervalle se compte après la fin de l'essai ». Ce
+    contrôle exigeait le contraire pour une raison fausse.
 
     au moins DEUX TENTATIVES, sans quoi un seul hoquet, une seconde de charge,
     déclare un service malade ;
@@ -309,18 +314,10 @@ def test_les_bornes_declarees_sont_coherentes(host) -> None:
            "dit.",
     )
 
-    interval = b.get("interval", 0)
-    timeout = b.get("timeout", 0)
-    assert interval > 0 and timeout > 0 and timeout < interval, message(
-        en=f"the probe's timeout ({timeout} s) is not below its interval "
-           f"({interval} s).\n"
-           "A slow probe is then still running when the next one starts, and "
-           "the engine stacks them up on a service that is already struggling.",
-        fr=f"le délai d'attente de la sonde ({timeout} s) n'est pas inférieur à "
-           f"son intervalle ({interval} s).\n"
-           "Une sonde lente est alors encore en cours quand la suivante "
-           "démarre, et le moteur les empile sur un service qui va déjà mal.",
-    )
+    # L assertion sur le delai d attente a ete retiree le 2026-11-03 : voir la
+    # docstring. Elle exigeait que le delai d attente reste strictement
+    # sous l intervalle au nom d un empilement de sondes que le moteur ne
+    # produit pas.
     assert b.get("retries", 0) >= 2, message(
         en=f"the probe allows {b.get('retries', 0)} attempt(s).\n"
            "A single hiccup, one second of load, then declares a healthy "

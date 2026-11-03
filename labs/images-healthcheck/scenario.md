@@ -62,15 +62,20 @@ So no check expects a stop: that would measure a belief.
 
 ## The bounds are not details
 
-The fourth check requires three things, each for a reason:
+The fourth check requires two things, each for a reason:
 
-- the **timeout below the interval**, otherwise a slow probe is still running
-  when the next one starts, and the engine stacks them up on a service that is
-  already struggling;
 - **at least two attempts**, otherwise a one-second hiccup declares a healthy
   service sick;
 - a **start period**, otherwise a service that takes time to get ready is
   judged before it has begun.
+
+The **timeout** is not checked, and that is measured: the interval counts from
+the **end** of a probe, never between two starts. A probe that lasts six seconds
+under a two-second interval therefore stacks nothing up. Measured on Docker
+Engine 29.1.3: a single probe in flight at any instant, and exactly two seconds
+between the end of one probe and the start of the next. The timeout serves
+another purpose: it bounds a probe that never returns, and is chosen just above
+the probe's normal duration.
 
 ## What is graded
 
