@@ -13,7 +13,7 @@
 # fait ailleurs.
 id: epreuve-durcir-sans-casser                      # REQUIS
 title: "Harden a service without breaking it"       # REQUIS
-level: c4                     # REQUIS
+level: c3                     # REQUIS
 description: "Strip a service of the rights it does not need, make its root read-only with declared writable paths, take its secret out of the environment without losing it, restore a blocked flow without disabling the firewall, and keep the one volume that matters."
 skills:                       # REQUIS, non vide
   - docker

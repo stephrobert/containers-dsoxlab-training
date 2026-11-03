@@ -8,7 +8,7 @@
 # conteneur et son PID sur l'hôte.
 id: epreuve-contenir-un-conteneur-gourmand                      # REQUIS
 title: "The batch job that takes the host down with it"  # REQUIS
-level: c4                     # REQUIS
+level: c3                     # REQUIS
 description: "Contain a runaway batch job with memory, CPU and process limits, prove that the limit actually holds during a pointe, keep the service answering, and lose none of the earlier results."
 skills:                       # REQUIS, non vide
   - docker
