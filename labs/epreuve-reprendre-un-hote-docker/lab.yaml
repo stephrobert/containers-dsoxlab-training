@@ -12,7 +12,7 @@
 # que les contrôles vérifient en lisant la ligne de commande effective du démon.
 id: epreuve-reprendre-un-hote-docker                      # REQUIS
 title: "Take over a Docker host nobody has maintained"  # REQUIS
-level: c4                     # REQUIS
+level: c6                     # REQUIS
 description: "Recover a neglected Docker host: impose log rotation and restart the daemon, give back the space taken for nothing without losing the application's volume, settle who may still talk to the engine, put a read-only proxy in front of the socket, and close the TCP API."
 skills:                       # REQUIS, non vide
   - docker

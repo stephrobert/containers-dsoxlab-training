@@ -6,7 +6,7 @@
 # Rien n'y est réexpliqué : les labs réseau du parcours l'ont enseigné.
 id: remettre-un-conteneur-en-service                      # REQUIS
 title: "The shop cannot find its catalogue"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Repair real name resolution, access and exposure faults, then recreate the catalogue without losing a fresh persistent business value."
 skills:                       # REQUIS, non vide
   - docker

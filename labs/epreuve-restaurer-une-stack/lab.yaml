@@ -3,7 +3,7 @@
 # machine (regle B). Voir LABS-A-ECRIRE-AUDIT.md a la racine du catalogue.
 id: epreuve-restaurer-une-stack
 title: Restore a stack on another host, data included
-level: c3
+level: c4
 description: 'A business request crosses the front end, the API and the database. A fault is injected
   without being announced: restore the service AND the witness record on a distinct host, without
   removing the data network isolation.'

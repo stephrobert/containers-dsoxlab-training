@@ -12,7 +12,7 @@
 # sert qu'une architecture ne se déploie pas.
 id: epreuve-reconstruire-une-image-pour-deux-architectures   # REQUIS
 title: "One image, four demands, two architectures"          # REQUIS
-level: c4                     # REQUIS
+level: c5                     # REQUIS
 description: "Rebuild a heavy single-stage image so that one single image is multi-stage without its compiler, under a measured size threshold, free of its build token in the layers and the history, and served for two architectures that both run, with the index's digest recorded."
 skills:                       # REQUIS, non vide
   - docker

@@ -9,7 +9,7 @@
 # l'isolement d'un conteneur.
 id: epreuve-exposer-sans-exposer-sa-base                      # REQUIS
 title: "Expose an application without exposing its database"
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Publish the front end on the one interface asked for, make the database answer to a service name, put it on a network with no way out, leave no published port on it, and still get the business answer end to end."
 skills:                       # REQUIS, non vide
   - docker

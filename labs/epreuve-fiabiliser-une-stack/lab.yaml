@@ -13,7 +13,7 @@
 # mesure quatre points de fiabilité.
 id: epreuve-fiabiliser-une-stack                      # REQUIS
 title: "The stack that only works on the second try"   # REQUIS
-level: c3                     # REQUIS
+level: c4                     # REQUIS
 description: "Make a Compose stack start correctly the first time: wait for the service it depends on, take the password out of the environment without losing it, apply a memory limit, keep a restart policy, and split deployment from development."
 skills:                       # REQUIS, non vide
   - docker
