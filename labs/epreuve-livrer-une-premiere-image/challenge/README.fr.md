@@ -3,7 +3,7 @@
 Un dépôt porte une application, sa dépendance, un fichier d'identifiants et un
 répertoire de travail. **Il n'y a pas de Dockerfile** : c'est à vous de l'écrire.
 
-## Les cinq contrôles
+## Les six contrôles
 
 Ils sont de poids égal, et chacun porte sur un fait vérifiable.
 
@@ -24,7 +24,7 @@ Déclarer un utilisateur non root et lui laisser un répertoire qu'il ne possèd
 pas livre une image qui échoue à sa première écriture ; le rendre inscriptible
 par tous règle le symptôme en annulant le bénéfice.
 
-### 3. Ni le jeton ni le travail dans aucune couche
+### 3. Le jeton dans aucune couche
 
 **C'est l'exigence critique : elle n'est compensée par aucun total.**
 
@@ -37,17 +37,30 @@ image qui ne l'est pas.
 Et c'est la **valeur** du jeton qui est cherchée, pas le nom du fichier :
 renommer ne change rien au fait que le secret voyage.
 
-### 4. La taille sous le seuil mesuré
+Elle porte sur **ce seul fait**. Un secret publié est irréversible, et c'est le
+défaut que cette épreuve existe pour éliminer.
 
-Le seuil vient d'une **construction de référence faite sur cette machine**
-pendant `dsoxlab run`. Il n'est pas écrit dans le test : une taille en dur
-périmerait à la première mise à jour de l'image de base, et le lab se mettrait à
-refuser du travail juste.
+### 4. Le répertoire de travail n'est pas livré
+
+Du gaspillage, et non une brèche : ce contrôle se note et **se compense**. Des
+fichiers de travail alourdissent l'image de tous ceux qui la tirent,
+définitivement, ce qui est une faute, mais une faute qui se rachète.
+
+### 5. Ce que l'image ajoute à sa base
+
+**Aucune base n'est imposée**, et la vôtre n'entre pas en compte : le contrôle
+compare ce que vous posez **par-dessus** avec ce qu'une image de référence pose
+par-dessus la sienne, plus une marge.
+
+Mesuré sur cette machine : le même contenu applicatif ajoute 0,1 Mo à
+`alpine:3.22` comme à `debian:13-slim`, et livrer le répertoire de travail en
+ajoute 80. C'est cet écart que le contrôle voit, et non la taille de votre base.
 
 La marge est large. L'épreuve mesure « n'a pas livré ce qui n'a rien à faire
-dans une image », pas « a optimisé au mégaoctet ».
+dans une image », pas « a optimisé au mégaoctet », qui est le sujet d'une autre
+épreuve du parcours.
 
-### 5. Publiée, et le digest consigné est celui servi
+### 6. Publiée, et le digest consigné est celui servi
 
 Le digest est **demandé au registre**, puis comparé au vôtre. Un tag se
 réécrit : deux `push` du même tag servent deux images différentes. Le digest est

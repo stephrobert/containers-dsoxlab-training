@@ -189,9 +189,7 @@ def test_l_image_tourne_sous_un_uid_non_nul_proprietaire_de_ses_donnees(
     )
 
 
-def test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche(
-    host, releve
-) -> None:
+def test_le_jeton_ne_survit_dans_aucune_couche(host, releve) -> None:
     """L'EXIGENCE CRITIQUE, et elle se mesure dans l'archive, pas dans la vue.
 
     Un `RUN rm` qui efface un secret à l'étape suivante laisse intacte la couche
@@ -210,9 +208,12 @@ def test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche(
     On y cherche la VALEUR du jeton, et non le nom du fichier : renommer le
     fichier ne change rien au fait que le secret voyage.
 
-    Le répertoire de travail est cherché par le nom de ses fichiers, qui est
-    propre au lab : il n'a aucune raison d'apparaître dans une image, et sa
-    présence dit qu'on a livré son répertoire de travail.
+    CE TEST NE PORTE QUE SUR LE JETON, et c'est le périmètre exact de
+    l'exigence critique. Le répertoire de travail a désormais son propre
+    contrôle. Les deux vivaient dans cette fonction, si bien qu'un apprenant
+    qui livrait son répertoire perdait l'épreuve entière, pour une raison que
+    l'énoncé n'annonce pas : `scenario.fr.md` ne fait échouer que sur le jeton,
+    et l'indice 1 dit déjà que les deux relèvent de deux contrôles différents.
     """
     _image_existe(host)
     jeton = releve["jeton"]
@@ -240,6 +241,27 @@ def test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche(
            "un secret publié, et aucun total ne le compense.",
     )
 
+
+def test_le_repertoire_de_travail_n_est_pas_livre(host) -> None:
+    """Du gaspillage, et non une brèche : cela se note, et cela se compense.
+
+    SÉPARÉ DE L'EXIGENCE CRITIQUE, et c'est une contrainte de forme autant
+    qu'un choix pédagogique. `exam_blocking_checks` nomme une FONCTION : deux
+    faits ne peuvent donc porter deux statuts qu'en vivant dans deux fonctions.
+    Tant qu'ils partageaient la leur, un apprenant qui livrait son répertoire
+    de travail perdait son épreuve entière, pour une raison que l'énoncé
+    n'annonce pas : `scenario.fr.md` ne fait échouer que sur le jeton, et
+    l'indice 1 dit déjà que les deux relèvent de deux contrôles.
+
+    Un secret publié est irréversible, et aucun total ne le compense. Des
+    fichiers de travail alourdissent l'image de tous ceux qui la tirent, ce qui
+    est une faute, mais une faute qui se rachète.
+
+    Le répertoire est cherché par le NOM de ses fichiers, qui est propre au
+    lab : il n'a aucune raison d'apparaître dans une image, et sa présence dit
+    qu'on a livré son répertoire de travail.
+    """
+    _image_existe(host)
     livres = fuites_dans_l_image(host, TAG, "extrait-1.bin")
     assert not livres, message(
         en="the working directory was delivered in the image:\n"
@@ -253,37 +275,104 @@ def test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche(
     )
 
 
-def test_la_taille_reste_sous_le_seuil_mesure_par_le_lab(host, releve) -> None:
-    """Le seuil vient d'une construction de référence faite sur CETTE machine.
+def _base_declaree(host) -> str | None:
+    """La dernière image dont le Dockerfile de l'apprenant hérite.
 
-    Il n'est pas écrit dans ce test, et c'est une décision : une taille en dur
-    périme à la première mise à jour de l'image de base, et le lab se mettrait
-    alors à refuser du travail juste. Le `run` construit une référence, relève
-    sa taille réelle, et consigne le seuil.
+    La DERNIÈRE et non la première : un build multi-étapes en déclare
+    plusieurs, et seule la dernière donne la base de l'image livrée. Les étapes
+    nommées (`FROM x AS build`) sont écartées comme cibles, et un `FROM` qui
+    reprend un nom d'étape n'est pas une image.
+    """
+    lu = host.run("cat %s", f"{DEPOT}/Dockerfile")
+    if lu.rc != 0:
+        return None
+    etapes: dict[str, str] = {}
+    base: str | None = None
+    for ligne in lu.stdout.splitlines():
+        mots = ligne.strip().split()
+        if len(mots) < 2 or mots[0].upper() != "FROM":
+            continue
+        image = mots[1]
+        if image in etapes:          # `FROM build` : on remonte à sa base
+            image = etapes[image]
+        if len(mots) >= 4 and mots[2].upper() == "AS":
+            etapes[mots[3]] = image
+        base = image
+    return base
 
-    La marge est large à dessein. L'épreuve mesure « n'a pas livré ce qui n'a
-    rien à faire dans une image », et non « a optimisé au mégaoctet », qui est
-    le sujet d'une autre épreuve du parcours.
+
+def test_la_taille_ajoutee_a_la_base_reste_sous_le_seuil(host, releve) -> None:
+    """Ce que l'image AJOUTE à sa base, et non sa taille absolue.
+
+    POURQUOI PAS UN SEUIL ABSOLU, et c'est une mesure qui le dit. L'énoncé
+    n'impose AUCUNE base, et le seuil était calculé au `setup` sur alpine.
+    Relevé sur docker.lab le 2026-11-03, avec le contenu réel de ce lab :
+
+        base              taille base   propre     delta   sale       delta
+        alpine:3.22          12,8 Mo    12,9 Mo    0,1 Mo   92,9 Mo   80,1 Mo
+        debian:13-slim      117,6 Mo   117,7 Mo    0,1 Mo  197,7 Mo   80,1 Mo
+
+    Le seuil absolu valait donc 27,9 Mo, et une image PARFAITEMENT PROPRE bâtie
+    sur `debian:13-slim` pesait 117,7 Mo : elle échouait de 90 Mo pour avoir
+    choisi une base que le module autorise, et qui est celle de la leçon
+    « Lancer un conteneur ».
+
+    Le delta, lui, est identique au dixième de mégaoctet sur les deux bases,
+    dans les deux sens. Le comparer rend le contrôle INDÉPENDANT DE LA BASE, ce
+    qui est exactement ce que l'épreuve prétend mesurer.
+
+    LA MARGE EST LARGE À DESSEIN, et elle n'a pas bougé : 15 Mo vaut 150 fois la
+    variation de style et cinq fois moins que la faute enseignée. L'épreuve
+    mesure « n'a pas livré ce qui n'a rien à faire dans une image », et non
+    « a optimisé au mégaoctet », qui est le sujet d'une autre épreuve.
+
+    On ne construit RIEN ici : la taille de la base se lit par
+    `docker image inspect`, qui la connaît puisque l'apprenant a construit
+    depuis elle. Construire une référence au moment du contrôle allongerait
+    chaque passage et ferait dépendre le verdict d'un accès réseau.
     """
     _image_existe(host)
     res = host.run("docker image inspect %s --format %s", TAG, "{{.Size}}")
     taille = int(res.stdout.strip())
-    seuil = int(releve["seuil_octets"])
-    reference = int(releve["reference_octets"])
-    assert taille <= seuil, message(
-        en=f"the image is above the threshold this lab measured on this "
-           f"machine.\n"
-           f"  your image: {taille / 1e6:.1f} MB\n"
-           f"  threshold : {seuil / 1e6:.1f} MB\n"
-           f"  reference : {reference / 1e6:.1f} MB for the same application\n"
-           "The gap is not about optimisation: it is the size of what was "
-           "delivered and had no reason to be.",
-        fr=f"l'image dépasse le seuil que ce lab a mesuré sur cette machine.\n"
-           f"  votre image : {taille / 1e6:.1f} Mo\n"
-           f"  seuil       : {seuil / 1e6:.1f} Mo\n"
-           f"  référence   : {reference / 1e6:.1f} Mo pour la même application\n"
-           "L'écart n'est pas une affaire d'optimisation : c'est la taille de "
-           "ce qui a été livré sans avoir de raison de l'être.",
+
+    base = _base_declaree(host)
+    assert base, message(
+        en=f"no `FROM` could be read in `{DEPOT}/Dockerfile`, so there is "
+           "nothing to compare the image's size to.",
+        fr=f"aucun `FROM` n'a pu être lu dans `{DEPOT}/Dockerfile`, il n'y a "
+           "donc rien à quoi comparer la taille de l'image.",
+    )
+    lu = host.run("docker image inspect %s --format %s", base, "{{.Size}}")
+    assert lu.rc == 0, message(
+        en=f"the declared base image `{base}` is unknown to the engine, so "
+           "what the image adds to it cannot be measured.",
+        fr=f"l'image de base déclarée, `{base}`, est inconnue du moteur : ce "
+           "que l'image lui ajoute ne peut donc pas être mesuré.",
+    )
+    taille_base = int(lu.stdout.strip())
+
+    ajoute = taille - taille_base
+    budget = int(releve["delta_reference_octets"]) + int(releve["marge_octets"])
+    assert ajoute <= budget, message(
+        en=f"the image adds more to its base than this lab measured as "
+           f"necessary.\n"
+           f"  base `{base}`: {taille_base / 1e6:.1f} MB\n"
+           f"  your image   : {taille / 1e6:.1f} MB\n"
+           f"  you add      : {ajoute / 1e6:.1f} MB\n"
+           f"  budget       : {budget / 1e6:.1f} MB\n"
+           "The gap is not about optimisation, and the base you chose does not "
+           "count: it is the size of what was delivered and had no reason to "
+           "be. A `RUN rm` at a later step does not give it back.",
+        fr=f"l'image ajoute à sa base plus que ce que ce lab a mesuré comme "
+           f"nécessaire.\n"
+           f"  base `{base}` : {taille_base / 1e6:.1f} Mo\n"
+           f"  votre image   : {taille / 1e6:.1f} Mo\n"
+           f"  vous ajoutez  : {ajoute / 1e6:.1f} Mo\n"
+           f"  budget        : {budget / 1e6:.1f} Mo\n"
+           "L'écart n'est pas une affaire d'optimisation, et la base que vous "
+           "avez choisie n'entre pas en compte : c'est la taille de ce qui a "
+           "été livré sans avoir de raison de l'être. Un `RUN rm` à une étape "
+           "ultérieure ne la rend pas.",
     )
 
 

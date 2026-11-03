@@ -202,6 +202,32 @@
           docker stop {{ temoin }} >/dev/null
       changed_when: true
 
+    - name: Relever l'empreinte de démarrage du témoin, pour qu'un relancement se voie
+      # SANS CE RELEVÉ, LE CONTRÔLE BLOQUANT NE PEUT PAS ÉCHOUER sur ce qu'il
+      # prétend mesurer. Il lisait `StartedAt` et `RestartCount` sans les
+      # comparer à rien, et se contentait du statut : un `docker start` suivi
+      # d'un `docker stop` repasse à `exited`, donc il passait, alors que
+      # l'énoncé demande de NE PAS relancer le témoin.
+      #
+      # `StartedAt` est l'horodatage du DERNIER démarrage, pas du premier : tout
+      # redémarrage le change, et c'est ce qui le rend comparable.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          lu=$(docker container inspect '{{ temoin }}' \
+            --format '{% raw %}{{.State.StartedAt}}|{{.RestartCount}}{% endraw %}')
+          python3 - "$lu" <<'PY'
+          import json, sys
+          from pathlib import Path
+          demarre, redemarrages = sys.argv[1].split("|", 1)
+          chemin = Path("{{ etat }}")
+          releve = json.loads(chemin.read_text())
+          releve["temoin_demarre_a"] = demarre
+          releve["temoin_redemarrages"] = int(redemarrages)
+          chemin.write_text(json.dumps(releve, indent=1))
+          PY
+      changed_when: true
+
     # OBSTACLE 3 : un conteneur arrêté occupe le nom demandé.
     - name: Laisser un ancien conteneur arrêté sur le nom du service
       ansible.builtin.shell:

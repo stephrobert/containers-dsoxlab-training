@@ -396,12 +396,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 100,
+  "duree_s": 99,
   "ecarts": [],
   "etapes": [
-   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 9 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -884,12 +884,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "docker": "29.9.2",
   "duree_s": 63,
   "ecarts": [],
   "etapes": [
-   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 9 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -2498,37 +2498,38 @@
  "epreuve-livrer-une-premiere-image": {
   "apres": {
    "echecs": [],
-   "passed": 5,
+   "passed": 6,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 5
+   "total": 6
   },
   "avant": {
    "echecs": [
     "test_l_image_est_publiee_et_son_digest_consigne_est_celui_servi",
     "test_l_image_repond_sans_option_d_identite",
     "test_l_image_tourne_sous_un_uid_non_nul_proprietaire_de_ses_donnees",
-    "test_la_taille_reste_sous_le_seuil_mesure_par_le_lab",
-    "test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche"
+    "test_la_taille_ajoutee_a_la_base_reste_sous_le_seuil",
+    "test_le_jeton_ne_survit_dans_aucune_couche",
+    "test_le_repertoire_de_travail_n_est_pas_livre"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 5
+   "total": 6
   },
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 60,
+  "duree_s": 65,
   "ecarts": [],
   "etapes": [
-   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/5",
-   "après la solution : 5/5",
-   "après clean et run : 0/5",
+   "état photographié : 9 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/6",
+   "après la solution : 6/6",
+   "après clean et run : 0/6",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -2546,15 +2547,16 @@
     "test_l_image_est_publiee_et_son_digest_consigne_est_celui_servi",
     "test_l_image_repond_sans_option_d_identite",
     "test_l_image_tourne_sous_un_uid_non_nul_proprietaire_de_ses_donnees",
-    "test_la_taille_reste_sous_le_seuil_mesure_par_le_lab",
-    "test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche"
+    "test_la_taille_ajoutee_a_la_base_reste_sous_le_seuil",
+    "test_le_jeton_ne_survit_dans_aucune_couche",
+    "test_le_repertoire_de_travail_n_est_pas_livre"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 5
+   "total": 6
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -2583,12 +2585,12 @@
    "status": "failed",
    "total": 5
   },
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 78,
+  "duree_s": 77,
   "ecarts": [],
   "etapes": [
-   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 9 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/5",
    "après la solution : 5/5",
    "après clean et run : 0/5",
@@ -2770,12 +2772,12 @@
    "status": "failed",
    "total": 5
   },
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 91,
+  "duree_s": 88,
   "ecarts": [],
   "etapes": [
-   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 9 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/5",
    "après la solution : 5/5",
    "après clean et run : 0/5",

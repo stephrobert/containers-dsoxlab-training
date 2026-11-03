@@ -34,7 +34,11 @@ exam_blocking_checks:
   # le score. Avant, quatre controles sur cinq donnaient 80, et 80
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
-  - test_ni_le_jeton_ni_le_travail_ne_survivent_dans_une_couche
+  # LE JETON SEUL. Un secret publie est irreversible, et c'est le
+  # defaut que cette epreuve existe pour eliminer. Livrer son
+  # repertoire de travail est du gaspillage, pas une breche : cela se
+  # note par son propre controle, et cela se compense.
+  - test_le_jeton_ne_survit_dans_aucune_couche
 estimated_time: 45m
 runtime:
   type: vm
