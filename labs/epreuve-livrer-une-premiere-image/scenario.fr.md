@@ -45,7 +45,7 @@ l'être.
 
 ## Comment vous êtes noté
 
-Cinq contrôles de poids égal, et **seul l'état final compte**. Aucune
+Six contrôles de poids égal, et **seul l'état final compte**. Aucune
 instruction de Dockerfile n'est imposée : deux façons d'obtenir la même image
 reçoivent la même note.
 
