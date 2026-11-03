@@ -223,6 +223,20 @@ repos:
         pass_filenames: false
         stages: [pre-push]
 
+      # `images-multi-architecture` comptait les ENTRÉES de l'index publié, alors
+      # qu'une poussée multi-plateforme qui garde la provenance par défaut en
+      # porte quatre : deux variantes et deux attestations en `unknown/unknown`
+      # (mesuré le 2026-11-03 sur Engine 29.9.2 et Buildx 0.38.1). La solution
+      # du lab désactivait la provenance, donc son attestation restait verte
+      # pendant qu'un apprenant suivant la leçon échouait. Ce test fige les deux
+      # index réels et provoque les refus, sans réseau.
+      - id: index-multiarch-sans-attestations
+        name: le lab multi-architecture compte les variantes, pas les entrées
+        entry: uv run --no-sync pytest tests/test_index_multiarch_sans_attestations.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
       # Le contrôle d'ancres ci-dessous TOLÈRE deux cas depuis le 2026-11-03 :
       # une page injoignable, et une ancre déclarée dans
       # `scripts/ancres-en-attente.yml`. Une tolérance non éprouvée est une
