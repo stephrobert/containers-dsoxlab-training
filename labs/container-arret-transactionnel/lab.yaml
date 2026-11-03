@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: container-arret-transactionnel                      # REQUIS
 title: "Finish an HTTP transaction before stopping"
-level: c1
+level: c6
 description: "Repair signal delivery, drain a real SQLite write, read it after recreation and compare a controlled forced abort."
 skills:                       # REQUIS, non vide
   - docker
