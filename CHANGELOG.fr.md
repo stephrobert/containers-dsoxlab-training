@@ -106,6 +106,28 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Corrigé
 
+- **`images-multi-architecture` comptait les entrées de l'index publié, et non
+  ses variantes.** Son énoncé demandait « exactement deux variantes Linux
+  distinctes » ; le test exigeait `len(manifests) == 2`. Mesuré le 2026-11-03
+  sur Engine 29.9.2 et Buildx 0.38.1, registre jetable : une poussée
+  `--platform linux/amd64,linux/arm64 --push` qui laisse la provenance à son
+  défaut produit un index de **quatre** entrées, les deux variantes plus deux
+  manifestes d'attestation en `unknown/unknown`, annotés
+  `vnd.docker.reference.type=attestation-manifest` ; la même avec
+  `--provenance=false` en produit deux. **La solution du lab emploie
+  `--provenance=false`, donc son attestation restait verte pendant qu'un
+  apprenant suivant la leçon échouait** avec le message « une release exige
+  deux manifestes distincts » après en avoir livré deux : le même masquage que
+  les sept labs de `terraform-training` en juillet. Le test compte désormais
+  les variantes, en écartant une entrée sur deux critères et non l'un ou
+  l'autre, l'annotation disant l'intention et la plateforme `unknown` la forme.
+  Un témoin du même banc montre que rien d'autre ne change : le digest de la
+  variante amd64 de l'index à quatre entrées se tire et s'inspecte à
+  l'identique. L'indice 3, qui conduisait vers la stratégie d'assemblage pour
+  20 points alors que la leçon ne la place qu'en troisième choix, nomme
+  maintenant la voie simple d'abord. Lab réattesté VALIDE le 2026-11-03 sur
+  Docker 29.9.2. Défaut relevé par la session du site, qui écrivait la leçon.
+
 - **`epreuve-mettre-un-service-en-marche` ne note plus `docker.socket`.** Le
   contrôle était impassable avec ce que la leçon enseigne :
   `docker.service` porte `Requires=docker.socket`, donc la socket devient

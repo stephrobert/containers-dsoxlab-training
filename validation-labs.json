@@ -3454,12 +3454,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 44,
+  "duree_s": 46,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 13 image(s), 0 conteneur(s), 3 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",

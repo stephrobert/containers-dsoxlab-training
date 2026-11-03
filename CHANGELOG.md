@@ -104,6 +104,27 @@ of the Docker engine and in which storage mode. That is what
 
 ### Fixed
 
+- **`images-multi-architecture` counted the published index entries rather than
+  its variants.** Its brief asked for "exactly two distinct Linux variants";
+  the test required `len(manifests) == 2`. Measured on 2026-11-03 on Engine
+  29.9.2 and Buildx 0.38.1 against a throwaway registry: a
+  `--platform linux/amd64,linux/arm64 --push` push that leaves provenance at
+  its default produces an index of **four** entries, the two variants plus two
+  attestation manifests on `unknown/unknown`, annotated
+  `vnd.docker.reference.type=attestation-manifest`; the same push with
+  `--provenance=false` produces two. **The lab's solution uses
+  `--provenance=false`, so its attestation stayed green while a learner
+  following the lesson failed** with "a release needs two distinct manifests"
+  right after delivering two: the same masking as the seven
+  `terraform-training` labs in July. The test now counts variants, discarding
+  an entry on two criteria rather than either one, the annotation stating
+  intent and the `unknown` platform stating form. A witness from the same bench
+  shows nothing else changes: the amd64 variant digest of the four-entry index
+  pulls and inspects identically. Hint 3, which steered towards the assembly
+  strategy for 20 points although the lesson only ranks it third, now names the
+  simple route first. Lab re-attested VALID on 2026-11-03 on Docker 29.9.2.
+  Defect reported by the website session, which was writing the lesson.
+
 - **`epreuve-mettre-un-service-en-marche` no longer grades `docker.socket`.**
   The check could not be passed with what the lesson teaches:
   `docker.service` carries `Requires=docker.socket`, so the socket becomes
