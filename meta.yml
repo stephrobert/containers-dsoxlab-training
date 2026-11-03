@@ -137,7 +137,7 @@ sections:
       - reseau-bridge-dedie
       - reseau-publication-de-ports
       - reseau-interne
-      - epreuve-relier-deux-conteneurs
+      - epreuve-exposer-sans-exposer-sa-base
       - donnees-volumes-et-montages
       - donnees-permissions-uid-gid
       - container-arret-transactionnel

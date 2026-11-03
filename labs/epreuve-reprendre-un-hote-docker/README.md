@@ -42,9 +42,11 @@ The bench concluded, and that is the condition on which this test exists.
 **Losing the application's volume fails the test**, even at 80 points.
 
 It is a good trap because it does not spring on carelessness, but on **the move
-that seems most reasonable**: to give space back you type `docker system prune`,
-and one of its options takes volumes away. The learner who does it is right
-about the intention and wrong about the reach.
+that seems most reasonable**: to give space back you type a `prune`. Measured
+on 29.9.2, it is `docker volume prune -a` that takes away the **named** volumes
+nothing mounts, where a `prune` without `-a` only takes the anonymous ones. The
+learner who types it is right about the intention and wrong about the reach,
+and the engine warns them before acting.
 
 The check compares the **data**, not the volume's existence: a volume recreated
 empty carries the right name and is worth nothing.

@@ -30,7 +30,7 @@
 # label, ce qui a un avantage mesurable : elle survit à la recréation des deux
 # conteneurs, donc le contrôle de la traversée ne punit pas un apprenant qui
 # recrée tout, ce qui est pourtant la bonne façon de s'y prendre.
-- name: Préparer l'épreuve epreuve-relier-deux-conteneurs
+- name: Préparer l'épreuve epreuve-exposer-sans-exposer-sa-base
   hosts: lab_target
   become: true
   vars:
@@ -55,9 +55,9 @@
       ansible.builtin.shell: |
         set -eu
         if docker image inspect '{{ image_epinglee }}' >/dev/null 2>&1; then
-          rm -f '/var/tmp/dsoxlab-epreuve-relier-deux-conteneurs.socle-a-rendre'
+          rm -f '/var/tmp/dsoxlab-epreuve-exposer-sans-exposer-sa-base.socle-a-rendre'
         else
-          : > '/var/tmp/dsoxlab-epreuve-relier-deux-conteneurs.socle-a-rendre'
+          : > '/var/tmp/dsoxlab-epreuve-exposer-sans-exposer-sa-base.socle-a-rendre'
           docker pull '{{ image_epinglee }}' >/dev/null
         fi
       changed_when: false
@@ -94,7 +94,7 @@
         cmd: |
           python3 - <<'PY'
           import json, subprocess, sys
-          lab = "epreuve-relier-deux-conteneurs"
+          lab = "epreuve-exposer-sans-exposer-sa-base"
           def inspecte(genre, nom):
               r = subprocess.run(["docker", genre, "inspect", nom],
                                  capture_output=True, text=True)
@@ -132,9 +132,9 @@
       ansible.builtin.shell:
         cmd: |
           set -eu
-          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-exposer-sans-exposer-sa-base)
           if test -n "$ids"; then docker rm -f $ids; fi
-          ids=$(docker network ls -q --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=epreuve-exposer-sans-exposer-sa-base)
           if test -n "$ids"; then docker network rm $ids; fi
       changed_when: false
 
@@ -196,7 +196,7 @@
         mode: "0644"
         content: |
           FROM {{ image_epinglee }}
-          LABEL dsoxlab.lab="epreuve-relier-deux-conteneurs"
+          LABEL dsoxlab.lab="epreuve-exposer-sans-exposer-sa-base"
           LABEL dsoxlab.article="{{ tirage_article.stdout }}"
           COPY article.txt /etc/article
           COPY service.sh /usr/local/bin/service.sh

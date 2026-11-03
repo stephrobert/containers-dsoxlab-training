@@ -43,8 +43,10 @@ Le banc a conclu, et c'est à cette condition que l'épreuve existe.
 
 Il est bon parce qu'il ne se déclenche pas sur une faute d'inattention, mais sur
 **le geste qui semble le plus raisonnable** : pour rendre de la place, on tape
-`docker system prune`, et l'une de ses options emporte les volumes. L'apprenant
-qui le fait a raison sur l'intention et tort sur la portée.
+un `prune`. Mesuré sur 29.9.2, c'est `docker volume prune -a` qui emporte les
+volumes **nommés** que rien ne monte, là où un `prune` sans `-a` ne prend que
+les anonymes. L'apprenant qui le tape a raison sur l'intention et tort sur la
+portée, et le moteur l'avertit pourtant avant d'agir.
 
 Le contrôle compare la **donnée**, pas l'existence du volume : un volume recréé
 vide porte le bon nom et ne vaut rien.

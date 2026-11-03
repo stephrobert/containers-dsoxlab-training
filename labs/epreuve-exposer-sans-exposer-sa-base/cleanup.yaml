@@ -25,7 +25,7 @@
         cmd: |
           set -eu
           if ! command -v docker >/dev/null 2>&1; then exit 0; fi
-          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-exposer-sans-exposer-sa-base)
           if test -z "$ids"; then exit 0; fi
           docker container inspect $ids \
             --format '{{ "{{range $nom, $_ := .NetworkSettings.Networks}}{{println $nom}}{{end}}" }}' \
@@ -38,7 +38,7 @@
         cmd: |
           set -eu
           if ! command -v docker >/dev/null 2>&1; then exit 0; fi
-          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          ids=$(docker ps -aq --filter label=dsoxlab.lab=epreuve-exposer-sans-exposer-sa-base)
           if test -n "$ids"; then docker rm -f $ids; fi
       changed_when: false
 
@@ -60,7 +60,7 @@
             esac
             docker network rm "$nom" >/dev/null 2>&1 || true
           done
-          ids=$(docker network ls -q --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          ids=$(docker network ls -q --filter label=dsoxlab.lab=epreuve-exposer-sans-exposer-sa-base)
           if test -n "$ids"; then docker network rm $ids >/dev/null 2>&1 || true; fi
       changed_when: false
 
@@ -72,7 +72,7 @@
           if docker image inspect '{{ tag_local }}' >/dev/null 2>&1; then
             docker image rm -f '{{ tag_local }}' >/dev/null
           fi
-          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-relier-deux-conteneurs)
+          ids=$(docker image ls -q --filter label=dsoxlab.lab=epreuve-exposer-sans-exposer-sa-base)
           if test -n "$ids"; then docker image rm -f $ids >/dev/null 2>&1 || true; fi
       changed_when: false
 
@@ -82,9 +82,9 @@
       ansible.builtin.shell: |
         set -eu
         if ! command -v docker >/dev/null 2>&1; then exit 0; fi
-        if test -e '/var/tmp/dsoxlab-epreuve-relier-deux-conteneurs.socle-a-rendre'; then
+        if test -e '/var/tmp/dsoxlab-epreuve-exposer-sans-exposer-sa-base.socle-a-rendre'; then
           docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
-          rm -f '/var/tmp/dsoxlab-epreuve-relier-deux-conteneurs.socle-a-rendre'
+          rm -f '/var/tmp/dsoxlab-epreuve-exposer-sans-exposer-sa-base.socle-a-rendre'
         fi
       changed_when: false
 

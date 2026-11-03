@@ -51,7 +51,7 @@ of the Docker engine and in which storage mode. That is what
 
 ### Changed
 
-- **`epreuve-relier-deux-conteneurs` is refocused on its own module.** Four of
+- **`epreuve-exposer-sans-exposer-sa-base` is refocused on its own module.** Four of
   its five checks restated an earlier lesson's lab, and the module's third
   teaching, isolation, was measured nowhere in the catalogue. It now grades
   publishing on a chosen interface, a service **alias** distinct from the
