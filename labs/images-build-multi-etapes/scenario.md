@@ -6,7 +6,7 @@ An application image weighs 39 MB, 30 of which are a fabrication tooling: a
 mock compiler and its libraries, with no business being there once the
 fabrication is over.
 
-You apply what the previous lab taught: delete within the same instruction. And
+The usual reflex is to delete within the **same instruction** as the install, because a layer keeps what a later layer erases. And
 you find there is **nothing to delete**: the tooling was not installed by an
 instruction of this Dockerfile. It comes from the **base**.
 

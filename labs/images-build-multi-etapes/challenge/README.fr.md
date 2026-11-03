@@ -26,9 +26,12 @@ Deux mesures, et elles sont complémentaires : l'**absence des fichiers** dit qu
 le conteneur ne les voit plus, la **pesée** dit qu'ils ne sont plus dans
 l'image.
 
-Un `rm -rf` dans une instruction suivante donne la première sans la seconde.
-`images-optimiser-la-taille` a montré pourquoi ; ici, c'est pire : il n'y a
-même rien à nettoyer, puisque l'outillage vient du socle.
+Un `rm -rf` dans une instruction suivante donne la première sans la seconde :
+**une couche garde ce qu'une couche suivante efface**, et le fichier voyage avec
+l'image même s'il a disparu de la vue finale.
+
+Ici, c'est pire : il n'y a même **rien à nettoyer**, puisque l'outillage vient du
+socle et non d'une instruction de ce Dockerfile.
 
 ## 3. L'image doit être construite sur le socle d'exécution
 

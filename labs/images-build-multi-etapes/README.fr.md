@@ -46,7 +46,8 @@ qu'ils ne sont plus dans l'image.
 
 Un `rm -rf` dans une instruction suivante donne la première sans la seconde, et
 un contrôle qui ne chercherait que les fichiers récompenserait exactement la
-faute que `images-optimiser-la-taille` a enseigné à reconnaître.
+faute que le module apprend à reconnaître : une couche garde ce qu'une couche
+suivante supprime.
 
 ## Pourquoi le troisième contrôle regarde dans les deux sens
 

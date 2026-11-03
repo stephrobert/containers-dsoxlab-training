@@ -198,8 +198,11 @@ def test_l_image_ne_porte_plus_l_outillage(host) -> None:
     DEUX MESURES, ET ELLES SONT COMPLÉMENTAIRES. L'absence des fichiers dit que
     le conteneur ne les voit plus ; le poids dit qu'ils ne sont plus dans
     l'image. Un `rm -rf` dans une instruction suivante donnerait la première
-    sans la seconde, et c'est exactement la faute que
-    `images-optimiser-la-taille` a enseigné à reconnaître.
+    sans la seconde, et c'est exactement la faute que le module apprend à
+    reconnaître : une couche garde ce qu'une couche suivante supprime. La règle
+    vient de C12 et de C17, tous deux AVANT ce lab ; l'attribuer à
+    `images-optimiser-la-taille` était faux, ce lab-là étant au niveau c5 quand
+    celui-ci est au c2.
     """
     if _image_absente(host):
         pytest.fail(message(

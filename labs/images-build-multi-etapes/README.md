@@ -44,8 +44,8 @@ The absence of the files says the container no longer sees them. The weight says
 they are no longer in the image.
 
 An `rm -rf` in a later instruction gives the first without the second, and a
-check looking only for the files would reward exactly the fault
-`images-optimiser-la-taille` taught how to recognise.
+check looking only for the files would reward exactly the fault the module
+teaches you to recognise: a layer keeps what a later layer deletes.
 
 ## Why the third check looks both ways
 
