@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "Identité d'une image : le tag ment, le digest non"
-description: "Dire exactement quelle image tourne : comparer un tag à un digest, lire un index multi-plateforme, et repérer une image remplacée sous le même tag."
+description: "Dire exactement quelle image tourne : lire le digest derrière un tag, repérer une image remplacée sous ce même tag, nommer le digest de l'image de base, et dire la plateforme servie."

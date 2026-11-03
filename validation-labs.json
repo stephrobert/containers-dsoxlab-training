@@ -3331,12 +3331,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 41,
+  "duree_s": 43,
   "ecarts": [],
   "etapes": [
-   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 10 image(s), 0 conteneur(s), 1 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
