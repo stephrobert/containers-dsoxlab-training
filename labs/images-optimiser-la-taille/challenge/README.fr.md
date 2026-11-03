@@ -47,8 +47,8 @@ Le seuil est **calculé** : le socle est pesé, les artefacts aussi. Rien n'est
 
 Aplatir l'image donne la bonne taille, et c'est refusé.
 
-Mesuré ici : 14,6 Mo en **une** couche, exactement le poids de la bonne
-écriture. Les deux contrôles de pesée seraient verts.
+Mesuré ici : 25,5 Mo en `DISK USAGE`, en **une** couche, soit le poids de la
+bonne écriture à 0,1 Mo près. Les deux contrôles de pesée seraient verts.
 
 Et elle ne partage plus aucune couche avec son socle. Les couches communes sont
 ce qui fait qu'un dépôt ne stocke le socle qu'une fois, et qu'un poste qui l'a

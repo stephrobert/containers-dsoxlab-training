@@ -10,11 +10,21 @@ sont, le comportement est juste. Le défaut ne se voit qu'à la pesée.
 
 Sur `docker.lab`, le 2026-10-30, le même travail sous trois formes :
 
-| Forme | Taille | Couches | Plus grosse couche |
-| --- | --- | --- | --- |
-| nettoyage une instruction trop tard | 52,3 Mo | 5 | **44 Mo** |
-| nettoyage dans la même instruction | 14,6 Mo | 4 | 6,3 Mo |
-| la seconde, aplatie | 14,6 Mo | **1** | 14,6 Mo |
+Mesuré le 2026-11-03 sur Docker 29.9.2, magasin containerd. **La colonne
+compte**, et c'est tout le sujet : `DISK USAGE` additionne le contenu
+compressé et les couches décompressées, là où `docker history` ne donne que le
+décompressé.
+
+| Forme | `DISK USAGE` | Couches | Couche ajoutée (`history`) | Plus grosse couche |
+| --- | --- | --- | --- | --- |
+| nettoyage une instruction trop tard | 101,1 Mo | 6 | **44,1 Mo** | 44,1 Mo |
+| nettoyage dans la même instruction | 25,6 Mo | 5 | 6,31 Mo | 9,08 Mo |
+| la seconde, aplatie | 25,5 Mo | **1** | sans objet | 15,4 Mo |
+
+Le socle `lab-taille:1.0` pèse 13,0 Mo en `DISK USAGE` sur 3 couches, et
+`/opt/app` occupe 6,3 Mo dans l'image. La couche fautive fait donc **sept fois**
+ce qu'elle livre, et ce rapport ne met en jeu qu'une seule colonne : il est
+stable quand le moteur change.
 
 Les trois produisent un conteneur identique. Et les deux fausses réponses ont
 été **éprouvées** : le Dockerfile de départ rend **2/4**, refusé par les deux

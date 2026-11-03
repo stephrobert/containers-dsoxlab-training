@@ -10,11 +10,21 @@ are, the behaviour is correct. The defect only shows on the scales.
 
 On `docker.lab`, on 2026-10-30, the same work in three forms:
 
-| Form | Size | Layers | Largest layer |
-| --- | --- | --- | --- |
-| cleanup one instruction too late | 52.3 MB | 5 | **44 MB** |
-| cleanup in the same instruction | 14.6 MB | 4 | 6.3 MB |
-| the latter, flattened | 14.6 MB | **1** | 14.6 MB |
+Measured on 2026-11-03 on Docker 29.9.2, containerd store. **The column
+matters**, and that is the whole point: `DISK USAGE` adds the compressed content
+and the decompressed layers, where `docker history` gives only the decompressed
+side.
+
+| Form | `DISK USAGE` | Layers | Added layer (`history`) | Largest layer |
+| --- | --- | --- | --- | --- |
+| cleanup one instruction too late | 101.1 MB | 6 | **44.1 MB** | 44.1 MB |
+| cleanup in the same instruction | 25.6 MB | 5 | 6.31 MB | 9.08 MB |
+| the latter, flattened | 25.5 MB | **1** | not applicable | 15.4 MB |
+
+The `lab-taille:1.0` base weighs 13.0 MB in `DISK USAGE` over 3 layers, and
+`/opt/app` takes 6.3 MB inside the image. The offending layer therefore weighs
+**seven times** what it ships, and that ratio involves a single column: it holds
+when the engine changes.
 
 All three produce an identical container. And both wrong answers were **put to
 the test**: the starting Dockerfile scores **2/4**, refused by the two weighings;
