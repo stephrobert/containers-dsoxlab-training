@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: troubleshoot-permission-refusee                      # REQUIS
 title: "Three refused accesses, three causes"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Tell apart three refused accesses read as one: the mount that forbids, the rights that refuse, and a file mode no mount ever changes. Then repair all three, without going root."
 skills:                       # REQUIS, non vide
   - docker

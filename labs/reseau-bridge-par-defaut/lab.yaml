@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: reseau-bridge-par-defaut                      # REQUIS
 title: "The default network, and what it does not do"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Map the network nobody chooses: find the address of a container, the gateway the engine gave it, the host interface that carries it, and reach a listener whose name does not resolve."
 skills:                       # REQUIS, non vide
   - docker

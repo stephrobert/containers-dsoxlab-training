@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: docker-cycle-de-vie                      # REQUIS
 title: "The life cycle: restarting is not recreating"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Move through a container's states without starting over: restart the sleeping one keeping its identity and its data, pause the other, and read an exit code."
 skills:                       # REQUIS, non vide
   - docker

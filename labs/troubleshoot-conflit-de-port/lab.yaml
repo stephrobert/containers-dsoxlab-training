@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: troubleshoot-conflit-de-port                      # REQUIS
 title: "Two port conflicts, two causes"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Compare two error messages that look alike, discover that one points at a container and the other at a program Docker does not show, and give both refused containers their ports back."
 skills:                       # REQUIS, non vide
   - docker

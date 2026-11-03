@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: reseau-bridge-dedie                      # REQUIS
 title: "A network of your own: naming and isolating"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Create a dedicated network with a chosen addressing plan, move two containers onto it, and measure both of its effects: their names now resolve, and a container left behind can no longer reach them."
 skills:                       # REQUIS, non vide
   - docker

@@ -2,7 +2,7 @@
 # sans eux, le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: donnees-volumes-et-montages                      # REQUIS
 title: "Where data survives: the three kinds of mount"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "A container writes its data into its own layer. Migrate it onto a named volume before destroying it, expose the host's configuration read-only, and give it a working space that persists nothing."
 skills:                       # REQUIS, non vide
   - docker

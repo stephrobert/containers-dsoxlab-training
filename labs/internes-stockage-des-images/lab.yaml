@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: internes-stockage-des-images                      # REQUIS
 title: "Where Docker stores a container's files"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Find the engine's storage driver and a container's write layer, then see that a file written inside it reads from the host's disk and takes up room there."
 skills:                       # REQUIS, non vide
   - docker

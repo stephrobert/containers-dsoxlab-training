@@ -2,7 +2,7 @@
 # sans eux, le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: donnees-permissions-uid-gid                      # REQUIS
 title: "Two containers, one volume, rights that hold"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "A volume belongs to root and a non-root container cannot write to it. Replace the two usual bad answers, running as root and opening the volume to everyone, with the one that holds: aligning the shared group."
 skills:                       # REQUIS, non vide
   - docker
