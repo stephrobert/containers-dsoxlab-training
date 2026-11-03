@@ -16,7 +16,7 @@ skills:                       # REQUIS, non vide
   - supply-chain
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
 runtime:

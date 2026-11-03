@@ -250,17 +250,17 @@ consensus and its control state to protect.
 
 | Lab (id) | Title | Level | Certif | Runtime | Companion guide |
 |---|---|---|---|---|---|
-| `images-identifier-image` | Image identity: the tag lies, the digest does not | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) |
+| `images-identifier-image` | Image identity: the tag lies, the digest does not | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/) |
 | `images-ordre-des-couches` | The same Dockerfile, and a cache that finally serves | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#mettre-en-pratique) |
 | `images-contexte-de-build` | A file that exists, and cannot be found | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/#mettre-en-pratique) |
 | `images-optimiser-la-taille` | What a layer keeps | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/) |
 | `images-migrer-vers-alpine` | Changing base is not changing a line | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/choisir-une-image-de-base/) |
-| `images-build-multi-etapes` | What comes from the base cannot be removed | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères) |
+| `images-build-multi-etapes` | What comes from the base cannot be removed | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build-multi-etapes/) |
 | `images-non-root` | USER changes the identity, and no right | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/utilisateur-et-permissions/) |
 | `images-healthcheck` | 'Up' says nothing about the service | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/) |
 | `buildkit-cache-monte` | Reuse dependencies when the build step runs again | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#mettre-en-pratique) |
-| `buildkit-secret-de-build` | Fetch a private dependency without shipping the build secret | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build) |
-| `images-multi-architecture` | Publish two architectures and execute both | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/) |
+| `buildkit-secret-de-build` | Fetch a private dependency without shipping the build secret | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#mettre-en-pratique) |
+| `images-multi-architecture` | Publish two architectures and execute both | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/multi-architecture/#mettre-en-pratique) |
 | `epreuve-livrer-une-premiere-image` | Deliver a first image worth publishing | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-premiere-image/) |
 
 ### Distribute images

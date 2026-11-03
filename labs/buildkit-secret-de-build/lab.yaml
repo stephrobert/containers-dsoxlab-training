@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - build-secrets
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#mettre-en-pratique   # REQUIS, http(s)
 lab_type: challenge
 estimated_time: 30m
 runtime:

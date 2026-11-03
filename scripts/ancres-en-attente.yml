@@ -28,6 +28,15 @@ ancres:
     depuis: 2026-11-03
     pourquoi: >-
       juste a la source de origin/main du site, pas encore deployee
+  - lab: buildkit-secret-de-build
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste dans le commit 951f43370 du site, qui refond C17 et n est pas
+      encore pousse sur origin/main. A la difference des autres entrees, cette
+      ancre n est donc PAS encore verifiable sur origin/main : elle l a ete
+      sur ce commit, page publiee et section presente.
   - lab: compose-premiere-stack
     ancre: mettre-en-pratique
     page: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
