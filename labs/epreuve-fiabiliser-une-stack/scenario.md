@@ -18,8 +18,8 @@ mount that was useful during development is still there.
    that **answers on the first try**, without any service having needed to
    restart.
 2. The password appears **neither in the containers' environment** nor **in the
-   image**, and the vault receives it all the same: the value served must stay
-   correct.
+   image**, nor in what `docker compose config` renders, and the vault receives
+   it all the same: the value served must stay correct.
 3. Each service carries a **memory limit**, visible in the container's
    inspection as well as in its cgroup.
 4. Each service carries a **restart policy**: a container that is killed comes
@@ -47,9 +47,14 @@ Five checks of equal weight, and **only the final state counts**. No syntax is
 imposed: two ways of obtaining the same behaviour get the same mark.
 
 The pass mark is **75 out of 100**. One requirement is made up for by no total:
-**the password readable in the environment fails the test**, even with
-everything else in place. An environment variable is read by `docker inspect`,
-by `docker compose config`, and by anyone who can talk to the daemon.
+**a readable password fails the test**, even with everything else in place. And
+it is looked for in **four** places, not one: the containers' environment, the
+**image's layers**, what `docker compose config` renders, and the **value
+served** by the API.
+
+Moving it out of the environment and into the image is therefore not a fix, it
+is worse: an environment variable is read by `docker inspect` and by anyone who
+can talk to the daemon, but an image **gets published**.
 
 Beware the false fix: removing the password **without replacing it** gives a
 clean, wrong stack. The check compares the value served with the one it expects.
