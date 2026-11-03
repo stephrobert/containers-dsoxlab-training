@@ -22,8 +22,10 @@ the daemon.
    without being world-writable.
 3. Neither the `.identifiants` file, nor its token, nor the contents of
    `travail/` are present in **any layer** of the image.
-4. The image's size stays **under the threshold this lab measured** on this
-   machine, by building a reference of its own during `dsoxlab run`.
+4. What the image **adds to its base** stays under the budget this lab
+   measured on this machine, by building a reference of its own during
+   `dsoxlab run`. **No base is imposed**, and the one you pick does not count:
+   only what you put on top of it does.
 5. The image is **published** in the lab's registry, and the **digest the
    registry serves** is recorded in
    `/opt/lab-premiere-livraison/digest.txt`, on a single line, in the form
@@ -39,8 +41,10 @@ measured is not the number, it is that it be numeric: a user name only resolves
 inside the image that defines it, and an orchestrator does not read its
 `/etc/passwd`.
 
-**The size threshold is not an optimisation exercise.** It is generous, and the
+**The size budget is not an optimisation exercise.** It is generous, and the
 gap it measures is the size of what was delivered without any reason to be.
+Measured on this machine: the application content adds 0.1 MB to its base
+whatever that base is, and delivering the working directory adds 80.
 
 ## How you are graded
 

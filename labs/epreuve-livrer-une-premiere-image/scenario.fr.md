@@ -22,8 +22,10 @@ démon.
    appartient**, sans être inscriptible par tous.
 3. Ni le fichier `.identifiants`, ni son jeton, ni le contenu de `travail/` ne
    se trouvent dans **aucune couche** de l'image.
-4. La taille de l'image reste **sous le seuil que ce lab a mesuré** sur cette
-   machine, en construisant lui-même une référence pendant `dsoxlab run`.
+4. Ce que l'image **ajoute à sa base** reste sous le budget que ce lab a
+   mesuré sur cette machine, en construisant lui-même une référence pendant
+   `dsoxlab run`. **Aucune base n'est imposée**, et celle que vous choisissez
+   n'entre pas en compte : seul compte ce que vous posez dessus.
 5. L'image est **publiée** dans le registre du lab, et le **digest que le
    registre sert** est consigné dans
    `/opt/lab-premiere-livraison/digest.txt`, sur une seule ligne, sous la forme
@@ -39,9 +41,10 @@ n'est pas le chiffre, c'est qu'il soit numérique : un nom d'utilisateur ne se
 résout que dans l'image qui le définit, et un orchestrateur ne lit pas son
 `/etc/passwd`.
 
-**Le seuil de taille n'est pas un exercice d'optimisation.** Il est large, et
+**Le budget de taille n'est pas un exercice d'optimisation.** Il est large, et
 l'écart qu'il mesure est la taille de ce qui a été livré sans avoir de raison de
-l'être.
+l'être. Mesuré sur cette machine : le contenu applicatif ajoute 0,1 Mo à sa base
+quelle que soit cette base, et livrer le répertoire de travail en ajoute 80.
 
 ## Comment vous êtes noté
 

@@ -233,14 +233,24 @@ def test_le_service_tourne_et_rend_la_valeur_demandee(host, salle) -> None:
     )
 
 
-def test_l_ancien_conteneur_homonyme_a_disparu(host) -> None:
-    """Un seul conteneur doit porter ce nom, et c'est le neuf.
+def test_l_ancien_conteneur_homonyme_a_disparu(host, releve) -> None:
+    """Un seul conteneur doit porter ce nom, et ce n'est PAS l'ancien.
 
     L'ancien était ARRÊTÉ : il n'empêchait rien de tourner, mais il occupait le
-    nom, et c'est pour cela qu'un `docker run` échouait. Le contrôle vérifie
-    qu'il n'en reste qu'un, et qu'il tourne : deux conteneurs ne peuvent pas
-    porter le même nom, donc constater qu'il n'y en a qu'un et qu'il est en
-    marche suffit à prouver que l'ancien est parti.
+    nom, et c'est pour cela qu'un `docker run` échouait.
+
+    COMPTER NE SUFFIT PAS, et le raisonnement que portait cette docstring était
+    faux. Elle disait : deux conteneurs ne peuvent pas porter le même nom, donc
+    constater qu'il n'y en a qu'un et qu'il tourne prouve que l'ancien est
+    parti. Un `docker restart` sur l'ancien satisfait les deux conditions, le
+    même conteneur étant désormais en marche sous le même nom. Avec les quatre
+    autres contrôles réussis, l'épreuve était reçue à 80 points **sans qu'aucun
+    service ait été configuré**.
+
+    L'IDENTIFIANT TRANCHE. Il ne survit pas à un retrait, et il ne change pas
+    sur un redémarrage : c'est le seul fait qui distingue « l'ancien a été
+    remplacé » de « l'ancien a été rallumé ». Le `run` le relève avant tout
+    travail.
     """
     res = host.run(
         "docker ps -a --filter %s --format %s",
@@ -265,6 +275,31 @@ def test_l_ancien_conteneur_homonyme_a_disparu(host) -> None:
            f"  {lignes[0]}\n"
            "L'ancien, arrêté, est encore là, et c'est sur lui que le "
            "`docker run` butait.",
+    )
+
+    # ET CE N'EST PAS L'ANCIEN, RALLUMÉ. Sans cette comparaison, un
+    # `docker restart` de l'homonyme passait les deux assertions ci-dessus.
+    ancien = releve.get("homonyme_id", "")
+    assert ancien, message(
+        en="the lab's own measurement of the old namesake is missing. It is "
+           "taken during `dsoxlab run`: replay it.",
+        fr="la mesure que le lab a prise de l'ancien homonyme manque. Elle est "
+           "faite pendant `dsoxlab run` : rejouez-le.",
+    )
+    present = lignes[0].split()[0]
+    assert not ancien.startswith(present), message(
+        en=f"the container named `{SERVICE}` is the OLD one, restarted.\n"
+           f"  its id        : {present}\n"
+           f"  the lab left  : {ancien[:12]}\n"
+           "It runs, and it carries the stale configuration it was created "
+           "with. The brief asks for the old namesake to be removed, not woken "
+           "up: restarting it leaves the service unconfigured.",
+        fr=f"le conteneur nommé `{SERVICE}` est l'ANCIEN, relancé.\n"
+           f"  son identifiant      : {present}\n"
+           f"  celui laissé par le lab : {ancien[:12]}\n"
+           "Il tourne, et il porte la configuration périmée avec laquelle il a "
+           "été créé. L'énoncé demande de retirer l'ancien homonyme, pas de le "
+           "rallumer : le relancer laisse le service non configuré.",
     )
 
 
