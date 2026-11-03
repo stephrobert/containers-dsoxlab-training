@@ -96,6 +96,27 @@ RE_CONSOMMATION = re.compile(
 #: en pratique, donc elle est refusée comme un tag nu, et le message le dit.
 RE_SANS_TAG = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 
+#: Une référence ÉPINGLÉE PAR DIGEST mais SANS TAG : `alpine@sha256:…`.
+#:
+#: LE TROU QU'ELLE BOUCHE, trouvé le 2026-11-03. Le contrôle de consommation
+#: faisait `if "@sha256:" in ref: continue`, donc il acceptait cette forme.
+#: `LABS-A-ECRIRE.md` exige pourtant `image:tag@sha256:…`, et la mesure a montré
+#: ce que l'écart coûtait : **255 références** dans 75 labs, dont 246 `alpine`
+#: épinglées sur le digest de `:latest` sans que rien ne dise quelle version
+#: c'était. Un digest rend reproductible ; seul le tag rend LISIBLE. Relever
+#: qu'il s'agissait d'Alpine 3.24.3 a demandé un `docker run` sur la VM.
+#:
+#: POURQUOI SON PÉRIMÈTRE EST PLUS LARGE QUE CELUI DE LA CONSOMMATION. Le
+#: contrôle de consommation s'en tient à `docker pull`, `FROM` et `image:`
+#: parce que la position de l'image dépend des options ailleurs, et qu'un nom de
+#: CONTENEUR y serait pris pour une image. Ce problème de détection ne se pose
+#: pas ici : un nom de conteneur ne porte jamais `@sha256:`. La forme est donc
+#: cherchée PARTOUT dans les fichiers joués, ce que la règle demande en disant
+#: « TOUTE image ».
+RE_DIGEST_SANS_TAG = re.compile(
+    r"(?<![\w.:/-])(?P<ref>[a-z0-9][a-z0-9._/-]*@sha256:[0-9a-f]{64})"
+)
+
 
 #: Les deux formes par lesquelles un setup FABRIQUE un tag sur la machine :
 #: `docker build -t <tag>` et `docker tag <reference> <tag>`. Un tag fabriqué
@@ -264,6 +285,27 @@ def _references_nues(source: str) -> list[tuple[int, str]]:
         fautives.append((no, ref))
     fabriques = _tags_fabriques(source)
     return [(no, ref) for no, ref in fautives if ref not in fabriques]
+
+
+def _digests_sans_tag(source: str) -> list[tuple[int, str]]:
+    """Les références épinglées par digest mais privées de leur tag.
+
+    Rend `(ligne, référence)`. Même asymétrie que `_references_nues` : les
+    références se cherchent dans la source blanchie de ses commentaires, le
+    marqueur dans la source d'origine, puisqu'il EST un commentaire.
+
+    Le marqueur vaut ici aussi, et il a un cas réel : le digest de
+    `cesanta/docker_auth` n'est porté par aucun tag publié, et la ligne qui le
+    nomme le SUPPRIME. Lui inventer un tag mentirait.
+    """
+    lignes = source.splitlines()
+    fautives: list[tuple[int, str]] = []
+    for trouve in RE_DIGEST_SANS_TAG.finditer(_sans_commentaires(source)):
+        no = source.count("\n", 0, trouve.start()) + 1
+        if MARQUEUR in _bloc_de_la_tache(lignes, no):
+            continue
+        fautives.append((no, trouve.group("ref")))
+    return fautives
 
 
 def test_il_y_a_des_setups_a_mesurer() -> None:
@@ -487,4 +529,65 @@ def test_les_images_tirees_par_le_setup_sont_epinglees(fichier: Path) -> None:
         f"raison. Le marqueur vaut jusqu'à la ligne vide qui précède, donc un "
         f"commentaire posé au-dessus du `- name:` suffit :\n"
         f"    # {MARQUEUR} : <pourquoi l'épingler casserait ce lab>\n"
+    )
+
+
+def test_le_detecteur_de_digest_sans_tag_juge_dans_les_deux_sens() -> None:
+    """Un contrôle qui refuse tout, ou qui n'accepte que l'évident, ne mesure rien.
+
+    Les deux moitiés comptent. Sans la seconde, un détecteur qui prendrait aussi
+    les références complètes passerait pour rigoureux tout en bloquant les 42
+    références déjà justes du dépôt.
+    """
+    vus = _digests_sans_tag(
+        "cmd: docker run --rm alpine@sha256:" + "a" * 64 + "\n"
+        "    FROM debian@sha256:" + "b" * 64 + "\n"
+        "      - cesanta/docker_auth@sha256:" + "c" * 64 + "\n"
+    )
+    assert [r.split("@")[0] for _, r in vus] == ["alpine", "debian",
+                                                 "cesanta/docker_auth"], vus
+
+    # Ce qui ne doit PAS être vu : une référence complète, un tag sans digest,
+    # et une référence déjà nommée par son tag devant le digest.
+    ignores = _digests_sans_tag(
+        "cmd: docker run --rm alpine:3.24.3@sha256:" + "a" * 64 + "\n"
+        "    FROM debian:13-slim@sha256:" + "b" * 64 + "\n"
+        "    image: nginx:1.29\n"
+        "    image: hello-world:latest@sha256:" + "d" * 64 + "\n"
+    )
+    assert ignores == [], (
+        "une référence déjà complète est refusée : le contrôle bloquerait les "
+        f"42 références justes du dépôt.\n  vus : {ignores}"
+    )
+
+    # Le marqueur doit valoir ici aussi, et pour SA tâche seulement.
+    marque = _digests_sans_tag(
+        f"    # {MARQUEUR} : ce digest n'est porté par aucun tag publié\n"
+        "    - name: Retirer une image dont le digest n'a plus de tag\n"
+        "      ansible.builtin.shell:\n"
+        "        cmd: docker image rm -f cesanta/docker_auth@sha256:" + "c" * 64 + "\n"
+    )
+    assert marque == [], f"le marqueur ne porte pas sur sa tâche : {marque}"
+
+
+@pytest.mark.parametrize("fichier", _fichiers_joues(), ids=_lab_de)
+def test_un_digest_porte_toujours_son_tag(fichier: Path) -> None:
+    """`LABS-A-ECRIRE.md` : « Toute image porte la forme `image:tag@sha256:…` ».
+
+    Un digest rend reproductible, seul le tag rend LISIBLE. Mesuré le
+    2026-11-03 : 255 références de ce dépôt portaient un digest sans tag, dont
+    246 `alpine` épinglées sur le digest de `:latest` sans que rien ne dise
+    qu'il s'agissait d'Alpine 3.24.3. Le relever a demandé un `docker run` sur
+    la VM, pour une information qui devrait se lire dans le fichier.
+    """
+    fautives = _digests_sans_tag(fichier.read_text(encoding="utf-8"))
+    assert not fautives, (
+        f"{_lab_de(fichier)} : {len(fautives)} référence(s) épinglée(s) par "
+        f"digest mais sans tag dans {fichier.name}.\n\n"
+        + "\n".join(f"    {fichier.name}:{no}  {ref}" for no, ref in fautives)
+        + "\n\nLe digest garantit l'image, le tag dit LAQUELLE. Relève le tag "
+        "qui porte exactement ce digest, et ne le devine pas :\n"
+        "    docker buildx imagetools inspect <image>:<tag>\n"
+        "\nSi aucun tag publié ne le porte, c'est une décision et elle se "
+        f"motive :\n    # {MARQUEUR} : <pourquoi aucun tag ne convient>\n"
     )

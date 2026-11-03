@@ -159,9 +159,37 @@ zéro sur treize.
 Toute image porte la forme `image:tag@sha256:…`. Jamais `:latest`, jamais un
 tag seul.
 
+**Un digest seul ne suffit pas, et c'est la règle qui manquait d'être
+contrôlée.** Mesure du 2026-11-03 : **255 références** de ce dépôt portaient un
+digest sans tag, dont **246 `alpine`** épinglées sur le digest de `:latest`.
+Elles étaient parfaitement reproductibles, et pourtant illisibles : rien ne
+disait qu'il s'agissait d'Alpine **3.24.3**, et le relever a demandé un
+`docker run` sur la VM pour une information qui devrait se lire dans le
+fichier. Le digest garantit **l'image**, le tag dit **laquelle**.
+
+Le tag se **relève**, il ne se devine pas, parce qu'un tag qui ne porte pas ce
+digest est un mensonge dans le fichier :
+
+```bash
+docker buildx imagetools inspect alpine:3.24.3   # Digest: sha256:…
+```
+
+**Le cas où `:latest` est la seule forme possible.** `hello-world` ne publie
+aucun tag de version, seulement `latest` et `linux`. On écrit donc
+`hello-world:latest@sha256:…` : accompagné d'un digest, `latest` ne flotte
+plus, il n'est qu'une étiquette, et le digest décide. L'interdiction de
+`:latest` vise un tag **seul**.
+
 `tests/test_images_epinglees.py` contrôle ce que **le dépôt exécute lui-même**,
 `setup.yaml` et `cleanup.yaml`, là où un tag flottant rend le lab non
-reproductible. Les `fixtures/` sont hors périmètre, et ce n'est pas un oubli :
+reproductible.
+
+Ses **deux** contrôles n'ont pas le même périmètre, et c'est voulu. Celui des
+références *sans digest* s'en tient à `docker pull`, `FROM` et `image:`, parce
+qu'ailleurs la position de l'image dépend des options et qu'un nom de
+**conteneur** y serait pris pour une image. Celui du *digest sans tag* cherche
+**partout**, la forme `nom@sha256:` étant sans ambiguïté : un nom de conteneur
+n'en porte jamais. Les `fixtures/` sont hors périmètre, et ce n'est pas un oubli :
 `scripts/hooks/hadolint-cible.sh` a déjà tracé cette frontière et nomme
 « image de base en tag flottant » parmi les sujets d'exercice légitimes.
 

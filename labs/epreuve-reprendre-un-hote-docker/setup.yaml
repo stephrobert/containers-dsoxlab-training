@@ -38,7 +38,7 @@
   become: true
   vars:
     image_epinglee: >-
-      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+      alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
     tag_service: lab-reprise:1.0
     tag_proxy: lab-reprise-proxy:1.0
     atelier: /opt/lab-reprise
@@ -126,6 +126,29 @@
       loop:
         - "{{ stagiaire }}"
         - "{{ exploitant }}"
+
+    # DÉFAUT 1 : aucune rotation des journaux, et il se POSE au lieu de se
+    # SUPPOSER.
+    #
+    # Le relevé ci-dessus a gardé le contenu du `daemon.json` et le fait qu'il
+    # existait, donc le cleanup sait le restituer. Mais le défaut lui-même
+    # n'était jamais posé : le setup se contentait de LIRE ce fichier, et
+    # comptait sur une machine où il n'existe pas.
+    #
+    # Mesuré le 2026-11-03, et c'est ce qui a fait sortir cette épreuve ROUGE
+    # d'une campagne de 75 labs, puis encore ROUGE rejouée seule : un lab joué
+    # plus tôt avait laissé une rotation dans `/etc/docker/daemon.json`, et
+    # `test_le_demon_tourne_avec_une_rotation_des_journaux` passait AVANT le
+    # travail. L'épreuve rendait donc 1/5 au départ, là où le cycle de
+    # validation exige 0, et l'apprenant recevait un point pour un défaut que
+    # personne n'avait corrigé.
+    #
+    # UN SETUP POSE L'ÉTAT DE DÉPART, IL NE LE SUPPOSE PAS. C'est la seule
+    # façon qu'un lab soit indépendant de ce que le précédent a laissé.
+    - name: Retirer la rotation des journaux, qui est le premier défaut
+      ansible.builtin.file:
+        path: /etc/docker/daemon.json
+        state: absent
 
     # DÉFAUT 4 : l'API en TCP sans TLS, par surcharge systemd.
     #

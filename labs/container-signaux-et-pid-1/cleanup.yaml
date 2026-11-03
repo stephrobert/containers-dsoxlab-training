@@ -29,7 +29,7 @@
   become: true
   vars:
     image_epinglee: >-
-      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+      alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
     travail: /opt/lab-signaux
   tasks:
     - name: Rendre le socle public, et seulement si ce lab l'a tire
@@ -39,7 +39,7 @@
         set -eu
         if ! command -v docker >/dev/null 2>&1; then exit 0; fi
         if test -e '/var/tmp/dsoxlab-container-signaux-et-pid-1.socle-a-rendre'; then
-          docker image rm -f 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
+          docker image rm -f 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
           rm -f '/var/tmp/dsoxlab-container-signaux-et-pid-1.socle-a-rendre'
         fi
       changed_when: false

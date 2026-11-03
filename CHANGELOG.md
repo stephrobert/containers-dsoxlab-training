@@ -104,6 +104,29 @@ of the Docker engine and in which storage mode. That is what
 
 ### Fixed
 
+- **255 image references carried a digest without their tag**, across 75 labs
+  (`setup.yaml` and `cleanup.yaml`), including **246 `alpine`** pinned to the
+  `:latest` digest. They were reproducible yet unreadable: nothing said this was
+  **Alpine 3.24.3**, and finding out required a `docker run` on the VM for
+  information that belongs in the file. `LABS-A-ECRIRE.md` has required the
+  `image:tag@sha256:…` form since 2026-10-29; `tests/test_images_epinglees.py`
+  did not check it, because it did `if "@sha256:" in ref: continue` and so
+  accepted any digest-bearing reference. Every tag was **measured** with
+  `docker buildx imagetools inspect` and carries exactly the digest already
+  written: `alpine:3.24.3`, `debian:13`, `debian:13-slim`,
+  `hello-world:latest`. **No image changes**, since Docker ignores the tag once
+  a digest is present. One reference stays untagged, `cesanta/docker_auth`,
+  whose digest no published tag carries and whose line **removes** it rather
+  than pulling it: it carries the repository marker with its reason.
+- **The pinning check now has two halves, with deliberately different scopes.**
+  The one for references *without a digest* stays with `docker pull`, `FROM` and
+  `image:`, because elsewhere the image position depends on options and a
+  **container** name would be taken for an image. The one for *digest without a
+  tag* searches **everywhere**, the `nom@sha256:` form being unambiguous. Tested
+  both ways, marker included, and verified able to refuse: removing the tag from
+  a single reference in a real lab makes the check reject it, and it goes green
+  again once restored.
+
 - **`buildkit-secret-de-build` required twice over that the secret stay out of
   the build context, and no test measured it.** Its three checks inspected the
   image: configuration, history and saved layers; yet a file sitting in the

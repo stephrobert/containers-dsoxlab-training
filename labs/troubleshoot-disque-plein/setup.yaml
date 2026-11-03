@@ -5,7 +5,7 @@
   vars:
     lab: troubleshoot-disque-plein
     work: /opt/dsoxlab-troubleshoot-disque-plein
-    image: alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    image: alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
   tasks:
     - name: Require the existing engine and sufficient memory for the 16 MiB sandbox
       ansible.builtin.shell: |

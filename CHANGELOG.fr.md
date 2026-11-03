@@ -106,6 +106,30 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Corrigé
 
+- **255 références d'image portaient un digest sans leur tag**, dans 75 labs
+  (`setup.yaml` et `cleanup.yaml`), dont **246 `alpine`** épinglées sur le
+  digest de `:latest`. Elles étaient reproductibles et pourtant illisibles :
+  rien ne disait qu'il s'agissait d'**Alpine 3.24.3**, et le relever a demandé
+  un `docker run` sur la VM pour une information qui devrait se lire dans le
+  fichier. `LABS-A-ECRIRE.md` exige depuis le 2026-10-29 la forme
+  `image:tag@sha256:…` ; `tests/test_images_epinglees.py` ne le vérifiait pas,
+  parce qu'il faisait `if "@sha256:" in ref: continue` et acceptait donc toute
+  référence à digest. Chaque tag a été **relevé** par
+  `docker buildx imagetools inspect` et porte exactement le digest déjà écrit :
+  `alpine:3.24.3`, `debian:13`, `debian:13-slim`, `hello-world:latest`. **Aucune
+  image ne change**, Docker ignorant le tag dès qu'un digest est présent. Une
+  seule référence reste sans tag, `cesanta/docker_auth`, dont le digest n'est
+  porté par aucun tag publié et que la ligne **supprime** au lieu de le tirer :
+  elle porte le marqueur du dépôt avec sa raison.
+- **Le contrôle d'épinglage a désormais deux volets, de périmètres différents à
+  dessein.** Celui des références *sans digest* s'en tient à `docker pull`,
+  `FROM` et `image:`, parce qu'ailleurs la position de l'image dépend des
+  options et qu'un nom de **conteneur** y serait pris pour une image. Celui du
+  *digest sans tag* cherche **partout**, la forme `nom@sha256:` étant sans
+  ambiguïté. Éprouvé dans les deux sens, marqueur compris, et vérifié capable
+  de refuser : en retirant le tag d'une seule référence d'un vrai lab, le
+  contrôle le rejette, puis redevient vert une fois restauré.
+
 - **`buildkit-secret-de-build` exigeait deux fois que le secret reste hors du
   contexte de build, et aucun test ne le mesurait.** Ses trois contrôles
   inspectaient l'image, configuration, historique et couches ; or un fichier

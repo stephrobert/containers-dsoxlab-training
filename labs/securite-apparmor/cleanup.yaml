@@ -5,7 +5,7 @@
   vars:
     lab: securite-apparmor
     work: /opt/dsoxlab-securite-apparmor
-    image: alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    image: alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
   tasks:
     - name: Remove the lab containers and only the profile owned by this run
       ansible.builtin.shell: |

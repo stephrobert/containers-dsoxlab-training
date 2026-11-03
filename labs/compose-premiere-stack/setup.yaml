@@ -13,7 +13,7 @@
       # qu'elle etait deja la.
       ansible.builtin.shell: |
         set -eu
-        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+        if docker image inspect 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
           rm -f '/var/tmp/dsoxlab-compose-premiere-stack.socle-a-rendre'
         else
           : > '/var/tmp/dsoxlab-compose-premiere-stack.socle-a-rendre'
@@ -57,7 +57,7 @@
 
     - name: Tirer Alpine épinglée
       ansible.builtin.command:
-        cmd: docker pull alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+        cmd: docker pull alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
       register: pulled
       changed_when: "'Downloaded newer image' in pulled.stdout"
 
@@ -85,7 +85,7 @@
         dest: /opt/lab-compose-first/api/Dockerfile
         mode: "0644"
         content: |
-          FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+          FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
           LABEL dsoxlab.lab="compose-premiere-stack"
           RUN apk add --no-cache busybox-extras
           COPY release.txt /www/release.txt
@@ -96,7 +96,7 @@
         dest: /opt/lab-compose-first/web/Dockerfile
         mode: "0644"
         content: |
-          FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+          FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
           LABEL dsoxlab.lab="compose-premiere-stack"
           RUN apk add --no-cache busybox-extras
           COPY cgi-bin /www/cgi-bin
