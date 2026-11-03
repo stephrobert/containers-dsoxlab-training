@@ -7,20 +7,7 @@ The `herbier` stack runs and serves. You must back it up, bring it back in a
 
 They carry equal weight, and each one rests on a verifiable fact.
 
-### 1. The source still runs, and serves as before
-
-This check does not measure your backup: it measures that the backup **cost
-nothing**.
-
-Stopping the database to copy it in peace, emptying it, moving its volume: all
-of that "works" and leaves the conservatory without its herbarium for the
-duration. It is the easiest fault to commit, because it makes the rest of the
-work simpler.
-
-Both its services must run, and its fingerprint must be **the one it started
-with**: the source is read, never modified.
-
-### 2. The database backup is logical, and reads back
+### 1. The database backup is logical, and reads back
 
 A copy of the data directory taken while the engine writes **is not a backup**.
 It looks complete, it holds an intermediate state, and it restores without an
@@ -29,7 +16,7 @@ error until the day it does not.
 The check does not look at **how** the archive was made, it looks at what it
 **is**: a logical backup reads back, and the check reads it back.
 
-### 3. The plates and the configuration are archived
+### 2. The plates and the configuration are archived
 
 Two separate archives, and two separate reasons.
 
@@ -37,7 +24,7 @@ The files volume **does not live in the database**: no `pg_dump` carries it
 along. And the configuration is what lets you **rebuild** the stack: without it
 you hold data and nothing to serve it with.
 
-### 4. The target is a project of its own, and it is up
+### 3. The target is a project of its own, and it is up
 
 Restoring over the source proves nothing: the data was already there.
 
@@ -45,9 +32,19 @@ The target is therefore a Compose project of its own, and the two **live side by
 side**, which forces it to take its own published port. That is also the real
 situation: you verify a backup **before** you have lost the original.
 
-### 5. The target serves exactly the source's data
+### 4. The target serves exactly the source's data
 
 **This is the check this lab exists for.**
+
+**And it requires the source to be intact.** That is not a separate check, it is
+a condition of this one: comparing the target's fingerprint with the source's
+only means something if the source is still the one we recorded. A restore
+proven against a destroyed source proves nothing.
+
+Stopping the database to copy it in peace, emptying it, moving its volume: all
+of that "works" and leaves the conservatory without its herbarium for the
+duration. It is the easiest fault to commit, because it makes the rest of the
+work simpler, and it costs this very check.
 
 Two fingerprints, and each covers what the other cannot see.
 
@@ -60,12 +57,12 @@ Two values are drawn at random on every run, one in the database and one in a
 plate. They exist nowhere but in the source: they can be neither guessed nor
 reconstructed.
 
-### 6. The target's web front does serve its plates
+### 5. The target's web front does serve its plates
 
 A correct volume and a service that does not mount it give you a target that
 **holds** the plates without **serving** them.
 
-Check 5 reads the volume; this one reads what a visitor gets. What is declared
+Check 4 reads the volume; this one reads what a visitor gets. What is declared
 and what is served are two facts, and only the second matters to whoever comes
 to consult the herbarium.
 
