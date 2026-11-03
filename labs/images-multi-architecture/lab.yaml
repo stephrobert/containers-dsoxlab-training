@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-multi-architecture                      # REQUIS
 title: "Publish two architectures and execute both"
-level: c2
+level: c5
 description: "Publish an AMD64/ARM64 image index and prove actual execution of each variant, explicitly using QEMU for ARM64 in the disposable VM."
 skills:                       # REQUIS, non vide
   - docker

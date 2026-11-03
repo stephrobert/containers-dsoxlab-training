@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: registry-air-gap                      # REQUIS
 title: "Deliver a complete image without its source registry"
-level: c2                     # REQUIS
+level: c5                     # REQUIS
 description: "Package a published image with an integrity checksum and prove offline recovery without relying on Docker's local cache."
 skills:                       # REQUIS, non vide
   - docker

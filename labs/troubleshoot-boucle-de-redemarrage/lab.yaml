@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: troubleshoot-boucle-de-redemarrage                      # REQUIS
 title: "A restart loop, and two outcomes"   # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Diagnose a container the engine keeps relaunching: read what its policy decides, tell it apart from one the engine gave up on, and lift the cause instead of silencing the loop."
 skills:                       # REQUIS, non vide
   - docker

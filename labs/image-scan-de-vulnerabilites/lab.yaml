@@ -1,6 +1,6 @@
 id: image-scan-de-vulnerabilites
 title: "Gate an image using dated, real offline vulnerability scans"
-level: c4
+level: c6
 description: "Scan genuine archived Debian libraries, preserve findings tied to image and database, and enforce a reproducible CVE policy."
 skills: [image-scanning, vulnerability-policy, evidence, supply-chain]
 distros: [debian13]

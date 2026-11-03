@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: troubleshoot-exit-127                      # REQUIS
 title: "Three failures, three exit codes to read"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Read the exit codes of three containers that failed for three reasons, discover that an empty log comes with an unexpected status, and repair on the same image to prove it was never at fault."
 skills:                       # REQUIS, non vide
   - docker

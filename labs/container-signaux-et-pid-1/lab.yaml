@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: container-signaux-et-pid-1                      # REQUIS
 title: "Who is PID 1 decides whether your container stops or gets killed"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Diagnose a container that takes the full timeout to die then exits 137, find that the signal never reaches the application, and fix the image without removing its entry script."
 skills:                       # REQUIS, non vide
   - docker

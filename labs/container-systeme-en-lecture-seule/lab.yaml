@@ -1,6 +1,6 @@
 id: container-systeme-en-lecture-seule
 title: "Use a read-only container root filesystem"
-level: c4
+level: c6
 description: "Protect the root filesystem while keeping the worker operational through a 4 MiB writable runtime tmpfs."
 skills:
   - docker

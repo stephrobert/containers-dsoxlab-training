@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: registry-authentification                      # REQUIS
 title: "Protect a TLS registry with authentication"
-level: c2                     # REQUIS
+level: c5                     # REQUIS
 description: "Require credentials for a private registry and prove authenticated Docker push and pull over verified TLS."
 skills:                       # REQUIS, non vide
   - docker

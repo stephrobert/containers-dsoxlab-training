@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: reseau-interne                      # REQUIS
 title: "Two isolations that are not alike"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Obtain both isolations on one machine: a container with no network at all, and a confined network whose members talk to each other by name but never get out."
 skills:                       # REQUIS, non vide
   - docker

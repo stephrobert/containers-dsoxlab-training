@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-build-multi-etapes                      # REQUIS
 title: "What comes from the base cannot be removed"   # REQUIS
-level: c2                     # REQUIS
+level: c5                     # REQUIS
 description: "Separate fabrication from execution: find out why a tooling coming from the base cannot be deleted, build the final image on another base, and let only the product cross over."
 skills:                       # REQUIS, non vide
   - docker

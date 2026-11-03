@@ -1,6 +1,6 @@
 id: container-limite-de-processus
 title: "Bound the container process count"
-level: c4
+level: c6
 description: "Apply a 16-task cgroup ceiling and observe rejection of a finite, short-lived process burst."
 skills:
   - docker

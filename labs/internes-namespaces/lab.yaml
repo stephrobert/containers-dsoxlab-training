@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: internes-namespaces                      # REQUIS
 title: "A namespace is a view, not a wall"            # REQUIS
-level: c1                     # REQUIS
+level: c6                     # REQUIS
 description: "Find on the host the process a container calls PID 1, read the namespaces the kernel gave it, and discover by comparison the one Docker does not isolate: the reason root in a container is a security subject."
 skills:                       # REQUIS, non vide
   - docker

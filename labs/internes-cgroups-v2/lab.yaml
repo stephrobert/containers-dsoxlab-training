@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: internes-cgroups-v2                      # REQUIS
 title: "Cgroups: what a container may consume"            # REQUIS
-level: c1                     # REQUIS
+level: c6                     # REQUIS
 description: "Find a container's cgroup on the host, read the memory limit it carries, discover what the same file says of a container with no limit, then set two ceilings in a single move."
 skills:                       # REQUIS, non vide
   - docker

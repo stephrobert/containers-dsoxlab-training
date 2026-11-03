@@ -1,6 +1,6 @@
 id: securite-seccomp
 title: "Measure a targeted seccomp syscall denial"
-level: c4
+level: c6
 description: "Attach a container-only filter that denies getpgid(2147483647) with EPERM while allowing ordinary getpgid and getpid calls."
 skills:
   - docker

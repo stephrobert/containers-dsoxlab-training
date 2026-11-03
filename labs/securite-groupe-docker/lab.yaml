@@ -1,6 +1,6 @@
 id: securite-groupe-docker
 title: "Remove an unnecessary Docker grant"
-level: c4
+level: c6
 description: "Remove only docker-group membership from the synthetic audit account."
 skills:
   - docker

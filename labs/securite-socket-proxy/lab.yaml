@@ -1,6 +1,6 @@
 id: securite-socket-proxy
 title: "Restrict a Docker API socket proxy"
-level: c4
+level: c6
 description: "Limit the loopback proxy to two read-only API endpoints."
 skills:
   - docker

@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: docker-inspecter-un-conteneur                      # REQUIS
 title: "Interrogate a running container"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Get out of a running container what nothing on the host says: a token from its logs, the address the engine gave it, the port it publishes, and a file it wrote after starting."
 skills:                       # REQUIS, non vide
   - docker

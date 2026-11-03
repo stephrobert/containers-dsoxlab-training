@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-epingler-par-digest                      # REQUIS
 title: "Keep a rebuild on its approved base when a tag moves"
-level: c2                     # REQUIS
+level: c5                     # REQUIS
 description: "Pin a build to its approved registry manifest, rebuild after a source change, and prove that replacing the base tag does not change the delivered base."
 skills:                       # REQUIS, non vide
   - docker

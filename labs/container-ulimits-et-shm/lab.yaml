@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: container-ulimits-et-shm                      # REQUIS
 title: "Shared memory and descriptors"            # REQUIS
-level: c1                     # REQUIS
+level: c6                     # REQUIS
 description: "Measure two defaults nobody ever looks at, set them both at a container's creation, and see that shared memory is not a separate space: it counts in the cgroup's memory."
 skills:                       # REQUIS, non vide
   - docker

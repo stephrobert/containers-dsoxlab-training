@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-optimiser-la-taille                      # REQUIS
 title: "What a layer keeps"   # REQUIS
-level: c2                     # REQUIS
+level: c5                     # REQUIS
 description: "Find the megabytes a container does not show: weigh an image layer by layer, move a cleanup into the instruction that created what it removes, and keep the layers shared with the base."
 skills:                       # REQUIS, non vide
   - docker

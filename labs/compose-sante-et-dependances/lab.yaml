@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: compose-sante-et-dependances                      # REQUIS
 title: "Wait for readiness, not just a running container"
-level: c3                     # REQUIS
+level: c4                     # REQUIS
 description: "Use a meaningful HTTP healthcheck and gate a dependent service on readiness, including during a simulated outage."
 skills:                       # REQUIS, non vide
   - compose-healthcheck

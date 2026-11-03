@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: compose-plusieurs-environnements                      # REQUIS
 title: "Deploy isolated development and production Compose projects"
-level: c3                     # REQUIS
+level: c6                     # REQUIS
 description: "Promote the same prepared image to two distinct VMs, apply environment-specific overrides and prove independent configuration, runtime behavior and data persistence without a deployment rebuild."
 skills:                       # REQUIS, non vide
   - compose-overrides

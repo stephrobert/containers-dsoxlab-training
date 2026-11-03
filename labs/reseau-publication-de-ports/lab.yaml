@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: reseau-publication-de-ports                      # REQUIS
 title: "Publishing a port, and only where it belongs"            # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Correct three badly published containers, one per posture: one that must only answer on the loopback, one only on the routable address, and one that must publish nothing while still serving the others."
 skills:                       # REQUIS, non vide
   - docker

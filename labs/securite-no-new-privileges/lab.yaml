@@ -1,6 +1,6 @@
 id: securite-no-new-privileges
 title: "Prevent privilege gain at runtime"
-level: c4
+level: c6
 description: "Prevent a harmless setuid probe from gaining EUID 0 using an inherited runtime privilege barrier."
 skills:
   - docker

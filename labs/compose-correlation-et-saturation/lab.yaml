@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: compose-correlation-et-saturation                      # REQUIS
 title: "Correlate business requests and attribute CPU saturation"
-level: c3
+level: c4
 description: "Configure the supplied gateway and calculator, measure effective cgroup throttling under bounded business load and exclude sensitive headers from both JSON traces."
 skills:                       # REQUIS, non vide
   - docker
