@@ -292,11 +292,18 @@ def _base_declaree(host) -> str | None:
         mots = ligne.strip().split()
         if len(mots) < 2 or mots[0].upper() != "FROM":
             continue
-        image = mots[1]
+        # LES DRAPEAUX SE SAUTENT. `FROM --platform=linux/amd64 alpine:3.22`
+        # est valide, et lire le deuxième mot rendait `--platform=linux/amd64`
+        # comme nom d'image : l'inspection échouait alors, et le contrôle
+        # refusait un Dockerfile juste.
+        reste = [m for m in mots[1:] if not m.startswith("--")]
+        if not reste:
+            continue
+        image = reste[0]
         if image in etapes:          # `FROM build` : on remonte à sa base
             image = etapes[image]
-        if len(mots) >= 4 and mots[2].upper() == "AS":
-            etapes[mots[3]] = image
+        if len(reste) >= 3 and reste[1].upper() == "AS":
+            etapes[reste[2]] = image
         base = image
     return base
 

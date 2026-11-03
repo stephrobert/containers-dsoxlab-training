@@ -236,6 +236,30 @@
           docker create --name {{ service }} -e SALLE=perimee {{ tag_local }} >/dev/null
       changed_when: true
 
+    - name: Relever l'identifiant de l'homonyme, pour qu'un `restart` se voie
+      # SANS CE RELEVÉ, LE CONTRÔLE NE PEUT PAS DISTINGUER un homonyme RETIRÉ
+      # d'un homonyme simplement RELANCÉ. Il vérifiait qu'un seul conteneur
+      # porte ce nom et qu'il tourne, et sa docstring en concluait que l'ancien
+      # était parti. Un `docker restart` sur l'ancien satisfait les deux : même
+      # nom, un seul conteneur, et il tourne. L'épreuve était alors reçue à 80
+      # avec un service qui n'a jamais été configuré.
+      #
+      # L'identifiant, lui, ne survit pas à un retrait : c'est le seul fait qui
+      # distingue les deux gestes.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          ancien=$(docker container inspect '{{ service }}' --format '{% raw %}{{.Id}}{% endraw %}')
+          python3 - "$ancien" <<'PY'
+          import json, sys
+          from pathlib import Path
+          chemin = Path("{{ etat }}")
+          releve = json.loads(chemin.read_text())
+          releve["homonyme_id"] = sys.argv[1].strip()
+          chemin.write_text(json.dumps(releve, indent=1))
+          PY
+      changed_when: true
+
     - name: Déposer l'énoncé sur la machine
       ansible.builtin.copy:
         dest: "{{ atelier }}/MISSION.md"

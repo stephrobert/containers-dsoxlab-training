@@ -2523,10 +2523,10 @@
   },
   "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 57,
+  "duree_s": 59,
   "ecarts": [],
   "etapes": [
-   "état photographié : 9 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 9 image(s), 0 conteneur(s), 1 volume(s)",
    "avant le travail : 0/6",
    "après la solution : 6/6",
    "après clean et run : 0/6",
@@ -2590,7 +2590,7 @@
   "duree_s": 77,
   "ecarts": [],
   "etapes": [
-   "état photographié : 9 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 9 image(s), 0 conteneur(s), 1 volume(s)",
    "avant le travail : 0/5",
    "après la solution : 5/5",
    "après clean et run : 0/5",
