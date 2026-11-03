@@ -16,11 +16,14 @@ architecture does not deploy.
 2. Its size stays **under the threshold** this lab measured on this machine, by
    building a multi-stage reference of its own.
 3. The token appears **neither in the layers nor in
-   `docker history --no-trunc`**, and the private dependency is present in the
-   image.
-4. The lab's registry, on `127.0.0.1:15002`, serves an **index** carrying
+   `docker history --no-trunc`**. This is the one demand that **no total makes
+   up for**: if the secret leaks, the exercise is refused whatever the score.
+4. The **private dependency** is present in the image, which is only possible if
+   the token was **used**. Removing the token without using it costs this check,
+   and this check only: it is not a leak.
+5. The lab's registry, on `127.0.0.1:15002`, serves an **index** carrying
    `linux/amd64` **and** `linux/arm64`, and **both of them run**.
-5. The **index's** digest is recorded in `/opt/lab-deux-arch/digest.txt`, on a
+6. The **index's** digest is recorded in `/opt/lab-deux-arch/digest.txt`, on a
    single line, in the form `sha256:...`.
 
 **Emulation of foreign architectures is already in place**: this lab set it up.
@@ -28,7 +31,7 @@ You do not have to install it.
 
 The full brief is also on the machine, in `/opt/lab-deux-arch/MISSION.md`.
 
-## Two points so you do not look in the wrong place
+## Three points so you do not look in the wrong place
 
 **The binary can be compiled statically**, and an image whose binary is static
 needs no system around it: no compiler, no package manager, no shell. That is the

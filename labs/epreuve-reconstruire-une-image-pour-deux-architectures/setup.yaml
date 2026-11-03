@@ -130,10 +130,17 @@
           docker buildx rm lab-deux-arch >/dev/null 2>&1 || true
       changed_when: false
 
-    - name: Déposer l'atelier
+    - name: Déposer l'atelier, et le DONNER à l'apprenant
+      # MESURÉ le 2026-11-03 sous le compte que `dsoxlab run` ouvre, sans
+      # `sudo` : l'atelier était `drwxr-xr-x root root`, donc l'apprenant ne
+      # pouvait pas y écrire son `digest.txt`, que la mission exige. Le setup
+      # annonce pourtant « Autoriser l'apprenant à parler au moteur sans
+      # sudo » : il tenait cette promesse pour le moteur et la rompait pour
+      # son propre atelier.
       ansible.builtin.file:
         path: "{{ atelier }}"
         state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
         mode: "0755"
 
     - name: Retirer les livrables d'un passage précédent
@@ -153,8 +160,16 @@
     - name: Déposer le jeton dans un fichier, que l'apprenant pourra monter
       # LE FICHIER EST FOURNI : le sujet est de s'en servir sans qu'il fuie, pas
       # de deviner où le mettre.
+      # MESURÉ le 2026-11-03 : en `0600` sans `owner`, donc root, le fichier
+      # était illisible par l'apprenant, et
+      # `docker build --secret id=depot,src=.../jeton` rendait
+      # « open /opt/lab-deux-arch/jeton: permission denied ». `--secret src=`
+      # est lu par le CLIENT, donc sous le compte de l'apprenant, et non par
+      # le démon. Le `0600` est conservé : le secret reste privé, mais à LUI.
+      # C'est ce que fait déjà `buildkit-secret-de-build`.
       ansible.builtin.copy:
         dest: "{{ atelier }}/jeton"
+        owner: "{{ ansible_user | default('ansible') }}"
         mode: "0600"
         content: "{{ tirage_jeton.stdout }}"
 
@@ -334,46 +349,55 @@
         dest: "{{ atelier }}/MISSION.md"
         mode: "0644"
         content: |
-          # Epreuve : reconstruire une image pour deux architectures
+          # Épreuve : reconstruire une image pour deux architectures
 
-          L image `{{ depot }}:{{ version }}` marche. Elle pese environ 200 Mo,
-          son `Dockerfile` tient en une seule etape, le jeton du depot prive y
-          passe par un `ARG`, et elle n existe que pour une architecture.
+          L'image `{{ depot }}:{{ version }}` marche. Elle pèse environ 200 Mo,
+          son `Dockerfile` tient en une seule étape, le jeton du dépôt privé y
+          passe par un `ARG`, et elle n'existe que pour une architecture.
 
-          C est une epreuve d ENCHAINEMENT : les quatre gestes ont ete vus
-          separement, et il s agit ici de les reunir dans UNE SEULE image.
+          C'est une épreuve d'ENCHAÎNEMENT : les quatre gestes ont été vus
+          séparément, et il s'agit ici de les réunir dans UNE SEULE image.
 
-          CE QUI EST ATTENDU A LA FIN :
+          CE QUI EST ATTENDU À LA FIN, et chaque point est un contrôle :
 
-            1. l image publiee ne contient NI le compilateur NI le gestionnaire
-               de paquets de l image de base, et son execution rend la charge
-               metier ;
-            2. sa taille reste sous le seuil que ce lab a mesure sur cette
-               machine, en construisant lui-meme une reference multi-etapes ;
-            3. le jeton n apparait NI dans les couches NI dans
-               `docker history --no-trunc`, et la dependance privee est bien
-               presente dans l image ;
-            4. le registre du lab, sur `127.0.0.1:{{ port_registre }}`, sert un
+            1. l'image publiée ne contient NI le compilateur NI le gestionnaire
+               de paquets de l'image de base, et son exécution rend la charge
+               métier ;
+            2. sa taille reste sous le seuil que ce lab a mesuré sur cette
+               machine, en construisant lui-même une référence multi-étapes ;
+            3. le jeton n'apparaît NI dans les couches NI dans
+               `docker history --no-trunc`. C'est la seule exigence
+               qu'AUCUN TOTAL NE COMPENSE : si le secret fuit, l'épreuve est
+               refusée quel que soit le score ;
+            4. la dépendance privée est bien présente dans l'image, ce qui n'est
+               possible que si le jeton a SERVI. Retirer le jeton sans s'en
+               servir coûte ce contrôle, et lui seul : ce n'est pas une fuite ;
+            5. le registre du lab, sur `127.0.0.1:{{ port_registre }}`, sert un
                INDEX qui porte `linux/amd64` ET `linux/arm64`, et CHACUNE des
-               deux s execute ;
-            5. le digest de l INDEX est consigne dans
+               deux s'exécute ;
+            6. le digest de l'INDEX est consigné dans
                `{{ atelier }}/digest.txt`, sur une seule ligne, sous la forme
                `sha256:...`.
 
-          L emulation des architectures etrangeres est DEJA EN PLACE : ce lab
-          l a posee. Vous n avez pas a l installer.
+          L'émulation des architectures étrangères est DÉJÀ EN PLACE : ce lab
+          l'a posée. Vous n'avez pas à l'installer. L'atelier et le fichier du
+          jeton vous appartiennent : vous n'avez pas besoin de `sudo`.
 
-          DEUX PRECISIONS POUR NE PAS CHERCHER AU MAUVAIS ENDROIT :
+          TROIS PRÉCISIONS POUR NE PAS CHERCHER AU MAUVAIS ENDROIT :
 
-            - le jeton du depot prive sert a produire la dependance, et dans ce
-              lab la dependance EST le condensat du jeton, ses seize premiers
-              caracteres. C est dit franchement : un vrai depot reseau ne
-              changerait rien a ce qui est mesure, qui est que le secret ait
-              SERVI et qu il n ait pas FUI ;
-            - l index publie par l outil de construction porte plus de deux
-              entrees : il y ajoute ses attestations, qui se presentent comme
-              des plateformes `unknown`. C est normal, et le controle cherche
-              les deux architectures PARMI les entrees.
+            - le binaire peut être compilé STATIQUEMENT, et une image dont le
+              binaire est statique n'a besoin d'aucun système autour de lui :
+              ni compilateur, ni gestionnaire de paquets, ni shell. C'est la
+              voie qui satisfait la première exigence sans contorsion ;
+            - le jeton du dépôt privé sert à produire la dépendance, et dans ce
+              lab la dépendance EST le condensat du jeton, ses seize premiers
+              caractères. C'est dit franchement : un vrai dépôt réseau ne
+              changerait rien à ce qui est mesuré, qui est que le secret ait
+              SERVI et qu'il n'ait pas FUI ;
+            - l'index publié par l'outil de construction porte plus de deux
+              entrées : il y ajoute ses attestations, qui se présentent comme
+              des plateformes `unknown`. C'est normal, et le contrôle cherche
+              les deux architectures PARMI les entrées.
 
-          Le nom du depot et la version ne changent pas :
+          Le nom du dépôt et la version ne changent pas :
           `{{ depot }}:{{ version }}`.
