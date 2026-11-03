@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: compose-ressources                      # REQUIS
 title: "Enforce Compose resource budgets on the engine"
-level: c3                     # REQUIS
+level: c4                     # REQUIS
 description: "Apply memory, CPU and process limits and verify cgroup enforcement instead of trusting the YAML alone."
 skills:                       # REQUIS, non vide
   - compose-resources
