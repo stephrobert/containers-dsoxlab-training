@@ -9,6 +9,16 @@ Both already carry:
 - the image `lab-restauration/service:1.0`, built locally;
 - `/opt/lab-restauration/sauvegarde/`, the backup taken before the fault.
 
+**To work on `docker-client.lab`, open a session on it from your own machine:**
+
+```bash
+dsoxlab ssh docker-client
+```
+
+Hopping from one lab machine to the other is **not** possible: the two hosts do
+not trust each other, and that is on purpose. You go through your own
+workstation, which is the only one that talks to both.
+
 The stack has three tiers. `front` is published on `127.0.0.1:18090` and sees
 only `api`; `api` sees both sides; `db` is only on the data network, which is
 **internal**. A business request crosses all three, and the service returns the

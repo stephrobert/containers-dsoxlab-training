@@ -9,6 +9,17 @@ Les deux portent déjà :
 - l'image `lab-restauration/service:1.0`, construite localement ;
 - `/opt/lab-restauration/sauvegarde/`, la sauvegarde prise avant la panne.
 
+**Pour travailler sur `docker-client.lab`, ouvrez-y une session depuis votre
+poste :**
+
+```bash
+dsoxlab ssh docker-client
+```
+
+Le saut d'une machine du lab vers l'autre n'est **pas** possible : les deux hôtes
+ne se font pas confiance, et c'est volontaire. On passe par son propre poste,
+qui est le seul à parler aux deux.
+
 La pile a trois étages. `front` est publié sur `127.0.0.1:18090` et ne voit que
 `api` ; `api` voit les deux côtés ; `db` n'est que sur le réseau de données, qui
 est **interne**. Une requête métier traverse les trois, et le service rend la
