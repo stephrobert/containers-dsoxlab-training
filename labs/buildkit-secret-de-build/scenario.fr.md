@@ -19,6 +19,7 @@ Corrigez le Dockerfile et construisez `dsoxlab-secret:finale`.
 - Aucun secret n'apparaît dans la configuration, l'historique ou les couches.
 - Une nouvelle identité passée par `--secret id=depot,src=...` permet de reconstruire.
 - Un secret absent ou erroné fait échouer un build exécuté sans cache des couches.
+- Le fichier d'identifiant ne séjourne pas dans le répertoire de contexte.
 
 Le dépôt et son état sont le banc de mesure : ne les modifiez pas. Le protocole
 HTTP est ici réservé au réseau isolé du lab ; le TLS du dépôt n'est pas le sujet.
@@ -32,7 +33,16 @@ docker buildx create --name dsoxlab-secret-work --driver docker-container \
 
 Passez `DEPOT_URL=http://<adresse-de-docker.lab>:18083/artifact` comme argument
 de build et le fichier d'identifiant comme secret BuildKit. Ce n'est pas un
-argument `DEPOT_SECRET`, et il ne doit pas être copié dans le contexte.
+argument `DEPOT_SECRET`, et il ne doit pas être copié dans le contexte : les
+contrôles vérifient que le répertoire `appli` ne le contient pas, même exclu
+par un `.dockerignore`.
+
+Un constructeur `docker-container` ne dépose pas l'image dans le magasin local :
+il la garde dans son propre cache. Sans `--load`, la construction réussit, puis
+`docker run` répond « Unable to find image ... locally » suivi d'un
+« may require 'docker login' » qui n'a rien à voir avec votre problème.
+Construisez donc avec `--load`, les contrôles lisant l'image depuis le magasin
+local.
 
 Les contrôles lisent votre image, puis reconstruisent une copie du contexte
 avec un produit et une identité neufs. Ils restaurent le dépôt après les essais.

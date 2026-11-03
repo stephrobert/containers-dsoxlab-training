@@ -106,6 +106,31 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Corrigé
 
+- **`buildkit-secret-de-build` exigeait deux fois que le secret reste hors du
+  contexte de build, et aucun test ne le mesurait.** Ses trois contrôles
+  inspectaient l'image, configuration, historique et couches ; or un fichier
+  présent dans le contexte mais jamais `COPY` n'entre dans aucune couche.
+  **L'exigence était donc invisible, et l'apprenant la croyait notée** : copier
+  `depot.token` dans `appli/` puis le passer par
+  `--secret id=depot,src=./depot.token` donnait 100. Un quatrième contrôle lit
+  désormais le répertoire de contexte, et y cherche le jeton en clair, en
+  base64, ainsi que l'en-tête `Bearer` construit sous ses deux formes, parce
+  qu'un secret recopié dans une note ou un script d'aide ne se présente pas
+  toujours brut. Il refuse aussi le fichier d'identifiant recopié, même vide,
+  et **même exclu par un `.dockerignore`** : une exclusion s'oublie, et le
+  secret suit alors l'arborescence. Le critère est ajouté à la mission des deux
+  scénarios, car une liste qui énumère ce qui est noté doit le nommer.
+- **Le scénario de `buildkit-secret-de-build` laissait l'apprenant sans
+  `--load`.** Mesuré le 2026-11-03 sur `docker.lab`, Engine 29.9.2, magasin
+  containerd : avec le constructeur `docker-container` que le scénario propose,
+  une construction sans `--load` **réussit**, l'image reste absente du magasin
+  local, et le `docker run` suivant répond « Unable to find image ... locally »
+  puis « pull access denied ... may require `docker login` ». **Dans un lab sur
+  les secrets de build, ce message envoie l'apprenant chercher un problème
+  d'authentification** là où il lui manque une option de sortie. La solution,
+  elle, employait `--load` depuis le début, donc l'attestation restait verte.
+  Les deux scénarios nomment désormais l'option et disent pourquoi.
+
 - **`images-multi-architecture` comptait les entrées de l'index publié, et non
   ses variantes.** Son énoncé demandait « exactement deux variantes Linux
   distinctes » ; le test exigeait `len(manifests) == 2`. Mesuré le 2026-11-03

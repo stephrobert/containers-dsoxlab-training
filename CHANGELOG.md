@@ -104,6 +104,30 @@ of the Docker engine and in which storage mode. That is what
 
 ### Fixed
 
+- **`buildkit-secret-de-build` required twice over that the secret stay out of
+  the build context, and no test measured it.** Its three checks inspected the
+  image: configuration, history and saved layers; yet a file sitting in the
+  context but never `COPY`-ed enters no layer at all. **The requirement was
+  therefore invisible, and the learner believed it was graded**: copying
+  `depot.token` into `appli/` and passing it through
+  `--secret id=depot,src=./depot.token` scored 100. A fourth check now reads the
+  context directory, looking for the token in clear text, in base64, and for the
+  assembled `Bearer` header in both forms, because a secret copied into a note
+  or a helper script does not always appear raw. It also rejects the copied
+  credential file, even empty, and **even when excluded by a `.dockerignore`**:
+  an exclusion gets forgotten, and the secret then follows the tree. The
+  criterion is added to both scenarios' mission list, since a list that
+  enumerates what is graded must name it.
+- **The `buildkit-secret-de-build` scenario left the learner without `--load`.**
+  Measured on 2026-11-03 on `docker.lab`, Engine 29.9.2, containerd store: with
+  the `docker-container` builder the scenario suggests, a build without `--load`
+  **succeeds**, the image stays absent from the local store, and the following
+  `docker run` answers "Unable to find image ... locally" then "pull access
+  denied ... may require `docker login`". **In a lab about build secrets, that
+  message sends the learner hunting an authentication problem** where an output
+  option is missing. The solution itself used `--load` all along, so the
+  attestation stayed green. Both scenarios now name the option and say why.
+
 - **`images-multi-architecture` counted the published index entries rather than
   its variants.** Its brief asked for "exactly two distinct Linux variants";
   the test required `len(manifests) == 2`. Measured on 2026-11-03 on Engine

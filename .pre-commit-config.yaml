@@ -223,6 +223,18 @@ repos:
         pass_filenames: false
         stages: [pre-push]
 
+      # `buildkit-secret-de-build` exige deux fois que le secret reste hors du
+      # contexte de build, et aucun test ne le mesurait : ses trois contrôles
+      # inspectaient l'IMAGE, où un fichier jamais `COPY` n'apparaît pas. Ce
+      # test éprouve la sonde ajoutée, sans Docker ni VM, dans les deux sens :
+      # les formes du secret sont refusées, et un `tokenizer.py` innocent passe.
+      - id: sonde-du-contexte-de-build
+        name: le secret ne séjourne pas dans le contexte de build
+        entry: uv run --no-sync pytest tests/test_sonde_du_contexte_de_build.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
       # `images-multi-architecture` comptait les ENTRÉES de l'index publié, alors
       # qu'une poussée multi-plateforme qui garde la provenance par défaut en
       # porte quatre : deux variantes et deux attestations en `unknown/unknown`
