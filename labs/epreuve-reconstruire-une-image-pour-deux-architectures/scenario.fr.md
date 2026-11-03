@@ -56,7 +56,7 @@ normal, et le contrôle cherche les deux architectures **parmi** les entrées.
 
 ## Comment vous êtes noté
 
-Cinq contrôles de poids égal, et **seul l'état final compte**. Les contrôles
+Six contrôles de poids égal, et **seul l'état final compte**. Les contrôles
 portent sur **l'image tirée du registre**, et non sur une image locale : publier
 sans rien garder en local est la façon normale de faire, et l'épreuve ne doit pas
 la punir.
