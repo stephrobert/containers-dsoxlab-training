@@ -358,7 +358,11 @@
           C'est une épreuve d'ENCHAÎNEMENT : les quatre gestes ont été vus
           séparément, et il s'agit ici de les réunir dans UNE SEULE image.
 
-          CE QUI EST ATTENDU À LA FIN, et chaque point est un contrôle :
+          CE QUI EST ATTENDU À LA FIN. Les quatre exigences se mesurent par
+          SIX CONTRÔLES de poids égal : deux d'entre elles en portent deux
+          chacune, parce qu'elles ont chacune deux faces. Une image allégée doit
+          rendre la charge métier ET tenir sous le seuil ; un secret doit ne pas
+          fuir ET avoir servi.
 
             1. l'image publiée ne contient NI le compilateur NI le gestionnaire
                de paquets de l'image de base, et son exécution rend la charge
