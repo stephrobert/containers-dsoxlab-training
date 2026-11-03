@@ -1,6 +1,6 @@
 id: docker-rotation-des-journaux
 title: "Rotate one container log"
-level: c4
+level: c6
 description: "Replace the labelled demo service with bounded per-container json-file rotation."
 skills:
   - docker

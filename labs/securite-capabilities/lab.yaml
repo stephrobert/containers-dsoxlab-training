@@ -1,6 +1,6 @@
 id: securite-capabilities
 title: "Drop all but one Linux capability"
-level: c4
+level: c6
 description: "Recreate the service with all capabilities dropped except NET_BIND_SERVICE."
 skills:
   - docker

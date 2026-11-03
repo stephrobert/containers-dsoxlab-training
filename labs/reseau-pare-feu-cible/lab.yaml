@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: reseau-pare-feu-cible                      # REQUIS
 title: "Repair one routed firewall path without dropping protections"
-level: c4
+level: c6
 description: "Diagnose client, router and server hops, correct one namespace-scoped nftables rule and retain default-deny, untrusted-client and debug-port protections after recreation."
 skills:                       # REQUIS, non vide
   - docker

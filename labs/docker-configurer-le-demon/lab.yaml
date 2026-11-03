@@ -1,6 +1,6 @@
 id: docker-configurer-le-demon
 title: "Configure persistent Docker log defaults"
-level: c4
+level: c6
 description: "Merge bounded json-file log defaults into the daemon configuration."
 skills:
   - docker
