@@ -11,6 +11,11 @@ qu'une architecture ne se déploie pas.
 
 ## Ce qui est attendu à la fin
 
+Les quatre exigences se mesurent par **six contrôles de poids égal** : deux
+d'entre elles en portent deux chacune, parce qu'elles ont chacune deux faces.
+Une image allégée doit rendre la charge métier **et** tenir sous le seuil ; un
+secret doit ne pas fuir **et** avoir servi.
+
 1. L'image **publiée** ne contient ni le compilateur ni le gestionnaire de
    paquets de l'image de base, et son exécution rend la charge métier.
 2. Sa taille reste **sous le seuil** que ce lab a mesuré sur cette machine, en

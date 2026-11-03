@@ -11,6 +11,11 @@ architecture does not deploy.
 
 ## What is expected at the end
 
+The four demands are measured by **six checks of equal weight**: two of them
+carry two checks each, because each has two sides. A slimmed image must deliver
+the business payload **and** stay under the threshold; a secret must not leak
+**and** must have been used.
+
 1. The **published** image contains neither the compiler nor the base image's
    package manager, and running it serves the business workload.
 2. Its size stays **under the threshold** this lab measured on this machine, by
