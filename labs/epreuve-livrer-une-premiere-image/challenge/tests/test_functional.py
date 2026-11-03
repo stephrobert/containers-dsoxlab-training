@@ -1,4 +1,4 @@
-"""Tests fonctionnels de l'épreuve de première livraison : cinq contrôles de poids égal.
+"""Tests fonctionnels de l'épreuve de première livraison : six contrôles de poids égal.
 
 C'EST UNE ÉPREUVE DE CONSTRUCTION, et non de diagnostic : il n'y a pas de panne
 à trouver, il y a une image à livrer correctement. Les messages nomment donc ce

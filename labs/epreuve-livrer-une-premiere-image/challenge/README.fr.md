@@ -74,7 +74,7 @@ quelque chose.
 
 ## Le barème
 
-Cinq contrôles de poids égal, seuil à **75 sur 100**, et **seul l'état final
+Six contrôles de poids égal, seuil à **75 sur 100**, et **seul l'état final
 compte** : aucune instruction de Dockerfile n'est imposée.
 
 Quatre indices, du plus vague au plus explicite, et **ils coûtent des points** :

@@ -73,7 +73,7 @@ proves you copied the right digest, not that the digest gives anything.
 
 ## The marking
 
-Five checks of equal weight, pass mark **75 out of 100**, and **only the final
+Six checks of equal weight, pass mark **75 out of 100**, and **only the final
 state counts**: no Dockerfile instruction is imposed.
 
 Four hints, from the vaguest to the most explicit, and **they cost points**:

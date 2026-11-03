@@ -44,7 +44,7 @@ gap it measures is the size of what was delivered without any reason to be.
 
 ## How you are graded
 
-Five checks of equal weight, and **only the final state counts**. No Dockerfile
+Six checks of equal weight, and **only the final state counts**. No Dockerfile
 instruction is imposed: two ways of obtaining the same image get the same mark.
 
 The pass mark is **75 out of 100**. One requirement is made up for by no total:
