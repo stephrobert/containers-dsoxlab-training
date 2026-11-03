@@ -1,16 +1,18 @@
-# Une image qui pèse sept fois son contenu
+# Une couche qui pèse sept fois son contenu
 
 ## La situation
 
-Une image fait 52 Mo pour une application qui en occupe six. On entre dedans
-pour comprendre, et on ne trouve rien : le cache de fabrication n'y est pas, les
-artefacts utiles sont là, le conteneur est juste.
+Une image occupe 101 Mo de **place sur le disque** pour une application qui en
+occupe six. On entre dedans pour comprendre, et on ne trouve rien : le cache de
+fabrication n'y est pas, les artefacts utiles sont là, le conteneur est juste.
 
 Le Dockerfile, lui, nettoie bien. On le relit trois fois sans rien voir, parce
 qu'il n'y a rien à voir : le nettoyage est simplement **une instruction trop
 tard**.
 
-Et ces 46 Mo partent à chaque téléchargement, chez tout le monde, pour toujours.
+Et la couche qui les porte pèse **44 Mo** selon `docker history`, sept fois les
+6 Mo qu'elle livre. Cette place est occupée sur chaque disque qui tire l'image,
+et la supprimer plus tard ne la sort pas de la couche.
 
 ## L'objectif
 
@@ -42,8 +44,9 @@ qu'on supprime.
 
 ## La dernière contrainte écarte une fausse bonne idée
 
-Aplatir l'image donne la bonne taille. Mesuré sur cette machine : 14,6 Mo, en
-une seule couche, exactement le poids de la bonne écriture.
+Aplatir l'image donne la bonne taille. Mesuré sur cette machine : 25,5 Mo en
+`DISK USAGE`, en une seule couche, soit le poids de la bonne écriture à
+0,1 Mo près.
 
 Et elle ne partage plus **aucune** couche avec son socle. Les couches communes
 sont ce qui fait qu'un dépôt ne stocke le socle qu'une fois, et qu'un poste qui
@@ -55,11 +58,11 @@ centuple.
 
 ## Ce qui est mesuré
 
-| Écriture | Taille | Couches | Plus grosse couche |
+| Écriture | `DISK USAGE` | Couches | Plus grosse couche |
 | --- | --- | --- | --- |
-| nettoyage une instruction trop tard | 52,3 Mo | 5 | **44 Mo** |
-| nettoyage dans la même instruction | 14,6 Mo | 4 | 6,3 Mo |
-| la seconde, aplatie | 14,6 Mo | **1** | 14,6 Mo |
+| nettoyage une instruction trop tard | 101,1 Mo | 6 | **44,1 Mo** |
+| nettoyage dans la même instruction | 25,6 Mo | 5 | 9,08 Mo |
+| la seconde, aplatie | 25,5 Mo | **1** | 15,4 Mo |
 
 Les trois produisent un conteneur identique. C'est pourquoi ce lab se note à la
 pesée, et à deux échelles : l'image entière, et chaque couche.

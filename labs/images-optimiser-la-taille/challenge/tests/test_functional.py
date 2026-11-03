@@ -6,12 +6,12 @@ visible, les artefacts utiles y sont. Le défaut ne se voit qu'à la pesée.
 
 MESURÉ SUR docker.lab LE 2026-10-30, le même travail sous deux écritures :
 
-| Écriture | Taille | Couches | Plus grosse couche |
-| nettoyage dans l'instruction SUIVANTE | 52,3 Mo | 5 | **44 Mo** |
-| nettoyage dans la MÊME instruction | 14,6 Mo | 4 | 6,3 Mo |
+| Écriture | `DISK USAGE` | Couches | Plus grosse couche |
+| nettoyage dans l'instruction SUIVANTE | 101,1 Mo | 6 | **44,1 Mo** |
+| nettoyage dans la MÊME instruction | 25,6 Mo | 5 | 9,08 Mo |
 
 ET UNE TROISIÈME MESURE, qui a décidé du quatrième contrôle. Aplatir l'image
-(`docker export | docker import`) donne 14,6 Mo elle aussi, en UNE couche, et
+(`docker export | docker import`) donne 25,5 Mo elle aussi, en UNE couche, et
 elle ne partage plus aucune couche avec son socle. Un contrôle qui ne pèserait
 que le total récompenserait donc ce geste, qui fait stocker et transférer
 l'image entière pour chaque variante.
@@ -54,15 +54,27 @@ ESSAI = "dsoxlab-essai-taille"
 # refusait une solution juste à 0,015 % près : il ne mesurait plus le sujet du
 # lab, il mesurait du bruit, et il ne passait sur Docker 26 que par chance.
 #
-# POURQUOI LA COUCHE AJOUTÉE PÈSE LE DOUBLE DE CE QUE `du` VOIT. Elle fait
-# 12,6 Mo pour 6,3 Mo d'artefacts : la marge de deux était assise sur l'arête,
-# sans aucune place pour les métadonnées de couche.
+# POURQUOI LA COUCHE AJOUTÉE PÈSE LE DOUBLE DE CE QUE `du` VOIT, et ce n'est
+# pas une imprécision. `.Size` est le `DISK USAGE`, qui additionne le contenu
+# COMPRESSÉ et les couches DÉCOMPRESSÉES : un même octet y est donc compté deux
+# fois. Mesuré le 2026-11-03 sur un contenu incompressible, une couche de 6,3 Mo
+# d'artefacts pèse 12,6 Mo en `UNIQUE SIZE`, exactement le double.
+#
+# LA MARGE N'ABSORBE DONC PAS DU BRUIT, elle absorbe un doublement connu, plus
+# les métadonnées de couche. C'est ce qui la rend défendable à trois et
+# intenable à deux : la marge de deux était assise sur l'arête.
 #
 # CE QUE TROIS FOIS DONNE. Un plafond de 31 863 927 : la bonne écriture passe
-# avec 20 % de reste, et le nettoyage tardif est refusé par un facteur 3,2,
-# puisqu'il pèse 101 118 930 octets. Le seuil sépare de nouveau DEUX MONDES,
-# ce qu'il annonçait déjà. Au passage, les 44 Mo que citait ce commentaire
-# n'existent plus : la mauvaise écriture en vaut cent.
+# avec 20 % de reste, et le nettoyage tardif est refusé par un facteur 3,95,
+# puisqu'il pèse 101 118 930 octets en `DISK USAGE`. Le seuil sépare de nouveau
+# DEUX MONDES, ce qu'il annonçait déjà.
+#
+# ET LES 44 Mo DU README EXISTENT BIEN. Une version de ce commentaire a soutenu
+# qu'ils avaient disparu, en comparant une COUCHE à un TOTAL : `docker history`
+# rend 44,1 Mo pour la couche fautive et 6,31 Mo pour celle de la bonne
+# écriture, sept fois moins, ce qui est le titre du lab. Les 101 Mo sont le
+# `DISK USAGE` de l'image entière. Deux colonnes, deux chiffres, tous les deux
+# justes.
 MARGE = 3.0
 
 # L'hôte du `meta.yml`, et le même que `runtime.targets[].host` du lab.yaml.
@@ -275,7 +287,7 @@ def test_aucune_couche_ne_porte_le_cache(host) -> None:
     trop_grosses = [t for t in tailles if t > plafond]
 
     # UNE IMAGE APLATIE FAIT ÉCHOUER CE CONTRÔLE AUSSI, puisque son unique
-    # couche porte tout. Mesuré le 2026-10-30 : 14,6 Mo en une seule couche,
+    # couche porte tout. Mesuré le 2026-11-03 : 25,5 Mo en une seule couche,
     # au-dessus du plafond. Le verdict est juste, mais le message ne doit pas
     # accuser le cache, qui n'y est pas : la cause est ailleurs, et un autre
     # contrôle la nomme.
@@ -350,15 +362,18 @@ def test_la_taille_totale_reste_proche_du_necessaire(host) -> None:
         en=f"`{IMAGE}` weighs {totale // 10**6} MB, where the base "
            f"({socle // 10**6} MB) and the artefacts ({utile // 10**6} MB) "
            f"account for a ceiling of {plafond // 10**6} MB.\n"
-           "The difference is being shipped on every pull, by everyone, for "
-           "ever. It lives in a layer, and deleting it later does not take it "
-           "out of that layer.",
+           "That difference takes disk space wherever the image lands. It "
+           "lives in a layer, and deleting it later does not take it out of "
+           "that layer. What is measured here is `DISK USAGE`; what a pull "
+           "downloads is `CONTENT SIZE`, which is another column.",
         fr=f"`{IMAGE}` pèse {totale // 10**6} Mo, là où le socle "
            f"({socle // 10**6} Mo) et les artefacts ({utile // 10**6} Mo) "
            f"donnent un plafond de {plafond // 10**6} Mo.\n"
-           "La différence part à chaque téléchargement, chez tout le monde, "
-           "pour toujours. Elle vit dans une couche, et la supprimer plus tard "
-           "ne la sort pas de cette couche.",
+           "Cette différence occupe de la place sur le disque partout où "
+           "l'image arrive. Elle vit dans une couche, et la supprimer plus "
+           "tard ne la sort pas de cette couche. Ce qui est mesuré ici est le "
+           "`DISK USAGE` ; ce qu'un pull télécharge est le `CONTENT SIZE`, "
+           "qui est une autre colonne.",
     )
 
 
