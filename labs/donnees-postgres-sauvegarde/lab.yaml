@@ -8,7 +8,7 @@ skills:
   - data-restore
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker
+doc_url: https://www.stephane-robert.info/docs/services/bdd/relationnelles/postgresql/sauvegarde-restauration/
 lab_type: challenge
 estimated_time: 40m
 runtime:

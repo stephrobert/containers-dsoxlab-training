@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - image-digest
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/#tags-vs-digests--la-distinction-critique   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
 runtime:
