@@ -16,6 +16,12 @@ Three releases of the same service are given to you by their digest, in
 The service listens on `127.0.0.1:18080`. `GET /etat` returns the release, the
 schema and the records; `POST /ecrire` with a value in the body appends one.
 
+**The stack runs in the Compose project `dsoxlab-retour`**, and its
+`compose.yaml` does not declare it. Every Compose command must therefore name
+it, or you create a second one, named after your directory: it will get a
+**brand-new, empty** volume, the service will start from a blank state, and the
+witness record will be gone. Nothing will tell you.
+
 ## 1. Deploy 2.0, by its digest
 
 Move the stack to `2.0`, **by digest** and not by a tag. A tag does not say what
@@ -54,7 +60,9 @@ code_de_sortie=<the code its process returns>
 ```
 
 All three values are read on the machine. None can be guessed, and the refusal
-message names all three.
+message names **two** of them, the release and the schema. The **exit code** is
+not in the message and has no business being there: a process does not announce
+its own code, it returns it. You ask the shell for it.
 
 ## The expected final state
 
