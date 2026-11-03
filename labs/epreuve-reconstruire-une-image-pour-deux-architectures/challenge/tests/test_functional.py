@@ -219,7 +219,7 @@ def test_la_taille_reste_sous_le_seuil_mesure(host, releve) -> None:
 def test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches(
     host, releve
 ) -> None:
-    """L'EXIGENCE CRITIQUE, et elle se mesure à DEUX endroits distincts.
+    """L'EXIGENCE CRITIQUE, et elle ne refuse QUE la fuite du jeton.
 
     L'HISTORIQUE d'abord. Un `--build-arg` y laisse la valeur, et quiconque tire
     l'image la relit avec `docker history --no-trunc`. Mesuré sur le banc de
@@ -229,9 +229,14 @@ def test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches(
     LES COUCHES ensuite, parce qu'un secret peut aussi avoir été écrit dans un
     fichier puis effacé : la couche qui le portait voyage toujours.
 
-    ET LA DÉPENDANCE DOIT ÊTRE LÀ. Retirer le jeton sans s'en servir donne une
-    image propre et inutile : le contrôle compare la dépendance produite à celle
-    que le lab attend, et elle ne peut être juste que si le jeton a servi.
+    CE QUI EN A ÉTÉ SORTI, et pourquoi. Ce contrôle vérifiait AUSSI que la
+    dépendance privée était là. Il est le seul contrôle BLOQUANT de l'épreuve,
+    celui qu'aucun total ne compense : un apprenant qui retirait le jeton sans
+    s'en servir livrait une image propre, obtenait 83 points, et se voyait
+    refusé par un contrôle qui parle de FUITE alors qu'il n'avait rien laissé
+    fuir. Un contrôle bloquant ne refuse que ce qu'il NOMME, sans quoi l'échec
+    est illisible et le verdict injuste. La dépendance a donc son propre
+    contrôle, non bloquant, juste en dessous.
     """
     _tire(host)
     jeton = releve["jeton"]
@@ -274,6 +279,18 @@ def test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches(
            "qui le portait voyage avec l'image.",
     )
 
+
+
+def test_la_dependance_privee_est_bien_celle_du_depot(host, releve) -> None:
+    """Le jeton a-t-il SERVI, et non seulement été tenu à l'écart ?
+
+    Ce contrôle était une assertion du contrôle bloquant, et il en a été sorti
+    le 2026-11-03. Retirer le jeton sans s'en servir donne une image propre et
+    inutile : c'est une réponse incomplète, qui coûte ce contrôle, et non une
+    fuite de secret, qui refuse l'épreuve. Les deux fautes n'ont ni la même
+    gravité ni le même remède, donc elles ne partagent plus le même verdict.
+    """
+    _tire(host)
     attendue = releve["dependance_attendue"]
     assert attendue, message(
         en="the lab's own measurement carries no expected dependency. It is taken during `dsoxlab run`: replay it.",
@@ -284,12 +301,14 @@ def test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches(
         en=f"the private dependency is missing or wrong in the image.\n"
            f"  what came back: {rendu.stdout.strip()[:300] or '(nothing)'}\n"
            f"  expected      : dependance={attendue}\n"
-           "Removing the token without using it gives a clean, useless image.",
+           "Removing the token without using it gives a clean, useless image: "
+           "the secret must be USED during the build, not merely kept out of it.",
         fr=f"la dépendance privée manque ou est fausse dans l'image.\n"
            f"  ce qui revient : {rendu.stdout.strip()[:300] or '(rien)'}\n"
            f"  attendu        : dependance={attendue}\n"
            "Retirer le jeton sans s'en servir donne une image propre et "
-           "inutile.",
+           "inutile : le secret doit SERVIR pendant la construction, pas "
+           "seulement rester hors d'elle.",
     )
 
 
@@ -444,34 +463,6 @@ def test_le_digest_consigne_est_celui_de_l_index(host, index) -> None:
             fr=f"le digest consigné n'est pas celui que le registre sert.\n"
                f"  consigné : {consigne}\n  servi    : {servi}",
         ))
-
-
-def _fichiers(host) -> list[str]:
-    """Les chemins que l'image publiée contient, sans rien exécuter dedans.
-
-    `docker create` puis `docker export` rendent le système de fichiers de
-    l'image, et le lister ne dépend d'aucun binaire présent à l'intérieur. C'est
-    la seule lecture qui fonctionne aussi bien sur une image sans système, et la
-    bonne réponse à cette épreuve est justement une image sans système.
-
-    Le conteneur est créé sous un nom unique et retiré dans un `finally` : deux
-    exécutions ne doivent pas se gêner, et un objet laissé derrière ferait
-    échouer la photographie du cycle de validation.
-    """
-    jetable = f"inventaire-{uuid.uuid4().hex[:8]}"
-    try:
-        cree = host.run("docker create --name %s %s", jetable, REFERENCE)
-        if cree.rc != 0:
-            pytest.fail(message(
-                en=f"the published image's contents cannot be listed:\n"
-                   f"  {cree.stderr.strip()[:200]}",
-                fr=f"le contenu de l'image publiée ne peut pas être listé :\n"
-                   f"  {cree.stderr.strip()[:200]}",
-            ))
-        liste = host.run("docker export %s | tar -t", jetable)
-    finally:
-        host.run("docker rm -f %s", jetable)
-    return [ligne.strip() for ligne in liste.stdout.splitlines() if ligne.strip()]
 
 
 def _fichiers(host) -> list[str]:

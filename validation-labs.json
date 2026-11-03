@@ -2692,16 +2692,17 @@
  "epreuve-reconstruire-une-image-pour-deux-architectures": {
   "apres": {
    "echecs": [],
-   "passed": 5,
+   "passed": 6,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 5
+   "total": 6
   },
   "avant": {
    "echecs": [
     "test_l_image_livree_ne_porte_plus_le_compilateur",
+    "test_la_dependance_privee_est_bien_celle_du_depot",
     "test_la_taille_reste_sous_le_seuil_mesure",
     "test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches"
    ],
@@ -2710,17 +2711,17 @@
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 5
+   "total": 6
   },
   "date": "2026-11-03",
   "docker": "29.9.2",
-  "duree_s": 123,
+  "duree_s": 110,
   "ecarts": [],
   "etapes": [
-   "état photographié : 9 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/5",
-   "après la solution : 5/5",
-   "après clean et run : 0/5",
+   "état photographié : 10 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/6",
+   "après la solution : 6/6",
+   "après clean et run : 0/6",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -2736,6 +2737,7 @@
   "rejeu": {
    "echecs": [
     "test_l_image_livree_ne_porte_plus_le_compilateur",
+    "test_la_dependance_privee_est_bien_celle_du_depot",
     "test_la_taille_reste_sous_le_seuil_mesure",
     "test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches"
    ],
@@ -2744,7 +2746,7 @@
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 5
+   "total": 6
   },
   "store": "containerd",
   "verdict": "VALIDE"
