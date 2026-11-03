@@ -33,6 +33,7 @@ un `timeout` accuse le lab au lieu du réseau.
 
 from __future__ import annotations
 
+import base64
 import contextlib
 import json
 import os
@@ -342,6 +343,154 @@ def en_mio(octets: int) -> float:
 def couches(tag: str) -> list[str]:
     """Les couches de l'image, du socle au sommet."""
     return list(inspecter_image(tag).get("RootFS", {}).get("Layers") or [])
+
+
+# Le programme qui ouvre une archive d'image. Il vit ici en SOURCE et non en
+# fichier voisin, parce qu'il doit s'exécuter sur la machine du lab : il y est
+# déposé en base64, ce qui évite tout échappement de guillemet.
+_LECTEUR_DE_COUCHES = r'''
+"""Où un secret se lit dans une image, couches DÉCOMPRESSÉES comprises."""
+import base64
+import gzip
+import io
+import json
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+tag = sys.argv[1]
+aiguilles = []
+for brut in sys.argv[2:]:
+    valeur = brut.encode()
+    if not valeur:
+        continue
+    # Un secret se publie aussi encodé : un jeton d'authentification voyage en
+    # base64, et `Bearer <jeton>` est la forme sous laquelle il finit dans un
+    # fichier de configuration.
+    aiguilles += [valeur, base64.b64encode(valeur),
+                  base64.b64encode(b"Bearer " + valeur)]
+
+trouve = []
+
+for args in (["docker", "image", "inspect", tag],
+             ["docker", "history", "--no-trunc", tag]):
+    rendu = subprocess.run(args, capture_output=True)
+    if rendu.returncode != 0:
+        trouve.append("ILLISIBLE:%s rc=%d" % (" ".join(args), rendu.returncode))
+        continue
+    if any(a in rendu.stdout for a in aiguilles):
+        trouve.append("metadonnees:%s" % args[1])
+
+# Les signatures que l'on sait reconnaitre. Seul gzip se decompresse ici : les
+# autres sont NOMMEES et rendues illisibles, parce qu'un lecteur qui ne sait pas
+# ouvrir ne doit pas conclure que rien ne s'y trouve.
+MAGIES = ((b"\x1f\x8b", "gzip"), (b"\x28\xb5\x2f\xfd", "zstd"),
+          (b"BZh", "bzip2"), (b"\xfd7zXZ", "xz"))
+
+
+def en_clair(donnees):
+    for magie, nom in MAGIES:
+        if donnees.startswith(magie):
+            if nom == "gzip":
+                return gzip.decompress(donnees)
+            raise ValueError(nom)
+    return donnees
+
+
+def fouiller_une_couche(octets, ou):
+    with tarfile.open(fileobj=io.BytesIO(octets)) as couche:
+        for entree in couche:
+            nom = entree.name
+            if any(a.decode("utf-8", "ignore") in nom for a in aiguilles):
+                trouve.append("nom:%s:%s" % (ou, nom))
+            if not entree.isfile():
+                continue
+            flux = couche.extractfile(entree)
+            if flux is None:
+                continue
+            donnees = flux.read()
+            if any(a in donnees for a in aiguilles):
+                trouve.append("contenu:%s:%s" % (ou, nom))
+
+
+with tempfile.NamedTemporaryFile(suffix=".tar") as archive:
+    rendu = subprocess.run(["docker", "save", tag], stdout=archive,
+                           stderr=subprocess.PIPE)
+    if rendu.returncode != 0:
+        trouve.append("ILLISIBLE:docker save rc=%d" % rendu.returncode)
+    else:
+        archive.flush()
+        with tarfile.open(archive.name) as sauvegarde:
+            for membre in sauvegarde.getmembers():
+                if not membre.isfile():
+                    continue
+                flux = sauvegarde.extractfile(membre)
+                if flux is None:
+                    continue
+                try:
+                    clair = en_clair(flux.read())
+                except ValueError as pourquoi:
+                    trouve.append("ILLISIBLE:%s compressé en %s"
+                                  % (membre.name, pourquoi))
+                    continue
+                # Une couche est un tar ; tout le reste est du JSON. On essaie
+                # donc de l'ouvrir, et l'echec dit simplement « ce n'en est pas ».
+                try:
+                    fouiller_une_couche(clair, membre.name)
+                    continue
+                except tarfile.TarError:
+                    pass
+                if any(a in clair for a in aiguilles):
+                    trouve.append("archive:%s" % membre.name)
+
+print(json.dumps(trouve))
+'''
+
+_CHEMIN_LECTEUR = "/tmp/dsoxlab-lecteur-de-couches.py"  # noqa: S108 -- machine du lab
+
+
+def fuites_dans_l_image(host, tag: str, *aiguilles: str) -> list[str]:
+    """Où chaque aiguille se lit dans l'image, couches DÉCOMPRESSÉES comprises.
+
+    REMPLACE `docker save <tag> | grep -a -c <jeton>`, QUI EST AVEUGLE. Mesuré
+    le 2026-11-02 sur Docker 29.9.2 avec le magasin containerd : `docker save`
+    écrit une disposition OCI dont les couches sont des blobs **gzip**, et il
+    n'existe plus aucun membre nommé `layer.tar`. Un `grep` sur ce flux rend 0
+    sur une image qui porte le secret en clair dans une couche, ce qui a été
+    reproduit. Quatre exigences critiques d'épreuve reposaient sur ce `grep`.
+
+    Rend la liste des surfaces où l'aiguille se lit, vide si l'image est
+    propre : `metadonnees:<commande>`, `nom:<blob>:<chemin>` pour un chemin
+    parlant, `contenu:<blob>:<chemin>` pour un contenu, `archive:<membre>` pour
+    un descripteur.
+
+    LÈVE si le lecteur n'a pas pu regarder, au lieu de rendre une liste vide :
+    une couche compressée autrement que par gzip, ou un `docker save` en échec,
+    ce n'est pas « rien ne fuit », c'est « on ne sait pas ». Le moteur tient la
+    même règle avec son code de sortie 10.
+    """
+    charge = base64.b64encode(_LECTEUR_DE_COUCHES.encode("utf-8")).decode("ascii")
+    pose = host.run("echo %s | base64 -d > %s", charge, _CHEMIN_LECTEUR)
+    assert pose.rc == 0, (
+        f"Le lecteur de couches n'a pas pu être déposé sur la machine du lab :\n"
+        f"  {pose.stderr.strip()[:300]}"
+    )
+    gabarit = "python3 -I %s %s" + " %s" * len(aiguilles)
+    lu = host.run(gabarit, _CHEMIN_LECTEUR, tag, *aiguilles)
+    assert lu.rc == 0, (
+        f"Le lecteur de couches a échoué sur `{tag}` :\n"
+        f"  {lu.stderr.strip()[-500:]}"
+    )
+    surfaces = json.loads(lu.stdout)
+    illisibles = [s for s in surfaces if s.startswith("ILLISIBLE:")]
+    assert not illisibles, (
+        f"Le contenu de l'image `{tag}` n'a pas pu être lu, donc rien ne permet "
+        f"de conclure qu'elle est propre :\n"
+        + "\n".join(f"  {s}" for s in illisibles)
+        + "\nUn contrôle qui n'a pas pu regarder ne conclut jamais au vert."
+    )
+    return surfaces
 
 
 def retirer_image(tag: str) -> None:

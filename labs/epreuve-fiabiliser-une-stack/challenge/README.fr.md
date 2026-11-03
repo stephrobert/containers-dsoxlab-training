@@ -15,9 +15,8 @@ démarrage à froid, puisqu'une stack déjà debout a oublié comment elle s'est
 levée, et que la seconde tentative réussit toujours.
 
 Deux faits sont exigés ensemble : l'API répond, **et** aucun service n'a eu
-besoin de redémarrer. Le second est le vrai contrôle : avec une politique de
-redémarrage et sans attente de la santé du coffre, l'API finit par répondre,
-après deux ou trois morts. Elle marche, et elle est fausse.
+besoin de redémarrer. Le second est le vrai contrôle : une stack qui se rattrape
+toute seule finit par répondre, et elle marche alors par accident.
 
 ### 2. Le mot de passe hors de l'environnement, et pourtant arrivé
 
@@ -31,23 +30,25 @@ servie à celle qu'il attend.
 
 ### 3. Une limite mémoire déclarée et appliquée
 
-`HostConfig.Memory` dit ce que le moteur a **retenu**. `memory.max` du cgroup
-dit ce que le noyau **applique**. Les deux peuvent différer : une limite écrite
-dans une section que le moteur n'honore pas laisse la première à zéro, et c'est
-le cas classique d'une section de déploiement écrite pour un orchestrateur qui
-n'est pas là.
+`HostConfig.Memory` dit ce que le moteur a **retenu** de la déclaration.
+`memory.max` du cgroup dit ce que le noyau **applique**. Les deux sont lus parce
+que ce sont deux faits distincts, et que seul le second protège l'hôte : une
+déclaration que le moteur accepte sans un mot peut n'imposer **aucune** limite
+au conteneur.
 
 Aucune valeur n'est imposée : une limite trop basse tuerait le service, et le
 contrôle du démarrage le verrait.
 
-### 4. Un conteneur tué repart seul
+### 4. Un service qui meurt repart seul
 
-**Le contrôle tue l'API**, parce que déclarer `restart:` ne prouve rien : la
-valeur peut être lue par Compose et ne jamais s'appliquer, par exemple sur un
-conteneur créé avant le changement.
+**Le contrôle fait mourir l'API**, parce que déclarer `restart:` ne prouve
+rien : la valeur peut être lue par Compose et ne jamais s'appliquer, par exemple
+sur un conteneur créé avant le changement.
 
-`docker kill` et non `docker stop` : un arrêt demandé est un arrêt voulu, et
-aucune politique ne redémarre un conteneur qu'on a arrêté soi-même.
+Il la fait mourir par le **déclencheur de panne** que le scénario annonce, et
+non par un `docker kill` : le moteur traite un arrêt demandé de l'extérieur
+comme un arrêt voulu, et aucune politique ne relance un conteneur arrêté ainsi.
+Ce qu'une politique couvre est un processus qui meurt de lui-même.
 
 ### 5. Deux variantes qui disent des choses différentes
 

@@ -4,13 +4,18 @@ C'EST UNE ÉPREUVE, et la stack livrée MARCHE, ou presque. C'est ce qui la rend
 réaliste : personne ne laisse en production une stack qui ne démarre jamais, on
 laisse celle qui démarre « quand on la relance deux fois ».
 
-LES QUATRE DÉFAUTS POSÉS, dits nulle part dans l'énoncé :
+LES CINQ DÉFAUTS POSÉS, dits nulle part dans l'énoncé, et un SEUL se voit :
   1. `api` démarre sans attendre que `coffre` soit PRÊT. `depends_on` seul ne
-     regarde que le démarrage du conteneur, pas la disponibilité du service ;
+     regarde que le démarrage du conteneur, pas la disponibilité du service.
+     C'est le seul défaut qui ait un symptôme, et il se voit mal : « il faut la
+     relancer deux fois » ;
   2. le mot de passe est dans `environment`, donc dans `docker inspect`, dans
      `docker compose config`, et dans le fichier versionné ;
   3. aucune limite mémoire ;
-  4. le montage du code source, qui a sa place en développement, est resté dans
+  4. aucune politique de redémarrage. Le compose livré ne porte aucun
+     `restart:`, et ce défaut-là n'était compté nulle part : l'énoncé en
+     annonçait quatre pour cinq contrôles ;
+  5. le montage du code source, qui a sa place en développement, est resté dans
      le fichier de déploiement.
 
 L'EXIGENCE CRITIQUE est le contrôle 2. Un secret dans l'environnement se lit
@@ -37,7 +42,7 @@ import time
 
 import pytest
 
-from conftest import lab_host, message
+from conftest import fuites_dans_l_image, lab_host, message
 
 ATELIER = "/opt/lab-stack-fiable"
 PROJET = "stack-fiable"
@@ -201,15 +206,18 @@ def test_le_mot_de_passe_n_est_ni_dans_l_environnement_ni_dans_l_image(
                "Aucun total ne le compense.",
         )
 
-    dans_image = host.run("docker save %s | grep -a -c %s || true", IMAGE, mdp)
-    compte = dans_image.stdout.strip() or "0"
-    assert compte == "0", message(
-        en=f"the password is present in the image's layers ({compte} "
-           "occurrence(s)).\n"
+    # PAS un `docker save | grep` : il est AVEUGLE. Les couches sont des blobs
+    # gzip, et le texte n'y est pas lisible. Voir `fuites_dans_l_image`.
+    surfaces = fuites_dans_l_image(host, IMAGE, mdp)
+    assert not surfaces, message(
+        en="the password is present in the image, which `docker save | grep` "
+           "could never see:\n"
+           + "\n".join(f"  {s}" for s in surfaces) + "\n"
            "Moving a secret from the environment into the image moves it from "
            "something readable to something published.",
-        fr=f"le mot de passe est présent dans les couches de l'image ({compte} "
-           "occurrence(s)).\n"
+        fr="le mot de passe est présent dans l'image, là où un "
+           "`docker save | grep` ne pouvait pas le voir :\n"
+           + "\n".join(f"  {s}" for s in surfaces) + "\n"
            "Déplacer un secret de l'environnement vers l'image, c'est le faire "
            "passer de lisible à publié.",
     )
@@ -248,12 +256,19 @@ def test_chaque_service_porte_une_limite_memoire_appliquee(host) -> None:
 
     `HostConfig.Memory` dit ce que le moteur a RETENU de la déclaration.
     `memory.max` du cgroup dit ce que le NOYAU applique. Les deux peuvent
-    différer, et la raison n'est pas celle qu'on croit : mesuré le 2026-11-02
-    sur Compose 5.6.1, `mem_limit` et `deploy.resources.limits.memory` donnent
-    tous DEUX `HostConfig.Memory` à 67108864 pour 64M. La forme n'est donc pas
-    le piège. Le piège est une limite déclarée au mauvais niveau d'indentation
-    laisse le premier à zéro, et c'est le cas classique d'une section de
-    déploiement écrite pour un orchestrateur qui n'est pas là.
+    différer, et la raison n'est pas celle qu'on croit.
+
+    NEUF FORMES MESURÉES le 2026-11-02 sur Docker 29.9.2 et Compose 5.6.1.
+    `mem_limit` au niveau du service et `deploy.resources.limits.memory`
+    donnent tous DEUX `HostConfig.Memory` à 67108864 pour 64M : la forme n'est
+    pas le piège. Une clé écrite au mauvais niveau n'en est pas un non plus,
+    Compose validant son schéma et REFUSANT le fichier avec un message et un
+    code d'erreur, ce qui ne laisse donc passer aucune stack.
+
+    LE PIÈGE EST LA RÉSERVATION. `deploy.resources.reservations.memory` passe
+    la validation sans un mot, et laisse `HostConfig.Memory` à zéro et
+    `memory.max` à `max` : le fichier parle de mémoire, et le conteneur n'a
+    aucune limite. C'est ce que la première assertion attrape.
 
     Le contrôle n'impose aucune valeur : une limite trop basse tuerait le
     service, et le contrôle du démarrage le verrait. Ce qui est mesuré est

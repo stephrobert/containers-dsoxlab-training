@@ -16,16 +16,17 @@ l'habitude de la relancer. C'est ce que cette épreuve reproduit, et c'est ce qu
 la rend difficile : il n'y a pas de panne franche à trouver, il y a une
 fragilité à nommer.
 
-## Les quatre défauts, et pourquoi ils cohabitent dans un vrai fichier
+## Les cinq défauts, et pourquoi ils cohabitent dans un vrai fichier
 
 | Défaut | Symptôme | Ce qu'il enseigne |
 | --- | --- | --- |
 | `depends_on` sans condition de santé | « il faut relancer deux fois » | démarrer un conteneur n'est pas rendre un service disponible |
 | le mot de passe dans `environment` | aucun : tout marche | un secret lisible suit la stack partout, et personne ne le remarque |
 | aucune limite mémoire | aucun, jusqu'au jour où | un service qui fuit emporte son voisin, pas lui-même |
+| aucune politique de redémarrage | aucun, jusqu'à la première mort | un service qui meurt à quatre heures du matin reste mort jusqu'à ce que quelqu'un s'en aperçoive |
 | le montage du source resté en déploiement | aucun, jusqu'au prochain déploiement | ce qui aide en développement nuit en production |
 
-**Trois des quatre n'ont aucun symptôme.** C'est la vraie leçon du module : la
+**Quatre des cinq n'ont aucun symptôme.** C'est la vraie leçon du module : la
 fiabilité ne se mesure pas à ce qui tombe aujourd'hui.
 
 ## Pourquoi le contrôle du démarrage redémarre la stack lui-même
@@ -58,22 +59,40 @@ secret est bien arrivé.
 ## Pourquoi la limite est lue à deux endroits
 
 `HostConfig.Memory` dit ce que le moteur a **retenu** de la déclaration.
-`memory.max` du cgroup dit ce que le noyau **applique**. Les deux peuvent
-différer, et le cas est courant : une limite écrite dans une section de
-déploiement destinée à un orchestrateur absent est lue par Compose, acceptée
-sans erreur, et jamais appliquée. Le conteneur reste sans limite, et le fichier
-a l'air juste.
+`memory.max` du cgroup dit ce que le noyau **applique**. Lire les deux n'est pas
+une précaution de style : ce sont deux faits distincts, et seul le second protège
+l'hôte.
 
-## Pourquoi le contrôle de la politique tue un conteneur
+Neuf formes mesurées le 2026-11-02 sur Docker 29.9.2 et Compose 5.6.1, et le
+résultat va contre l'intuition. `mem_limit` au niveau du service **et**
+`deploy.resources.limits.memory` donnent tous **deux** `HostConfig.Memory` à
+67108864 pour 64M : la forme n'est pas le piège. Une clé écrite au mauvais
+niveau n'en est pas un non plus, car Compose valide son schéma et **refuse** le
+fichier, avec un message et un code d'erreur.
+
+Le seul cas accepté sans un mot et jamais appliqué est ailleurs :
+`deploy.resources.reservations.memory` est une **réservation**, pas une limite.
+Elle passe la validation, et elle laisse `HostConfig.Memory` à zéro et
+`memory.max` à `max`. Le fichier parle de mémoire, et le conteneur n'a aucune
+limite.
+
+## Pourquoi le contrôle provoque une panne au lieu de tuer
 
 Déclarer `restart:` et le relire dans l'inspection ne prouve rien : la valeur
 peut être présente et ne jamais s'appliquer, par exemple sur un conteneur créé
-avant le changement. La seule question qui compte est « revient-il ? », et elle
-se répond en tuant.
+avant le changement. La seule question qui compte est « revient-il ? ».
 
-`docker kill` et non `docker stop` : un arrêt demandé est un arrêt voulu, et
-aucune politique ne redémarre un conteneur qu'on a arrêté soi-même. Confondre
-les deux fait conclure à tort que la politique ne marche pas.
+Elle ne se répond **pas** en tuant, et c'est ce que la leçon « Encadrer
+ressources et redémarrage » enseigne. Mesuré le 2026-11-02 : après un
+`docker kill` sur un conteneur en `restart: unless-stopped`, le moteur traite
+l'arrêt comme **voulu**, le conteneur reste `exited` et le compteur de
+redémarrages est encore à zéro vingt secondes plus tard. Un
+`docker exec kill -9 1` ne fait rien non plus, le noyau protégeant le PID 1 d'un
+namespace contre les signaux venus de ce namespace, SIGKILL compris.
+
+Ce qu'une politique couvre vraiment est un processus qui **meurt de lui-même**.
+Le contrôle pose donc le déclencheur de panne que le scénario annonce,
+`/tmp/panne-provoquee`, et le service sort en erreur à la requête suivante.
 
 ## Pourquoi les contrôles sont indépendants
 
@@ -89,4 +108,4 @@ rend un verdict qui dépend du hasard.
 ## Ce que l'épreuve ne mesure pas
 
 La sauvegarde, la restauration, le second hôte : c'est le sujet de
-`epreuve-restaurer-une-stack`. Ici, un seul hôte et quatre points de fiabilité.
+`epreuve-restaurer-une-stack`. Ici, un seul hôte et cinq points de fiabilité.

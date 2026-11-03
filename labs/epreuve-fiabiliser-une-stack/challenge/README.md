@@ -15,9 +15,8 @@ start, since a stack already up has forgotten how it got there, and the second
 attempt always succeeds.
 
 Two facts are required together: the API answers, **and** no service needed to
-restart. The second is the real check: with a restart policy and without waiting
-for the vault's health, the API eventually answers, after two or three deaths. It
-works, and it is wrong.
+restart. The second is the real check: a stack that picks itself up does
+eventually answer, and it then works by accident.
 
 ### 2. The password out of the environment, and yet delivered
 
@@ -31,22 +30,25 @@ it expects.
 
 ### 3. A memory limit declared and applied
 
-`HostConfig.Memory` says what the engine **retained**. `memory.max` in the cgroup
-says what the kernel **applies**. The two can differ: a limit written in a
-section the engine does not honour leaves the first at zero, and that is the
-classic case of a deploy section written for an orchestrator that is not there.
+`HostConfig.Memory` says what the engine **retained** from the declaration.
+`memory.max` in the cgroup says what the kernel **applies**. Both are read
+because they are two distinct facts, and only the second protects the host: a
+declaration the engine accepts without a word may impose **no** limit at all on
+the container.
 
 No value is imposed: a limit set too low would kill the service, and the start
 check would see it.
 
-### 4. A killed container comes back on its own
+### 4. A service that dies comes back on its own
 
-**The check kills the API**, because declaring `restart:` proves nothing: the
-value can be read by Compose and never apply, for instance on a container
+**The check makes the API die**, because declaring `restart:` proves nothing:
+the value can be read by Compose and never apply, for instance on a container
 created before the change.
 
-`docker kill` and not `docker stop`: a requested stop is a wanted stop, and no
-policy restarts a container you stopped yourself.
+It makes it die through the **failure trigger** the scenario announces, and not
+through a `docker kill`: the engine treats a stop requested from outside as a
+wanted stop, and no policy restarts a container stopped that way. What a policy
+covers is a process that dies on its own.
 
 ### 5. Two variants that say different things
 
