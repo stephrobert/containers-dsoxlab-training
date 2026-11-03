@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - qemu
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#builds-multi-plateformes
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/
 lab_type: challenge
 estimated_time: 30m
 runtime:

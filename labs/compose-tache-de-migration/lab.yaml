@@ -9,7 +9,7 @@ skills:                       # REQUIS, non vide
   - database-migrations
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/#configuration-avancée   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sante-et-ordre-de-demarrage/#mettre-en-pratique   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
 runtime:

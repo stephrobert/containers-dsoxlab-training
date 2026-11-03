@@ -8,7 +8,7 @@ skills:
   - oom
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#diagnostic-approfondi--le-cas-oom-kill
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/
 lab_type: lab
 estimated_time: 30m
 runtime:
