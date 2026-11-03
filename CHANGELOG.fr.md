@@ -51,6 +51,25 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Modifié
 
+- **Le contrôle des ancres de `doc_url` a désormais trois issues, au lieu de
+  deux** (`scripts/verifier-ancres.py`, test
+  `tests/test_ancres_trois_issues.py` câblé en hook). Il interroge la
+  production du site, alors que la vérité d'un `doc_url` est dans la source,
+  à laquelle la CI de ce dépôt n'a pas accès. Mesuré le 2026-11-03 en croisant
+  les deux, lien par lien, sur les 91 `doc_url` des labs : 41 verts,
+  **50 rouges, dont 44 justes à la source** et 6 visant des pages en brouillon.
+  Soit **zéro dette réelle du catalogue sur 50 rouges**, et pourtant une CI
+  rouge en permanence, dont les PR étaient fusionnées par-dessus. Un contrôle
+  qu'on fusionne par-dessus ne contrôle plus rien. Désormais une page
+  injoignable ne conclut plus au rouge (c'est `unknown` au sens de
+  `dsoxlab doctor` : affiché, jamais tu, et `--strict` lui rend son propre code
+  de sortie `10`), et une ancre juste à la source mais pas encore déployée se
+  déclare dans `scripts/ancres-en-attente.yml`, nommée, datée et motivée,
+  plutôt que tolérée en silence. Ce qui empêche ce fichier de devenir un
+  dépotoir : le contrôle **échoue** sur une entrée qui n'a plus d'objet, parce
+  que l'ancre résout désormais ou qu'aucun `doc_url` ne la porte plus. Onze
+  entrées à l'ouverture, toutes mesurées justes à la source.
+
 - **`epreuve-exposer-sans-exposer-sa-base` est recentrée sur son module.** Quatre de
   ses cinq contrôles redisaient le lab d'une leçon antérieure, et le troisième
   enseignement du module, l'isolement, n'était mesuré nulle part dans le

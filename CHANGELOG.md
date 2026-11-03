@@ -51,6 +51,25 @@ of the Docker engine and in which storage mode. That is what
 
 ### Changed
 
+- **The `doc_url` anchor check now has three outcomes instead of two**
+  (`scripts/verifier-ancres.py`, with `tests/test_ancres_trois_issues.py` wired
+  as a hook). It queries the published site, whereas the truth about a
+  `doc_url` lives in the site's source, which this repository's CI cannot
+  reach. Measured on 2026-11-03 by crossing the two, link by link, across the
+  91 lab `doc_url`s: 41 green, **50 red, of which 44 are correct against the
+  source** and 6 point at draft pages. That is **zero real catalogue debt out
+  of 50 red**, yet CI was permanently red and pull requests were merged over
+  it. A check people merge over no longer checks anything. An unreachable page
+  therefore no longer concludes red: it is `unknown` in the sense of
+  `dsoxlab doctor`, always printed, never silenced, and `--strict` gives it its
+  own exit code (`10`). An anchor that is correct against the source but not
+  yet deployed is declared in `scripts/ancres-en-attente.yml`, named, dated and
+  justified, rather than tolerated silently. What keeps that file from becoming
+  a dumping ground: the check **fails** on an entry that no longer has a
+  purpose, either because the anchor now resolves or because no `doc_url`
+  carries it any more. Eleven entries at opening, each measured correct against
+  the source.
+
 - **`epreuve-exposer-sans-exposer-sa-base` is refocused on its own module.** Four of
   its five checks restated an earlier lesson's lab, and the module's third
   teaching, isolation, was measured nowhere in the catalogue. It now grades

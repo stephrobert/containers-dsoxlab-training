@@ -1,0 +1,90 @@
+# Les ancres justes a la SOURCE du site, pas encore DEPLOYEES.
+#
+# POURQUOI CE FICHIER EXISTE
+#
+# `scripts/verifier-ancres.py` interroge la production. La verite d un `doc_url`
+# est dans la source du site, a laquelle la CI de ce depot n a pas acces : une
+# ancre peut donc etre signalee fausse ici alors qu elle est juste, simplement
+# pas encore servie. Mesure du 2026-11-03 sur les 91 `doc_url` des labs :
+# 50 rouges, dont ZERO dette reelle du catalogue. La CI etait rouge en
+# permanence et les PR fusionnees par-dessus.
+#
+# Plutot qu une tolerance implicite, chaque cas est NOMME, DATE et MOTIVE ici.
+#
+# CE QUI EMPECHE CE FICHIER DE DEVENIR UN DEPOTOIR
+#
+# Le controle ECHOUE sur une entree devenue inutile : des que l ancre resout en
+# production, il exige son retrait ; et si le lab ne porte plus cette ancre,
+# il signale l entree morte. Une tolerance qu on oublie de retirer est donc une
+# faute, pas un oubli silencieux.
+#
+# Ce fichier ne se tape pas a la main : il se genere en croisant la production
+# et la source, et chaque entree porte sa preuve.
+
+ancres:
+  - lab: buildkit-cache-monte
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: compose-premiere-stack
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: container-entrypoint-et-cmd
+    ancre: entrypoint-et-cmd--que-remplacent-vos-arguments-
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: docker-premier-conteneur
+    ancre: comment-lister-arrêter-et-supprimer-un-conteneur-
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: docker-verifier-son-moteur
+    ancre: comment-vérifier-que-linstallation-est-juste-
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: images-contexte-de-build
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: images-ordre-des-couches
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: registry-tag-contre-digest
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: registry-tag-push-pull
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: troubleshoot-boucle-de-redemarrage
+    ancre: comment-arrêter-une-boucle-de-redémarrage-
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
+  - lab: troubleshoot-exit-127
+    ancre: que-signifient-les-codes-125-126-et-127-
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/
+    depuis: 2026-11-03
+    pourquoi: >-
+      juste a la source de origin/main du site, pas encore deployee
