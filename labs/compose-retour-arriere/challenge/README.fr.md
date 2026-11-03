@@ -18,6 +18,12 @@ Le service écoute sur `127.0.0.1:18080`. `GET /etat` rend la release, le schém
 et les enregistrements ; `POST /ecrire` avec une valeur dans le corps en ajoute
 un.
 
+**La pile tourne dans le projet Compose `dsoxlab-retour`**, et son `compose.yaml`
+ne le déclare pas. Chaque commande Compose doit donc le désigner, sans quoi vous
+en créez un second, nommé d'après votre répertoire : il recevra un volume
+**neuf et vide**, le service repartira d'un état vierge, et l'enregistrement
+témoin aura disparu. Rien ne vous le dira.
+
 ## 1. Déployer la 2.0, par son digest
 
 Faites passer la pile en `2.0`, **par le digest** et non par une étiquette. Une
@@ -55,8 +61,10 @@ schema_illisible=<le numero de schema qu'elle ne sait pas lire>
 code_de_sortie=<le code que son processus rend>
 ```
 
-Les trois valeurs se lisent sur la machine. Aucune ne se devine, et le message
-de refus les nomme toutes les trois.
+Les trois valeurs se lisent sur la machine, et aucune ne se devine. Le message
+de refus en nomme **deux**, la release et le schéma. Le **code de sortie**, lui,
+n'est pas dans le message et n'a aucune raison d'y être : un processus ne
+s'annonce pas son propre code, il le rend. C'est au shell qu'on le demande.
 
 ## L'état final attendu
 

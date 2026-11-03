@@ -1,9 +1,14 @@
-# Lab compose-retour-arriere. Metadonnees posees le 2026-11-01 d'apres l'audit du plan de
-# formation : scenario, setup et tests restent a ecrire APRES mesure sur la
-# machine (regle B). Voir LABS-A-ECRIRE-AUDIT.md a la racine du catalogue.
+# Lab compose-retour-arriere. Le lab est ecrit, mesure sur la machine et atteste :
+# l'en-tete qui disait « scenario, setup et tests restent a ecrire » datait de sa
+# planification, le 2026-11-01, et il est reste apres coup. Un commentaire qui
+# decrit un etat passe est pire qu'absent, il fait douter du reste du fichier.
 id: compose-retour-arriere
 title: Roll back a release, and refuse the one that would lose data
-level: c3
+# `c4` ET NON `c3` : la fiche C33 de la formation est au niveau c4, et c'est elle
+# qui decide. Le niveau sert la PROGRESSION, donc un lab range trop tot est
+# propose a un apprenant qui n'a pas ses prerequis, et il echoue pour une raison
+# qui n'est pas la sienne.
+level: c4
 description: 'Deploy a release by its digest, roll back without losing the record written meanwhile,
   then establish that a second rollback is impossible: the schema migration is irreversible, and
   the previous release can no longer read it.'
