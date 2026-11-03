@@ -4,7 +4,7 @@ Une image qui marche, en une seule étape, avec son compilateur, son jeton dans
 l'historique, et une seule architecture. Tout est à reprendre **dans une seule
 image**.
 
-## Les cinq contrôles
+## Les six contrôles
 
 Ils sont de poids égal, et chacun porte sur un fait vérifiable. **Ils portent sur
 l'image tirée du registre**, parce que publier sans rien garder en local est la
@@ -26,9 +26,10 @@ Le seuil vient d'une construction de référence **multi-étapes** faite sur cet
 machine pendant `dsoxlab run`. Il n'est pas écrit dans le test : une taille en
 dur périmerait à la première mise à jour de l'image de base.
 
-### 3. Le jeton nulle part, et la dépendance présente
+### 3. Le jeton nulle part
 
-**C'est l'exigence critique : elle n'est compensée par aucun total.**
+**C'est l'exigence critique, et la seule : elle n'est compensée par aucun
+total.**
 
 Deux endroits distincts. **L'historique** : un `--build-arg` y laisse la valeur,
 et quiconque tire l'image la relit. Mesuré sur le banc de cette épreuve : deux
@@ -36,10 +37,18 @@ occurrences avec `--build-arg`, zéro avec un secret monté. **Les couches**, pa
 qu'un secret écrit dans un fichier puis effacé voyage toujours dans la couche qui
 le portait.
 
-**Et la dépendance doit être là** : retirer le jeton sans s'en servir donne une
-image propre et inutile.
+### 4. La dépendance privée est bien celle du dépôt
 
-### 4. L'index porte les deux architectures, et chacune s'exécute
+Retirer le jeton sans s'en servir donne une image propre et inutile : la
+dépendance ne peut être juste que si le secret a **servi**.
+
+Ce contrôle était une assertion du précédent, et il en a été sorti. Un apprenant
+qui retirait le jeton sans s'en servir livrait une image propre, gardait 83
+points, et se voyait refusé par un contrôle qui parle de **fuite** alors qu'il
+n'avait rien laissé fuir. **Perdre ce contrôle coûte ses points, et rien de
+plus.**
+
+### 5. L'index porte les deux architectures, et chacune s'exécute
 
 Le contrôle cherche `amd64` et `arm64` **parmi** les manifestes, sans en exiger
 un nombre : l'outil de construction ajoute ses attestations, qui se présentent
@@ -49,7 +58,7 @@ comme des plateformes `unknown`.
 démarre pas est pire qu'un index à une seule entrée : il promet un déploiement
 qui échouera chez celui qui s'y fie.
 
-### 5. Le digest consigné est celui de l'index
+### 6. Le digest consigné est celui de l'index
 
 C'est la distinction que ce contrôle existe pour mesurer. L'index a son propre
 digest, et c'est lui qu'on épingle : il désigne les deux architectures à la fois
@@ -62,7 +71,7 @@ instructive, et la nommer vaut mieux qu'annoncer une différence.
 
 ## Le barème
 
-Cinq contrôles de poids égal, seuil à **75 sur 100**, et **seul l'état final
+Six contrôles de poids égal, seuil à **75 sur 100**, et **seul l'état final
 compte**.
 
 Quatre indices, du plus vague au plus explicite, et **ils coûtent des points** :

@@ -1,4 +1,4 @@
-"""Tests fonctionnels de l'épreuve d'enchaînement : cinq contrôles de poids égal.
+"""Tests fonctionnels de l'épreuve d'enchaînement : six contrôles de poids égal.
 
 C'EST L'ÉPREUVE D'ENCHAÎNEMENT du parcours des images, et c'est ce qui la
 justifie malgré un recouvrement assumé avec quatre labs d'entraînement. Chacun

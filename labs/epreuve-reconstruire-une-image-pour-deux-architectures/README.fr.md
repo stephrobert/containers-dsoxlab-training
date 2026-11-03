@@ -3,11 +3,11 @@
 ## Ce que cette épreuve éprouve
 
 Qu'une **seule** image réunisse quatre exigences qui ont été vues séparément.
-Elle clôt le module « Industrialiser la chaîne des images » et ne réexplique
+Elle clôt le module « Fabriquer des images avancées » et ne réexplique
 rien.
 
 Son `lab_type: challenge` autorise son `exam_passing_score`, fixé à **75**. Les
-cinq contrôles sont de poids égal, et l'un d'eux est critique.
+six contrôles sont de poids égal, et l'un d'eux est critique.
 
 ## Son recouvrement est assumé, et c'est ce qui la justifie
 
@@ -68,7 +68,7 @@ simule.
 
 ## L'exigence critique, et pourquoi c'est la fuite la plus discrète du métier
 
-**Le jeton lisible dans l'historique fait échouer l'épreuve**, même à 80 points.
+**Le jeton lisible dans l'historique fait échouer l'épreuve**, même à 83 points.
 
 Elle est discrète parce que l'image elle-même ne contient rien de suspect : on
 peut l'inspecter, lister ses fichiers, lancer un shell dedans, et ne rien voir.

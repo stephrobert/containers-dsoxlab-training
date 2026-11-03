@@ -54,7 +54,7 @@ looks for both architectures **among** the entries.
 
 ## How you are graded
 
-Five checks of equal weight, and **only the final state counts**. The checks
+Six checks of equal weight, and **only the final state counts**. The checks
 apply to **the image pulled from the registry**, not to a local image: pushing
 without keeping anything locally is the normal way to do it, and the test must
 not punish it.

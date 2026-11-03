@@ -23,7 +23,7 @@ mounts, what the application answers.
 needs. You work on the image, the runtime, the network, storage, distribution
 and hardening.
 
-Each module ends with a **test**: five checks of equal weight, a pass mark of 75
+Each module ends with a **test**: checks of equal weight, a pass mark of 75
 out of 100, four hints that cost points, and one critical requirement that no
 total makes up for. A test grades the system's **final state**, never the
 commands typed: two paths reaching the same state get the same mark.

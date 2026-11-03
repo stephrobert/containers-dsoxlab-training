@@ -23,7 +23,7 @@ qui l'exécute, les montages du conteneur, ce que l'application répond.
 dont il a besoin. Vous travaillez l'image, l'exécution, le réseau, le stockage,
 la distribution et le durcissement.
 
-Chaque module se termine par une **épreuve** : cinq contrôles de poids égal, un
+Chaque module se termine par une **épreuve** : des contrôles de poids égal, un
 seuil de 75 sur 100, quatre indices qui coûtent des points, et une exigence
 critique qu'aucun total ne compense. Une épreuve note **l'état final** du
 système, jamais les commandes tapées : deux chemins qui aboutissent au même état

@@ -3,10 +3,10 @@
 ## What this test measures
 
 That **one single** image meets four demands that were seen separately. It closes
-the "Industrialise the image pipeline" module and re-explains nothing.
+the "Build advanced images" module and re-explains nothing.
 
 Its `lab_type: challenge` is what allows its `exam_passing_score`, set to **75**.
-The five checks are of equal weight, and one of them is critical.
+The six checks are of equal weight, and one of them is critical.
 
 ## Its overlap is assumed, and that is what justifies it
 
@@ -64,7 +64,7 @@ rather than pretending. A lab that simulates must say that it simulates.
 
 ## The critical requirement, and why it is the trade's most discreet leak
 
-**The token readable in the history fails the test**, even at 80 points.
+**The token readable in the history fails the test**, even at 83 points.
 
 It is discreet because the image itself contains nothing suspicious: you can
 inspect it, list its files, open a shell inside, and see nothing. The value is in
