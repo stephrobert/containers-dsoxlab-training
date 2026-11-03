@@ -1,0 +1,340 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE LAB POSE, ET POURQUOI. Une stack Compose DEBOUT et qui sert déjà des
+# données : un herbier, sa base PostgreSQL et son volume de planches. L'apprenant
+# doit la sauvegarder, puis la restaurer dans un projet NEUF, et prouver que ce
+# que la cible sert est bien ce que la source servait.
+#
+# LA STACK EST POSÉE PAR LE SETUP, ET C'EST DÉLIBÉRÉ. La leçon enseigne la
+# sauvegarde et la restauration, pas l'écriture d'une stack : la demander ici
+# noterait le module précédent. L'apprenant reçoit donc une stack qui marche, et
+# tout son travail porte sur ce que la leçon a introduit.
+#
+# LES VALEURS SONT TIRÉES AU SORT à chaque passage. Une empreinte figée dans un
+# dépôt public est une réponse publiée, et ce lab se prouve par empreinte.
+- name: Préparer le lab compose-sauver-et-restaurer
+  hosts: lab_target
+  become: true
+  vars:
+    atelier: /opt/lab-sauver-restaurer
+    source: /opt/lab-sauver-restaurer/herbier
+    sauvegardes: /opt/lab-sauver-restaurer/sauvegardes
+    etat: /root/.lab-sauver-restaurer.json
+    projet: herbier
+    port_source: 18530
+    # Les images de la leçon C32, épinglées par digest. La leçon travaille sur
+    # PostgreSQL 18, dernière majeure : un lab qui montrerait une autre majeure
+    # mesurerait un moteur que l'apprenant n'installera pas.
+    image_base: >-
+      postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+    image_vitrine: >-
+      nginx:1.30.6-alpine@sha256:0e52bd054126cdc040b1276c0af347aeb02a41b9cfe305d6094767ac30e97949
+    image_alpine: >-
+      alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+  tasks:
+    - name: Installer Docker et Compose
+      ansible.builtin.apt:
+        name: [docker-ce, docker-compose-plugin]
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Autoriser le compte apprenant
+      ansible.builtin.user:
+        name: "{{ ansible_user | default('ansible') }}"
+        groups: docker
+        append: true
+
+    - name: Retirer les restes d'un passage précédent, et eux seuls
+      # DEUX CAS QU'IL FAUT DISTINGUER, et c'est tout le sujet de cette tâche.
+      #
+      # Un projet `herbier` laissé par un passage PRÉCÉDENT de ce lab doit
+      # partir, sans quoi le lab n'est plus rejouable : le cycle de validation
+      # enchaîne `clean` puis `run`, et un `run` qui refuse de s'installer rend
+      # le lab non reprenable.
+      #
+      # Un projet du même nom qui appartiendrait à QUELQU'UN D'AUTRE doit au
+      # contraire faire échouer le setup : l'écraser détruirait sans un mot le
+      # travail qu'il était venu préserver.
+      #
+      # L'étiquette `dsoxlab.lab` tranche. Elle est posée sur les services du
+      # `compose.yaml` que ce setup écrit, donc tout conteneur qui la porte vient
+      # de nous — y compris ceux de la CIBLE, que l'apprenant construit depuis
+      # l'archive de configuration, laquelle porte l'étiquette avec elle.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          for nom in {{ projet }} {{ projet }}-reprise; do
+            tous=$(docker ps -aq --filter "label=com.docker.compose.project=$nom")
+            if test -z "$tous"; then continue; fi
+            nos=$(docker ps -aq \
+              --filter "label=com.docker.compose.project=$nom" \
+              --filter "label=dsoxlab.lab=compose-sauver-et-restaurer")
+            if test "$(echo "$tous" | sort)" != "$(echo "$nos" | sort)"; then
+              echo "le projet Compose '$nom' existe deja et n est pas a ce lab" >&2
+              exit 1
+            fi
+            docker rm -f $nos >/dev/null
+            reseaux=$(docker network ls -q --filter "label=com.docker.compose.project=$nom")
+            if test -n "$reseaux"; then docker network rm $reseaux >/dev/null 2>&1 || true; fi
+            volumes=$(docker volume ls -q --filter "label=com.docker.compose.project=$nom")
+            if test -n "$volumes"; then docker volume rm -f $volumes >/dev/null 2>&1 || true; fi
+          done
+      changed_when: false
+
+    - name: Créer l'atelier, qui appartient à l'apprenant
+      # IL LUI APPARTIENT. Sans `owner`, l'atelier serait `root:root` et il
+      # faudrait `sudo` pour y écrire une sauvegarde, c'est-à-dire pour rendre
+      # son travail. Le lab mesure la sauvegarde, pas la permission d'écrire.
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0755"
+      loop:
+        - "{{ atelier }}"
+        - "{{ source }}"
+        - "{{ source }}/vitrine"
+        - "{{ source }}/secrets"
+
+    - name: Le répertoire des sauvegardes, en 0700
+      # 0700 comme le `mkdir -m 700 -p ~/sauv` de la leçon : une sauvegarde de
+      # base porte toutes les données, et un répertoire lisible par tous en
+      # ferait une fuite.
+      ansible.builtin.file:
+        path: "{{ sauvegardes }}"
+        state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0700"
+
+    - name: Tirer au sort ce que seul ce passage connaît
+      ansible.builtin.set_fact:
+        # `set_fact` et non `vars` : un `lookup('password')` dans `vars` est
+        # RÉÉVALUÉ à chaque usage, donc la valeur consignée ne serait pas celle
+        # qui a été écrite. Le défaut a déjà coûté une campagne sur un autre lab.
+        mdp_base: "{{ lookup('ansible.builtin.password', '/dev/null', length=28, chars=['ascii_letters', 'digits']) }}"
+        jeton_specimen: "{{ lookup('ansible.builtin.password', '/dev/null', length=20, chars=['ascii_letters', 'digits']) }}"
+        jeton_planche: "{{ lookup('ansible.builtin.password', '/dev/null', length=20, chars=['ascii_letters', 'digits']) }}"
+
+    - name: Déposer le secret de la base
+      ansible.builtin.copy:
+        dest: "{{ source }}/secrets/depot_motdepasse.txt"
+        content: "{{ mdp_base }}"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0600"
+
+    - name: Déposer le .env, en 0600 comme la leçon le montre
+      ansible.builtin.copy:
+        dest: "{{ source }}/.env"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0600"
+        content: |
+          DEPOT_UTILISATEUR=conservateur
+          DEPOT_NOM=herbier
+          VITRINE_PORT={{ port_source }}
+
+    - name: Déposer la configuration de la vitrine
+      ansible.builtin.copy:
+        dest: "{{ source }}/vitrine/vitrine.conf"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0644"
+        content: |
+          server {
+            listen 80;
+            root /srv/planches;
+            autoindex on;
+          }
+
+    - name: Déposer le compose.yaml de la source
+      # LE NOM DU PROJET EST DÉCLARÉ DANS LE FICHIER, par `name:`. Sans lui,
+      # Compose le déduit du répertoire, et un apprenant qui restaure depuis
+      # l'archive de configuration dans un autre répertoire obtiendrait un
+      # troisième projet sans s'en apercevoir. Le déclarer rend la cible
+      # explicite : elle change ce nom, et elle sait qu'elle le change.
+      ansible.builtin.copy:
+        dest: "{{ source }}/compose.yaml"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0644"
+        content: |
+          name: {{ projet }}
+
+          services:
+            depot:
+              image: {{ image_base }}
+              # L ETIQUETTE DIT A QUI APPARTIENT CE CONTENEUR, et elle voyage
+              # avec l archive de configuration : la cible que l apprenant
+              # reconstruit la porte donc aussi. C est ce qui permet au setup de
+              # distinguer ses propres restes du travail de quelqu un d autre,
+              # et au cleanup de ne retirer que ce qui est a lui.
+              labels:
+                dsoxlab.lab: compose-sauver-et-restaurer
+              environment:
+                POSTGRES_USER: ${DEPOT_UTILISATEUR}
+                POSTGRES_DB: ${DEPOT_NOM}
+                POSTGRES_PASSWORD_FILE: /run/secrets/depot_motdepasse
+              secrets:
+                - depot_motdepasse
+              volumes:
+                - depot-donnees:/var/lib/postgresql
+              healthcheck:
+                # `$$POSTGRES_USER` et non `$${DEPOT_UTILISATEUR}` : `$$`
+                # échappe le `$` pour Compose, donc le conteneur reçoit la
+                # variable telle quelle et l'étend lui-même. Or son
+                # environnement porte `POSTGRES_USER`, pas `DEPOT_UTILISATEUR`,
+                # qui ne vit que dans le `.env` de l'hôte. Avec le mauvais nom
+                # la sonde interrogeait un utilisateur vide, et `up -d --wait`
+                # attendait en vain.
+                test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+                interval: 3s
+                timeout: 3s
+                retries: 20
+
+            vitrine:
+              image: {{ image_vitrine }}
+              labels:
+                dsoxlab.lab: compose-sauver-et-restaurer
+              ports:
+                - "127.0.0.1:${VITRINE_PORT}:80"
+              volumes:
+                - planches:/srv/planches:ro
+                - ./vitrine/vitrine.conf:/etc/nginx/conf.d/default.conf:ro
+              depends_on:
+                depot:
+                  condition: service_healthy
+
+          secrets:
+            depot_motdepasse:
+              file: ./secrets/depot_motdepasse.txt
+
+          volumes:
+            depot-donnees: {}
+            planches: {}
+
+    - name: Lever la stack source et attendre qu'elle soit prête
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cd {{ source }}
+          docker compose up -d --wait
+      changed_when: true
+
+    - name: Poser les données de la base, dont la valeur témoin
+      # LES PLANCHES SONT ÉCRITES DANS LE VOLUME par un conteneur alpine, et non
+      # par un montage d'hôte : un volume nommé est ce que la leçon archive, et
+      # un bind mount se sauvegarderait tout seul, ce qui priverait le lab de son
+      # sujet.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cd {{ source }}
+          docker compose exec -T depot \
+            psql -v ON_ERROR_STOP=1 -U conservateur -d herbier < /dev/null -c "
+              create table specimens (
+                id serial primary key,
+                nom text not null,
+                recolte date not null,
+                jeton text not null
+              );
+              insert into specimens (nom, recolte, jeton) values
+                ('Asplenium scolopendrium', '1897-06-12', 'public-1'),
+                ('Drosera rotundifolia',    '1903-08-30', 'public-2'),
+                ('Gentiana lutea',          '1911-07-04', 'public-3'),
+                ('Pinguicula vulgaris',     '1921-05-19', '{{ jeton_specimen }}');
+            "
+      changed_when: true
+
+    - name: Poser les planches dans le volume de fichiers
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          docker run --rm -v {{ projet }}_planches:/dst '{{ image_alpine }}' \
+            sh -c "printf 'planche 1, scolopendre\n' > /dst/planche-01.txt; \
+                   printf 'planche 2, rossolis\n'    > /dst/planche-02.txt; \
+                   printf 'planche 3, temoin {{ jeton_planche }}\n' > /dst/planche-03.txt"
+      changed_when: true
+
+    - name: Relever les empreintes de la SOURCE, qui font foi
+      # C'EST LA SEULE MESURE QUI PROUVE LA RESTAURATION. Compter les lignes ne
+      # suffit pas : une table remplie de mauvaises valeurs a le bon compte. On
+      # relève donc un md5 du contenu AGRÉGÉ et ORDONNÉ, et un sha256 de chaque
+      # planche servie. Les deux sont pris sur la source, avant tout travail.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          cd {{ source }}
+          # `< /dev/null` sur chaque `exec` : sans lui, `docker compose exec`
+          # avale la suite du script depuis son entrée standard, et les lignes
+          # qui suivent ne s'exécutent jamais. C'est un des pièges que la leçon
+          # enseigne, et il mord ici aussi.
+          empreinte_base=$(docker compose exec -T depot \
+            psql -Atq -U conservateur -d herbier < /dev/null -c \
+            "select count(*)||' lignes, md5 '||md5(string_agg(nom||'|'||recolte||'|'||jeton, '|' order by id)) from specimens")
+          planches=$(docker run --rm -v {{ projet }}_planches:/src:ro '{{ image_alpine }}' \
+            sh -c 'cd /src && sha256sum * | sort')
+          python3 - "$empreinte_base" "$planches" <<'PY'
+          import json, sys
+          from pathlib import Path
+          Path("{{ etat }}").write_text(json.dumps({
+              "empreinte_base": sys.argv[1].strip(),
+              "empreinte_planches": sys.argv[2].strip(),
+              "jeton_specimen": "{{ jeton_specimen }}",
+              "jeton_planche": "{{ jeton_planche }}",
+              "projet_source": "{{ projet }}",
+              "projet_cible": "{{ projet }}-reprise",
+              "port_source": {{ port_source }},
+          }, indent=1))
+          PY
+          chmod 0600 '{{ etat }}'
+      changed_when: true
+
+    - name: Déposer l'énoncé sur la machine
+      ansible.builtin.copy:
+        dest: "{{ atelier }}/MISSION.md"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0644"
+        content: |
+          # Sauvegarder l herbier, et le remettre en service ailleurs
+
+          La stack `{{ projet }}` tourne dans `{{ source }}` et sert ses planches
+          sur `http://127.0.0.1:{{ port_source }}/`. Sa base contient la table
+          `specimens`.
+
+          Le conservatoire change de salle. Vous devez pouvoir remonter cet
+          herbier A COTE de l existant, a l identique, et le prouver.
+
+          ## Ce qui est demande
+
+          1. SAUVEGARDER, dans `{{ sauvegardes }}` :
+             - la base, par une sauvegarde LOGIQUE ;
+             - le volume des planches ;
+             - la configuration, de quoi reconstruire la stack.
+
+          2. RESTAURER dans un projet NEUF nomme `{{ projet }}-reprise`, qui
+             tourne EN MEME TEMPS que la source. Les deux ne peuvent pas publier
+             le meme port : la cible prendra le sien.
+
+          3. PROUVER que la cible sert les memes donnees que la source : les
+             memes lignes dans `specimens`, et les memes planches.
+
+          ## Ce qui est interdit
+
+          Toucher a la source. Elle doit tourner et servir comme avant : on ne
+          casse pas ce qu on est venu sauvegarder.
+
+          ## Le controle decisif
+
+          LES DONNEES SERVIES PAR LA CIBLE DOIVENT EGALER CELLES DE LA SOURCE.
+          C est le controle pour lequel ce lab existe : une restauration qui
+          rend des donnees fausses est pire qu une restauration qui echoue,
+          parce que personne ne s en apercoit.
+
+          Une sauvegarde de base prise en COPIANT le volume pendant que la base
+          tourne n est pas une sauvegarde. Le controle le verifie.
+      changed_when: false

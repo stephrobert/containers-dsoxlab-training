@@ -861,6 +861,70 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "compose-sauver-et-restaurer": {
+  "apres": {
+   "echecs": [],
+   "passed": 5,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 5
+  },
+  "avant": {
+   "echecs": [
+    "test_la_cible_est_un_projet_distinct_et_debout",
+    "test_la_cible_sert_exactement_les_donnees_de_la_source",
+    "test_la_cible_sert_ses_planches_par_le_web_et_non_seulement_son_volume",
+    "test_la_sauvegarde_de_la_base_est_logique_et_relisible",
+    "test_les_planches_et_la_configuration_sont_archivees"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "date": "2026-11-03",
+  "docker": "29.9.2",
+  "duree_s": 62,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 10 image(s), 0 conteneur(s), 1 volume(s)",
+   "avant le travail : 0/5",
+   "après la solution : 5/5",
+   "après clean et run : 0/5",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "compose-sauver-et-restaurer",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-compose-sauver-et-restaurer.log",
+  "moteurs": {
+   "docker.lab": {
+    "docker": "29.9.2",
+    "store": "containerd"
+   }
+  },
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_la_cible_est_un_projet_distinct_et_debout",
+    "test_la_cible_sert_exactement_les_donnees_de_la_source",
+    "test_la_cible_sert_ses_planches_par_le_web_et_non_seulement_son_volume",
+    "test_la_sauvegarde_de_la_base_est_logique_et_relisible",
+    "test_les_planches_et_la_configuration_sont_archivees"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
  "compose-secrets": {
   "apres": {
    "echecs": [],

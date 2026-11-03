@@ -1,0 +1,59 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# DEUX PROJETS À RETIRER, et c'est la particularité de ce lab : la source, que le
+# setup a posée, et la CIBLE, que l'apprenant a créée. Oublier la seconde
+# laisserait un projet Compose debout, avec ses volumes et son port publié, et
+# c'est le lab suivant qui en paierait le prix.
+#
+# ON NE RETIRE QUE CE QUI PORTE NOS NOMS. Les images de la leçon, elles, restent :
+# elles sont tirées depuis un registre public, elles servent à tout autre lab
+# Compose de la machine, et les retirer coûterait un retéléchargement à
+# l'apprenant pour un objet qu'il n'a pas demandé.
+- name: Défaire le lab compose-sauver-et-restaurer
+  hosts: lab_target
+  become: true
+  vars:
+    atelier: /opt/lab-sauver-restaurer
+    etat: /root/.lab-sauver-restaurer.json
+    projet: herbier
+  tasks:
+    - name: Retirer les deux projets Compose, la source et la cible
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for nom in {{ projet }} {{ projet }}-reprise; do
+            conteneurs=$(docker ps -aq --filter "label=com.docker.compose.project=$nom")
+            if test -n "$conteneurs"; then docker rm -f $conteneurs >/dev/null; fi
+            reseaux=$(docker network ls -q --filter "label=com.docker.compose.project=$nom")
+            if test -n "$reseaux"; then docker network rm $reseaux >/dev/null 2>&1 || true; fi
+            volumes=$(docker volume ls -q --filter "label=com.docker.compose.project=$nom")
+            if test -n "$volumes"; then docker volume rm -f $volumes >/dev/null 2>&1 || true; fi
+          done
+      changed_when: false
+
+    - name: Retirer les volumes nommés que Compose n'a pas étiquetés
+      # UN VOLUME CRÉÉ A LA MAIN NE PORTE PAS L'ÉTIQUETTE DU PROJET. Un apprenant
+      # qui fabrique son volume de cible par `docker volume create` au lieu de
+      # laisser `compose create` le faire laisse donc un objet que le filtre
+      # ci-dessus ne voit pas. On le retire par son NOM, qui est celui que
+      # Compose aurait donné.
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          for v in {{ projet }}_depot-donnees {{ projet }}_planches \
+                   {{ projet }}-reprise_depot-donnees {{ projet }}-reprise_planches; do
+            docker volume rm -f "$v" >/dev/null 2>&1 || true
+          done
+      changed_when: false
+
+    - name: Retirer les fichiers du lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ atelier }}"
+        - "{{ etat }}"
