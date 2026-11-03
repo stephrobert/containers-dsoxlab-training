@@ -1,7 +1,7 @@
 # Lab epreuve-remettre-une-stack-en-service.
 id: epreuve-remettre-une-stack-en-service
 title: "Bring a Compose stack back into service"
-level: c3
+level: c4
 description: "Rebuild a lost composition: two services in a named project, a front end that reaches its data by service name, a single façade published on the loopback, data that survives the stack being recreated, and values read from the provided environment file."
 skills:
   - docker-compose

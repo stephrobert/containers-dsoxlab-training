@@ -8,7 +8,7 @@
 # politique de redémarrage, et savoir qui est PID 1.
 id: epreuve-remettre-trois-conteneurs-en-service                      # REQUIS
 title: "Three containers down, three different causes"  # REQUIS
-level: c1                     # REQUIS
+level: c3                     # REQUIS
 description: "Bring back three containers down for three independent reasons, keep what made one of the failures visible, and recover intact a report one of them never finished writing."
 skills:                       # REQUIS, non vide
   - docker

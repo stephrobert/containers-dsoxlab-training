@@ -225,12 +225,12 @@ consensus et son état de contrôle à protéger.
 | `reseau-bridge-dedie` | Un réseau à soi : nommer et isoler | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/) |
 | `reseau-publication-de-ports` | Publier un port, et seulement où il faut | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/) |
 | `reseau-interne` | Deux isolations qui ne se ressemblent pas | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-interne/#mettre-en-pratique) |
-| `epreuve-exposer-sans-exposer-sa-base` | Exposer une application sans exposer sa base | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/) |
+| `epreuve-exposer-sans-exposer-sa-base` | Exposer une application sans exposer sa base | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/) |
 | `donnees-volumes-et-montages` | Où les données survivent : les trois types de montage | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/) |
 | `donnees-permissions-uid-gid` | Deux conteneurs, un volume, des droits qui tiennent | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/droits-sur-un-volume/) |
 | `container-arret-transactionnel` | Terminer une transaction HTTP avant l'arrêt | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/) |
-| `epreuve-remettre-trois-conteneurs-en-service` | Trois conteneurs en panne, trois causes différentes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/remettre-trois-conteneurs-en-service/) |
-| `remettre-un-conteneur-en-service` | La boutique ne trouve plus son catalogue | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/) |
+| `epreuve-remettre-trois-conteneurs-en-service` | Trois conteneurs en panne, trois causes différentes | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/remettre-trois-conteneurs-en-service/) |
+| `remettre-un-conteneur-en-service` | La boutique ne trouve plus son catalogue | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/) |
 
 ### Mesurer l'isolation, et remettre un conteneur en service
 
@@ -246,7 +246,7 @@ consensus et son état de contrôle à protéger.
 | `troubleshoot-conflit-de-port` | Deux conflits de port, deux causes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/) |
 | `troubleshoot-permission-refusee` | Trois accès refusés, trois causes | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/droits-sur-un-volume/) |
 | `troubleshoot-boucle-de-redemarrage` | Une boucle de redémarrage, et deux issues | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#comment-arrêter-une-boucle-de-redémarrage-) |
-| `epreuve-contenir-un-conteneur-gourmand` | Le traitement qui emporte la machine avec lui | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/contenir-un-conteneur-gourmand/) |
+| `epreuve-contenir-un-conteneur-gourmand` | Le traitement qui emporte la machine avec lui | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/contenir-un-conteneur-gourmand/) |
 
 ### Construire ses images
 
@@ -277,7 +277,7 @@ consensus et son état de contrôle à protéger.
 | `registry-droits-minimaux` | Accorder les droits minimaux à un éditeur et un lecteur distinct | c2 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/) |
 | `registry-air-gap` | Livrer une image complète sans son registre d'origine | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/outils/skopeo/#environnements-air-gap-déconnectés) |
 | `epreuve-livrer-une-image` | Livrer une image qu'un client vierge exécute vraiment | c2 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/2-livrer-une-image-utilisable-ailleurs/) |
-| `epreuve-reconstruire-une-image-pour-deux-architectures` | Une seule image, quatre exigences, deux architectures | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/) |
+| `epreuve-reconstruire-une-image-pour-deux-architectures` | Une seule image, quatre exigences, deux architectures | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/) |
 
 ### Décrire une application avec Compose
 
@@ -293,7 +293,7 @@ consensus et son état de contrôle à protéger.
 | `compose-ressources` | Faire appliquer les budgets Compose par le moteur | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/ressources-et-redemarrage/#mettre-en-pratique) |
 | `compose-plusieurs-environnements` | Déployer des projets Compose de développement et production isolés | c3 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
 | `compose-profils-et-variantes` | Deux variantes d'un même socle, et aucun montage de dev en déploiement | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/variantes-de-deploiement/) |
-| `epreuve-fiabiliser-une-stack` | La stack qui ne marche qu'à la deuxième tentative | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/fiabiliser-une-stack/) |
+| `epreuve-fiabiliser-une-stack` | La stack qui ne marche qu'à la deuxième tentative | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/fiabiliser-une-stack/) |
 
 ### Exploiter une application Compose
 
@@ -303,8 +303,8 @@ consensus et son état de contrôle à protéger.
 | `compose-correlation-et-saturation` | Corréler une requête métier et attribuer la saturation CPU | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/journaux-et-saturation/#mettre-en-pratique) |
 | `compose-sauver-et-restaurer` | Sauvegarder une stack Compose, et la restaurer ailleurs | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sauvegarder-et-restaurer/) |
 | `donnees-postgres-sauvegarde` | Restaurer PostgreSQL sur une seconde VM | c3 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/services/bdd/relationnelles/postgresql/sauvegarde-restauration/) |
-| `epreuve-remettre-une-stack-en-service` | Remettre une stack Compose en service | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/) |
-| `epreuve-restaurer-une-stack` | Restaurer une stack sur un autre hôte, données comprises | c3 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/3-exploiter-et-restaurer-une-stack/) |
+| `epreuve-remettre-une-stack-en-service` | Remettre une stack Compose en service | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/) |
+| `epreuve-restaurer-une-stack` | Restaurer une stack sur un autre hôte, données comprises | c4 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/3-exploiter-et-restaurer-une-stack/) |
 
 ### Administrer et durcir un hôte Docker
 
@@ -328,7 +328,7 @@ consensus et son état de contrôle à protéger.
 | `container-memoire-et-oom` | Fixer un plafond mémoire et contenir un OOM | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/) |
 | `troubleshoot-disque-plein` | Récupérer de l'espace dans un sandbox ENOSPC borné | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#optimisations-production) |
 | `donnees-volume-orphelin` | Récupérer les données orphelines et retirer seulement le jetable | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/) |
-| `epreuve-reprendre-un-hote-docker` | Reprendre un hôte Docker que personne n'a suivi | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/reprendre-un-hote-docker/) |
+| `epreuve-reprendre-un-hote-docker` | Reprendre un hôte Docker que personne n'a suivi | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/reprendre-un-hote-docker/) |
 
 ### Industrialiser la chaîne de livraison
 
@@ -337,8 +337,8 @@ consensus et son état de contrôle à protéger.
 | `compose-dans-une-ci` | Exécuter Compose dans une CI locale reproductible | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/) |
 | `image-scan-de-vulnerabilites` | Bloquer une image sur un vrai scan hors ligne daté | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/quay-io/#publier-une-image-sur-quayio) |
 | `images-signature-identite` | Vérifier la signature d'une archive et l'identité de son signataire | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/securiser/supply-chain/cosign/#la-solution--signature-cryptographique) |
-| `capstone-chaine-complete` | Livrer et rétablir une application isolée de bout en bout | c4 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/) |
-| `epreuve-durcir-sans-casser` | Durcir un service sans le casser | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/) |
+| `capstone-chaine-complete` | Livrer et rétablir une application isolée de bout en bout | c6 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/) |
+| `epreuve-durcir-sans-casser` | Durcir un service sans le casser | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/) |
 
 _91 labs, table générée par `scripts/gen_catalog.py`._
 <!-- LABS:END -->
