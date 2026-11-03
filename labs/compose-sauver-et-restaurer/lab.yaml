@@ -29,9 +29,22 @@ distros:                                      # REQUIS, non vide
   - debian13
 doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sauvegarder-et-restaurer/   # REQUIS, http(s)
 lab_type: lab
-# PAS D'`estimated_time`, et c'est délibéré : il est optionnel au contrat, et
-# aucune durée n'a été mesurée. En écrire une au jugé serait la seule valeur de
-# ce fichier que personne n'aurait vérifiée.
+# LA DURÉE NE VIENT PAS DE MOI, et c'est pour cela qu'elle est là. Elle avait
+# d'abord été laissée ABSENTE, parce qu'aucune durée d'apprenant n'avait été
+# mesurée et qu'en écrire une au jugé en aurait fait la seule valeur de ce
+# fichier que personne n'aurait vérifiée.
+#
+# Elle est désormais posée par la session qui tient les pages, sur une base
+# qu'elle énonce : la leçon C32 représente 40 minutes de lecture, et les gestes
+# du lab sont ceux qu'elle montre. Le cycle de validation, lui, prend 62
+# secondes, mais c'est le temps machine d'un formateur qui connaît la réponse,
+# et non celui d'un apprenant qui cherche : les deux ne se déduisent pas l'un de
+# l'autre.
+#
+# Le générateur de catalogue du site refuse par ailleurs un lab sans durée, ce
+# qui est une bonne contrainte : une fiche qui n'annonce pas son temps ne se
+# planifie pas.
+estimated_time: 40m
 runtime:
   type: vm
   targets:                                    # REQUIS pour vm, non vide
