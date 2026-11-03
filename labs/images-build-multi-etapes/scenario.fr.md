@@ -6,9 +6,10 @@ Une image d'application pèse 39 Mo, dont 30 d'un outillage de fabrication :
 un faux compilateur et ses bibliothèques, qui n'ont plus rien à faire là une
 fois la fabrication terminée.
 
-On applique ce que le lab précédent a enseigné : supprimer dans la même
-instruction. Et on découvre qu'il n'y a **rien à supprimer** : l'outillage n'a
-pas été installé par une instruction de ce Dockerfile. Il vient du **socle**.
+Le réflexe habituel est de supprimer dans la **même instruction** que
+l'installation, parce qu'une couche garde ce qu'une couche suivante efface. Et
+on découvre ici qu'il n'y a **rien à supprimer** : l'outillage n'a pas été
+installé par une instruction de ce Dockerfile. Il vient du **socle**.
 
 Un `rm -rf` le cache au conteneur, et l'image pèse toujours 39 Mo. Mesuré sur
 cette machine.

@@ -27,7 +27,9 @@ the container no longer sees them, the **weighing** says they are no longer in
 the image.
 
 An `rm -rf` in a later instruction gives the first without the second.
-`images-optimiser-la-taille` showed why; here it is worse: there is nothing to
+**a layer keeps what a later layer erases**, and the file travels with the image even though it is gone from the final view.
+
+Here it is worse: there is nothing to
 clean up at all, since the tooling comes from the base.
 
 ## 3. The image must be built on the execution base
