@@ -16,7 +16,7 @@
       # parce qu'elle etait deja la.
       ansible.builtin.shell: |
         set -eu
-        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+        if docker image inspect 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
           rm -f '/var/tmp/dsoxlab-compose-secrets.socle-a-rendre'
         else
           : > '/var/tmp/dsoxlab-compose-secrets.socle-a-rendre'
@@ -28,7 +28,7 @@
       # moteur. La construction de l'image du lab ne suffit donc plus a rendre
       # alpine lançable, et la solution la lance en service avec `--pull never`.
       ansible.builtin.command:
-        cmd: docker pull alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+        cmd: docker pull alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
       register: socle_tire
       changed_when: "'Downloaded newer image' in socle_tire.stdout"
     - name: Démarrer Docker
@@ -89,7 +89,7 @@
         dest: /opt/lab-compose-secret/image/Dockerfile
         mode: "0644"
         content: |
-          FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+          FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
           LABEL dsoxlab.lab="compose-secrets"
           COPY start.sh /usr/local/bin/start.sh
           CMD ["/usr/local/bin/start.sh"]

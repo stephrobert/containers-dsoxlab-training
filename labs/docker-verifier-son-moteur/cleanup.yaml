@@ -41,7 +41,7 @@
       ansible.builtin.shell:
         cmd: >
           docker rmi -f lab-preuve:1.0
-          hello-world@sha256:c567b231f65614688711a75f31518a064258a51d442117a3e771a3a8fdba78ef
+          hello-world:latest@sha256:c567b231f65614688711a75f31518a064258a51d442117a3e771a3a8fdba78ef
           || true
       changed_when: false
 

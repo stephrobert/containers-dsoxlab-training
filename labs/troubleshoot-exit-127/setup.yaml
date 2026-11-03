@@ -30,7 +30,7 @@
   become: true
   vars:
     image_epinglee: >-
-      alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+      alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
     tag_local: lab-exit:1.0
     atelier: /opt/lab-exit
   tasks:
@@ -42,11 +42,11 @@
       # Le marqueur dit au cleanup s'il doit rendre l'image, ou la laisser.
       ansible.builtin.shell: |
         set -eu
-        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+        if docker image inspect 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
           rm -f '/var/tmp/dsoxlab-troubleshoot-exit-127.socle-a-rendre'
         else
           : > '/var/tmp/dsoxlab-troubleshoot-exit-127.socle-a-rendre'
-          docker pull 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null
+          docker pull 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null
         fi
       changed_when: false
 

@@ -3,7 +3,7 @@
   hosts: lab_target
   become: true
   vars:
-    pinned_image: alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    pinned_image: alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
   tasks:
     - name: Noter si le socle public etait deja present
       # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Ce
@@ -13,7 +13,7 @@
       # qu'elle etait deja la.
       ansible.builtin.shell: |
         set -eu
-        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+        if docker image inspect 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
           rm -f '/var/tmp/dsoxlab-securite-socket-lecture-seule.socle-a-rendre'
         else
           : > '/var/tmp/dsoxlab-securite-socket-lecture-seule.socle-a-rendre'

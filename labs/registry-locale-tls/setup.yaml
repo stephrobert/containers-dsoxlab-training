@@ -13,7 +13,7 @@
       # qu'elle etait deja la.
       ansible.builtin.shell: |
         set -eu
-        if docker image inspect 'alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
+        if docker image inspect 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
           rm -f '/var/tmp/dsoxlab-registry-locale-tls.socle-a-rendre'
         else
           : > '/var/tmp/dsoxlab-registry-locale-tls.socle-a-rendre'
@@ -104,7 +104,7 @@
         cmd: docker pull {{ item }}
       loop:
         - registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
-        - alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+        - alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
       register: pulls
       changed_when: "'Downloaded newer image' in pulls.stdout"
 
@@ -141,7 +141,7 @@
         dest: /opt/lab-registry-tls/appli/Dockerfile
         mode: "0644"
         content: |
-          FROM alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+          FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
           LABEL dsoxlab.lab="registry-locale-tls"
           COPY release.txt /release.txt
           CMD ["cat", "/release.txt"]
