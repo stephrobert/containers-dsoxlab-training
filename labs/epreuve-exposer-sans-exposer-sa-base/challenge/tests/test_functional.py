@@ -298,6 +298,27 @@ def test_l_inventaire_ne_publie_aucun_port(host) -> None:
     Une base n'a aucune raison d'être joignable depuis l'extérieur : sa vitrine
     l'atteint par le réseau des conteneurs. Rien ne retire un port publié sur
     un conteneur existant, ce qui est en soi une information du diagnostic.
+
+    DEUX FAÇONS D'ÊTRE JOIGNABLE, ET UNE SEULE SE LISAIT. Le contrôle ne lisait
+    que `HostConfig.PortBindings`, et c'était un trou. Quatre façons mesurées le
+    2026-11-03 sur Docker 29.9.2, avec une image sans `EXPOSE` comme celle-ci :
+
+        façon                        joignable   PortBindings   vu
+        sans rien                    non         vide           -
+        -p 127.0.0.1:18777:15432     OUI         rempli         oui
+        -P (image sans EXPOSE)       non         vide           rien à voir
+        --network host               OUI         VIDE           NON
+
+    `--network host` fait partager au conteneur la pile réseau de l'hôte : son
+    port répond depuis l'extérieur SANS AUCUNE publication. L'exigence critique
+    passait donc sur une base totalement exposée.
+
+    On lit donc aussi le MODE RÉSEAU. Et on ne lit NI `NetworkSettings.Ports`,
+    vide lui aussi dans ce cas, NI `PublishAllPorts`, qui vaut `true` sans que
+    rien soit publié : aucun des deux ne distingue le cas. Seul `NetworkMode`
+    le dit.
+
+    `-P` n'est pas un trou ici, mesuré : sans `EXPOSE`, il ne publie rien.
     """
     _tourne(host, BASE)
     res = host.run("docker container inspect %s", BASE)
@@ -305,7 +326,28 @@ def test_l_inventaire_ne_publie_aucun_port(host) -> None:
         en=f"container `{BASE}` cannot be inspected.",
         fr=f"le conteneur `{BASE}` ne peut pas être inspecté.",
     )
-    liaisons = json.loads(res.stdout)[0]["HostConfig"]["PortBindings"] or {}
+    hote = json.loads(res.stdout)[0]["HostConfig"]
+    liaisons = hote["PortBindings"] or {}
+
+    # LE MODE RÉSEAU D'ABORD, parce qu'il expose TOUT et sans rien publier :
+    # le dire après les liaisons ferait lire « ne publie aucun port » à un
+    # apprenant dont la base est entièrement ouverte.
+    mode = (hote.get("NetworkMode") or "").lower()
+    assert mode != "host", message(
+        en=f"`{BASE}` runs on the host's network stack "
+           "(`--network host`).\n"
+           "It publishes no port, and it does not need to: it shares the host's "
+           "network, so every port it listens on answers from the outside. That "
+           "is the very fault this requirement exists to eliminate, and no "
+           "total makes up for it.",
+        fr=f"`{BASE}` tourne sur la pile réseau de l'hôte "
+           "(`--network host`).\n"
+           "Il ne publie aucun port, et il n'en a pas besoin : il partage le "
+           "réseau de l'hôte, donc chacun des ports sur lesquels il écoute "
+           "répond depuis l'extérieur. C'est précisément la faute que cette "
+           "exigence existe pour éliminer, et aucun total ne la compense.",
+    )
+
     assert not liaisons, message(
         en=f"`{BASE}` still publishes a port:\n"
            f"  {', '.join(sorted(liaisons))}\n"
