@@ -42,7 +42,7 @@ JETON = "jeton-de-banc-7f3a91c4"
 def jouer(contexte: Path, chemin_jeton: Path) -> dict:
     resultat = subprocess.run(
         [sys.executable, "-I", str(SONDE), str(contexte), str(chemin_jeton)],
-        capture_output=True, text=True, timeout=60,
+        check=False, capture_output=True, text=True, timeout=60,
     )
     assert resultat.returncode == 0, resultat.stderr[-500:]
     return json.loads(resultat.stdout)
