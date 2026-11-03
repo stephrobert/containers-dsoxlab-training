@@ -173,9 +173,8 @@
             atteindre l etat SAIN quand le service travaille
             passer MALADE quand le pouls devient rance, le processus vivant
             REVENIR a SAIN quand le service repart
-            declarer des bornes coherentes : un delai d attente inferieur a
-              l intervalle, au moins deux tentatives, et une periode de
-              demarrage
+            declarer des bornes coherentes : au moins deux tentatives et une
+              periode de demarrage
 
           UNE SONDE QUI REGARDE LE PROCESSUS NE MARCHE PAS ICI, et c est
           mesure : elle declare le service sain alors que son pouls est rance.
