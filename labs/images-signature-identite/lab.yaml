@@ -2,7 +2,7 @@
 # le lab est refusé, ou pire, disparaît du catalogue sans un mot.
 id: images-signature-identite                      # REQUIS
 title: "Verify a container archive signature and its approved signer identity"
-level: c3
+level: c6
 description: "Bind a real container archive to a cryptographic signature and a CA-approved identity; reject altered bytes, other identities and other keys."
 skills:                       # REQUIS, non vide
   - docker
