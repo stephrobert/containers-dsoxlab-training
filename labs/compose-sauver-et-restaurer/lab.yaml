@@ -1,0 +1,45 @@
+# Lab compose-sauver-et-restaurer. Les champs marqués REQUIS sont exigés par le
+# validator : sans eux, le lab est refusé, ou pire, disparaît du catalogue sans
+# un mot.
+#
+# IL N'EXIGE QUE CE QUE LA LEÇON C32 ENSEIGNE, et c'est la raison pour laquelle
+# il existe. Le lab qui tenait cette place, `donnees-postgres-sauvegarde`,
+# demandait un PostgreSQL installé sur la VM, du `sudo -u postgres`, un
+# `CREATE DATABASE`, un `pg_restore --no-owner --no-privileges` et un `scp` vers
+# un second hôte : la leçon ne dit rien de tout cela. Un lab qui exige ce que la
+# leçon n'a pas introduit ne mesure plus l'apprentissage, il mesure la débrouille.
+#
+# Ce que la leçon enseigne, et donc tout ce que ce lab demande : une sauvegarde
+# LOGIQUE de la base par `pg_dump -Fc`, une archive du volume de fichiers par un
+# conteneur alpine et `tar`, une archive de la configuration, puis une
+# restauration sur une CIBLE VIERGE dans l'ordre `create`, fichiers, `up -d
+# --wait`, `pg_restore`.
+id: compose-sauver-et-restaurer               # REQUIS
+title: "Back up a Compose stack, and restore it elsewhere"
+level: c4                                     # REQUIS
+description: >-
+  Back up a running Compose stack, database and served files alike, then restore
+  it into a fresh project and prove the data served is the data that was saved.
+skills:                                       # REQUIS, non vide
+  - compose-sauvegarde
+  - compose-restauration
+  - postgresql-dump-logique
+  - volumes-archivage
+distros:                                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sauvegarder-et-restaurer/   # REQUIS, http(s)
+lab_type: lab
+# PAS D'`estimated_time`, et c'est délibéré : il est optionnel au contrat, et
+# aucune durée n'a été mesurée. En écrire une au jugé serait la seule valeur de
+# ce fichier que personne n'aurait vérifiée.
+runtime:
+  type: vm
+  targets:                                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab                        # doit exister dans meta.yml: infra.hosts[]
+      label_en: "Docker host"
+      label_fr: "Hôte Docker"
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

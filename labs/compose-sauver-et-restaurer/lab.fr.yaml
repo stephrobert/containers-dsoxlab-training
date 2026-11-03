@@ -1,0 +1,8 @@
+# Surcharge française du lab compose-sauver-et-restaurer. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Sauvegarder une stack Compose, et la restaurer ailleurs"
+description: >-
+  Sauvegarder une stack Compose en marche, sa base comme ses fichiers servis,
+  puis la restaurer dans un projet neuf et prouver que les données servies sont
+  bien celles qui ont été sauvegardées.
