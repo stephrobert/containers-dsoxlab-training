@@ -4796,33 +4796,35 @@
  "securite-apparmor": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 3,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 3
   },
   "avant": {
    "echecs": [
-    "test_profile_denies_only_the_private_read"
+    "test_le_noyau_applique_le_profil_en_mode_enforce",
+    "test_le_profil_dedie_est_declare_sur_le_conteneur",
+    "test_le_profil_refuse_la_lecture_privee_sans_casser_la_publique"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 35,
+  "duree_s": 40,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -4837,14 +4839,16 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_profile_denies_only_the_private_read"
+    "test_le_noyau_applique_le_profil_en_mode_enforce",
+    "test_le_profil_dedie_est_declare_sur_le_conteneur",
+    "test_le_profil_refuse_la_lecture_privee_sans_casser_la_publique"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -4852,33 +4856,35 @@
  "securite-capabilities": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 3,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 3
   },
   "avant": {
    "echecs": [
-    "test_only_bind_service_remains"
+    "test_le_noyau_n_applique_que_ce_bit_a_pid_1",
+    "test_les_capabilities_declarees_ne_gardent_que_net_bind_service",
+    "test_un_changement_de_proprietaire_est_reellement_refuse"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 33,
+  "duree_s": 41,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -4893,14 +4899,16 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_only_bind_service_remains"
+    "test_le_noyau_n_applique_que_ce_bit_a_pid_1",
+    "test_les_capabilities_declarees_ne_gardent_que_net_bind_service",
+    "test_un_changement_de_proprietaire_est_reellement_refuse"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -4908,33 +4916,34 @@
  "securite-groupe-docker": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 2,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 2
   },
   "avant": {
    "echecs": [
-    "test_auditor_exists_without_docker_group_membership"
+    "test_le_compte_n_appartient_plus_au_groupe_privilegie",
+    "test_le_compte_ne_peut_plus_joindre_le_demon"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 26,
+  "duree_s": 33,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/2",
+   "après la solution : 2/2",
+   "après clean et run : 0/2",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -4949,14 +4958,15 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_auditor_exists_without_docker_group_membership"
+    "test_le_compte_n_appartient_plus_au_groupe_privilegie",
+    "test_le_compte_ne_peut_plus_joindre_le_demon"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -4964,33 +4974,35 @@
  "securite-no-new-privileges": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 3,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 3
   },
   "avant": {
    "echecs": [
-    "test_setuid_cannot_elevate"
+    "test_la_barriere_est_declaree_au_runtime",
+    "test_le_binaire_setuid_n_eleve_plus_l_euid",
+    "test_le_noyau_porte_le_drapeau_sur_pid_1"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 56,
+  "duree_s": 50,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -5005,14 +5017,16 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_setuid_cannot_elevate"
+    "test_la_barriere_est_declaree_au_runtime",
+    "test_le_binaire_setuid_n_eleve_plus_l_euid",
+    "test_le_noyau_porte_le_drapeau_sur_pid_1"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -5078,33 +5092,35 @@
  "securite-seccomp": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 3,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 3
   },
   "avant": {
    "echecs": [
-    "test_only_reserved_getpgid_argument_is_filtered"
+    "test_le_noyau_filtre_vraiment_pid_1",
+    "test_le_syscall_vise_est_refuse_sans_bloquer_les_autres",
+    "test_un_filtre_explicite_est_declare_et_aucun_unconfined_ne_subsiste"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 42,
+  "duree_s": 52,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -5119,14 +5135,16 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_only_reserved_getpgid_argument_is_filtered"
+    "test_le_noyau_filtre_vraiment_pid_1",
+    "test_le_syscall_vise_est_refuse_sans_bloquer_les_autres",
+    "test_un_filtre_explicite_est_declare_et_aucun_unconfined_ne_subsiste"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
   "store": "containerd",
   "verdict": "VALIDE"
