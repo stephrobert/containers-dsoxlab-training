@@ -5190,9 +5190,9 @@
    "status": "failed",
    "total": 7
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 128,
+  "duree_s": 123,
   "ecarts": [],
   "etapes": [
    "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",

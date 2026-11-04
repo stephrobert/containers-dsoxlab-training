@@ -51,7 +51,7 @@ from conftest import lab_host, message
 PROXY = "filtre-api"
 RESEAU = "reseau-filtre"
 CIBLE_ARRET = "cible-1"
-CIBLE_SECRET = "cible-2"
+CIBLE_SERVICE = "cible-2"
 CLIENT_RO = "client-ro"
 
 #: Le digest de l'image de proxy, celui que le setup tire. Le contrôle le vérifie
@@ -307,17 +307,17 @@ def test_le_proxy_est_epingle_durci_et_seul_a_monter_le_socket(host) -> None:
 
     # Le témoin porteur du service ne doit PAS monter le socket : le proxy est
     # le seul à le faire, et c'est ce qui donne un sens au filtrage.
-    cible = _inspecter(host, "conteneur", CIBLE_SECRET)
+    cible = _inspecter(host, "conteneur", CIBLE_SERVICE)
     if cible is not None:
         fautifs = [
             m for m in cible.get("Mounts") or []
             if m.get("Destination") == "/var/run/docker.sock"
         ]
         assert not fautifs, message(
-            en=f"`{CIBLE_SECRET}` still mounts the Docker socket. The proxy "
+            en=f"`{CIBLE_SERVICE}` still mounts the Docker socket. The proxy "
                "must be the ONLY container to mount it, otherwise it filters "
                "nothing.",
-            fr=f"`{CIBLE_SECRET}` monte encore le socket Docker. Le proxy doit "
+            fr=f"`{CIBLE_SERVICE}` monte encore le socket Docker. Le proxy doit "
                "être le SEUL à le monter, sinon il ne filtre rien.",
         )
 
@@ -371,35 +371,35 @@ def test_le_secret_du_temoin_ne_passe_plus_par_l_environnement(host) -> None:
     client le verrait.
     """
     _exiger_proxy(host)
-    cible = _inspecter(host, "conteneur", CIBLE_SECRET)
+    cible = _inspecter(host, "conteneur", CIBLE_SERVICE)
     assert cible is not None, message(
-        en=f"The witness `{CIBLE_SECRET}` is gone. Recreate it without its "
+        en=f"The witness `{CIBLE_SERVICE}` is gone. Recreate it without its "
            "secret in the environment, keeping its name.",
-        fr=f"Le témoin `{CIBLE_SECRET}` a disparu. Recréez-le sans son secret "
+        fr=f"Le témoin `{CIBLE_SERVICE}` a disparu. Recréez-le sans son secret "
            "dans l'environnement, en gardant son nom.",
     )
     assert cible["State"]["Running"], message(
-        en=f"`{CIBLE_SECRET}` is not running. It carries the service whose "
+        en=f"`{CIBLE_SERVICE}` is not running. It carries the service whose "
            "secret must stay out of reach.",
-        fr=f"`{CIBLE_SECRET}` ne tourne pas. Il porte le service dont le "
+        fr=f"`{CIBLE_SERVICE}` ne tourne pas. Il porte le service dont le "
            "secret doit rester hors de portée.",
     )
 
     # On lit ce que verrait un client du réseau interne, et non l'inspection
     # locale : c'est la vue de l'attaquant qui compte.
-    code, corps = _requete(host, f"/containers/{CIBLE_SECRET}/json")
+    code, corps = _requete(host, f"/containers/{CIBLE_SERVICE}/json")
     assert code == "200", message(
-        en=f"Inspecting {CIBLE_SECRET} through the proxy answers {code}. The "
+        en=f"Inspecting {CIBLE_SERVICE} through the proxy answers {code}. The "
            "reading profile should allow it.",
-        fr=f"L'inspection de {CIBLE_SECRET} à travers le proxy répond {code}. "
+        fr=f"L'inspection de {CIBLE_SERVICE} à travers le proxy répond {code}. "
            "Le profil de lecture devrait l'autoriser.",
     )
     assert "CLE_API" not in corps, message(
-        en=f"The inspection of `{CIBLE_SECRET}` through the proxy still "
+        en=f"The inspection of `{CIBLE_SERVICE}` through the proxy still "
            "returns CLE_API in .Config.Env. A reading profile is enough to "
            "read it, from any container on the network. Pass the secret as a "
            "mounted file instead of `-e`.",
-        fr=f"L'inspection de `{CIBLE_SECRET}` à travers le proxy rend encore "
+        fr=f"L'inspection de `{CIBLE_SERVICE}` à travers le proxy rend encore "
            "CLE_API dans .Config.Env. Un simple profil de lecture suffit à le "
            "lire, depuis n'importe quel conteneur du réseau. Passez le secret "
            "par un fichier monté au lieu de `-e`.",
@@ -610,7 +610,7 @@ def test_les_trois_refus_se_distinguent_par_qui_les_prononce(host) -> None:
         "-v", "/var/run/docker.sock:/var/run/docker.sock:ro", CLIENT_IMAGE,
         "--unix-socket", "/var/run/docker.sock",
         "-m", "8", "-s", "-S", "-o", "/dev/null",
-        f"http://localhost/containers/{CIBLE_SECRET}/json",
+        f"http://localhost/containers/{CIBLE_SERVICE}/json",
     ]))
     assert echec.rc != 0, message(
         en="A client running as the image's default user managed to open the "
