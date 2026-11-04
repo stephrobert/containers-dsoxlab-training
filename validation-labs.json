@@ -1602,33 +1602,34 @@
  "docker-configurer-le-demon": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 2,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 2
   },
   "avant": {
    "echecs": [
-    "test_new_containers_use_bounded_json_file_logs"
+    "test_les_bornes_heritees_mordent_vraiment_sur_un_journal",
+    "test_les_nouveaux_conteneurs_heritent_du_pilote_et_des_bornes"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 33,
+  "duree_s": 68,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/2",
+   "après la solution : 2/2",
+   "après clean et run : 0/2",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -1643,14 +1644,15 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_new_containers_use_bounded_json_file_logs"
+    "test_les_bornes_heritees_mordent_vraiment_sur_un_journal",
+    "test_les_nouveaux_conteneurs_heritent_du_pilote_et_des_bornes"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -1658,33 +1660,34 @@
  "docker-contexte-ssh": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 2,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 2
   },
   "avant": {
    "echecs": [
-    "test_named_context_uses_ssh_without_changing_the_default"
+    "test_le_contexte_joint_le_vrai_moteur_et_seule_la_bonne_cle_y_accede",
+    "test_le_contexte_nomme_vise_l_alias_ssh_prepare"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 47,
+  "duree_s": 56,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/2",
+   "après la solution : 2/2",
+   "après clean et run : 0/2",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -1703,14 +1706,15 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_named_context_uses_ssh_without_changing_the_default"
+    "test_le_contexte_joint_le_vrai_moteur_et_seule_la_bonne_cle_y_accede",
+    "test_le_contexte_nomme_vise_l_alias_ssh_prepare"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
   "store": "containerd",
   "verdict": "VALIDE"
