@@ -6,6 +6,7 @@ import hashlib
 import json
 import shlex
 import time
+import unicodedata
 import uuid
 
 import pytest
@@ -437,7 +438,19 @@ def test_bad_release_rolls_back_without_losing_data_and_incompatible_schema_is_r
         )
         schema_changed = True
         refused = host.run("/opt/lab-delivery/rollback.sh")
-        assert refused.rc != 0 and "schema" in (refused.stdout + refused.stderr).lower(), message(
+        # LE MOT SE CHERCHE SANS SES ACCENTS, et le defaut etait grave.
+        #
+        # Ce controle exigeait « schema » en ASCII dans la sortie du script que
+        # l'apprenant ecrit, pendant que l'enonce francais lui demande de
+        # « signaler le schema incompatible ». Or « schema ».lower() ne contient
+        # pas « schema » : le `e` accentue est un autre caractere. Un apprenant
+        # qui repondait en francais, correctement, echouait.
+        #
+        # Signale par la session du site le 2026-11-04. Un controle qui mesure
+        # une orthographe au lieu d'un comportement refuse du travail juste.
+        trace = unicodedata.normalize("NFD", refused.stdout + refused.stderr)
+        trace = "".join(c for c in trace if not unicodedata.combining(c)).lower()
+        assert refused.rc != 0 and "schema" in trace, message(
             en="An incompatible data migration must block a blind image rollback and report the schema error.",
             fr="Une migration de données incompatible doit bloquer le rollback aveugle et signaler le schéma.",
         )

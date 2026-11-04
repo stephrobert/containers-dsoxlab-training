@@ -24,7 +24,8 @@ On vous demande de le reprendre.
    le proxy de lecture seule que ce lab fournit, l'image `lab-reprise-proxy:1.0`.
    À travers ce proxy, une requête de **lecture passe** et une requête
    d'**arrêt est refusée**.
-5. Le démon n'écoute plus **aucun socket TCP sans TLS**.
+5. Le démon n'écoute plus **aucun socket TCP**, avec ou sans TLS : l'accès
+   distant passe par le proxy fourni, pas par l'API du démon.
 
 Le proxy doit être **joignable depuis l'hôte** : publiez-lui un port sur la
 boucle locale. Il écoute sur le port 2375 dans son conteneur, et il a besoin du

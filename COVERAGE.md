@@ -72,7 +72,7 @@ lab de l'ancien dépôt s'il existait, et le lab cible.
 | `outils/skopeo` | c3 air-gap | non | - | `registry-air-gap` | **validé** |
 | `outils/crane`, `oras` | c3 outillage | non | - | - (servent un lab, pas un module) | écarté v1 |
 | `docker/execution-depannage` | c4 exécuter, c7 dépanner | oui | - | `container-entrypoint-cmd`, `container-signaux-pid1`, `container-memoire-oom`, `troubleshoot-exit-127`, `troubleshoot-boucle-de-redemarrage` | **validé** (partiel) |
-| `docker/volumes` | c5 persister | oui + TP | TP5 | **`donnees-volumes-et-montages`**, `donnees-volume-orphelin`, `donnees-permissions`, `donnees-postgres-sauvegarde` | **validé** (partiel) |
+| `docker/volumes` | c5 persister | oui + TP | TP5 | **`donnees-volumes-et-montages`**, `donnees-volume-orphelin`, `donnees-permissions` | **validé** (partiel) |
 | `docker/network` | c5 connecter | oui + TP | - | `reseau-bridge-par-defaut`, `reseau-bridge-dedie`, `reseau-publication-de-ports`, `reseau-interne`, `remettre-un-conteneur-en-service` | **validé** |
 | `orchestrateurs/docker-compose` | c6 composer | non | coquille vide | 10 labs `compose-*` | à écrire |
 | `docker/daemon-config` | c7 exploiter | oui | - | `docker-daemon-config`, `docker-rotation-des-journaux` | **validé** (partiel) |

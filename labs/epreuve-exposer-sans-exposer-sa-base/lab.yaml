@@ -19,7 +19,7 @@ skills:                       # REQUIS, non vide
   - diagnostic
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/#passer-lépreuve
 lab_type: challenge
 exam_passing_score: 75
 exam_blocking_checks:

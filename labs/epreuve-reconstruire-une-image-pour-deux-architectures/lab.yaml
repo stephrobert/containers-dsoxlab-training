@@ -22,7 +22,7 @@ skills:                       # REQUIS, non vide
   - securite
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/#passer-lépreuve
 lab_type: challenge
 exam_passing_score: 75
 exam_blocking_checks:

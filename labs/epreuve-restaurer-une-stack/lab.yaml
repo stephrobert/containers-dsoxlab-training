@@ -15,7 +15,7 @@ skills:
 - isolation
 distros:
 - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/3-exploiter-et-restaurer-une-stack/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/3-exploiter-et-restaurer-une-stack/#passer-lépreuve
 lab_type: capstone
 estimated_time: 60m
 runtime:

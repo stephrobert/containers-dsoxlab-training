@@ -217,18 +217,18 @@ consensus and its control state to protect.
 | `container-entrypoint-et-cmd` | ENTRYPOINT and CMD: which one do your arguments replace? | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/#entrypoint-et-cmd--que-remplacent-vos-arguments-) |
 | `container-signaux-et-pid-1` | Who is PID 1 decides whether your container stops or gets killed | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cycle-de-vie-et-signaux/) |
 | `docker-inspecter-un-conteneur` | Interrogate a running container | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/inspecter-un-conteneur/) |
-| `epreuve-mettre-un-service-en-marche` | Nothing runs on this host | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/mettre-un-service-en-marche/) |
+| `epreuve-mettre-un-service-en-marche` | Nothing runs on this host | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/mettre-un-service-en-marche/#passer-lépreuve) |
 | `docker-anatomie-dune-image` | The anatomy of an image: layers, sharing, configuration | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/anatomie/) |
 | `reseau-bridge-par-defaut` | The default network, and what it does not do | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/) |
 | `reseau-bridge-dedie` | A network of your own: naming and isolating | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/) |
 | `reseau-publication-de-ports` | Publishing a port, and only where it belongs | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/) |
 | `reseau-interne` | Two isolations that are not alike | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-interne/#mettre-en-pratique) |
-| `epreuve-exposer-sans-exposer-sa-base` | Expose an application without exposing its database | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/) |
+| `epreuve-exposer-sans-exposer-sa-base` | Expose an application without exposing its database | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/#passer-lépreuve) |
 | `donnees-volumes-et-montages` | Where data survives: the three kinds of mount | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/) |
 | `donnees-permissions-uid-gid` | Two containers, one volume, rights that hold | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/droits-sur-un-volume/) |
 | `container-arret-transactionnel` | Finish an HTTP transaction before stopping | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/racine-en-lecture-seule/#mettre-en-pratique) |
-| `epreuve-remettre-trois-conteneurs-en-service` | Three containers down, three different causes | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/remettre-trois-conteneurs-en-service/) |
-| `remettre-un-conteneur-en-service` | The shop cannot find its catalogue | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/) |
+| `epreuve-remettre-trois-conteneurs-en-service` | Three containers down, three different causes | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/remettre-trois-conteneurs-en-service/#passer-lépreuve) |
+| `remettre-un-conteneur-en-service` | The shop cannot find its catalogue | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/#passer-lépreuve) |
 
 ### Measure isolation, and put a container back in service
 
@@ -244,7 +244,7 @@ consensus and its control state to protect.
 | `troubleshoot-conflit-de-port` | Two port conflicts, two causes | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/) |
 | `troubleshoot-permission-refusee` | Three refused accesses, three causes | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/droits-sur-un-volume/) |
 | `troubleshoot-boucle-de-redemarrage` | A restart loop, and two outcomes | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/#comment-arrêter-une-boucle-de-redémarrage-) |
-| `epreuve-contenir-un-conteneur-gourmand` | The batch job that takes the host down with it | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/contenir-un-conteneur-gourmand/) |
+| `epreuve-contenir-un-conteneur-gourmand` | The batch job that takes the host down with it | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/contenir-un-conteneur-gourmand/#passer-lépreuve) |
 
 ### Build images
 
@@ -261,7 +261,7 @@ consensus and its control state to protect.
 | `buildkit-cache-monte` | Reuse dependencies when the build step runs again | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#mettre-en-pratique) |
 | `buildkit-secret-de-build` | Fetch a private dependency without shipping the build secret | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#mettre-en-pratique) |
 | `images-multi-architecture` | Publish two architectures and execute both | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/multi-architecture/#mettre-en-pratique) |
-| `epreuve-livrer-une-premiere-image` | Deliver a first image worth publishing | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-premiere-image/) |
+| `epreuve-livrer-une-premiere-image` | Deliver a first image worth publishing | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-premiere-image/#passer-lépreuve) |
 
 ### Distribute images
 
@@ -274,8 +274,8 @@ consensus and its control state to protect.
 | `registry-authentification` | Protect a TLS registry with authentication | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/distribution/#mettre-en-pratique) |
 | `registry-droits-minimaux` | Grant minimal registry scopes to a publisher and a separate reader | c2 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/#quel-entraînement-avant-lépreuve-) |
 | `registry-air-gap` | Deliver a complete image without its source registry | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epingler-et-livrer-hors-ligne/#mettre-en-pratique) |
-| `epreuve-livrer-une-image` | Deliver an image a bare client can actually run | c2 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/) |
-| `epreuve-reconstruire-une-image-pour-deux-architectures` | One image, four demands, two architectures | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/) |
+| `epreuve-livrer-une-image` | Deliver an image a bare client can actually run | c2 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/#passer-lépreuve) |
+| `epreuve-reconstruire-une-image-pour-deux-architectures` | One image, four demands, two architectures | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/#passer-lépreuve) |
 
 ### Describe an application with Compose
 
@@ -291,7 +291,7 @@ consensus and its control state to protect.
 | `compose-ressources` | Enforce Compose resource budgets on the engine | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/ressources-et-redemarrage/#mettre-en-pratique) |
 | `compose-plusieurs-environnements` | Deploy isolated development and production Compose projects | c6 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/promouvoir-un-artefact/#mettre-en-pratique) |
 | `compose-profils-et-variantes` | Two variants from one base, and no dev mount left in deployment | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/variantes-de-deploiement/) |
-| `epreuve-fiabiliser-une-stack` | The stack that only works on the second try | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/fiabiliser-une-stack/) |
+| `epreuve-fiabiliser-une-stack` | The stack that only works on the second try | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/fiabiliser-une-stack/#passer-lépreuve) |
 
 ### Operate a Compose application
 
@@ -300,9 +300,8 @@ consensus and its control state to protect.
 | `compose-retour-arriere` | Roll back a release, and refuse the one that would lose data | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/mettre-a-jour-et-revenir-en-arriere/) |
 | `compose-correlation-et-saturation` | Correlate business requests and attribute CPU saturation | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/journaux-et-saturation/#mettre-en-pratique) |
 | `compose-sauver-et-restaurer` | Back up a Compose stack, and restore it elsewhere | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sauvegarder-et-restaurer/) |
-| `donnees-postgres-sauvegarde` | Restore PostgreSQL data on a second VM | c3 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/services/bdd/relationnelles/postgresql/sauvegarde-restauration/) |
-| `epreuve-remettre-une-stack-en-service` | Bring a Compose stack back into service | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/) |
-| `epreuve-restaurer-une-stack` | Restore a stack on another host, data included | c4 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/3-exploiter-et-restaurer-une-stack/) |
+| `epreuve-remettre-une-stack-en-service` | Bring a Compose stack back into service | c4 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/#passer-lépreuve) |
+| `epreuve-restaurer-une-stack` | Restore a stack on another host, data included | c4 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/3-exploiter-et-restaurer-une-stack/#passer-lépreuve) |
 
 ### Administer and harden a Docker host
 
@@ -314,19 +313,19 @@ consensus and its control state to protect.
 | `securite-groupe-docker` | Remove an unnecessary Docker grant | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/#mettre-en-pratique) |
 | `securite-socket-lecture-seule` | Remove direct Docker socket access | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/#mettre-en-pratique) |
 | `securite-socket-proxy` | Restrict a Docker API socket proxy | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/) |
-| `securite-rootless` | Qualify a rootless Docker engine | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#rootless-mode) |
+| `securite-rootless` | Qualify a rootless Docker engine | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/rootless/#mettre-en-pratique) |
 | `securite-capabilities` | Drop all but one Linux capability | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#linux-capabilities) |
 | `securite-no-new-privileges` | Prevent privilege gain at runtime | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
 | `securite-seccomp` | Measure a targeted seccomp syscall denial | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique) |
 | `securite-apparmor` | Write an AppArmor policy that refuses by default | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique) |
 | `container-systeme-en-lecture-seule` | Use a read-only container root filesystem | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/racine-en-lecture-seule/#mettre-en-pratique) |
-| `reseau-pare-feu-cible` | Repair one routed firewall path without dropping protections | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/) |
+| `reseau-pare-feu-cible` | Repair one routed firewall path without dropping protections | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-et-pare-feu/#mettre-en-pratique) |
 | `container-limite-de-processus` | Bound the container process count | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/#mettre-en-pratique) |
 | `secrets-au-runtime` | Keep a runtime token out of Env | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes) |
 | `container-memoire-et-oom` | Set a hard memory ceiling | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/#mettre-en-pratique) |
 | `troubleshoot-disque-plein` | Recover space in a bounded ENOSPC sandbox | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/#mettre-en-pratique) |
 | `donnees-volume-orphelin` | Recover retained orphan data and remove only disposable data | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/donnees-orphelines/#mettre-en-pratique) |
-| `epreuve-reprendre-un-hote-docker` | Take over a Docker host nobody has maintained | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/reprendre-un-hote-docker/) |
+| `epreuve-reprendre-un-hote-docker` | Take over a Docker host nobody has maintained | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/reprendre-un-hote-docker/#passer-lépreuve) |
 
 ### Industrialise the delivery chain
 
@@ -335,10 +334,10 @@ consensus and its control state to protect.
 | `compose-dans-une-ci` | Run Compose as a reproducible local CI job | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/cicd-images/#mettre-en-pratique) |
 | `image-scan-de-vulnerabilites` | Gate an image using dated, real offline vulnerability scans | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/supply-chain-images/#mettre-en-pratique) |
 | `images-signature-identite` | Verify a container archive signature and its approved signer identity | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/supply-chain-images/#mettre-en-pratique) |
-| `capstone-chaine-complete` | Deliver and recover an isolated application end to end | c6 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/) |
-| `epreuve-durcir-sans-casser` | Harden a service without breaking it | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/) |
+| `capstone-chaine-complete` | Deliver and recover an isolated application end to end | c6 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/#passer-lépreuve) |
+| `epreuve-durcir-sans-casser` | Harden a service without breaking it | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/#passer-lépreuve) |
 
-_91 labs, table generated by `scripts/gen_catalog.py`._
+_90 labs, table generated by `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Where this catalogue stands

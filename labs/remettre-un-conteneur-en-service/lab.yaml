@@ -16,7 +16,7 @@ skills:                       # REQUIS, non vide
   - persistence
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/#passer-lépreuve
 lab_type: challenge
 exam_passing_score: 75
 exam_blocking_checks:

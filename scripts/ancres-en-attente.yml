@@ -267,3 +267,115 @@ ancres:
       L ancienne ancre #configurer-tls etait servie mais ABSENTE de la
       source : un lien qui aurait casse a la prochaine publication
       sans qu aucun controle le dise.
+  - lab: capstone-chaine-complete
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-contenir-un-conteneur-gourmand
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/contenir-un-conteneur-gourmand/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-durcir-sans-casser
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-exposer-sans-exposer-sa-base
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/relier-deux-conteneurs/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-fiabiliser-une-stack
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/fiabiliser-une-stack/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-livrer-une-image
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-livrer-une-premiere-image
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-premiere-image/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-mettre-un-service-en-marche
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/mettre-un-service-en-marche/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-reconstruire-une-image-pour-deux-architectures
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-remettre-trois-conteneurs-en-service
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/remettre-trois-conteneurs-en-service/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-remettre-une-stack-en-service
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-reprendre-un-hote-docker
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/reprendre-un-hote-docker/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: epreuve-restaurer-une-stack
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/3-exploiter-et-restaurer-une-stack/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: remettre-un-conteneur-en-service
+    ancre: passer-lépreuve
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/1-remettre-un-conteneur-en-service/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: reseau-pare-feu-cible
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-et-pare-feu/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: securite-rootless
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/rootless/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production

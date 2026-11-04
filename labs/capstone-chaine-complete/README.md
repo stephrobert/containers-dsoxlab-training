@@ -1,6 +1,6 @@
 # Complete delivery chain
 
-Capstone c4, 180 minutes. Read [the assessment](scenario.md).
+Capstone c6, 180 minutes. Read [the assessment](scenario.md).
 Source → multistage BuildKit → actual SPDX inventory → loopback registry →
 digest pull → hardened Compose API/PostgreSQL → durable data → eight incidents
 → fresh second-VM restoration → schema-aware release rollback → targeted

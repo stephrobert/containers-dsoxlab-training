@@ -70,9 +70,11 @@ Deliver a working release:
   establish high availability or native ARM64 support.
 
 After delivery, eight incidents can be injected with
-`python3 incidents.py NUMBER` (1–8). Their causes are intentionally not listed
-here. Observe health, logs, networks, mounts and configuration; recover without
-losing a previously written item. The evaluator really injects each incident,
+`python3 incidents.py NUMBER` (1–8). Their causes are not listed here, and the
+script that injects them is on the machine: reading it is allowed, the way one
+reads the code of a service in production. What is graded is the recovered
+state, never how you found it. Observe health, logs, networks, mounts and
+configuration; recover without losing a previously written item. The evaluator really injects each incident,
 measures failure, runs `recover.sh`, and checks availability and data again.
 
 The lab registry is intentionally HTTP **on loopback only**, not a production
@@ -85,4 +87,12 @@ Compose must support `!override` when used to replace the API publication.
 The bundled driver wheel requires amd64
 and CPython 3.13 with glibc. Public training tokens are not real credentials.
 
-**Five requirements are made up for by no total**, and each one fails the test on its own: data loss, a disclosed secret, access outside the perimeter, a protection removed to make a check pass, and a deployed artefact different from the one that was accepted.
+**Five checks are made up for by no total**, and each one fails the assessment
+on its own: data surviving container replacement, the build secret absent from
+the delivered image, network isolation with a real PostgreSQL write, runtime
+hardening with its health dependency, and the identity of the deployed artefact
+against the accepted digest.
+
+**Elsewhere, the same fault costs only its own check.** Data lost during an
+incident cycle, a restore or a maintenance window fails that check, not the
+assessment. What is disqualifying is named in `lab.yaml`, and nothing else is.

@@ -480,12 +480,24 @@ def test_l_outil_passe_par_un_proxy_de_lecture_seule(host) -> None:
     )
 
 
-def test_le_demon_n_ecoute_aucun_socket_tcp_sans_tls(host) -> None:
+def test_le_demon_n_ecoute_aucun_socket_tcp(host) -> None:
     """L'API exposée, et c'est la faute la plus grave de l'hôte livré.
 
     Une API Docker en TCP sans TLS donne à quiconque l'atteint le pouvoir de
     lancer un conteneur privilégié, donc de devenir root sur la machine. Il n'y
     a pas de demi-mesure à trouver ici : cette écoute doit disparaître.
+
+    AUCUNE ÉCOUTE TCP, MÊME CHIFFRÉE, et l'énoncé le disait mal. Ce contrôle a
+    toujours refusé tout `-H tcp://`, avec ou sans TLS, tandis que son nom et le
+    scénario promettaient « aucun socket TCP sans TLS ». Un apprenant qui
+    ajoutait TLS pour garder son écoute échouait après avoir suivi l'énoncé à la
+    lettre. Signalé par la session du site le 2026-11-04, et corrigé du côté de
+    l'énoncé, puisque c'est lui qui avait tort.
+
+    La raison tient en une phrase : cette épreuve FOURNIT un socket-proxy et
+    exige qu'il tourne. L'accès distant passe donc par ce proxy filtrant, et
+    l'API du démon n'a aucune raison d'être exposée en TCP, chiffrée ou non. Ce
+    qui n'a pas de raison d'exister ne se durcit pas, il se retire.
 
     LE CONTRÔLE REGARDE LES SOCKETS D'ÉCOUTE, et non la configuration. Un fichier
     corrigé sans redémarrage du démon laisse l'écoute en place, et c'est

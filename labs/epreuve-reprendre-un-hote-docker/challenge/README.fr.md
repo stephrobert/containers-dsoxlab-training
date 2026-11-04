@@ -54,10 +54,16 @@ une requête d'arrêt tout en laissant passer une lecture. Le second est le vrai
 contrôle : un proxy qui laisserait tout passer satisferait le premier sans rien
 protéger.
 
-### 5. Aucun socket TCP sans TLS
+### 5. Aucun socket TCP, avec ou sans TLS
 
 Une API Docker en TCP sans TLS donne à quiconque l'atteint le pouvoir de lancer
 un conteneur privilégié, donc de devenir root sur la machine.
+
+**Ajouter TLS ne suffit pas, et n'est pas ce qui est demandé.** Cette épreuve
+fournit un socket-proxy et exige qu'il tourne : l'accès distant passe par ce
+proxy filtrant, et l'API du démon n'a donc aucune raison d'être exposée en TCP,
+chiffrée ou non. Ce qui n'a pas de raison d'exister ne se durcit pas, il se
+retire.
 
 Le contrôle regarde les **sockets d'écoute** et la **ligne de commande effective
 du démon**, et non un fichier de configuration : corriger un fichier sans

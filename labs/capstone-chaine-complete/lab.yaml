@@ -4,7 +4,7 @@ level: c6
 description: "Build and deploy by digest, recover incidents, restore on a second VM, refuse incompatible rollback and maintain without losing live reads or data."
 skills: [buildkit, multi-stage, sbom, registry, digest, compose, postgresql, secrets, hardening, recovery, backup, rollback, maintenance]
 distros: [debian13]
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/#passer-lépreuve
 lab_type: capstone
 exam_passing_score: 75
 exam_blocking_checks:

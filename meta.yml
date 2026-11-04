@@ -227,18 +227,13 @@ sections:
       - compose-retour-arriere
       - compose-correlation-et-saturation
       - compose-sauver-et-restaurer
-      # `donnees-postgres-sauvegarde` reste listé pour l'instant, et c'est
-      # délibéré. Il doit sortir de cette formation : il exige un PostgreSQL
-      # installé sur l'hôte, un `sudo -u postgres`, un `CREATE DATABASE` et un
-      # `scp` vers un second hôte, dont la leçon C32 ne dit rien. Un lab qui
-      # exige ce que la leçon n'a pas introduit ne mesure plus l'apprentissage.
-      #
-      # Mais son retrait demande de décider où il se rattache, et son `doc_url`
-      # suivra ce rattachement : c'est une décision de catalogue, pas une
-      # correction de lab, et la faire ici retirerait un lab attesté sans lui
-      # donner de nouvelle place. `compose-sauver-et-restaurer` le remplace
-      # auprès de la leçon C32.
-      - donnees-postgres-sauvegarde
+      # `donnees-postgres-sauvegarde` A ÉTÉ RETIRÉ du dépôt le 2026-11-04, et ce
+      # commentaire reste pour que la décision ne se reprenne pas. Il exigeait un
+      # PostgreSQL installé sur l'hôte, un `sudo -u postgres`, un
+      # `CREATE DATABASE` et un `scp` vers un second hôte, dont la leçon C32 ne
+      # dit rien : un lab qui exige ce que la leçon n'a pas introduit ne mesure
+      # plus l'apprentissage. Il n'avait ni TP ni page sur le site.
+      # `compose-sauver-et-restaurer` le remplace auprès de la leçon C32.
       - epreuve-remettre-une-stack-en-service
       - epreuve-restaurer-une-stack
 
