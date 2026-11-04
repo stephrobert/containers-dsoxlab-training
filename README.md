@@ -274,7 +274,7 @@ consensus and its control state to protect.
 | `registry-authentification` | Protect a TLS registry with authentication | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/distribution/#configurer-lauthentification) |
 | `registry-droits-minimaux` | Grant minimal registry scopes to a publisher and a separate reader | c2 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/) |
 | `registry-air-gap` | Deliver a complete image without its source registry | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/outils/skopeo/#environnements-air-gap-déconnectés) |
-| `epreuve-livrer-une-image` | Deliver an image a bare client can actually run | c2 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/2-livrer-une-image-utilisable-ailleurs/) |
+| `epreuve-livrer-une-image` | Deliver an image a bare client can actually run | c2 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/) |
 | `epreuve-reconstruire-une-image-pour-deux-architectures` | One image, four demands, two architectures | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/) |
 
 ### Describe an application with Compose

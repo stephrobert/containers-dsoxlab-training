@@ -207,10 +207,32 @@ def test_le_secret_a_servi_et_ne_survit_dans_aucune_couche(host) -> None:
            "atterrissent.",
     )
 
-    # LES COUCHES ELLES-MEMES, et pas seulement l'historique : un `COPY` n'y
-    # laisse que le nom du fichier. On exporte l'image et on cherche dedans.
+    # LES COUCHES ELLES-MEMES, et pas seulement l'historique : l'historique ne
+    # porte que le nom du fichier copié, son CONTENU est dans la couche.
+    #
+    # IL FAUT DECOMPRESSER, et c'est tout l'objet de cette commande. La version
+    # précédente faisait `docker image save | tar -xO | grep`, ce qui ne lit
+    # jamais une couche : les blobs sont des
+    # `application/vnd.oci.image.layer.v1.tar+gzip`, et grep n'y voit que du
+    # binaire. Mesuré le 2026-11-04 sur Docker 29.9.2, magasin containerd, trois
+    # images ne différant que par la façon dont le secret entre :
+    #
+    #     COPY secret.txt puis RUN rm   ancien 0, corrigé 1  (une couche gzip)
+    #     RUN echo > /f puis RUN rm     ancien 1, corrigé 2  (config ET couche)
+    #     RUN --mount=type=secret       ancien 0, corrigé 0  (le travail juste)
+    #
+    # Le premier cas est celui qui comptait : un secret copié puis supprimé
+    # passait ce contrôle BLOQUANT, donc l'épreuve notait faux. Le deuxième est
+    # le plus traître, puisque son 1 venait du blob de config, c'est-à-dire de
+    # l'historique relu une seconde fois : le contrôle donnait la preuve
+    # apparente qu'il savait lire une couche, alors qu'il n'en avait jamais lu.
+    #
+    # `zcat -f` traite indifféremment un blob compressé et un blob qui ne l'est
+    # pas, ce qui couvre une couche non gzippée comme les blobs JSON.
     fouille = host.run(
-        "set -o pipefail; docker image save %s | tar -xO 2>/dev/null | "
+        "set -o pipefail; d=$(mktemp -d); trap 'rm -rf \"$d\"' EXIT; "
+        "docker image save %s | tar -x -C \"$d\" 2>/dev/null; "
+        "find \"$d\" -type f -exec zcat -f {} + 2>/dev/null | "
         "grep -c -F -- %s || true",
         f"{DEPOT}:1.0", secret,
     )
