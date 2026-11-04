@@ -21,6 +21,15 @@ rule, or a bare `capability,` or `network,` rule, allows everything and turns th
 profile into a one-line blacklist. The lab checks this by reading `/etc/shadow`,
 which a service handling two files in `/lab` has no reason to read.
 
+One rule the method will not reveal on this lab, and that you need to know:
+`signal (receive) peer=runc,`. Without it, a dedicated profile denies runc the
+right to send SIGTERM to the service, and `docker stop` cleans nothing up: twelve
+seconds, then SIGKILL and exit code 137. This service's PID 1 installs no signal
+handler, so it ignores SIGTERM anyway and the denial is never even attempted:
+`complain` therefore does not log it. That is the limit of the method, and it is
+worth knowing: it shows what the service **attempted**, never what another
+service would attempt.
+
 The method is the real one, and the template spells it out: load in `complain`,
 start the service, read the refusals the kernel logged with
 `dmesg | grep 'apparmor="DENIED"'`, add the matching rule, repeat, then drop

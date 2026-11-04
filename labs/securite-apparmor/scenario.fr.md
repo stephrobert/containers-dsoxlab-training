@@ -23,6 +23,15 @@ fait du profil une liste noire d'une ligne. Le lab le vérifie en lisant
 `/etc/shadow`, qu'un service manipulant deux fichiers de `/lab` n'a aucune raison
 de lire.
 
+Une règle que la méthode ne révélera pas sur ce lab, et qu'il faut connaître :
+`signal (receive) peer=runc,`. Sans elle, un profil dédié refuse à runc
+d'envoyer SIGTERM au service, et `docker stop` n'arrête rien proprement : douze
+secondes, puis SIGKILL et code 137. Le PID 1 de ce service n'ayant aucun
+gestionnaire de signaux, il ignore SIGTERM de toute façon et le refus n'a jamais
+lieu d'être tenté : `complain` ne le journalise donc pas. C'est la limite de la
+méthode, et elle vaut d'être sue : elle montre ce que le service **a tenté**,
+jamais ce qu'un autre service tenterait.
+
 La méthode est la vraie, et le modèle la détaille : charger en `complain`,
 démarrer le service, relever les refus journalisés par le noyau avec
 `dmesg | grep 'apparmor="DENIED"'`, ajouter la règle correspondante, recommencer,

@@ -19,6 +19,22 @@
 #      service tourne sans rien journaliser ;
 #   5. retirez `complain` des flags et rechargez : la politique s applique.
 #
+# UNE REGLE QUE LA METHODE NE VOUS DONNERA PAS, et qu il faut connaitre :
+#
+#     signal (receive) peer=runc,
+#
+# Sans elle, un profil dedie refuse a runc d envoyer SIGTERM au service, et
+# `docker stop` n arrete rien proprement : douze secondes puis SIGKILL, code
+# 137. Mesure du 2026-11-04 sur Docker 29.9.2 et Debian 13, avec un PID 1 qui
+# pose un trap sur TERM, seul le profil changeant : 0 s sous docker-default,
+# 12 s sous un profil dedie sans cette regle, 0 s des qu on l ajoute.
+#
+# ELLE NE SE JOURNALISE PAS ICI, parce que le PID 1 de ce service est un
+# `while :; do sleep 3600; done` sans gestionnaire : il ignore SIGTERM de toute
+# facon, donc le refus n a jamais lieu d etre tente. Le mode complain ne vous
+# la revelera donc pas. C est la limite de la methode : elle montre ce que le
+# service A TENTE, jamais ce qu un autre service tenterait.
+#
 # CE QU IL NE FAUT PAS FAIRE, et que le lab verifie :
 #
 #   - pas de `file,` global, ni `capability,` ni `network,` nus : ils autorisent
