@@ -2064,33 +2064,37 @@
  "donnees-postgres-sauvegarde": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 5,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 5
   },
   "avant": {
    "echecs": [
-    "test_custom_dump_restores_the_seeded_rows_on_a_second_vm"
+    "test_la_base_restauree_porte_toutes_les_lignes",
+    "test_la_sauvegarde_a_ete_transferee_a_l_identique",
+    "test_la_sauvegarde_existe_au_format_personnalise",
+    "test_la_sauvegarde_se_restaure_dans_une_base_vierge",
+    "test_le_service_cible_repond_et_porte_la_base_marquee"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 5
   },
-  "date": "2026-11-02",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 42,
+  "duree_s": 55,
   "ecarts": [],
   "etapes": [
-   "état photographié : 2 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/5",
+   "après la solution : 5/5",
+   "après clean et run : 0/5",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -2109,14 +2113,18 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_custom_dump_restores_the_seeded_rows_on_a_second_vm"
+    "test_la_base_restauree_porte_toutes_les_lignes",
+    "test_la_sauvegarde_a_ete_transferee_a_l_identique",
+    "test_la_sauvegarde_existe_au_format_personnalise",
+    "test_la_sauvegarde_se_restaure_dans_une_base_vierge",
+    "test_le_service_cible_repond_et_porte_la_base_marquee"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 5
   },
   "store": "containerd",
   "verdict": "VALIDE"

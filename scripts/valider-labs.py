@@ -41,6 +41,7 @@ import argparse
 import contextlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -270,6 +271,38 @@ def workdir(lab: Path) -> Path:
     return lab / rel
 
 
+def tests_qui_passent(lab: Path | None, resultat: dict) -> list[str]:
+    """Les tests qui PASSENT, déduits du fichier moins les échecs.
+
+    POURQUOI CETTE FONCTION EXISTE. Le message « N test(s) passent avant le
+    travail » listait `set(echecs) ^ set()`, une différence symétrique avec
+    l'ensemble vide qui ne fait rien : il nommait donc les tests EN ÉCHEC en
+    annonçant ceux qui passent, soit exactement les innocents. Sur un lab à six
+    contrôles dont un seul passait à tort, il affichait les cinq autres, et
+    lisait « 1 test(s) passent » au-dessus d'une liste de cinq noms. La
+    contradiction sautait aux yeux ; la liste, non.
+
+    `verdict_check.lire` ne rend que les échecs, parce que `dsoxlab check --json`
+    ne nomme que ceux-là. On lit donc les noms dans le fichier de test et on
+    soustrait. Un nom absent du fichier mais présent dans les échecs est gardé :
+    il signale un test paramétré ou déplacé, et le taire serait pire que le
+    montrer.
+    """
+    if lab is None:
+        return []
+    fichier = lab / "challenge" / "tests" / "test_functional.py"
+    if not fichier.is_file():
+        return []
+    declares = re.findall(r"^def (test_\w+)", fichier.read_text(encoding="utf-8"), re.M)
+    # Les échecs de pytest portent un chemin : `…::test_nom[param]`. On ne garde
+    # que le nom de la fonction pour pouvoir comparer.
+    en_echec = {
+        echec.split("::")[-1].split("[")[0]
+        for echec in resultat.get("echecs", [])
+    }
+    return sorted(nom for nom in declares if nom not in en_echec)
+
+
 def check(lab_id: str, journal) -> dict:
     """Le `check` du lab, lu dans le CONTRAT et non dans l'encadré du terminal.
 
@@ -490,12 +523,21 @@ def valider(lab: Path, rejeu: bool = True, double_passage: bool = False) -> dict
                 dsoxlab(["clean", ident, "--yes"], journal, 300)
 
     resultat["duree_s"] = round(time.time() - debut)
-    resultat["verdict"] = verdict(resultat, rejeu)
+    resultat["verdict"] = verdict(resultat, rejeu, lab)
     resultat["etapes"] = etapes
     return resultat
 
 
-def verdict(r: dict, rejeu: bool) -> str:
+def verdict(r: dict, rejeu: bool, lab: Path | None = None) -> str:
+    """Le verdict d'un lab, et la raison quand il est rouge.
+
+    `lab` EST OPTIONNEL À DESSEIN. Les contrôles de maturité du dépôt
+    (`tests/test_maturite_des_labs.py`) éprouvent ce verdict sur des cas
+    SYNTHÉTIQUES, où aucun lab n'existe sur le disque : leur imposer un chemin
+    factice ne mesurerait rien de plus et rendrait leur lecture moins claire.
+    Sans lab, on ne peut pas nommer les tests qui passent, et le message le dit
+    (« voir le journal ») au lieu d'inventer.
+    """
     if "erreur" in r:
         return "ROUGE"
     # Trois issues, pas deux. Une exécution qui n'a RIEN mesuré n'accuse pas le
@@ -522,7 +564,7 @@ def verdict(r: dict, rejeu: bool) -> str:
     if r["avant"]["passed"] != 0:
         raisons.append(
             f"{r['avant']['passed']} test(s) passent avant le travail : "
-            f"{', '.join(set(r['avant'].get('echecs', [])) ^ set()) or 'voir le journal'}"
+            f"{', '.join(tests_qui_passent(lab, r['avant'])) or 'voir le journal'}"
         )
     if r["apres"]["passed"] != r["apres"]["total"]:
         restes = r["apres"]["echecs"]
