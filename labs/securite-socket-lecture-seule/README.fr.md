@@ -2,16 +2,30 @@
 
 **Public :** apprenants.
 
-Remove the host socket mount; read-only on a Unix socket does not create a read-only API.
+Retirer la capacité d'atteindre le socket du démon, au lieu de la restreindre :
+la lecture seule porte sur le fichier du socket, pas sur les requêtes qui y
+transitent.
 
 ## Ce que vous allez pratiquer
 
-Le conteneur applicatif marqué ne monte pas la socket Docker de l’hôte.
+Constater d'abord qu'un `POST` d'arrêt réussit à travers un socket monté en
+`:ro`, puis retirer ce montage du conteneur applicatif, par aucun chemin
+détourné.
 
 ## Limites de sécurité
 
-Seuls les conteneurs, volumes et fichiers du lab sont modifiés. Les exercices système utilisent des comptes dédiés ou restaurent la configuration initiale du démon. La pression disque est simulée par un volume borné de 16 Mio et ne remplit jamais le système de fichiers de l’hôte.
+Seuls les conteneurs et le répertoire de travail portant l'étiquette de ce lab
+sont modifiés. Le témoin que vous arrêterez n'existe que pour la démonstration
+et est retiré au nettoyage, comme les deux images épinglées, mais seulement si
+ce lab les a tirées.
+
+Le socket du démon n'est jamais modifié : le lab retire un montage, il ne touche
+ni à la configuration du démon ni aux droits du fichier.
 
 ## Validation
 
-Les tests inspectent l’état effectif sur `docker.lab` ; l’historique des commandes ou le contenu d’un fichier n’accorde aucun point. Les messages d’assertion sont bilingues.
+Les deux contrôles inspectent l'état effectif sur `docker.lab` ; ni l'historique
+des commandes ni le contenu d'un fichier n'accorde de point. Aucun des deux ne
+compare des noms de fichiers : l'un résout les sources de montage sur l'hôte,
+l'autre relève l'inode de chaque socket visible dans le conteneur. Les messages
+d'assertion sont bilingues.

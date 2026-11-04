@@ -5110,33 +5110,34 @@
  "securite-socket-lecture-seule": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 2,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 2
   },
   "avant": {
    "echecs": [
-    "test_application_container_has_no_host_docker_socket_mount"
+    "test_aucun_montage_ne_donne_acces_au_socket_du_demon",
+    "test_le_socket_du_demon_est_injoignable_depuis_le_conteneur"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 25,
+  "duree_s": 33,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/2",
+   "après la solution : 2/2",
+   "après clean et run : 0/2",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -5151,14 +5152,15 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_application_container_has_no_host_docker_socket_mount"
+    "test_aucun_montage_ne_donne_acces_au_socket_du_demon",
+    "test_le_socket_du_demon_est_injoignable_depuis_le_conteneur"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
   "store": "containerd",
   "verdict": "VALIDE"

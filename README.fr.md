@@ -314,7 +314,7 @@ consensus et son état de contrôle à protéger.
 | `docker-contexte-ssh` | Administrer une seconde VM avec un contexte Docker SSH | c6 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe) |
 | `docker-rotation-des-journaux` | Faire tourner le journal d'un conteneur | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#logging-drivers) |
 | `securite-groupe-docker` | Retirer un accès Docker qui ne se justifie plus | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker) |
-| `securite-socket-lecture-seule` | Retirer l'accès direct à la socket Docker | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas) |
+| `securite-socket-lecture-seule` | Retirer l'accès direct au socket Docker | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas) |
 | `securite-socket-proxy` | Interposer un proxy filtrant devant l'API Docker | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/) |
 | `securite-rootless` | Qualifier un moteur Docker rootless | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#rootless-mode) |
 | `securite-capabilities` | Retirer toutes les capabilities sauf une | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#linux-capabilities) |

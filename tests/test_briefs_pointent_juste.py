@@ -61,7 +61,14 @@ from lecture_yaml import lire_yaml  # noqa: E402
 
 #: Un nom d'hôte du lab, cité entre accents graves. Le suffixe `.lab` est la
 #: convention de tous les catalogues `vm` de la collection.
-HOTE_CITE = re.compile(r"`([A-Za-z0-9][A-Za-z0-9_.-]*\.lab)`")
+#:
+#: La négation en tête écarte le seul homonyme du catalogue : `dsoxlab.lab` est
+#: le nom du **label** que chaque lab pose sur ses objets Docker, et un énoncé a
+#: de bonnes raisons de le citer. Sans elle, le contrôle refusait un texte juste
+#: en annonçant un hôte manquant, ce qui envoie corriger le meta.yml pour rien.
+#: L'exclusion ne masque aucun hôte réel : aucune machine ne porte ce nom, et le
+#: label le porte dans les vingt-trois catalogues.
+HOTE_CITE = re.compile(r"`(?!dsoxlab\.lab`)([A-Za-z0-9][A-Za-z0-9_.-]*\.lab)`")
 
 #: Un chemin du répertoire de travail, cité entre accents graves. Le reste du
 #: texte parle de commandes et de concepts, pas d'emplacements.
@@ -159,6 +166,12 @@ def test_les_extracteurs_voient_ce_qu_ils_pretendent_voir() -> None:
     assert HOTE_CITE.findall("le fichier `daemon.json`") == [], (
         "Un nom de fichier ne doit pas être pris pour un hôte."
     )
+    assert HOTE_CITE.findall("conservez son label `dsoxlab.lab`") == [], (
+        "Le nom du label ne doit pas être pris pour un hôte."
+    )
+    assert HOTE_CITE.findall("Sur `docker.lab`, le label `dsoxlab.lab`") == [
+        "docker.lab"
+    ], "L'exclusion du label ne doit pas emporter l'hôte cité dans la même phrase."
 
     assert CHEMIN_CITE.findall("écrivez `challenge/work/compose.yaml`") == [
         "challenge/work/compose.yaml"
