@@ -204,4 +204,3 @@ def test_la_transaction_validee_survit_a_la_recreation(host):
         "The committed transaction did not survive the recreation:",
         "La transaction validée n'a pas survécu à la recréation :",
     )
-
