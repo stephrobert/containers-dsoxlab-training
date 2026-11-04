@@ -14,7 +14,7 @@ skills:
 - acl
 distros:
 - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/2-livrer-une-image-utilisable-ailleurs/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/
 lab_type: challenge
 estimated_time: 60m
 runtime:
