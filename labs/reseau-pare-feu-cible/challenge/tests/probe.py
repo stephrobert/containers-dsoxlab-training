@@ -1,8 +1,25 @@
-"""Namespace-scoped multi-hop diagnostics and denied-path counter evidence."""
+"""Diagnostic multi-sauts dans le namespace du routeur, une étape à la fois.
+
+Ce fichier portait un `main()` qui jouait tout et un unique `def test_` qui
+agrégeait le verdict. Pour deux exigences distinctes, l'apprenant recevait un
+seul refus et neuf cents caractères de trace.
+
+`assess()` était déjà autonome : il vérifie la topologie, les trois sauts, les
+refus et les compteurs nftables. Deux étapes l'exposent donc, appelées par leur
+nom en argument :
+
+    etat         un seul `assess()`
+    recreation   recrée la stack, puis `assess()`
+
+La topologie et les refus restent DANS `assess()` comme garde-fous, et non comme
+étapes : ils tiennent déjà sur l'état initial, où le pare-feu bloque tout. Ce qui
+est vrai avant tout travail ne peut pas noter.
+"""
 
 import json
 import os
 import subprocess
+import sys
 import time
 
 LAB = "reseau-pare-feu-cible"
@@ -198,32 +215,46 @@ def assess():
     }
 
 
-def main():
-    first = assess()
+def etape_etat():
+    """Le flux métier passe-t-il, et les exclusions tiennent-elles ?"""
+    return {
+        "hops": ["client-router", "router-server", "client-server"],
+        "counters": assess(),
+    }
+
+
+def etape_recreation():
+    """Tout tient-il encore après une recréation de la stack ?
+
+    Le scénario l'exige implicitement : une règle corrigée à la main dans le
+    namespace du routeur disparaîtrait au redémarrage, et le lab serait réussi
+    sur un état qui ne survit pas.
+
+    L'étape joue `assess()` AVANT et APRÈS, parce qu'une recréation qui partirait
+    d'un état déjà faux ne dirait rien de la persistance.
+    """
+    avant = assess()
     docker(
-        "compose",
-        "-p",
-        PROJECT,
-        "-f",
-        WORK + "/compose.yaml",
-        "up",
-        "-d",
-        "--force-recreate",
-        "--pull",
-        "never",
-        timeout=35,
+        "compose", "-p", PROJECT, "-f", WORK + "/compose.yaml",
+        "up", "-d", "--force-recreate", "--pull", "never", timeout=35,
     )
-    second = assess()
-    print(
-        json.dumps(
-            {
-                "hops": ["client-router", "router-server", "client-server"],
-                "counters": [first, second],
-                "recreation": "protected",
-            }
-        )
-    )
+    apres = assess()
+    return {"counters": [avant, apres], "recreation": "protected"}
+
+
+ETAPES = {
+    "etat": etape_etat,
+    "recreation": etape_recreation,
+}
+
+
+def main(argv):
+    if len(argv) != 2 or argv[1] not in ETAPES:
+        print(f"usage: probe.py <{', '.join(sorted(ETAPES))}>", file=sys.stderr)
+        return 2
+    print(json.dumps(ETAPES[argv[1]]()))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main(sys.argv))
