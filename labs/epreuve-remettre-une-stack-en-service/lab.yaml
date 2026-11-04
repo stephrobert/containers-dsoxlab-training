@@ -9,7 +9,7 @@ skills:
   - persistent-data
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/epreuves/remettre-une-stack-en-service/#passer-lépreuve
 lab_type: challenge
 exam_passing_score: 75
 exam_blocking_checks:

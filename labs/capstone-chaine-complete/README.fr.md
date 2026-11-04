@@ -1,6 +1,6 @@
 # Chaîne de livraison complète
 
-Capstone c4, 180 minutes. Lire [l'épreuve](scenario.fr.md).
+Capstone c6, 180 minutes. Lire [l'épreuve](scenario.fr.md).
 Source → BuildKit multi-étapes → inventaire SPDX réel → registre local →
 pull par digest → Compose API/PostgreSQL durci → données durables → huit pannes
 → restauration sur une seconde VM vierge → rollback avec contrôle du schéma

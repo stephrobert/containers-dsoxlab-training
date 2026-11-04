@@ -18,7 +18,7 @@ skills:                       # REQUIS, non vide
   - exploitation
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/remettre-trois-conteneurs-en-service/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/remettre-trois-conteneurs-en-service/#passer-lépreuve
 lab_type: challenge
 exam_passing_score: 75
 exam_blocking_checks:

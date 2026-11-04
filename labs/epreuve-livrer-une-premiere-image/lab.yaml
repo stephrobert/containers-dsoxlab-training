@@ -25,7 +25,7 @@ skills:                       # REQUIS, non vide
   - securite
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-premiere-image/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-premiere-image/#passer-lépreuve
 lab_type: challenge
 exam_passing_score: 75
 exam_blocking_checks:

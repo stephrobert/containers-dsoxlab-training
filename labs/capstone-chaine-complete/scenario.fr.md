@@ -71,9 +71,11 @@ Livrez une version opérationnelle :
   à deux VM ne démontre ni haute disponibilité ni prise en charge ARM64 native.
 
 Après livraison, huit incidents s'injectent avec `python3 incidents.py NUMERO`
-(1–8). Leurs causes ne sont volontairement pas annoncées. Observez santé,
-journaux, réseaux, montages et configuration ; rétablissez sans perdre un
-élément écrit auparavant. L'évaluation injecte chaque incident, mesure la panne,
+(1–8). Leurs causes ne sont pas annoncées ici, et le script qui les injecte
+est sur la machine : le lire est permis, comme on lit le code d'un service en
+production. Ce qui est noté est l'état rétabli, jamais la façon de l'avoir
+trouvé. Observez santé, journaux, réseaux, montages et configuration ;
+rétablissez sans perdre un élément écrit auparavant. L'évaluation injecte chaque incident, mesure la panne,
 lance `recover.sh` puis vérifie disponibilité et données.
 
 Le registre est volontairement HTTP **sur boucle locale uniquement**, pas une
@@ -86,4 +88,13 @@ en charge `!override` si utilisé pour remplacer la publication API.
 Wheel pour CPython 3.13 amd64 avec
 glibc. Les tokens publics de formation ne sont pas de vrais identifiants.
 
-**Cinq exigences ne sont compensées par aucun total**, et chacune fait échouer l'épreuve à elle seule : une perte de données, un secret divulgué, un accès hors du périmètre, une protection retirée pour faire réussir un contrôle, et un artefact déployé différent de celui qui a été accepté.
+**Cinq contrôles ne sont compensés par aucun total**, et chacun fait échouer
+l'épreuve à lui seul : la survie des données au remplacement des conteneurs, le
+secret de build absent de l'image livrée, l'isolation réseau avec écriture
+PostgreSQL réelle, le durcissement d'exécution avec sa dépendance de santé, et
+l'identité de l'artefact déployé face au digest accepté.
+
+**Ailleurs, la même faute ne coûte que son contrôle.** Une donnée perdue pendant
+un cycle d'incident, une restauration ou une maintenance fait échouer ce
+contrôle-là, sans faire échouer l'épreuve. Ce qui est éliminatoire est nommé dans
+`lab.yaml`, et rien d'autre ne l'est.

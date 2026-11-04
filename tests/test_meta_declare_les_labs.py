@@ -122,7 +122,11 @@ def test_les_epreuves_integrees_suivent_leurs_prerequis() -> None:
     assert order.index("container-signaux-et-pid-1") < order.index("container-arret-transactionnel")
     assert order.index("donnees-permissions-uid-gid") < order.index("container-arret-transactionnel")
     assert order.index("donnees-volumes-et-montages") < order.index("remettre-un-conteneur-en-service")
-    assert order.index("compose-correlation-et-saturation") < order.index("donnees-postgres-sauvegarde")
+    # L ordre `compose-correlation-et-saturation` avant
+    # `donnees-postgres-sauvegarde` a ete retire le 2026-11-04 : ce second lab
+    # est sorti du depot, et l assertion levait un ValueError au lieu de
+    # mesurer un ordre. Le hook meta-declare-les-labs l a dit au premier
+    # commit, ce qu un grep tronque n avait pas vu.
     assert order.index("container-systeme-en-lecture-seule") < order.index("reseau-pare-feu-cible")
     assert order.index("reseau-pare-feu-cible") < order.index("container-limite-de-processus")
 

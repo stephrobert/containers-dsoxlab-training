@@ -270,7 +270,6 @@ ce module en huit leçons.
 
 | id | type | val | prér. | doc_url ancré |
 | --- | --- | --- | --- | --- |
-| `donnees-postgres-sauvegarde` | challenge | f | - | `moteurs-conteneurs/docker/volumes/#sauvegarderestauration-des-volumes-docker` |
 | `epreuve-remettre-une-stack-en-service` | capstone | f+s | les labs de `compose-application` | `orchestrateurs/docker-compose/` |
 
 **Ce module est le trou que le reclassement a mis au jour.** Il annonce quatre
@@ -279,9 +278,11 @@ sert d'épreuve 3, mais **la lecture des journaux, la mesure des ressources
 d'une stack, la mise à jour et le retour arrière n'ont aucun lab**. Trois ou
 quatre labs sont à écrire ici, et ils se décrivent avant de se coder.
 
-`donnees-postgres-sauvegarde` quitte le bloc « persister » de l'ancien
-découpage : sauvegarder une base, c'est exploiter une application, pas monter
-un volume.
+`donnees-postgres-sauvegarde` a été **retiré du dépôt le 2026-11-04**. Il
+exigeait un PostgreSQL installé sur l'hôte, un `sudo -u postgres`, un
+`CREATE DATABASE` et un `scp` vers un second hôte, dont aucune leçon ne parle,
+et il n'avait ni TP ni page sur le site. `compose-sauver-et-restaurer` tient
+désormais cette place auprès de la leçon C32.
 
 ---
 

@@ -52,10 +52,15 @@ refuses a stop request while letting a read through. The second is the real
 check: a proxy that let everything through would satisfy the first while
 protecting nothing.
 
-### 5. No TCP socket without TLS
+### 5. No TCP socket at all, with or without TLS
 
 A Docker API over TCP without TLS gives anyone who reaches it the power to start
 a privileged container, hence to become root on the machine.
+
+**Adding TLS is not enough, and is not what is asked.** This assessment supplies
+a socket proxy and requires it to run: remote access goes through that filtering
+proxy, so the daemon API has no reason to be exposed over TCP, encrypted or not.
+What has no reason to exist is not hardened, it is removed.
 
 The check looks at the **listening sockets** and at the daemon's **effective
 command line**, not at a configuration file: correcting a file without

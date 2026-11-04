@@ -592,7 +592,7 @@
                passe par le proxy de lecture seule que ce lab fournit,
                l image `{{ tag_proxy }}`. A travers ce proxy, une requete de
                LECTURE passe et une requete d ARRET recoit un refus ;
-            5. le demon n ecoute plus AUCUN socket TCP sans TLS.
+            5. le demon n ecoute plus AUCUN socket TCP, avec ou sans TLS.
 
           CE QUI EST FOURNI : les deux images, `{{ tag_service }}` et
           `{{ tag_proxy }}`. Il n y a rien a ecrire ni a reconstruire. Le proxy

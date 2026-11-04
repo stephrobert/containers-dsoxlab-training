@@ -23,7 +23,8 @@ You are asked to take it over.
    through the read-only proxy this lab provides, the `lab-reprise-proxy:1.0`
    image. Through that proxy, a **read request passes** and a **stop request is
    refused**.
-5. The daemon no longer listens on **any TCP socket without TLS**.
+5. The daemon no longer listens on **any TCP socket**, with or without TLS:
+   remote access goes through the supplied proxy, not the daemon API.
 
 The proxy must be **reachable from the host**: publish a port for it on the
 loopback interface. It listens on port 2375 inside its container, and it needs
