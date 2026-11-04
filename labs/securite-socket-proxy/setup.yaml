@@ -1,17 +1,48 @@
 ---
+# Point de départ du lab securite-socket-proxy.
+#
+# CE QUE LE SETUP POSE, ET CE QU'IL NE POSE PAS. Il pose les deux témoins et les
+# trois images épinglées, parce que les tirer fait partie de l'infrastructure et
+# non de l'exercice. Il NE POSE NI le réseau NI le proxy : c'est tout le travail
+# de l'apprenant, et un setup qui les poserait noterait sa propre sortie.
+#
+# LE PREMIER TÉMOIN EST POSÉ POUR ÊTRE ARRÊTÉ. `cible-1` existe pour que
+# l'apprenant lui envoie un POST d'arrêt à travers un socket monté en lecture
+# seule, et constate que le moteur l'exécute. Il faut donc qu'il soit en marche
+# au départ, et son arrêt est un résultat attendu, pas un dégât.
+#
+# LE SECOND PORTE UN FAUX SECRET. `cible-2` reçoit `CLE_API`, qui joue le rôle
+# d'un secret passé avec `-e`. Un profil de lecture le livre en clair par
+# l'inspection, et c'est ce que l'apprenant doit mesurer. La valeur est
+# évidemment factice : un lab ne pose jamais un vrai secret, même pour le
+# montrer.
 - name: Prepare lab securite-socket-proxy
   hosts: lab_target
   become: true
+  vars:
+    atelier: /opt/dsoxlab-securite-socket-proxy
+    # Les trois images sont épinglées par tag ET par digest : le tag dit ce qu'on
+    # a voulu, le digest dit ce qu'on a eu. Relevés le 2026-11-03.
+    image_proxy: >-
+      lscr.io/linuxserver/socket-proxy:3.4.7-r0-ls104@sha256:4e5e59efd3338205561c54262581992036e5a36ccca97d487b1d4ec41f9adc58
+    image_client: >-
+      curlimages/curl:8.23.0@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
+    image_temoin: >-
+      alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
   tasks:
-    - name: Install Docker and the proxy runtime
+    - name: Install Docker and the HTTP client used by the lab
       ansible.builtin.apt:
-        name: [docker-ce, python3, curl]
+        name: [docker-ce, curl]
         state: present
         update_cache: true
     - name: Ensure Docker is available for this host lab
       ansible.builtin.systemd_service:
         name: docker
         state: started
+
+    # ── Les garde-fous : ne rien écraser ────────────────────────────────────
+    # Un setup qui écrase le travail d'un tour précédent détruit sans
+    # confirmation. Chacun de ces contrôles nomme ce qu'il a trouvé.
     - name: Refuse to overwrite lab-labelled containers or volumes
       ansible.builtin.shell: |
         set -eu
@@ -20,69 +51,95 @@
       args:
         executable: /bin/sh
       changed_when: false
+    - name: Look for objects of a previous run
+      ansible.builtin.shell: |
+        set -eu
+        docker ps -aq --filter name='^cible-1$' --filter name='^cible-2$'
+        docker ps -aq --filter name='^filtre-api$'
+        docker network ls -q --filter name='^reseau-filtre$'
+      args:
+        executable: /bin/sh
+      register: lab_objects
+      changed_when: false
+    - name: Require a clean engine for this lab
+      ansible.builtin.assert:
+        that: lab_objects.stdout | trim | length == 0
+        fail_msg: >-
+          Objects named cible-1, cible-2, filtre-api or reseau-filtre already
+          exist on this host; cleanup must restore the previous run first.
     - name: Refuse to overwrite a previous lab work directory
       ansible.builtin.stat:
-        path: /opt/dsoxlab-securite-socket-proxy
+        path: "{{ atelier }}"
       register: workdir_state
     - name: Require a clean lab work directory
       ansible.builtin.assert:
         that: not workdir_state.stat.exists
-        fail_msg: "/opt/dsoxlab-securite-socket-proxy already exists; cleanup must restore the previous run first."
-    - name: Refuse to overwrite an existing proxy service
-      ansible.builtin.stat:
-        path: /etc/systemd/system/dsoxlab-securite-socket-proxy.service
-      register: proxy_service_unit
-    - name: Require an unused proxy service name
-      ansible.builtin.assert:
-        that: not proxy_service_unit.stat.exists
-        fail_msg: "The dedicated proxy service already exists; cleanup must restore the previous run first."
-    - name: Create the unique lab work directory
+        fail_msg: "{{ atelier }} already exists; cleanup must restore the previous run first."
+
+    # ── Les images, tirées une fois pour toutes ─────────────────────────────
+    # Les tirer ici et non pendant l'exercice : le lab mesure un filtrage, pas
+    # la bande passante de la machine. Et un `docker run` qui tire l'image au
+    # vol ferait dépendre le premier essai du réseau.
+    - name: Pull the pinned images the lab needs
+      ansible.builtin.command:
+        cmd: "docker pull {{ item }}"
+      loop:
+        - "{{ image_proxy }}"
+        - "{{ image_client }}"
+        - "{{ image_temoin }}"
+      changed_when: true
+
+    # ── Les deux témoins ────────────────────────────────────────────────────
+    - name: Start the witness that will be stopped through the read-only socket
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name cible-1
+          --label dsoxlab.lab=securite-socket-proxy
+          {{ image_temoin }} sleep 3600
+      changed_when: true
+    - name: Start the witness that carries a decoy secret
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d --name cible-2
+          --label dsoxlab.lab=securite-socket-proxy
+          -e CLE_API=valeur-factice-du-lab
+          {{ image_temoin }} sleep 3600
+      changed_when: true
+    - name: Wait until both witnesses are running
+      ansible.builtin.shell: |
+        set -eu
+        test "$(docker inspect -f '{{ '{{' }}.State.Status{{ '}}' }}' cible-1)" = running
+        test "$(docker inspect -f '{{ '{{' }}.State.Status{{ '}}' }}' cible-2)" = running
+      args:
+        executable: /bin/sh
+      register: witnesses
+      until: witnesses.rc == 0
+      retries: 10
+      delay: 2
+      changed_when: false
+
+    # ── L'atelier et la mission ─────────────────────────────────────────────
+    - name: Create the lab work directory
       ansible.builtin.file:
-        path: /opt/dsoxlab-securite-socket-proxy
+        path: "{{ atelier }}"
         state: directory
         mode: "0750"
-    - name: Install the loopback-only proxy implementation
+        owner: "{{ ansible_user | default('ansible') }}"
+    - name: Record the pinned references the learner must reuse
       ansible.builtin.copy:
-        src: fixtures/proxy.py
-        dest: /opt/dsoxlab-securite-socket-proxy/proxy.py
-        mode: "0644"
-    - name: Install a deliberately broad starter API policy
-      ansible.builtin.copy:
-        dest: /opt/dsoxlab-securite-socket-proxy/policy.json
-        mode: "0600"
+        dest: "{{ atelier }}/images.env"
+        mode: "0640"
+        owner: "{{ ansible_user | default('ansible') }}"
         content: |
-          {"rules":[{"method":"*","path":"*"}]}
-    - name: Install the dedicated proxy service
-      ansible.builtin.copy:
-        dest: /etc/systemd/system/dsoxlab-securite-socket-proxy.service
-        mode: "0644"
-        content: |
-          [Unit]
-          Description=DSOXLAB loopback Docker API proxy
-          After=docker.service
-          Requires=docker.service
-          [Service]
-          Type=simple
-          User=root
-          ExecStart=/usr/bin/python3 /opt/dsoxlab-securite-socket-proxy/proxy.py /opt/dsoxlab-securite-socket-proxy/policy.json
-          Restart=on-failure
-          NoNewPrivileges=yes
-          PrivateTmp=yes
-          [Install]
-          WantedBy=multi-user.target
-    - name: Mark the dedicated proxy service as lab-owned
-      ansible.builtin.file:
-        path: /opt/dsoxlab-securite-socket-proxy/service-owned
-        state: touch
-        mode: "0600"
-    - name: Start the lab-scoped proxy only
-      ansible.builtin.systemd_service:
-        name: dsoxlab-securite-socket-proxy.service
-        daemon_reload: true
-        state: started
-        enabled: false
+          # Les références épinglées de ce lab. Reprenez-les telles quelles :
+          # un tag seul laisserait le contenu changer sous vos pieds, et le
+          # contrôle du lab vérifie le digest.
+          PROXY='{{ image_proxy }}'
+          CLIENT='{{ image_client }}'
+          TEMOIN='{{ image_temoin }}'
     - name: Install this lab's bilingual mission
       ansible.builtin.copy:
         src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
-        dest: /opt/dsoxlab-securite-socket-proxy/MISSION.md
-        mode: "0644"
+        dest: "{{ atelier }}/MISSION.md"
+        mode: "0640"
+        owner: "{{ ansible_user | default('ansible') }}"

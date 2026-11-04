@@ -5166,33 +5166,39 @@
  "securite-socket-proxy": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 7,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 7
   },
   "avant": {
    "echecs": [
-    "test_proxy_allows_only_health_and_version_reads"
+    "test_la_portee_du_proxy_est_bornee_par_son_reseau",
+    "test_le_profil_de_lecture_ouvre_ce_qu_il_faut_et_rien_de_plus",
+    "test_le_proxy_est_epingle_durci_et_seul_a_monter_le_socket",
+    "test_le_secret_du_temoin_ne_passe_plus_par_l_environnement",
+    "test_le_socket_en_lecture_seule_n_a_pas_protege_le_temoin",
+    "test_les_trois_refus_se_distinguent_par_qui_les_prononce",
+    "test_une_action_precise_est_ouverte_sans_donner_root_sur_l_hote"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 7
   },
-  "date": "2026-11-02",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 32,
+  "duree_s": 123,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/7",
+   "après la solution : 7/7",
+   "après clean et run : 0/7",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -5207,14 +5213,20 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_proxy_allows_only_health_and_version_reads"
+    "test_la_portee_du_proxy_est_bornee_par_son_reseau",
+    "test_le_profil_de_lecture_ouvre_ce_qu_il_faut_et_rien_de_plus",
+    "test_le_proxy_est_epingle_durci_et_seul_a_monter_le_socket",
+    "test_le_secret_du_temoin_ne_passe_plus_par_l_environnement",
+    "test_le_socket_en_lecture_seule_n_a_pas_protege_le_temoin",
+    "test_les_trois_refus_se_distinguent_par_qui_les_prononce",
+    "test_une_action_precise_est_ouverte_sans_donner_root_sur_l_hote"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 7
   },
   "store": "containerd",
   "verdict": "VALIDE"

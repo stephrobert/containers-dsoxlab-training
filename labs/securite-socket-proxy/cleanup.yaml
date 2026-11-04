@@ -1,34 +1,58 @@
 ---
+# Remise en état du lab securite-socket-proxy.
+#
+# POURQUOI CE CLEANUP RETIRE PLUS QUE LE LABEL. Le setup étiquette ce qu'il crée
+# (`dsoxlab.lab=securite-socket-proxy`), mais l'apprenant, lui, crée le proxy, le
+# réseau et le client en suivant l'énoncé, et ces objets ne portent aucun label :
+# personne ne demande à un apprenant d'étiqueter son travail. Un cleanup qui ne
+# regarderait que le label les laisserait debout, et le cycle de validation
+# verrait un écart qu'il attribuerait au lab suivant.
+#
+# CE QU'IL NE RETIRE PAS, ET POURQUOI. Les trois images épinglées restent : elles
+# sont tirées par le setup, elles sont lourdes, et le prochain tour les
+# retrouverait de toute façon. La photographie du validateur les voit déjà
+# présentes avant le lab, donc elles ne créent pas d'écart. En revanche, aucun
+# conteneur ni réseau ne doit survivre.
+#
+# LES NOMS RETIRÉS SONT CEUX QUE L'ÉNONCÉ IMPOSE, et c'est ce qui rend le geste
+# sûr : le setup a refusé de démarrer si l'un d'eux existait déjà, donc tout
+# objet qui les porte à cette heure vient de ce lab.
 - name: Clean lab securite-socket-proxy
   hosts: lab_target
   become: true
+  vars:
+    atelier: /opt/dsoxlab-securite-socket-proxy
+    # Le proxy et le client d'abord : ils sont branchés au réseau, qu'on ne peut
+    # pas retirer tant qu'un conteneur y est attaché.
+    conteneurs_du_lab: [filtre-api, client-ro, cible-1, cible-2]
   tasks:
-    - name: Check whether setup owns the proxy service
-      ansible.builtin.stat:
-        path: /opt/dsoxlab-securite-socket-proxy/service-owned
-      register: proxy_service_marker
-    - name: Stop and remove only the lab proxy service
-      ansible.builtin.systemd_service:
-        name: dsoxlab-securite-socket-proxy.service
-        state: stopped
-        enabled: false
-        daemon_reload: true
+    - name: Remove the containers this lab names, whether labelled or not
+      ansible.builtin.shell: |
+        set -eu
+        for nom in {{ conteneurs_du_lab | join(' ') }}; do
+          if [ -n "$(docker ps -aq --filter name="^${nom}$")" ]; then
+            docker rm -f "$nom" >/dev/null
+          fi
+        done
+      args:
+        executable: /bin/sh
+      changed_when: false
       failed_when: false
-      when: proxy_service_marker.stat.exists
-    - name: Remove the lab proxy unit only
-      ansible.builtin.file:
-        path: /etc/systemd/system/dsoxlab-securite-socket-proxy.service
-        state: absent
-      when: proxy_service_marker.stat.exists
-    - name: Reload systemd after removing the lab proxy unit
-      ansible.builtin.systemd_service:
-        daemon_reload: true
-      when: proxy_service_marker.stat.exists
-    - name: Remove only containers carrying this lab's label
+    - name: Remove any other container carrying this lab's label
       ansible.builtin.shell: |
         set -eu
         ids="$(docker ps -aq --filter label=dsoxlab.lab=securite-socket-proxy)"
         if [ -n "$ids" ]; then docker rm -f $ids; fi
+      args:
+        executable: /bin/sh
+      changed_when: false
+      failed_when: false
+    - name: Remove the network this lab names
+      ansible.builtin.shell: |
+        set -eu
+        if [ -n "$(docker network ls -q --filter name='^reseau-filtre$')" ]; then
+          docker network rm reseau-filtre >/dev/null
+        fi
       args:
         executable: /bin/sh
       changed_when: false
@@ -44,5 +68,28 @@
       failed_when: false
     - name: Remove the unique work directory created for this lab
       ansible.builtin.file:
-        path: /opt/dsoxlab-securite-socket-proxy
+        path: "{{ atelier }}"
         state: absent
+
+    # CE CONTRÔLE EST LA RAISON D'ÊTRE DU CLEANUP : sans lui, un retrait qui
+    # échoue en silence rend la main comme un succès, et c'est le lab suivant qui
+    # paie. Il nomme ce qui reste.
+    - name: Verify that nothing of this lab survives
+      ansible.builtin.shell: |
+        set -eu
+        reste=""
+        for nom in {{ conteneurs_du_lab | join(' ') }}; do
+          if [ -n "$(docker ps -aq --filter name="^${nom}$")" ]; then
+            reste="${reste} conteneur:${nom}"
+          fi
+        done
+        if [ -n "$(docker network ls -q --filter name='^reseau-filtre$')" ]; then
+          reste="${reste} reseau:reseau-filtre"
+        fi
+        if [ -n "${reste}" ]; then
+          echo "il reste :${reste}" >&2
+          exit 1
+        fi
+      args:
+        executable: /bin/sh
+      changed_when: false
