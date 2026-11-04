@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - build-multi-etapes
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build-multi-etapes/#mettre-en-pratique   # REQUIS, http(s)
 lab_type: lab
 estimated_time: 30m
 runtime:

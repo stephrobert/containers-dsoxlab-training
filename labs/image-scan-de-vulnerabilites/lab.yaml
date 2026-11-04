@@ -4,7 +4,7 @@ level: c6
 description: "Scan genuine archived Debian libraries, preserve findings tied to image and database, and enforce a reproducible CVE policy."
 skills: [image-scanning, vulnerability-policy, evidence, supply-chain]
 distros: [debian13]
-doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/quay-io/#publier-une-image-sur-quayio
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/supply-chain-images/#mettre-en-pratique
 lab_type: lab
 estimated_time: 45m
 runtime:

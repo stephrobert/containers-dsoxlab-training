@@ -88,3 +88,115 @@ ancres:
     depuis: 2026-11-03
     pourquoi: >-
       juste a la source de origin/main du site, pas encore deployee
+  - lab: buildkit-secret-de-build
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: compose-dans-une-ci
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurisation/cicd-images/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: compose-plusieurs-environnements
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/promouvoir-un-artefact/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: container-arret-transactionnel
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/racine-en-lecture-seule/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: container-limite-de-processus
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: container-memoire-et-oom
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: container-systeme-en-lecture-seule
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/racine-en-lecture-seule/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: image-scan-de-vulnerabilites
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurisation/supply-chain-images/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: images-build-multi-etapes
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build-multi-etapes/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: images-epingler-par-digest
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epingler-et-livrer-hors-ligne/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: images-healthcheck
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/tester-une-image/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: images-identifier-image
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: images-multi-architecture
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/multi-architecture/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: images-signature-identite
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurisation/supply-chain-images/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: registry-air-gap
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epingler-et-livrer-hors-ligne/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: registry-droits-minimaux
+    ancre: quel-entraînement-avant-lépreuve-
+    page: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production

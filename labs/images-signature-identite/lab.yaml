@@ -10,7 +10,7 @@ skills:                       # REQUIS, non vide
   - signatures
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/securiser/supply-chain/cosign/#la-solution--signature-cryptographique
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/supply-chain-images/#mettre-en-pratique
 lab_type: lab
 estimated_time: 30m
 runtime:

@@ -11,7 +11,7 @@ skills:                       # REQUIS, non vide
   - tls
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/registres/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/#quel-entraînement-avant-lépreuve-
 lab_type: lab
 estimated_time: 30m
 runtime:
