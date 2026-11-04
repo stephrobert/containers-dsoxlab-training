@@ -3,21 +3,37 @@
   hosts: lab_target
   become: true
   vars:
-    pinned_image: alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    # Les deux images du lab, épinglées par digest. L'image curl est celle de la
+    # leçon : c'est elle qui permet de CONSTATER que :ro ne protège rien, et le
+    # constat est le premier temps de la mission.
+    image_applicative: alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    image_client: curlimages/curl:8.23.0@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
   tasks:
-    - name: Noter si le socle public etait deja present
-      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Ce
-      # lab TIRAIT le socle sans jamais le retirer : le validateur comptait
-      # « image laisse », et le lab suivant heritait d'un moteur modifie. Le
-      # marqueur dit au cleanup s'il doit rendre l'image, ou la laisser parce
-      # qu'elle etait deja la.
-      ansible.builtin.shell: |
-        set -eu
-        if docker image inspect 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1; then
-          rm -f '/var/tmp/dsoxlab-securite-socket-lecture-seule.socle-a-rendre'
-        else
-          : > '/var/tmp/dsoxlab-securite-socket-lecture-seule.socle-a-rendre'
-        fi
+    - name: Noter, image par image, laquelle ce lab devra rendre
+      # UN LAB NE REND QUE CE QU'IL A POSE, et il rend tout ce qu'il a pose. Le
+      # marqueur dit au cleanup s'il doit retirer l'image, ou la laisser parce
+      # qu'elle etait deja la. Un marqueur PAR IMAGE : sans cela, tirer la
+      # seconde ferait rendre la premiere, qui preexistait peut-etre.
+      # La forme DICTIONNAIRE (`cmd:`) et non la forme libre : une apostrophe
+      # française dans un commentaire casse le chargement du playbook en forme
+      # libre, parce qu'Ansible la passe à `split_args`, qui y voit l'ouverture
+      # d'une chaîne.
+      ansible.builtin.shell:
+        executable: /bin/sh
+        cmd: |
+          set -eu
+          if docker image inspect '{{ item.image }}' >/dev/null 2>&1; then
+            rm -f '{{ item.marqueur }}'
+          else
+            : > '{{ item.marqueur }}'
+          fi
+      loop:
+        - image: "{{ image_applicative }}"
+          marqueur: /var/tmp/dsoxlab-securite-socket-lecture-seule.rendre-alpine
+        - image: "{{ image_client }}"
+          marqueur: /var/tmp/dsoxlab-securite-socket-lecture-seule.rendre-curl
+      loop_control:
+        label: "{{ item.marqueur }}"
       changed_when: false
 
     - name: Install Docker and the small test runtime
@@ -25,45 +41,66 @@
         name: [docker-ce, python3]
         state: present
         update_cache: true
+
     - name: Ensure Docker is available for this host lab
       ansible.builtin.systemd_service:
         name: docker
         state: started
+
     - name: Refuse to overwrite lab-labelled containers or volumes
-      ansible.builtin.shell: |
-        set -eu
-        test -z "$(docker ps -aq --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
-        test -z "$(docker volume ls -q --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
-      args:
+      ansible.builtin.shell:
         executable: /bin/sh
+        cmd: |
+          set -eu
+          test -z "$(docker ps -aq --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
+          test -z "$(docker volume ls -q --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
       changed_when: false
+
     - name: Refuse to overwrite a previous lab work directory
       ansible.builtin.stat:
         path: /opt/dsoxlab-securite-socket-lecture-seule
       register: workdir_state
+
     - name: Require a clean lab work directory
       ansible.builtin.assert:
         that: not workdir_state.stat.exists
         fail_msg: "/opt/dsoxlab-securite-socket-lecture-seule already exists; cleanup must restore the previous run first."
+
     - name: Create the unique lab work directory
       ansible.builtin.file:
         path: /opt/dsoxlab-securite-socket-lecture-seule
         state: directory
         mode: "0750"
-    - name: Check whether the pinned image is already present
-      ansible.builtin.command: docker image inspect "{{ pinned_image }}"
-      register: image_state
+
+    - name: Pull the pinned images only when absent
+      ansible.builtin.shell:
+        executable: /bin/sh
+        cmd: |
+          set -eu
+          docker image inspect '{{ item }}' >/dev/null 2>&1 || docker pull '{{ item }}'
+      loop:
+        - "{{ image_applicative }}"
+        - "{{ image_client }}"
       changed_when: false
-      failed_when: false
-    - name: Pull the pinned disposable image only when absent
-      ansible.builtin.command: docker pull "{{ pinned_image }}"
-      when: image_state.rc != 0
+
+    - name: Create the witness container, which the learner will try to stop
+      # LE TEMOIN SERT AU CONSTAT, pas a la notation. Le premier temps de la
+      # mission est de prouver que :ro n empeche rien, et cela demande une cible
+      # dont l arret se voie.
+      ansible.builtin.command: >-
+        docker run --detach --name dsoxlab-socket-temoin
+        --label dsoxlab.lab=securite-socket-lecture-seule
+        {{ image_applicative }} sleep 1800
+      changed_when: true
+
     - name: Create the starter container with a misleading read-only socket bind
       ansible.builtin.command: >-
         docker run --detach --name dsoxlab-socket-readonly
         --label dsoxlab.lab=securite-socket-lecture-seule
         --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly
-        {{ pinned_image }} sh -c 'while :; do sleep 3600; done'
+        {{ image_applicative }} sh -c 'while :; do sleep 3600; done'
+      changed_when: true
+
     - name: Install this lab's bilingual mission
       ansible.builtin.copy:
         src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"

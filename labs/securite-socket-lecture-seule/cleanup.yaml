@@ -2,37 +2,73 @@
 - name: Clean lab securite-socket-lecture-seule
   hosts: lab_target
   become: true
+  vars:
+    image_applicative: alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    image_client: curlimages/curl:8.23.0@sha256:3fb7e13e5d179a845c97d78204f3f1064d1907037f26a3ebf91710571151fd93
   tasks:
-    - name: Rendre le socle public, et seulement si ce lab l'a tire
-      # Voir la tache jumelle du setup.
-      ansible.builtin.shell: |
-        set -eu
-        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
-        if test -e '/var/tmp/dsoxlab-securite-socket-lecture-seule.socle-a-rendre'; then
-          docker image rm -f 'alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a' >/dev/null 2>&1 || true
-          rm -f '/var/tmp/dsoxlab-securite-socket-lecture-seule.socle-a-rendre'
-        fi
+    - name: Remove only containers carrying this lab's label
+      # EN PREMIER, et avant de rendre les images : une image dont un conteneur
+      # depend ne se retire pas, et le cleanup sortirait en silence sur un
+      # « image is being used ».
+      ansible.builtin.shell:
+        executable: /bin/sh
+        cmd: |
+          set -eu
+          command -v docker >/dev/null 2>&1 || exit 0
+          ids="$(docker ps -aq --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
+          if [ -n "$ids" ]; then docker rm -f $ids; fi
+      changed_when: false
+      failed_when: false
+
+    - name: Remove only volumes carrying this lab's label
+      ansible.builtin.shell:
+        executable: /bin/sh
+        cmd: |
+          set -eu
+          command -v docker >/dev/null 2>&1 || exit 0
+          ids="$(docker volume ls -q --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
+          if [ -n "$ids" ]; then docker volume rm $ids; fi
+      changed_when: false
+      failed_when: false
+
+    - name: Rendre chaque image, et seulement celles que ce lab a tirees
+      # Voir la tache jumelle du setup : un marqueur par image.
+      ansible.builtin.shell:
+        executable: /bin/sh
+        cmd: |
+          set -eu
+          command -v docker >/dev/null 2>&1 || exit 0
+          if test -e '{{ item.marqueur }}'; then
+            docker image rm -f '{{ item.image }}' >/dev/null 2>&1 || true
+            rm -f '{{ item.marqueur }}'
+          fi
+      loop:
+        - image: "{{ image_applicative }}"
+          marqueur: /var/tmp/dsoxlab-securite-socket-lecture-seule.rendre-alpine
+        - image: "{{ image_client }}"
+          marqueur: /var/tmp/dsoxlab-securite-socket-lecture-seule.rendre-curl
+      loop_control:
+        label: "{{ item.marqueur }}"
       changed_when: false
 
-    - name: Remove only containers carrying this lab's label
-      ansible.builtin.shell: |
-        set -eu
-        ids="$(docker ps -aq --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
-        if [ -n "$ids" ]; then docker rm -f $ids; fi
-      args:
-        executable: /bin/sh
-      changed_when: false
-      failed_when: false
-    - name: Remove only volumes carrying this lab's label
-      ansible.builtin.shell: |
-        set -eu
-        ids="$(docker volume ls -q --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
-        if [ -n "$ids" ]; then docker volume rm $ids; fi
-      args:
-        executable: /bin/sh
-      changed_when: false
-      failed_when: false
     - name: Remove the unique work directory created for this lab
       ansible.builtin.file:
         path: /opt/dsoxlab-securite-socket-lecture-seule
         state: absent
+
+    - name: Nommer ce qui survit, plutot que de sortir en succes muet
+      # UN NETTOYAGE QUI NE DIT RIEN N EST PAS UN NETTOYAGE VERIFIE. Si un objet
+      # etiquete reste, le lab suivant en herite, et le validateur accusera le
+      # mauvais lab.
+      ansible.builtin.shell:
+        executable: /bin/sh
+        cmd: |
+          set -eu
+          command -v docker >/dev/null 2>&1 || exit 0
+          restes="$(docker ps -aq --filter label=dsoxlab.lab=securite-socket-lecture-seule)"
+          if [ -n "$restes" ]; then
+            echo "conteneurs survivants :"
+            docker ps -a --filter label=dsoxlab.lab=securite-socket-lecture-seule --format '  {{ '{{' }}.Names{{ '}}' }} ({{ '{{' }}.Status{{ '}}' }})'
+            exit 1
+          fi
+      changed_when: false
