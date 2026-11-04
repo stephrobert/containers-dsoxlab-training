@@ -249,3 +249,21 @@ ancres:
     pourquoi: >-
       section portante du bloc Lab a la source de origin/main
       du site, pas encore servie en production
+  - lab: registry-authentification
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/registres/distribution/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source, pas encore servie.
+      L ancienne ancre #configurer-lauthentification etait servie mais ABSENTE de la
+      source : un lien qui aurait casse a la prochaine publication
+      sans qu aucun controle le dise.
+  - lab: registry-locale-tls
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/registres/distribution/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source, pas encore servie.
+      L ancienne ancre #configurer-tls etait servie mais ABSENTE de la
+      source : un lien qui aurait casse a la prochaine publication
+      sans qu aucun controle le dise.
