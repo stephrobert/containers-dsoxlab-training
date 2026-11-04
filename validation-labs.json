@@ -200,33 +200,36 @@
  "compose-correlation-et-saturation": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 4,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 4
   },
   "avant": {
    "echecs": [
-    "test_bounded_business_load_and_safe_correlation"
+    "test_chaque_requete_metier_est_correlee_de_bout_en_bout",
+    "test_la_saturation_est_attribuee_au_calculateur",
+    "test_les_en_tetes_sensibles_ne_sortent_jamais_des_journaux",
+    "test_les_quotas_cpu_sont_durs_et_differencies"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 4
   },
-  "date": "2026-11-02",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 132,
+  "duree_s": 170,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -241,14 +244,17 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_bounded_business_load_and_safe_correlation"
+    "test_chaque_requete_metier_est_correlee_de_bout_en_bout",
+    "test_la_saturation_est_attribuee_au_calculateur",
+    "test_les_en_tetes_sensibles_ne_sortent_jamais_des_journaux",
+    "test_les_quotas_cpu_sont_durs_et_differencies"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 4
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -2158,33 +2164,35 @@
  "donnees-volume-orphelin": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 3,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 3
   },
   "avant": {
    "echecs": [
-    "test_retained_volume_reconnected_without_data_loss"
+    "test_le_recu_original_est_intact",
+    "test_le_volume_original_est_reconnecte_en_lecture_seule",
+    "test_seul_l_orphelin_jetable_a_ete_retire"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 40,
+  "duree_s": 50,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -2199,14 +2207,16 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_retained_volume_reconnected_without_data_loss"
+    "test_le_recu_original_est_intact",
+    "test_le_volume_original_est_reconnecte_en_lecture_seule",
+    "test_seul_l_orphelin_jetable_a_ete_retire"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -4144,33 +4154,34 @@
  "registry-droits-minimaux": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 2,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 2
   },
   "avant": {
    "echecs": [
-    "test_minimal_acl_controls_push_and_a_fresh_second_host_digest_pull"
+    "test_l_editeur_publie_sur_son_depot",
+    "test_le_lecteur_distinct_tire_le_digest_et_ne_peut_pas_publier"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
-  "date": "2026-11-02",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 71,
+  "duree_s": 98,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/2",
+   "après la solution : 2/2",
+   "après clean et run : 0/2",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -4189,14 +4200,15 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_minimal_acl_controls_push_and_a_fresh_second_host_digest_pull"
+    "test_l_editeur_publie_sur_son_depot",
+    "test_le_lecteur_distinct_tire_le_digest_et_ne_peut_pas_publier"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -4632,33 +4644,34 @@
  "reseau-pare-feu-cible": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 2,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 2
   },
   "avant": {
    "echecs": [
-    "test_targeted_firewall_and_denied_paths"
+    "test_le_flux_metier_passe_et_les_exclusions_tiennent",
+    "test_les_protections_survivent_a_une_recreation"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
-  "date": "2026-11-02",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 96,
+  "duree_s": 109,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/2",
+   "après la solution : 2/2",
+   "après clean et run : 0/2",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -4673,14 +4686,15 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_targeted_firewall_and_denied_paths"
+    "test_le_flux_metier_passe_et_les_exclusions_tiennent",
+    "test_les_protections_survivent_a_une_recreation"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 2
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -4750,33 +4764,35 @@
  "secrets-au-runtime": {
   "apres": {
    "echecs": [],
-   "passed": 1,
+   "passed": 3,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 1
+   "total": 3
   },
   "avant": {
    "echecs": [
-    "test_runtime_secret_is_read_only_used_and_not_leaked"
+    "test_l_application_a_consomme_le_secret",
+    "test_le_secret_est_fourni_par_un_montage_et_ne_fuit_nulle_part",
+    "test_une_ecriture_reelle_est_refusee_sans_modifier_la_source"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 36,
+  "duree_s": 54,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/1",
-   "après la solution : 1/1",
-   "après clean et run : 0/1",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/3",
+   "après la solution : 3/3",
+   "après clean et run : 0/3",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -4791,14 +4807,16 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_runtime_secret_is_read_only_used_and_not_leaked"
+    "test_l_application_a_consomme_le_secret",
+    "test_le_secret_est_fourni_par_un_montage_et_ne_fuit_nulle_part",
+    "test_une_ecriture_reelle_est_refusee_sans_modifier_la_source"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 1
+   "total": 3
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -4806,35 +4824,36 @@
  "securite-apparmor": {
   "apres": {
    "echecs": [],
-   "passed": 3,
+   "passed": 4,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 3
+   "total": 4
   },
   "avant": {
    "echecs": [
     "test_le_noyau_applique_le_profil_en_mode_enforce",
     "test_le_profil_dedie_est_declare_sur_le_conteneur",
-    "test_le_profil_refuse_la_lecture_privee_sans_casser_la_publique"
+    "test_le_profil_refuse_la_lecture_privee_sans_casser_la_publique",
+    "test_le_profil_refuse_par_defaut_et_non_par_liste_noire"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 3
+   "total": 4
   },
   "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 40,
+  "duree_s": 43,
   "ecarts": [],
   "etapes": [
    "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
-   "avant le travail : 0/3",
-   "après la solution : 3/3",
-   "après clean et run : 0/3",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -4851,14 +4870,15 @@
    "echecs": [
     "test_le_noyau_applique_le_profil_en_mode_enforce",
     "test_le_profil_dedie_est_declare_sur_le_conteneur",
-    "test_le_profil_refuse_la_lecture_privee_sans_casser_la_publique"
+    "test_le_profil_refuse_la_lecture_privee_sans_casser_la_publique",
+    "test_le_profil_refuse_par_defaut_et_non_par_liste_noire"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 3
+   "total": 4
   },
   "store": "containerd",
   "verdict": "VALIDE"
@@ -5102,16 +5122,17 @@
  "securite-seccomp": {
   "apres": {
    "echecs": [],
-   "passed": 3,
+   "passed": 4,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 3
+   "total": 4
   },
   "avant": {
    "echecs": [
     "test_le_noyau_filtre_vraiment_pid_1",
+    "test_le_profil_ne_desserre_pas_ce_que_le_defaut_refuse",
     "test_le_syscall_vise_est_refuse_sans_bloquer_les_autres",
     "test_un_filtre_explicite_est_declare_et_aucun_unconfined_ne_subsiste"
    ],
@@ -5120,17 +5141,17 @@
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 3
+   "total": 4
   },
   "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 52,
+  "duree_s": 53,
   "ecarts": [],
   "etapes": [
    "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
-   "avant le travail : 0/3",
-   "après la solution : 3/3",
-   "après clean et run : 0/3",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -5146,6 +5167,7 @@
   "rejeu": {
    "echecs": [
     "test_le_noyau_filtre_vraiment_pid_1",
+    "test_le_profil_ne_desserre_pas_ce_que_le_defaut_refuse",
     "test_le_syscall_vise_est_refuse_sans_bloquer_les_autres",
     "test_un_filtre_explicite_est_declare_et_aucun_unconfined_ne_subsiste"
    ],
@@ -5154,7 +5176,7 @@
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 3
+   "total": 4
   },
   "store": "containerd",
   "verdict": "VALIDE"
