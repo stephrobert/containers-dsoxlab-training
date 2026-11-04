@@ -1,5 +1,5 @@
 ---
-- name: Prepare a dedicated AppArmor profile without changing existing profiles
+- name: Prepare the workspace and a profile template the learner completes
   hosts: lab_target
   become: true
   vars:
@@ -35,15 +35,15 @@
           docker pull "{{ image }}" >/dev/null
         fi
       changed_when: true
-    - name: Install the project and dedicated profile
+    - name: Install the project and the profile template
       ansible.builtin.copy:
         src: assets/
         dest: "{{ work }}/"
         owner: "{{ ansible_user | default('ansible') }}"
         mode: preserve
-    - name: Register only the new lab profile, without writing system policy files
-      ansible.builtin.command: apparmor_parser --skip-cache -a {{ work }}/profile
-      changed_when: true
+    # LE PROFIL N EST PLUS CHARGE ICI. L apprenant l ecrit et le charge
+    # lui-meme : c etait l objectif annonce du lab, et le setup le faisait
+    # a sa place, si bien que personne ne le prouvait.
     - name: Start the unconfined container, not a host process
       ansible.builtin.shell: |
         set -eu

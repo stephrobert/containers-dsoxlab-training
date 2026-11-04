@@ -1,18 +1,19 @@
-"""Un filtre seccomp déclaré, chargé par le noyau, et éprouvé par un syscall.
+"""Un filtre dérivé du défaut, chargé par le noyau, et qui ne desserre rien.
 
-Pourquoi trois contrôles là où il n'y en avait qu'un
----------------------------------------------------
+Pourquoi quatre contrôles là où il n'y en avait qu'un
+----------------------------------------------------
 
 Le fichier précédent portait **un** `def test_` et six assertions enchaînées.
 Il mesurait les trois bonnes choses, et le défaut était la forme : la première
 assertion qui tombait masquait les cinq suivantes, et son message tenait en trois
 mots, « Un service actif requis ».
 
-Les trois contrôles mesurent trois choses indépendantes :
+Les quatre contrôles mesurent quatre choses indépendantes :
 
 1. le filtre **déclaré** au runtime, et l'absence de `unconfined` ;
 2. le mode que le **noyau applique** à PID 1 ;
-3. ce que le syscall visé **obtient réellement**, éprouvé par la sonde.
+3. ce que le syscall visé **obtient réellement**, éprouvé par la sonde ;
+4. ce que le profil **refuse toujours**, et qui prouve qu'il dérive du défaut.
 
 1 et 2 ne sont pas redondants. Une option `seccomp=` acceptée par Docker sans que
 le noyau charge le filtre laisserait tout passer, et `/proc/1/status` le dit par
@@ -25,12 +26,29 @@ filtre attendu, il rend `EPERM`. Les deux erreurs sont différentes, et c'est
 cette différence qui distingue un filtre qui mord d'un filtre absent. Un contrôle
 qui se contenterait de constater un échec accepterait les deux.
 
-CE QUI RESTE À FAIRE SUR CE LAB, et qui dépasse ce découpage : le sujet part d'un
-JSON qui autorise tout et d'un starter en `unconfined`, si bien que l'apprenant
-construit un filtre permissif auquel il ajoute un refus. Partir du profil par
-défaut du moteur et en retirer un syscall de plus serait plus proche du geste
-réel, et permettrait d'exiger qu'un syscall refusé par défaut le reste. C'est une
-refonte du sujet, pas un découpage de contrôles, et elle n'est pas faite ici.
+CE QUE LE QUATRIÈME CONTRÔLE A CHANGÉ DANS LE SUJET. Les trois premiers étaient
+satisfaits par un profil `defaultAction: SCMP_ACT_ALLOW` portant un seul refus,
+que la leçon qualifie de « jamais pour un service » : tout passe, sauf une ligne.
+L'apprenant construisait donc un filtre permissif au lieu de resserrer celui du
+moteur, et aucun contrôle ne pouvait faire la différence.
+
+Le lab part désormais du **profil par défaut du moteur**, fourni et épinglé dans
+`assets/seccomp-defaut.json`, et le quatrième contrôle exige qu'un appel refusé
+par défaut le reste. Les trois états se distinguent alors deux à deux, ce qui a
+été mesuré le 2026-11-04 sur Docker 29.9.2 :
+
+| profil | `getpgid(sentinelle)` | `unshare -U` |
+| --- | --- | --- |
+| défaut intact | ESRCH, pas EPERM | refusé |
+| permissif, un seul refus | EPERM | **passe** |
+| dérivé du défaut | EPERM | refusé |
+
+POURQUOI LE PROFIL EST FOURNI ET NON RELEVÉ SUR LA MACHINE : Docker embarque le
+sien **en dur**, il n'existe aucun fichier à copier sur l'hôte. La copie de
+référence vient de `moby/profiles`, tag `seccomp/v0.3.0`, dépôt dédié vers lequel
+le profil a migré entre moby v28.0.0 et v28.5.2. C'est donc une référence
+épinglée, et non le profil exact du moteur local : le lab mesure ce que le profil
+**fourni** produit, ce que le scénario dit.
 """
 
 import json
@@ -213,5 +231,48 @@ def test_le_syscall_vise_est_refuse_sans_bloquer_les_autres(host):
             "parce que ce PID n'existe pas, et avec le filtre attendu c'est "
             "EPERM. Les deux sont des échecs, et un seul prouve que le filtre a "
             "mordu."
+        ),
+    )
+
+
+def test_le_profil_ne_desserre_pas_ce_que_le_defaut_refuse(host):
+    """La preuve que le profil DÉRIVE du défaut, et ne le remplace pas.
+
+    Les trois contrôles précédents sont tous satisfaits par un profil
+    `defaultAction: SCMP_ACT_ALLOW` portant un unique refus : le filtre est
+    déclaré, le noyau le charge, et le syscall visé rend bien EPERM. Aucun ne
+    voit que TOUT LE RESTE est passé en autorisation.
+
+    `unshare` est le témoin, et il l'est pour une raison nommable. Dans le profil
+    par défaut, il ne figure en autorisation que dans un bloc conditionné à
+    `CAP_SYS_ADMIN` (`includes: caps`). Un conteneur sans cette capacité ne
+    trouve donc `unshare` dans aucune liste permise, et l'appel tombe sur
+    `defaultAction: SCMP_ACT_ERRNO`. Mesuré le 2026-11-04 sur Docker 29.9.2 :
+    refusé sous le défaut et sous un dérivé du défaut, **accepté** sous un profil
+    permissif, et accepté sous `unconfined`.
+
+    Ce contrôle refuse donc deux gestes à la fois : écrire un profil permissif,
+    et ajouter une capacité pour contourner le filtre.
+    """
+    cid, _info = _worker(host)
+
+    essai = host.run("docker exec %s unshare -U true", cid)
+    assert essai.rc != 0, message(
+        en=(
+            "`unshare -U` succeeded inside the worker, so the profile allows "
+            "what the engine default refuses.\n"
+            "A profile whose defaultAction is SCMP_ACT_ALLOW permits everything "
+            "except the lines it denies: it is a blacklist, not a policy, and "
+            "the lesson rules it out for a service. Derive the supplied "
+            "reference profile instead of writing a new one, and add no "
+            "capability."
+        ),
+        fr=(
+            "`unshare -U` a réussi dans le worker, donc le profil autorise ce que "
+            "le défaut du moteur refuse.\n"
+            "Un profil dont le defaultAction vaut SCMP_ACT_ALLOW permet tout sauf "
+            "les lignes qu'il refuse : c'est une liste noire, pas une politique, "
+            "et la leçon l'exclut pour un service. Dérivez le profil de référence "
+            "fourni au lieu d'en écrire un neuf, et n'ajoutez aucune capacité."
         ),
     )

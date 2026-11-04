@@ -200,3 +200,52 @@ ancres:
     pourquoi: >-
       section portante du bloc Lab a la source de origin/main
       du site, pas encore servie en production
+  - lab: docker-rotation-des-journaux
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: donnees-volume-orphelin
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/donnees-orphelines/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: securite-apparmor
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: securite-groupe-docker
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: securite-seccomp
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: securite-socket-lecture-seule
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production
+  - lab: troubleshoot-disque-plein
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/
+    depuis: 2026-11-04
+    pourquoi: >-
+      section portante du bloc Lab a la source de origin/main
+      du site, pas encore servie en production

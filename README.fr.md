@@ -312,22 +312,22 @@ consensus et son état de contrôle à protéger.
 |---|---|---|---|---|---|
 | `docker-configurer-le-demon` | Configurer les journaux du démon pour qu'ils survivent au redémarrage | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/) |
 | `docker-contexte-ssh` | Administrer une seconde VM avec un contexte Docker SSH | c6 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe) |
-| `docker-rotation-des-journaux` | Faire tourner le journal d'un conteneur | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#logging-drivers) |
-| `securite-groupe-docker` | Retirer un accès Docker qui ne se justifie plus | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker) |
-| `securite-socket-lecture-seule` | Retirer l'accès direct au socket Docker | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas) |
+| `docker-rotation-des-journaux` | Faire tourner le journal d'un conteneur | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/#mettre-en-pratique) |
+| `securite-groupe-docker` | Retirer un accès Docker qui ne se justifie plus | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/#mettre-en-pratique) |
+| `securite-socket-lecture-seule` | Retirer l'accès direct au socket Docker | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/#mettre-en-pratique) |
 | `securite-socket-proxy` | Interposer un proxy filtrant devant l'API Docker | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/) |
 | `securite-rootless` | Qualifier un moteur Docker rootless | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#rootless-mode) |
 | `securite-capabilities` | Retirer toutes les capabilities sauf une | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#linux-capabilities) |
 | `securite-no-new-privileges` | Empêcher les gains de privilèges au runtime | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
-| `securite-seccomp` | Mesurer un refus seccomp ciblé | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#profils-seccomp) |
-| `securite-apparmor` | Confiner le service avec AppArmor | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#apparmor-et-selinux) |
+| `securite-seccomp` | Mesurer un refus seccomp ciblé | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique) |
+| `securite-apparmor` | Écrire une politique AppArmor qui refuse par défaut | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique) |
 | `container-systeme-en-lecture-seule` | Utiliser une racine de conteneur en lecture seule | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/racine-en-lecture-seule/#mettre-en-pratique) |
 | `reseau-pare-feu-cible` | Réparer un flux routé sans retirer les protections | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/) |
 | `container-limite-de-processus` | Plafonner le nombre de tâches du conteneur | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/#mettre-en-pratique) |
 | `secrets-au-runtime` | Garder un jeton runtime hors de l'environnement | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes) |
 | `container-memoire-et-oom` | Fixer un plafond mémoire et contenir un OOM | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/#mettre-en-pratique) |
-| `troubleshoot-disque-plein` | Récupérer de l'espace dans un sandbox ENOSPC borné | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#optimisations-production) |
-| `donnees-volume-orphelin` | Récupérer les données orphelines et retirer seulement le jetable | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/) |
+| `troubleshoot-disque-plein` | Récupérer de l'espace dans un sandbox ENOSPC borné | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/#mettre-en-pratique) |
+| `donnees-volume-orphelin` | Récupérer les données orphelines et retirer seulement le jetable | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/donnees-orphelines/#mettre-en-pratique) |
 | `epreuve-reprendre-un-hote-docker` | Reprendre un hôte Docker que personne n'a suivi | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/reprendre-un-hote-docker/) |
 
 ### Industrialiser la chaîne de livraison

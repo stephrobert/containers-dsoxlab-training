@@ -8,7 +8,7 @@ skills:
   - log-rotation
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#logging-drivers
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/#mettre-en-pratique
 lab_type: lab
 estimated_time: 30m
 runtime:
