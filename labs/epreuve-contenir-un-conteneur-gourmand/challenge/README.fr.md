@@ -12,9 +12,14 @@ Ils sont de poids égal, et chacun porte sur un fait vérifiable.
 
 Mémoire, processeur, nombre de processus. Chacune est lue à **deux endroits** :
 l'inspection dit ce que le moteur a **retenu**, le cgroup dit ce que le noyau
-**applique**. Les deux peuvent différer, et le cas est courant : un cgroup se
-pose à la **création** du conteneur, donc une limite changée sur un conteneur en
-cours n'est pas appliquée.
+**applique**. Les deux peuvent différer, et c'est pourquoi les deux sont lues.
+
+Une précision qui change l'ordre de vos gestes : **deux voies** posent ces
+limites, et les deux marchent. Recréer le conteneur, ou `docker update` sur
+celui qui tourne. Mesuré sur cette machine, Docker 29.9.2 : un `docker update
+--memory 64m --memory-swap 64m --cpus 0.5 --pids-limit 50` rend 0, l'inspection
+porte les nouvelles valeurs, le cgroup les applique (`memory.max=67108864`,
+`pids.max=50`, `cpu.max=50000 100000`) et `StartedAt` ne change pas.
 
 ### 2. La pointe est contenue
 

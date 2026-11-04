@@ -9,7 +9,7 @@
 #
 # LA POINTE EST BORNÉE, ET C'EST UNE DÉCISION DE SÛRETÉ. Le programme gourmand
 # alloue par doublement jusqu'à dépasser une cible, puis rend la main : mesuré
-# sur cette VM le 2026-11-02, cela plafonne à 512 Mo et l'hôte garde 1,4 Go
+# sur cette VM le 2026-11-04, la pointe consomme 404 Mo et l'hôte garde sa marge
 # libre. Un `tail /dev/zero`, qui alloue sans fin, aurait fait tuer sshd ou le
 # démon par l'OOM de l'hôte au premier passage sans limite : une épreuve ne doit
 # pas pouvoir emporter la machine qui la mesure.
@@ -31,7 +31,7 @@
     volume: dsoxlab-gourmand-resultats
     conteneur: traitement
     etat: /root/.lab-gourmand-state.json
-    # 200 Mo demandés : le doublement plafonne alors à 256 Mo, ce qui dépasse
+    # 200 Mo demandés : la chaîne finale pèse 268 Mo et la pointe 404 Mo, ce qui dépasse
     # largement la limite que l'apprenant posera, sans inquiéter l'hôte.
     pointe_mo: 200
   tasks:
@@ -150,8 +150,18 @@
           }
 
           # LA POINTE EST BORNÉE : l'allocation double jusqu'à dépasser la
-          # cible, puis rend la main. Mesuré sur cette machine : cela plafonne à
-          # 256 Mo pour une cible de 200, et l'hôte n'est jamais en danger.
+          # cible, puis rend la main.
+          #
+          # DEUX CHIFFRES, ET ILS NE SONT PAS LE MÊME. Mesuré le 2026-11-04 sous
+          # un plafond large, pour une cible de 200 Mo : la chaîne finale pèse
+          # 268 435 456 octets, soit 2^28, et le cgroup voit une pointe de
+          # 404 152 320 octets. Le rapport vaut 1,51, parce que `s = s s` fait
+          # détenir l'ancienne chaîne et la nouvelle au même instant.
+          #
+          # Ce fichier portait les deux valeurs fausses, et elles se
+          # contredisaient : « 512 Mo » ici et « 256 Mo » plus bas. L'hôte garde
+          # sa marge dans les deux cas, mais un chiffre qu'on recopie sans le
+          # mesurer finit par mentir dans les deux sens.
           # L'allocation se fait dans un ENFANT, pour que le cgroup puisse le
           # tuer sans emporter le service.
           pointe() {

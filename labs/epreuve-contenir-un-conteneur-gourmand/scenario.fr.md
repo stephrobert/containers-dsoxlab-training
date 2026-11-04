@@ -34,9 +34,13 @@ L'énoncé complet est aussi sur la machine, dans `/opt/lab-gourmand/MISSION.md`
 
 ## Une précision sur la pointe
 
-Elle est **bornée** : l'allocation plafonne à 256 Mo, et elle ne met pas la
-machine en danger même sans limite. C'est délibéré : une épreuve ne doit pas
-pouvoir emporter la machine qui la mesure.
+Elle est **bornée**, et deux chiffres la décrivent sans se confondre. La chaîne
+allouée pèse **268 Mo** ; la mémoire que le cgroup voit consommer monte à
+**404 Mo**, parce que le doublement fait détenir l'ancienne chaîne et la nouvelle
+au même instant. Mesuré le 2026-11-04.
+
+Dans les deux cas la machine garde sa marge, et c'est délibéré : une épreuve ne
+doit pas pouvoir emporter la machine qui la mesure.
 
 ## Comment vous êtes noté
 
@@ -46,7 +50,8 @@ appliquée par le noyau, et qu'elle contienne la pointe sans tuer le service.
 
 Le seuil est de **75 sur 100**. Une exigence ne se compense par aucun total :
 **perdre les résultats antérieurs fait échouer l'épreuve**, même avec tout le
-reste en place. C'est le piège, et il est entier : poser des limites exige de
-**recréer** le conteneur, et c'est là qu'on oublie un volume.
+reste en place. C'est le piège, et il reste entier sans fausse contrainte :
+recréer le conteneur est **une** voie de pose des limites, et c'est celle où l'on
+oublie un volume. L'autre voie existe, et la trouver fait partie du travail.
 
 Quatre indices sont disponibles, et **ils coûtent des points** : `dsoxlab hint`.

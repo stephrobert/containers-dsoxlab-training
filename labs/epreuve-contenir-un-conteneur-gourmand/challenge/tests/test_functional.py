@@ -9,7 +9,7 @@ conteneur, et c'est là qu'on perd un volume qu'on a oublié de remonter. Aucun
 total ne compense une donnée perdue.
 
 CE QUE LA MESURE A ÉTABLI, et qui fonde le contrôle de la pointe. Sur cette
-machine, le 2026-11-02, avec une pointe bornée à 256 Mo :
+machine, le 2026-11-04, avec une chaîne de 268 Mo dont la pointe atteint 404 Mo :
 
     sans limite    l'allocation réussit, 536 870 912 octets, l'hôte tient ;
     avec 128 Mo    le cgroup tue l'ENFANT gourmand (`oom_kill 1`), le PID 1
@@ -103,13 +103,14 @@ def test_les_trois_limites_sont_posees_et_appliquees(host) -> None:
     assert memoire > 0, message(
         en="the container carries no memory limit the engine retained.\n"
            "  HostConfig.Memory: 0\n"
-           "A limit can only be set when a container is created: changing it on "
-           "a running one leaves this value at zero.",
+           "Two routes set one: recreating the container, or `docker update` on "
+           "the running one. Both work; recreating is where a volume gets lost.",
         fr="le conteneur ne porte aucune limite mémoire que le moteur ait "
            "retenue.\n"
            "  HostConfig.Memory : 0\n"
-           "Une limite ne se pose qu'à la création d'un conteneur : la changer "
-           "sur un conteneur en cours laisse cette valeur à zéro.",
+           "Deux voies en posent une : recréer le conteneur, ou `docker update` "
+           "sur celui qui tourne. Les deux marchent ; c'est en recréant qu'un "
+           "volume se perd.",
     )
     processus = int(hote.get("PidsLimit") or 0)
     assert processus > 0, message(
@@ -172,7 +173,7 @@ def test_la_pointe_est_contenue_par_la_limite(host, releve) -> None:
                       limite, ce qui est la définition même de « contenu » ;
       `memory.events` le compteur `max`, qui dit combien de fois la limite a été
                       atteinte, et `oom_kill`, qui dit que le noyau a tué dans
-                      ce cgroup. Un `max` à zéro après une pointe de 256 Mo
+                      ce cgroup. Un `max` à zéro après une pointe de 404 Mo
                       signifierait que la pointe n'a pas eu lieu.
 
     ET L'HÔTE N'A RIEN PERDU : le contrôle vérifie qu'aucun processus de l'hôte
@@ -192,7 +193,6 @@ def test_la_pointe_est_contenue_par_la_limite(host, releve) -> None:
     # Le traitement évalue le déclencheur après chaque requête servie.
     _interroge(host)
 
-    pic = 0
     evenements = ""
     for _ in range(40):
         time.sleep(1)
@@ -201,19 +201,38 @@ def test_la_pointe_est_contenue_par_la_limite(host, releve) -> None:
             re.search(r"\bmax (\d+)", evenements).group(1)
         ) > 0:
             break
-    pic = _cgroup_nombre(host, "memory.peak")
     limite = _cgroup_nombre(host, "memory.max")
 
     assert limite > 0, message(
         en="there is no memory limit to contain the pointe with.",
         fr="il n'y a aucune limite mémoire pour contenir la pointe.",
     )
-    assert pic <= limite, message(
-        en=f"the container went past its own memory limit during the pointe.\n"
-           f"  peak : {pic}\n  limit: {limite}",
-        fr=f"le conteneur a dépassé sa propre limite mémoire pendant la "
-           f"pointe.\n  pic : {pic}\n  limite : {limite}",
-    )
+    # IL N Y A PLUS D ASSERTION `pic <= limite` ICI, ET C EST MESURÉ.
+    #
+    # Elle comparait `memory.peak` à `memory.max`. Or `memory.peak` retient le
+    # maximum depuis la CRÉATION du cgroup, et il n est pas réinitialisable
+    # depuis le conteneur : « Read-only file system ». Relevé sur docker.lab,
+    # Docker 29.9.2 :
+    #
+    #     conteneur sans limite, pointe de 128 Mio   memory.peak = 202567680
+    #     puis docker update --memory 64m            memory.peak = 202567680
+    #     la limite appliquée                        memory.max  =  67108864
+    #
+    # Un candidat qui OBSERVE la pointe avant d agir, ce qui est le geste de
+    # diagnostic que l épreuve veut encourager, puis pose la limite par
+    # `docker update`, échouait donc avec le diagnostic « a dépassé sa propre
+    # limite ». Il ne l avait pas dépassée : il l avait posée après.
+    #
+    # Cette assertion ne pouvait refuser QUE dans ce cas. Un cgroup n autorise
+    # pas le dépassement de sa propre limite, donc `pic > limite` ne signifie
+    # jamais autre chose qu une pointe antérieure à la pose. Elle ne refusait
+    # que les candidats qui avaient bien travaillé.
+    #
+    # ET ELLE N APPORTAIT RIEN : l assertion suivante lit `memory.events`, dont
+    # le compteur `max` dit combien de fois la limite a été ATTEINTE pendant la
+    # pointe que ce contrôle déclenche lui-même. C est un différentiel, donc il
+    # est insensible à l histoire du cgroup, et c est la seule mesure qui prouve
+    # que la limite mord.
     atteintes = re.search(r"\bmax (\d+)", evenements)
     assert atteintes and int(atteintes.group(1)) > 0, message(
         en=f"the limit was never reached, so the pointe did not take place.\n"
