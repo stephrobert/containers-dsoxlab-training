@@ -1,2 +1,2 @@
 title: "Mesurer un refus seccomp ciblé"
-description: "Attacher un filtre local au conteneur refusant getpgid(2147483647) avec EPERM tout en autorisant les appels ordinaires getpgid et getpid."
+description: "Dériver le profil par défaut du moteur pour refuser getpgid(2147483647) avec EPERM, autoriser encore les appels ordinaires getpgid et getpid, et refuser tout ce que le défaut refusait déjà."

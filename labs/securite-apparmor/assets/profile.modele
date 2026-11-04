@@ -1,0 +1,37 @@
+#include <tunables/global>
+
+# MODELE A COMPLETER, puis a charger vous-meme.
+#
+# Le nom du profil est impose : c est lui que le service declarera dans son
+# `security_opt`, et c est lui que le nettoyage du lab retire. Ne le changez pas.
+#
+# LA METHODE, qui est celle de tout profil AppArmor ecrit en vrai :
+#
+#   1. chargez ce profil en mode complain, en ajoutant `complain` aux flags :
+#        profile dsoxlab-securite-apparmor flags=(attach_disconnected,mediate_deleted,complain)
+#      puis `apparmor_parser --skip-cache -r profile`
+#   2. attachez-le au service et demarrez-le. En complain, rien n est refuse :
+#      tout ce qui n est pas permis est PERMIS ET JOURNALISE ;
+#   3. relevez les refus que le noyau a journalises :
+#        dmesg | grep 'apparmor="DENIED"'
+#      chaque ligne nomme un chemin (`name=`) et un mode d acces (`requested_mask=`) ;
+#   4. ajoutez la regle correspondante ici, une par une, jusqu a ce que le
+#      service tourne sans rien journaliser ;
+#   5. retirez `complain` des flags et rechargez : la politique s applique.
+#
+# CE QU IL NE FAUT PAS FAIRE, et que le lab verifie :
+#
+#   - pas de `file,` global, ni `capability,` ni `network,` nus : ils autorisent
+#     TOUT, et le profil devient une liste noire au lieu d une politique ;
+#   - pas de regle `deny` sur la lecture du fichier prive. Une regle `deny`
+#     explicite s applique MEME EN COMPLAIN (mesure du 2026-11-04 sur Docker
+#     29.9.2 et Debian 13), donc elle ne prouverait rien du mode applique. Le
+#     refus doit venir de l OMISSION : accordez l ecriture dont le service a
+#     besoin, et ne nommez jamais sa lecture.
+
+profile dsoxlab-securite-apparmor flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # A completer : ce dont le service a besoin, nomme explicitement.
+
+}

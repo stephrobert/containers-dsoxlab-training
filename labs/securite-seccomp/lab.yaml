@@ -1,14 +1,14 @@
 id: securite-seccomp
 title: "Measure a targeted seccomp syscall denial"
 level: c6
-description: "Attach a container-only filter that denies getpgid(2147483647) with EPERM while allowing ordinary getpgid and getpid calls."
+description: "Derive the engine default profile so it denies getpgid(2147483647) with EPERM, still allows ordinary getpgid and getpid calls, and refuses everything the default already refused."
 skills:
   - docker
   - seccomp
   - runtime-security
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#profils-seccomp
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique
 lab_type: lab
 estimated_time: 30m
 runtime:

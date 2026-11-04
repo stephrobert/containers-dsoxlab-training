@@ -1,28 +1,48 @@
-"""Un profil AppArmor dédié, en mode enforce, et qui refuse le bon chemin.
+"""Un profil écrit par l'apprenant, qui refuse par omission et non par liste noire.
 
-Pourquoi trois contrôles là où il n'y en avait qu'un
----------------------------------------------------
+Pourquoi quatre contrôles là où il n'y en avait qu'un
+----------------------------------------------------
 
-Le fichier précédent portait **un** `def test_` et six assertions enchaînées. Il
-mesurait les trois bonnes choses, et le défaut était la forme : la première
-assertion qui tombait masquait les cinq suivantes, et son message tenait en trois
+Le fichier précédent portait **un** `def test_` et six assertions enchaînées. La
+première qui tombait masquait les cinq suivantes, et son message tenait en trois
 mots, « Un service actif requis ».
 
-Les trois contrôles mesurent trois choses indépendantes :
+Les quatre contrôles mesurent quatre choses indépendantes :
 
-1. le profil **déclaré** sur le conteneur ;
+1. le profil **déclaré** sur le conteneur, sous un nom dédié ;
 2. le mode que le **noyau applique** à PID 1, qui doit être `enforce` ;
-3. ce que le profil **refuse et laisse passer**, éprouvé par deux lectures.
+3. ce que le profil **refuse et laisse passer** sur les deux fichiers du lab ;
+4. qu'il **refuse par défaut**, et n'est donc pas une liste noire d'une ligne.
 
-1 et 2 ne sont pas redondants, et la différence est le cœur du sujet : un profil
-chargé en `complain` est attaché, visible, et n'empêche rien. Il journalise.
-`/proc/1/attr/current` dit lequel des deux modes s'applique, et c'est le seul
-endroit qui le dise.
+CE QUE JE DISAIS ICI, ET QUI ÉTAIT FAUX. Trois endroits de ce fichier
+affirmaient qu'un profil en `complain` « ne refuse rien ». C'est inexact pour une
+règle `deny` explicite, et le profil du lab en portait une. Signalé par la
+session du site, remesuré ici le 2026-11-04 sur Docker 29.9.2 et Debian 13 :
 
-Le troisième ne lit aucune configuration, il essaie deux lectures. Les deux
-ensemble font la mesure : refuser le fichier privé prouve que le profil mord,
-laisser passer le fichier public prouve qu'il ne mord pas trop. Un profil qui
-refuserait tout satisferait la première moitié et casserait le service.
+| le profil refuse par | en `complain` | en `enforce` |
+| --- | --- | --- |
+| `deny /lab/private.txt r,` | **refusé** | refusé |
+| omission (`w` accordé, `r` jamais nommé) | **passe** | refusé |
+
+**Une règle `deny` explicite s'applique dans les deux modes. Une permission non
+nommée ne refuse qu'en `enforce`**, puisqu'en `complain` tout ce qui n'est pas
+permis est permis-et-journalisé.
+
+LA CONSÉQUENCE DÉPASSAIT LA CORRECTION D'UN MESSAGE. L'ancien profil portait
+`file,` `network,` `capability,` `signal,` : tout permis, sauf une ligne `deny`.
+Il n'existait donc **aucun geste** qui distingue `enforce` de `complain` sur ce
+profil, hors journalisation. Le lab exigeait `enforce` sans que l'apprenant
+puisse en constater le moindre effet, et le troisième contrôle prétendait
+éprouver « ce que le profil fait réellement » alors qu'il aurait rendu le même
+verdict sur une politique qui ne confine rien.
+
+D'OÙ LA REFONTE. L'apprenant **écrit et charge** le profil, que le setup posait à
+sa place ; le refus vient de l'**omission** de la permission de lecture, ce qui
+rend `enforce` observable ; et le quatrième contrôle vérifie qu'un chemin que le
+profil ne nomme pas est refusé, ce qui distingue une politique d'une liste noire.
+C'est le pendant exact du contrôle `unshare -U` de `securite-seccomp` : les deux
+labs enseignent qu'une politique obligatoire autorise explicitement et refuse par
+défaut.
 
 LE PIÈGE QUE LE TROISIÈME CONTRÔLE DÉSAMORCE. Refuser une lecture est aussi ce
 qu'un `chmod` obtient, sans AppArmor et sans rien comprendre au sujet. Le mode du
@@ -106,9 +126,12 @@ def test_le_profil_dedie_est_declare_sur_le_conteneur(host):
 def test_le_noyau_applique_le_profil_en_mode_enforce(host):
     """Ce que le noyau applique, qui est la seule vérité.
 
-    Un profil chargé en `complain` est attaché, visible dans l'inspection, et
-    n'empêche rien : il journalise. C'est `/proc/1/attr/current` qui dit lequel
-    des deux modes s'applique.
+    Un profil chargé en `complain` est attaché et visible dans l'inspection,
+    mais il n'applique **que ses règles `deny` explicites** : tout ce qu'il ne
+    nomme pas est permis-et-journalisé. Ce n'est donc pas une politique, c'est
+    une liste noire, et le profil attendu ici refuse par omission. C'est
+    `/proc/1/attr/current` qui dit lequel des deux modes s'applique, et c'est le
+    seul endroit qui le dise.
     """
     cid, _info = _worker(host)
 
@@ -122,16 +145,19 @@ def test_le_noyau_applique_le_profil_en_mode_enforce(host):
         en=(
             f"PID 1 reports « {actif or '(nothing)'} » instead of "
             f"« {PROFIL} (enforce) ».\n"
-            "A profile in `complain` mode is attached and refuses nothing: it "
-            "only writes to the log. Loading it is not enough, it must be "
-            "enforced."
+            "In `complain` mode, only explicit `deny` rules apply: everything "
+            "the profile does not name is permitted and merely logged. This "
+            "profile refuses by omission, so in `complain` it refuses nothing "
+            "at all. Loading it is not enough, it must be enforced."
         ),
         fr=(
             f"PID 1 annonce « {actif or '(rien)'} » au lieu de "
             f"« {PROFIL} (enforce) ».\n"
-            "Un profil en mode `complain` est attaché et ne refuse rien : il "
-            "écrit seulement dans le journal. Le charger ne suffit pas, il faut "
-            "qu'il soit appliqué."
+            "En mode `complain`, seules les règles `deny` explicites "
+            "s'appliquent : tout ce que le profil ne nomme pas est permis et "
+            "simplement journalisé. Ce profil refuse par omission, donc en "
+            "`complain` il ne refuse rien du tout. Le charger ne suffit pas, il "
+            "faut qu'il soit appliqué."
         ),
     )
 
@@ -203,5 +229,65 @@ def test_le_profil_refuse_la_lecture_privee_sans_casser_la_publique(host):
             f"  {prive.stderr.strip()[:200]}\n"
             "Un fichier absent échouerait de la même façon sans rien prouver du "
             "profil."
+        ),
+    )
+
+
+def test_le_profil_refuse_par_defaut_et_non_par_liste_noire(host):
+    """La preuve que le profil est une POLITIQUE, et non une liste noire.
+
+    Les trois contrôles précédents sont tous satisfaits par un profil qui porte
+    `file,` `network,` `capability,` `signal,` et une seule règle
+    `deny /lab/private.txt r,` : le nom est dédié, le mode est `enforce`, le
+    privé est refusé et le public passe. Aucun ne voit que **tout le reste** est
+    autorisé.
+
+    `/etc/shadow` est le témoin. Ce service écrit et lit deux fichiers de
+    `/lab` ; il n'a aucune raison de lire la base des mots de passe. Un profil
+    qui l'autorise n'a pas été resserré, il a été percé d'une exception.
+
+    MESURÉ le 2026-11-04 sur Docker 29.9.2 et Debian 13, les deux profils côte à
+    côte, en `enforce` tous les deux : le resserré refuse `/etc/shadow`,
+    `/etc/alpine-release`, l'écriture dans `/tmp` et jusqu'au listage de `/` ; le
+    permissif les permet tous, tout en rendant le même verdict que lui sur les
+    deux fichiers du lab.
+    """
+    cid, _info = _worker(host)
+
+    essai = host.run("docker exec %s cat /etc/shadow", cid)
+    assert essai.rc != 0, message(
+        en=(
+            "The worker can read /etc/shadow, which a service handling two "
+            "files in /lab has no reason to do.\n"
+            "A mandatory policy names what the service needs and refuses the "
+            "rest by default. A `file,` rule, or a `capability,` or `network,` "
+            "rule with no argument, allows everything and turns the profile "
+            "into a one-line blacklist. List the paths the service actually "
+            "uses instead."
+        ),
+        fr=(
+            "Le worker peut lire /etc/shadow, ce qu'un service qui manipule deux "
+            "fichiers de /lab n'a aucune raison de faire.\n"
+            "Une politique obligatoire nomme ce dont le service a besoin et "
+            "refuse le reste par défaut. Une règle `file,`, ou une règle "
+            "`capability,` ou `network,` sans argument, autorise tout et fait du "
+            "profil une liste noire d'une ligne. Énumérez plutôt les chemins que "
+            "le service emploie vraiment."
+        ),
+    )
+    trace = (essai.stderr + essai.stdout).lower()
+    assert "permission denied" in trace, message(
+        en=(
+            f"Reading /etc/shadow failed, but not on a permission refusal: "
+            f"{(essai.stderr or essai.stdout).strip()[:200]}\n"
+            "A missing file fails the same way while proving nothing about the "
+            "policy. Not your fault if the image changed: report it."
+        ),
+        fr=(
+            f"La lecture de /etc/shadow a échoué, mais pas sur un refus de "
+            f"permission : {(essai.stderr or essai.stdout).strip()[:200]}\n"
+            "Un fichier absent échoue de la même façon sans rien prouver de la "
+            "politique. Ce n'est pas votre faute si l'image a changé : "
+            "signalez-le."
         ),
     )

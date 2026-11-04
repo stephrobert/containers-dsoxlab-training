@@ -1,14 +1,14 @@
 id: securite-apparmor
-title: "Confine the service with AppArmor"
+title: "Write an AppArmor policy that refuses by default"
 level: c6
-description: "Attach a uniquely named enforcing profile that denies one file read without changing any preexisting policy."
+description: "Write, load and attach a uniquely named enforcing profile that refuses a read by omission rather than by a deny rule."
 skills:
   - docker
   - apparmor
   - runtime-security
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#apparmor-et-selinux
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique
 lab_type: lab
 estimated_time: 30m
 runtime:
