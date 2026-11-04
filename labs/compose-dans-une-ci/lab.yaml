@@ -4,7 +4,7 @@ level: c6
 description: "Build real commits, publish only accepted image archives with provenance, refuse uncommitted source and always clean the isolated stack."
 skills: [compose, ci, integration-testing, lifecycle, provenance, git]
 distros: [debian13]
-doc_url: https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/cicd-images/#mettre-en-pratique
 lab_type: challenge
 estimated_time: 45m
 runtime:

@@ -11,7 +11,7 @@ skills:                       # REQUIS, non vide
   - air-gap
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/outils/skopeo/#environnements-air-gap-déconnectés   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epingler-et-livrer-hors-ligne/#mettre-en-pratique   # REQUIS, http(s)
 lab_type: challenge
 estimated_time: 30m
 runtime:
