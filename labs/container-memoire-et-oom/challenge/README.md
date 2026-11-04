@@ -12,10 +12,23 @@ Four independent checks measure four different things.
 
 `Memory` and `MemorySwap` both equal 33554432, that is 32 MiB.
 
-Their equality is what forbids swap, and the distinction is not cosmetic: a
-`--memory` set on its own leaves `memory.swap.max` open, and the allocation then
-spills into swap instead of being killed. The ceiling looks set and does not
-bite.
+Their equality is what forbids swap, and the distinction is not cosmetic.
+Measured on the lab host, in both views:
+
+| Form | declared `MemorySwap` | `memory.swap.max` |
+| --- | --- | --- |
+| `--memory 32m` alone | 67108864, that is **twice** | 33554432 |
+| `--memory-swap` equal | 33554432 | **0** |
+| `--memory-swap -1` | -1 | `max` |
+
+So a `--memory` set on its own does not leave swap "open": Docker doubles the
+value, and the cgroup grants a swap budget **equal to memory**. Unlimited only
+comes with `-1`. Only their equality sets `memory.swap.max` to 0.
+
+Worth noting, because it changes what can be concluded: this lab's host has **no
+swap at all**. An allocation therefore spills nowhere here, whatever the value,
+and it is the deployment contract that requires the equality, not a spill one
+could observe on this machine.
 
 This check requires nothing about `OomKillDisable`, and that is measured: on a
 cgroup v2 host the kernel cannot disable the OOM killer. Docker discards the
@@ -47,9 +60,13 @@ the cgroup's.
 
 Its size is **measured**, and that is less trivial than it looks: it must be
 killed under 32 MiB *and survive* under the starting 96 MiB, or else it declares
-the mission accomplished before any work. The probe doubles a string on every
-round, so on the last round it holds both the old and the new one: its peak
-usage is twice its stated size, which no arithmetic on the result reveals.
+the mission accomplished before any work.
+
+The probe doubles a string on every round, so on the last round it holds both
+the old and the new one: its peak usage therefore exceeds its stated size. By
+how much is a matter of measurement. Read from the cgroup's `memory.peak`, the
+ratio of peak to size tends towards **1.53**, not towards 2 as a quick reading
+of the doubling suggests. A 32 MiB probe peaks at 49 MiB: above 32, under 96.
 
 ## 4. The service survives the OOM and keeps its state
 

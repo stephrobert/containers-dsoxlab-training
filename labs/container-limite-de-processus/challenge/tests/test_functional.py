@@ -108,7 +108,36 @@ def _refus_de_tache(host, cid: str) -> int:
 
 
 def _rafale(host, cid: str):
-    """Lance la rafale bornée, puis laisse les enfants se terminer."""
+    """Lance la rafale bornée, puis laisse les enfants se terminer.
+
+    LE `wait` N EST PAS DÉCORATIF, ET LA LECTURE QUI SUIT EN DÉPEND. Un
+    `docker exec` sur un cgroup de tâches saturé échoue lui-même, avec un rc 128
+    et « unable to spawn stage-1: Resource temporarily unavailable » : le
+    lancement du processus d'exec a besoin d'une tâche libre. Or les deux
+    contrôles qui appellent cette fonction lisent ensuite `pids.events` PAR un
+    `docker exec`. Si le cgroup était encore plein, la lecture échouerait et le
+    message accuserait l'apprenant d'un défaut qui n'est pas le sien.
+
+    Mesuré, trois formes comparées, lecture réessayée jusqu'à 20 secondes :
+
+        rafale détachée, lecture immédiate     rc=128, ne se rétablit PAS en 20 s
+        rafale synchrone, lecture immédiate    pids.current=3, rc=0
+        rafale synchrone puis sleep 3          pids.current=3, rc=0
+
+    La forme synchrone est donc ce qui protège : le `wait` du shell garantit que
+    tous les enfants sont terminés quand l'exec rend la main, et `pids.current`
+    retombe à sa valeur de repos. Le `sleep 3` est une ceinture, mesurée inutile
+    sous cette forme et sans coût.
+
+    La première forme, elle, ne se résorbe pas : sans `wait`, le shell n'est
+    jamais moissonné, et chaque tentative de lecture ajoute au cgroup un
+    processus d'exec qui échoue. C'est un emballement, et c'est la raison pour
+    laquelle cette fonction n'utilise pas `-d`.
+
+    Le défaut a été signalé par la session du site sur sa propre VM, puis éprouvé
+    ici : un signalement qui vise juste peut ne pas atteindre son objet, et c'est
+    la mesure qui le dit, pas le raisonnement.
+    """
     lancee = host.run("timeout 8 docker exec %s sh -c %s", cid, RAFALE)
     host.run("sleep 3")
     return lancee
@@ -263,20 +292,33 @@ def test_le_service_survit_a_la_saturation_et_garde_son_etat(host):
         # qui refuse avant. Un diagnostic qu'aucun travail ne peut déclencher est
         # du décor, c'est-à-dire le défaut même qu'on corrige ici.
         #
-        # LE CODE DE SORTIE EST DONC DANS LE MESSAGE, ce qui donne le diagnostic
-        # sans prétendre le trier : un 137 dit un OOM, et le cahier des charges
-        # le rappelle.
+        # LE CODE DE SORTIE EST DONC DANS LE MESSAGE, mais il ne faut pas le
+        # faire dire plus qu'il ne dit. Une première version de ce commentaire
+        # écrivait « un 137 dit un OOM ». C'est faux, et mesuré : 137 vaut
+        # 128 + 9, donc un SIGKILL, quelle qu'en soit l'origine.
+        #
+        #     docker kill                                  Exit=137  OOMKilled=false
+        #     docker stop sur un PID 1 qui ignore SIGTERM   Exit=137  OOMKilled=false
+        #     un vrai OOM du cgroup                        Exit=137  OOMKilled=true
+        #
+        # Les trois causes rendent le même code. Seul `OOMKilled` les sépare, et
+        # la session du site rapporte même un OOM sorti en 137 avec
+        # `OOMKilled=false` une fois sur cinq, que je n'ai pas reproduit ici :
+        # son absence n'exclut donc pas tout à fait l'OOM. Le message nomme le
+        # signal, et laisse `docker inspect` dire le reste.
         assert etat["Running"], message(
             en=(
                 f"The worker is down after the burst (exit code {etat['ExitCode']}). "
-                "The cap must bound the incident, not propagate it. An exit code of "
-                "137 means the kernel killed it for memory, not for tasks."
+                "The cap must bound the incident, not propagate it. A 137 only "
+                "says the process received SIGKILL, whatever sent it: check "
+                "`docker inspect -f '{{.State.OOMKilled}}'` to tell an OOM apart."
             ),
             fr=(
                 f"Le worker est à l'arrêt après la rafale (code de sortie "
                 f"{etat['ExitCode']}). Le plafond doit borner l'incident, non le "
-                "propager. Un code 137 signifie que le noyau l'a tué pour la "
-                "mémoire, et non pour les tâches."
+                "propager. Un 137 dit seulement que le processus a reçu SIGKILL, "
+                "quelle qu'en soit l'origine : `docker inspect -f "
+                "'{{.State.OOMKilled}}'` dit si c'était l'OOM."
             ),
         )
         assert etat["StartedAt"] == info["State"]["StartedAt"], message(

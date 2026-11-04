@@ -51,9 +51,20 @@ Un plafond qui emporte le PID 1 à chaque pic ne protège pas le service, il le
 remplace par un redémarrage. Et survivre comme processus ne suffit pas : un
 service qui repart de zéro a perdu ce qu'il tenait.
 
-Si le worker est à l'arrêt, le message donne son **code de sortie**, qui porte
-le diagnostic : un 137 signifie que le noyau l'a tué pour la mémoire, et non
-pour les tâches.
+Si le worker est à l'arrêt, le message donne son **code de sortie**, et il ne
+faut pas le faire dire plus qu'il ne dit. Un 137 vaut 128 + 9, donc un SIGKILL,
+quelle qu'en soit l'origine. Mesuré sur l'hôte du lab :
+
+| Cause | `ExitCode` | `OOMKilled` |
+| --- | --- | --- |
+| `docker kill` | 137 | false |
+| `docker stop` sur un PID 1 qui ignore SIGTERM | 137 | false |
+| un vrai OOM du cgroup | 137 | **true** |
+
+Les trois causes rendent le même code, et seul `OOMKilled` les sépare :
+`docker inspect -f '{{.State.OOMKilled}}'`. À noter que son absence n'exclut pas
+tout à fait l'OOM, un cas d'OOM sorti en 137 avec `OOMKilled=false` ayant été
+rapporté sur une autre machine sans que la cause en soit établie.
 
 Le contrôle ne trie pas lui-même les deux causes, et c'est mesuré plutôt que
 choisi. Un tri de ce genre serait du décor ici : sur cinq paliers de mémoire,

@@ -50,8 +50,20 @@ A cap that takes PID 1 down at every spike does not protect the service, it
 replaces it with a restart. And surviving as a process is not enough: a service
 that starts over has lost what it held.
 
-If the worker is down, the message gives its **exit code**, which carries the
-diagnosis: a 137 means the kernel killed it for memory, not for tasks.
+If the worker is down, the message gives its **exit code**, and that code must
+not be made to say more than it does. A 137 is 128 + 9, that is a SIGKILL,
+whatever sent it. Measured on the lab host:
+
+| Cause | `ExitCode` | `OOMKilled` |
+| --- | --- | --- |
+| `docker kill` | 137 | false |
+| `docker stop` on a PID 1 that ignores SIGTERM | 137 | false |
+| a real cgroup OOM | 137 | **true** |
+
+All three causes yield the same code, and only `OOMKilled` tells them apart:
+`docker inspect -f '{{.State.OOMKilled}}'`. Note that its absence does not
+entirely rule out an OOM: a case of an OOM exiting 137 with `OOMKilled=false`
+has been reported on another machine, with no cause established.
 
 The check does not sort the two causes itself, and that is measured rather than
 chosen. Such sorting would be decoration here: across five memory levels, from

@@ -13,9 +13,22 @@ Quatre contrôles indépendants mesurent quatre choses différentes.
 `Memory` et `MemorySwap` valent tous deux 33554432, soit 32 Mio.
 
 C'est l'égalité des deux qui interdit le swap, et la distinction n'est pas
-cosmétique : un `--memory` posé seul laisse `memory.swap.max` ouvert, et
-l'allocation déborde alors en swap au lieu d'être tuée. Le plafond paraît posé
-et ne mord pas.
+cosmétique. Mesuré sur l'hôte du lab, dans les deux vues :
+
+| Forme | `MemorySwap` déclaré | `memory.swap.max` |
+| --- | --- | --- |
+| `--memory 32m` seul | 67108864, soit le **double** | 33554432 |
+| `--memory-swap` égal | 33554432 | **0** |
+| `--memory-swap -1` | -1 | `max` |
+
+Un `--memory` posé seul ne laisse donc pas le swap « ouvert » : Docker double la
+valeur, et le cgroup accorde un budget de swap **égal à la mémoire**. L'illimité
+n'arrive qu'avec `-1`. Seule l'égalité des deux met `memory.swap.max` à 0.
+
+À noter, parce que cela change ce qu'on peut en conclure : l'hôte de ce lab n'a
+**aucun swap**. Une allocation n'y déborde donc nulle part, quelle que soit la
+valeur, et c'est le contrat de déploiement qui exige l'égalité, non un
+débordement qu'on pourrait observer ici.
 
 Ce contrôle n'exige rien sur `OomKillDisable`, et c'est mesuré : sur un hôte
 en cgroup v2, le noyau ne sait pas désactiver l'OOM killer. Docker écarte
@@ -47,10 +60,14 @@ cgroup.
 
 Sa taille est **mesurée**, et c'est moins trivial qu'il n'y paraît : elle doit
 être tuée sous 32 Mio *et survivre* sous les 96 Mio du départ, sinon elle
-déclare la mission accomplie avant tout travail. La sonde double une chaîne à
-chaque tour, si bien qu'au dernier tour elle détient l'ancienne et la nouvelle :
-sa consommation de pointe vaut le double de sa taille annoncée, ce qu'aucun
-calcul sur le résultat ne dit.
+déclare la mission accomplie avant tout travail.
+
+La sonde double une chaîne à chaque tour, si bien qu'au dernier tour elle
+détient l'ancienne et la nouvelle : sa consommation de pointe dépasse donc la
+taille annoncée. De combien, cela se mesure. Relevé dans `memory.peak` du
+cgroup, le rapport entre la pointe et la taille tend vers **1,53**, et non
+vers 2 comme une lecture rapide du doublement le laisse croire. Une sonde de
+32 Mio pointe à 49 Mio : au-dessus de 32, sous 96.
 
 ## 4. Le service survit à l'OOM et garde son état
 

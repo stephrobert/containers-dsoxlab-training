@@ -28,10 +28,23 @@ Les quatre contrôles mesurent quatre choses indépendantes :
 3. qu'une allocation excessive **subit un OOM réel** ;
 4. que le service **survit** à cet OOM sans redémarrer ni perdre son état.
 
-1 et 2 ne sont pas redondants, et la différence n'est pas théorique : un
-`--memory` sans `--memory-swap` laisse `memory.swap.max` ouvert, si bien que
-l'allocation déborde en swap au lieu d'être tuée. Le premier lit ce qu'on a
-demandé, le second ce que le noyau a retenu.
+1 et 2 ne sont pas redondants, et la différence se mesure. Les trois formes,
+relevées sur `docker.lab`, dans les deux vues :
+
+===========================  ==================  ==================
+forme                        MemorySwap déclaré   memory.swap.max
+===========================  ==================  ==================
+``--memory 32m`` seul        67108864 (le DOUBLE) 33554432
+``--memory-swap`` égal       33554432             **0**
+``--memory-swap -1``         -1                   ``max``
+===========================  ==================  ==================
+
+Un `--memory` posé seul ne laisse donc pas le swap « ouvert » : Docker double la
+valeur, et le cgroup accorde un budget de swap **égal à la mémoire**. L'illimité
+n'arrive qu'avec `-1`. Seule l'égalité des deux met `memory.swap.max` à 0, c'est
+à dire interdit le swap, et c'est ce que le contrat demande.
+
+Le premier contrôle lit ce qu'on a demandé, le second ce que le noyau a retenu.
 
 3 et 4 provoquent chacun **leur propre** sonde, plutôt que de partager celle du
 précédent. C'est un OOM de plus à chaque passage, et c'est le prix de
@@ -148,10 +161,26 @@ def _sonde(host, cid: str):
         2^26       TUÉE          TUÉE
 
     2^26 était donc tué dans les deux cas, et les deux contrôles d'OOM passaient
-    sur l'état initial. La cause est dans `awk` : `s = s s` double la chaîne à
-    chaque tour, si bien qu'au dernier tour le processus détient l'ancienne ET la
-    nouvelle. Le pic vaut au moins le double du résultat annoncé, ce qu'aucun
-    calcul sur la taille finale ne dit.
+    sur l'état initial. La cause est que `s = s s` fait détenir à `awk` l'ancienne
+    chaîne et la nouvelle en même temps, si bien que sa pointe dépasse le résultat
+    annoncé. De combien, cela se mesure et ne se devine pas : relevé dans
+    `memory.peak` du cgroup, sous un plafond assez large pour que rien ne soit
+    tué,
+
+        2^22   taille 4 Mio    pointe 10,5 Mio   rapport 2,62
+        2^23   taille 8 Mio    pointe 13,0 Mio   rapport 1,63
+        2^24   taille 16 Mio   pointe 25,1 Mio   rapport 1,57
+        2^25   taille 32 Mio   pointe 49,0 Mio   rapport 1,53
+
+    le rapport tend vers **1,53**, et non vers 2 comme une lecture rapide du
+    doublement le laisse croire. C'est ce qui explique le défaut au chiffre près :
+    2^25 pointe à 49 Mio, donc au-dessus de 32 et sous 96 ; 2^26 pointe vers
+    98 Mio, donc juste au-dessus des 96 du départ.
+
+    Le facteur 1,5 a d'abord été mesuré par la session du site sur une sonde
+    Python, et contredisait le « double » écrit ici. Vérifié sur la sonde `awk`
+    de ce lab, il se confirme : une explication non mesurée reste une supposition,
+    même quand la conclusion qu'elle sert est juste.
 
     Le défaut préexistait et restait invisible : l'ancien contrôle unique plaçait
     ses assertions sur les limites avant la sonde, et tombait donc avant de
@@ -175,13 +204,15 @@ def test_les_limites_declarees_bornent_la_memoire_et_interdisent_le_swap(host):
     assert config["MemorySwap"] == PLAFOND, message(
         en=(
             f"The worker declares MemorySwap={config['MemorySwap']} instead of "
-            f"{PLAFOND}. Equal to Memory is what forbids swap: left alone, the "
-            "allocation spills into swap instead of being killed."
+            f"{PLAFOND}. Only equality with Memory sets memory.swap.max to 0, "
+            "that is forbids swap. Left alone, Docker doubles the value and the "
+            "cgroup grants a swap budget equal to memory."
         ),
         fr=(
             f"Le worker déclare MemorySwap={config['MemorySwap']} au lieu de "
-            f"{PLAFOND}. C'est l'égalité avec Memory qui interdit le swap : "
-            "laissé libre, l'allocation déborde en swap au lieu d'être tuée."
+            f"{PLAFOND}. Seule l'égalité avec Memory met memory.swap.max à 0, "
+            "c'est-à-dire interdit le swap. Laissé libre, Docker double la "
+            "valeur et le cgroup accorde un budget de swap égal à la mémoire."
         ),
     )
     # IL N Y A PAS DE TROISIEME ASSERTION ICI, ET C EST MESURE.
