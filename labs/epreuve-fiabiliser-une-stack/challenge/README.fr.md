@@ -41,9 +41,13 @@ contrôle du démarrage le verrait.
 
 ### 4. Un service qui meurt repart seul
 
-**Le contrôle fait mourir l'API**, parce que déclarer `restart:` ne prouve
-rien : la valeur peut être lue par Compose et ne jamais s'appliquer, par exemple
-sur un conteneur créé avant le changement.
+**Chaque service** porte une politique de redémarrage, le coffre comme l'API :
+une stack dont le coffre ne repart pas n'est pas fiabilisée, puisque l'API tombe
+avec lui. Le contrôle lit la politique des deux.
+
+**Et il fait mourir l'API**, parce que déclarer `restart:` ne prouve rien : la
+valeur peut être lue par Compose et ne jamais s'appliquer, par exemple sur un
+conteneur créé avant le changement.
 
 Il la fait mourir par le **déclencheur de panne** que le scénario annonce, et
 non par un `docker kill` : le moteur traite un arrêt demandé de l'extérieur

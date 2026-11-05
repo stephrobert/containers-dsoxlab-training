@@ -41,8 +41,12 @@ check would see it.
 
 ### 4. A service that dies comes back on its own
 
-**The check makes the API die**, because declaring `restart:` proves nothing:
-the value can be read by Compose and never apply, for instance on a container
+**Every service** carries a restart policy, the vault as well as the API: a
+stack whose vault does not come back is not made reliable, since the API falls
+with it. The check reads the policy of both.
+
+**And it makes the API die**, because declaring `restart:` proves nothing: the
+value can be read by Compose and never apply, for instance on a container
 created before the change.
 
 It makes it die through the **failure trigger** the scenario announces, and not

@@ -357,13 +357,27 @@ def test_l_index_porte_les_deux_architectures_et_chacune_s_execute(
     )
 
     for arch in ARCHITECTURES:
-        # LE TIRAGE PAR PLATEFORME EST OBLIGATOIRE, et c'est une mesure qui
-        # l'impose : `docker run --platform linux/arm64` n'honore PAS la
-        # plateforme demandée si une image locale correspond déjà à la
-        # référence. Le moteur annonce « Image is up to date » et exécute celle
-        # qu'il a, en rendant `architecture=amd64` pour un `--platform
-        # linux/arm64`. Sans ce tirage, le contrôle validerait un index dont
-        # une variante n'a jamais été construite.
+        # LE TIRAGE PAR PLATEFORME GARANTIT QUE LA VARIANTE EXISTE, et c'est
+        # la seule raison de le faire ici.
+        #
+        # UN COMMENTAIRE PRÉCÉDENT DISAIT AUTRE CHOSE, et il était faux.
+        # Il affirmait que `docker run --platform linux/arm64` n'honore pas la
+        # plateforme quand une image locale correspond à la référence. Remesuré
+        # le 2026-11-05 sur Docker 29.9.2 et un store containerd, avec le
+        # témoin des deux cas :
+        #
+        #   sans image locale,  run --platform arm64  ->  aarch64
+        #   image AMD64 locale, run --platform arm64  ->  aarch64
+        #
+        # Le moteur honore donc bien la plateforme demandée. Le tirage reste,
+        # parce qu'il assure que la variante a été publiée dans l'index : sans
+        # lui, le contrôle validerait un index dont une variante n'a jamais été
+        # construite.
+        #
+        # CE QUE LA MESURE A MONTRÉ EN PLUS, et qui mérite d'être su : ce tirage
+        # répond « Image is up to date », et `docker image inspect` sans
+        # `--platform` continue de rendre `amd64` alors que le run choisit
+        # arm64. L'inspection ne dit pas quelle variante s'exécutera.
         tirage = host.run(
             "docker pull -q --platform %s %s", f"linux/{arch}", REFERENCE
         )

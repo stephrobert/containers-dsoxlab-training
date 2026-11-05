@@ -1,6 +1,11 @@
-# Lab epreuve-restaurer-une-stack. Metadonnees posees le 2026-11-01 d'apres l'audit du plan de
-# formation : scenario, setup et tests restent a ecrire APRES mesure sur la
-# machine (regle B). Voir LABS-A-ECRIRE-AUDIT.md a la racine du catalogue.
+# Lab epreuve-restaurer-une-stack. Metadonnees posees le 2026-11-01 d'apres
+# l'audit du plan de formation, puis scenario, setup et tests ECRITS et mesures
+# sur la machine. L'en-tete disait encore « restent a ecrire » le 2026-11-05,
+# alors que les trois existaient et que le lab etait atteste : un commentaire
+# qui survit a ce qu'il decrit fait ecrire du faux avec assurance.
+#
+# Ce lab est l'epreuve du niveau 2 de la formation, le module exploiter-une-stack
+# ayant rejoint n2 le 2026-11-02.
 id: epreuve-restaurer-une-stack
 title: Restore a stack on another host, data included
 level: c4
