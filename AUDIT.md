@@ -24,6 +24,35 @@ $ find . -type f -not -path './.git/*' | wc -l
 Le README annonçait les quatre répertoires sur le même plan. Deux d'entre eux
 ne contenaient rien.
 
+## Ce qui en reste, le 2026-11-05 : rien
+
+**Les quatre répertoires sont supprimés.** Les trois derniers l'avaient été à la
+refonte ; `00-Docker/` a survécu dix-neuf mois de plus, par oubli, et part
+aujourd'hui.
+
+Ce qu'il portait est couvert par **huit labs** qui prouvent au lieu de
+pas-à-pas :
+
+| TP retiré | labs qui couvrent le terrain |
+| --- | --- |
+| `01-debian12-basique` | `images-contexte-de-build`, `images-identifier-image` |
+| `02-debian12-optimisee` | `images-optimiser-la-taille`, `images-ordre-des-couches` |
+| `03-alpine` | `images-migrer-vers-alpine` |
+| `04-multistage-build` | `images-build-multi-etapes` |
+| `05-volumes` | `donnees-volumes-et-montages`, `donnees-volume-orphelin` |
+
+Mesure de l'état avant retrait : premier commit le 2025-04-02, **cinq commits
+en tout**, dont le dernier n'était qu'un renommage de domaine automatique. Aucun
+fichier du dépôt n'y renvoyait, hors ce document. L'historique git le conserve,
+donc rien n'est perdu : il cesse seulement d'être servi comme du contenu
+courant, ce qu'il n'était plus.
+
+**Les deux défauts consignés plus bas sont la raison du retrait**, et non son
+prétexte : des TP qui donnent les commandes, et une affirmation fausse sur les
+vulnérabilités d'Alpine suivie, dans le même TP, d'une consigne de scan. Un
+contenu qui affirme sans mesurer est pire qu'absent, et c'est exactement ce que
+ce catalogue corrige partout ailleurs.
+
 ## Le défaut de fond : des TP qui donnent les commandes
 
 Les cinq TP sont des **pas-à-pas**. Ils enseignent, et ils enseignent bien,
