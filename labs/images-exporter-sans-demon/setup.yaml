@@ -1,0 +1,126 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+- name: Préparer le lab images-exporter-sans-demon
+  hosts: lab_target
+  become: true
+  vars:
+    lab: images-exporter-sans-demon
+    travail: /opt/dsoxlab-images-exporter-sans-demon
+    # SKOPEO VIENT DE L'IMAGE DE L'ÉDITEUR, pas du paquet de la distribution.
+    # Debian 13 livre 1.18.0 ; la leçon et ce lab travaillent sur 1.22.3, qui
+    # est la version de l'éditeur. Le digest est relu le jour de l'écriture :
+    # l'éditeur REPUBLIE son tag v1.22.3, et le digest du 2026-11-03 ne répond
+    # plus. Celui-ci est mesuré le 2026-11-05.
+    skopeo_img: quay.io/skopeo/stable:v1.22.3@sha256:2681eccb8b02c495b013c2669cbf7f41d5c0b0b0e644e7c69bd3ea9bcb20641f
+    # L'image à livrer. Épinglée par le digest de son INDEX, qui porte quinze
+    # manifestes : c'est ce qui rend `--override-arch` mesurable.
+    sujet: busybox:1.37.0-musl
+    sujet_digest: sha256:f6a95d611e0a8780fabdb2aec43e31275b2720dfefa3e41b16835bfc42454478
+  tasks:
+    - name: Exiger le moteur et refuser les collisions
+      ansible.builtin.shell: |
+        set -eu
+        docker info >/dev/null
+        test ! -e "{{ travail }}"
+        test ! -L "{{ travail }}"
+      changed_when: false
+
+    # UN LAB NE REND QUE CE QU'IL A POSÉ, et il rend tout ce qu'il a posé. Deux
+    # marqueurs, parce que deux images sont en jeu et qu'elles ne se traitent
+    # pas pareil.
+    - name: Noter si l'image de skopeo était déjà présente
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ skopeo_img }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-{{ lab }}.skopeo-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-{{ lab }}.skopeo-a-rendre'
+        fi
+      changed_when: false
+
+    # L'IMAGE À LIVRER DOIT ÊTRE ABSENTE DU STORE, sans quoi le contrôle « le
+    # démon ne l'a jamais tirée » ne mesurerait rien : il serait vrai parce que
+    # le lab l'aurait laissée là, pas parce que l'apprenant aurait bien
+    # travaillé. On la retire, en notant qu'il faudra la remettre si elle était
+    # là avant nous.
+    - name: Retirer du store l'image à livrer, en notant s'il faudra la remettre
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ sujet }}' >/dev/null 2>&1; then
+          : > '/var/tmp/dsoxlab-{{ lab }}.sujet-a-remettre'
+          docker rmi -f '{{ sujet }}' >/dev/null 2>&1 || true
+        else
+          rm -f '/var/tmp/dsoxlab-{{ lab }}.sujet-a-remettre'
+        fi
+      changed_when: true
+
+    # `docker pull` EN COMMANDE, et non par une collection : `community.docker`
+    # n'est pas installée sur cette machine, et les quatorze labs du catalogue
+    # qui tirent une image le font tous ainsi. Une collection supposée fait
+    # échouer le setup sur « missing collection », ce qui est arrivé ici.
+    - name: Tirer l'image de skopeo, épinglée
+      ansible.builtin.command:
+        cmd: docker pull {{ skopeo_img }}
+      register: tirage
+      until: tirage.rc == 0
+      retries: 2
+      delay: 5
+      changed_when: true
+
+    - name: Créer l'espace de travail et le répertoire de livraison
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0755"
+      loop:
+        - "{{ travail }}"
+        - "{{ travail }}/livraison"
+
+    # LE LANCEUR EST FOURNI, et c'est délibéré : ce lab note l'emploi de skopeo,
+    # pas la façon de le conteneuriser. Sans lui, l'apprenant passerait son
+    # temps sur les montages de `docker run` au lieu des formats d'archive.
+    #
+    # Il monte le socket du démon parce que `docker-daemon:` en a besoin, et le
+    # répertoire de travail pour que les archives soient écrites là où le
+    # contrôle les cherche.
+    - name: Installer le lanceur de skopeo
+      ansible.builtin.copy:
+        dest: "{{ travail }}/skopeo"
+        mode: "0755"
+        owner: "{{ ansible_user | default('ansible') }}"
+        content: |
+          #!/bin/sh
+          # Lanceur de skopeo 1.22.3, fourni par le lab.
+          #
+          # Le repertoire de travail est monte sur /travail, et c est le
+          # repertoire courant dans le conteneur : un chemin relatif que vous
+          # donnez a skopeo vise donc le meme fichier que depuis votre shell.
+          exec docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v {{ travail }}:/travail \
+            -w /travail \
+            {{ skopeo_img }} "$@"
+
+    - name: Noter l'image à livrer et son digest, pour que rien ne se devine
+      ansible.builtin.copy:
+        dest: "{{ travail }}/A-LIVRER.txt"
+        mode: "0644"
+        owner: "{{ ansible_user | default('ansible') }}"
+        content: |
+          image  : {{ sujet }}
+          digest : {{ sujet_digest }}
+          nom de destination attendu : livraison.test/socle:1.0
+
+    - name: Marquer le répertoire comme appartenant à ce lab
+      ansible.builtin.copy:
+        dest: "{{ travail }}/.owner"
+        content: "{{ lab }}\n"
+        mode: "0644"
+
+    - name: Installer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: "{{ travail }}/MISSION.md"
+        mode: "0644"
