@@ -123,31 +123,67 @@ def assess():
     )
     for service in services.values():
         host = service["HostConfig"]
-        assert service["State"]["Running"] and service["Image"] == image
-        assert service["Config"]["Labels"].get("dsoxlab.lab") == LAB
+        assert service["State"]["Running"] and service["Image"] == image, message(
+            en="Each component must run the image this lab builds",
+            fr="Chaque composant doit tourner l'image que ce lab construit",
+        )
+        assert service["Config"]["Labels"].get("dsoxlab.lab") == LAB, message(
+            en="Keep the dsoxlab.lab label: cleanup removes only what carries it",
+            fr="Conservez le label dsoxlab.lab : le nettoyage ne retire que ce qui le porte",
+        )
         assert (
             not host["Privileged"]
             and canonique(host["CapAdd"]) == ["CAP_NET_ADMIN"]
             and canonique(host["CapDrop"]) == ["ALL"]
+        ), message(
+            en="Each component keeps CAP_NET_ADMIN only, drops the rest, and stays "
+               "unprivileged: a privileged container escapes the very routing this "
+               "lab measures",
+            fr="Chaque composant garde CAP_NET_ADMIN seul, abandonne le reste et "
+               "reste non privilegie : un conteneur privilegie echappe au routage "
+               "meme que ce lab mesure",
         )
-        assert host["NetworkMode"] != "host" and not host["PortBindings"]
-        assert host["PidMode"] != "host" and host["IpcMode"] != "host"
+        assert host["NetworkMode"] != "host" and not host["PortBindings"], message(
+            en="No component uses the host network or publishes a port: the three "
+               "hops must cross the router, not the host stack",
+            fr="Aucun composant n'utilise le reseau de l'hote ni ne publie de port : "
+               "les trois sauts doivent traverser le routeur, pas la pile de l'hote",
+        )
+        assert host["PidMode"] != "host" and host["IpcMode"] != "host", message(
+            en="No component shares the host PID or IPC namespace",
+            fr="Aucun composant ne partage le namespace PID ou IPC de l'hote",
+        )
         assert all(m["Destination"] == "/rules.nft" for m in service["Mounts"]), message(
             en="Do not mount host APIs or namespaces",
             fr="Ne montez ni API ni namespaces de l'hote",
         )
     router, server = services["router"], services["server"]
     network_names = set(router["NetworkSettings"]["Networks"])
-    assert len(network_names) == 2
+    assert len(network_names) == 2, message(
+        en=f"The router must sit on exactly two networks, found "
+           f"{len(network_names)}: it is what makes it a router rather than a peer",
+        fr=f"Le routeur doit etre sur exactement deux reseaux, {len(network_names)} "
+           f"trouve(s) : c'est ce qui en fait un routeur et non un voisin",
+    )
     for net in json.loads(docker("network", "inspect", *network_names)):
-        assert net["Driver"] == "bridge" and net["Labels"].get("dsoxlab.lab") == LAB
+        assert net["Driver"] == "bridge" and net["Labels"].get("dsoxlab.lab") == LAB, message(
+            en="Both networks are dedicated bridges labelled for this lab",
+            fr="Les deux reseaux sont des bridges dedies, etiquetes pour ce lab",
+        )
         assert set(net["Containers"]) <= {
             service["Id"] for service in services.values()
         }, message(
             en="Keep the dedicated bridges exclusive to this lab",
             fr="Reservez les bridges dedies a ce lab",
         )
-    assert docker("exec", router["Id"], "cat", "/proc/sys/net/ipv4/ip_forward") == "1"
+    assert docker(
+        "exec", router["Id"], "cat", "/proc/sys/net/ipv4/ip_forward"
+    ) == "1", message(
+        en="The router does not forward: net.ipv4.ip_forward is 0 in its namespace, "
+           "so no packet can cross it whatever the rules say",
+        fr="Le routeur ne relaie pas : net.ipv4.ip_forward vaut 0 dans son namespace, "
+           "donc aucun paquet ne peut le traverser quoi que disent les regles",
+    )
     for role in ("allowed", "denied"):
         route = docker(
             "exec", services[role]["Id"], "ip", "route", "get", "172.30.202.10"
@@ -158,6 +194,11 @@ def assess():
         )
     assert "via 172.30.202.254" in docker(
         "exec", server["Id"], "ip", "route", "get", "172.30.201.10"
+    ), message(
+        en="The server must answer through the router: without that return route "
+           "the reply never comes back, and the hop looks blocked when it is not",
+        fr="Le serveur doit repondre par le routeur : sans cette route retour la "
+           "reponse ne revient jamais, et le saut parait bloque sans l'etre",
     )
     deadline = time.monotonic() + 8
     while request(server, "127.0.0.1", 8080) is None:
@@ -201,7 +242,12 @@ def assess():
         fr="La destination erronee ne doit pas etre ouverte",
     )
     after = protections(router)
-    assert after["business"] > before["business"]
+    assert after["business"] > before["business"], message(
+        en="The accepted traffic did not increment the business rule counter: it "
+           "reached its destination without traversing the rule that allows it",
+        fr="Le trafic accepte n'a pas incremente le compteur de la regle metier : il "
+           "a atteint sa destination sans traverser la regle qui l'autorise",
+    )
     assert (
         after["deny-untrusted"] > before["deny-untrusted"]
         and after["deny-debug"] > before["deny-debug"]

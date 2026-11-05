@@ -89,6 +89,21 @@ repos:
         pass_filenames: false
         always_run: true
 
+      # Le pendant du precedent, et separe a dessein : celui-la verifie que le
+      # texte lu par l apprenant existe dans les DEUX langues, celui-ci qu il
+      # EXISTE. Son voisin l annoncait deja (« un autre defaut, que le style
+      # des tests du depot traite ailleurs »), et cet ailleurs n existait pas.
+      #
+      # Mesure le 2026-11-05 : 1313 assertions dans les 90 labs, dont DIX sans
+      # aucun message, toutes dans une sonde. Ce que l apprenant lisait alors
+      # etait une trace Python et le mot « AssertionError ».
+      - id: assertions-non-nues
+        name: aucune assertion ne refuse sans dire pourquoi
+        entry: uv run --no-sync pytest tests/test_assertions_non_nues.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: images-epinglees
         name: les images que les setups tirent sont épinglées par digest
         entry: uv run --no-sync pytest tests/test_images_epinglees.py -q
