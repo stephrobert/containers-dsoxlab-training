@@ -275,6 +275,7 @@ consensus et son état de contrôle à protéger.
 | `registry-locale-tls` | Servir un registre de confiance et tirer sans désactiver TLS | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/distribution/#mettre-en-pratique) |
 | `registry-authentification` | Protéger un registre TLS par authentification | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/registres/distribution/#mettre-en-pratique) |
 | `registry-droits-minimaux` | Accorder les droits minimaux à un éditeur et un lecteur distinct | c2 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/#quel-entraînement-avant-lépreuve-) |
+| `images-exporter-sans-demon` | Exporter une image sans le démon, et garder ce qui doit survivre | c3 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/exporter-sans-demon-avec-skopeo/#mettre-en-pratique) |
 | `registry-air-gap` | Livrer une image complète sans son registre d'origine | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epingler-et-livrer-hors-ligne/#mettre-en-pratique) |
 | `epreuve-livrer-une-image` | Livrer une image qu'un client vierge exécute vraiment | c2 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-image-utilisable-ailleurs/#passer-lépreuve) |
 | `epreuve-reconstruire-une-image-pour-deux-architectures` | Une seule image, quatre exigences, deux architectures | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/reconstruire-une-image-pour-deux-architectures/#passer-lépreuve) |
@@ -339,7 +340,7 @@ consensus et son état de contrôle à protéger.
 | `capstone-chaine-complete` | Livrer et rétablir une application isolée de bout en bout | c6 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/#passer-lépreuve) |
 | `epreuve-durcir-sans-casser` | Durcir un service sans le casser | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/#passer-lépreuve) |
 
-_90 labs, table générée par `scripts/gen_catalog.py`._
+_91 labs, table générée par `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Où en est ce catalogue
