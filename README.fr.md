@@ -23,7 +23,7 @@ qui l'exécute, les montages du conteneur, ce que l'application répond.
 dont il a besoin. Vous travaillez l'image, l'exécution, le réseau, le stockage,
 la distribution et le durcissement.
 
-Chaque module se termine par une **épreuve** : des contrôles de poids égal, un
+Chaque module se termine par une **épreuve** : cinq contrôles de poids égal, un
 seuil de 75 sur 100, quatre indices qui coûtent des points, et une exigence
 critique qu'aucun total ne compense. Une épreuve note **l'état final** du
 système, jamais les commandes tapées : deux chemins qui aboutissent au même état
@@ -252,17 +252,17 @@ consensus et son état de contrôle à protéger.
 
 | Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
 |---|---|---|---|---|---|
-| `images-identifier-image` | Identité d'une image : le tag ment, le digest non | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/#mettre-en-pratique) |
+| `images-identifier-image` | Identité d'une image : le tag ment, le digest non | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/#mettre-en-pratique) |
 | `images-ordre-des-couches` | Le même Dockerfile, et un cache qui sert enfin | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#mettre-en-pratique) |
 | `images-contexte-de-build` | Un fichier qui existe, et qu'on ne trouve pas | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/#mettre-en-pratique) |
 | `images-optimiser-la-taille` | Ce qu'une couche garde | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/) |
 | `images-migrer-vers-alpine` | Changer de socle n'est pas changer une ligne | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/choisir-une-image-de-base/) |
-| `images-build-multi-etapes` | Ce qui vient du socle ne se retire pas | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build-multi-etapes/#mettre-en-pratique) |
+| `images-build-multi-etapes` | Ce qui vient du socle ne se retire pas | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build-multi-etapes/#mettre-en-pratique) |
 | `images-non-root` | USER change l'identité, et aucun droit | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/utilisateur-et-permissions/) |
 | `images-healthcheck` | « Up » ne dit rien du service | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/tester-une-image/#mettre-en-pratique) |
 | `buildkit-cache-monte` | Réutiliser les dépendances quand l'étape de build rejoue | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#mettre-en-pratique) |
-| `buildkit-secret-de-build` | Récupérer une dépendance privée sans embarquer le secret de build | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#mettre-en-pratique) |
-| `images-multi-architecture` | Publier deux architectures et exécuter les deux | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/multi-architecture/#mettre-en-pratique) |
+| `buildkit-secret-de-build` | Récupérer une dépendance privée sans embarquer le secret de build | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#mettre-en-pratique) |
+| `images-multi-architecture` | Publier deux architectures et exécuter les deux | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/multi-architecture/#mettre-en-pratique) |
 | `epreuve-livrer-une-premiere-image` | Livrer une première image publiable | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epreuves/livrer-une-premiere-image/#passer-lépreuve) |
 
 ### Distribuer ses images

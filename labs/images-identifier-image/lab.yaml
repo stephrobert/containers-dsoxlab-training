@@ -7,7 +7,7 @@
 # parce qu'un numéro date de l'ordre d'écriture et jamais de l'ordre de lecture.
 id: images-identifier-image                      # REQUIS
 title: "Image identity: the tag lies, the digest does not"            # REQUIS
-level: c5                     # REQUIS
+level: c2                     # REQUIS
 description: "Tell exactly which image is running: compare a tag to a digest, read a multi-platform index, and catch an image that was replaced under the same tag."
 skills:                       # REQUIS, non vide
   - docker

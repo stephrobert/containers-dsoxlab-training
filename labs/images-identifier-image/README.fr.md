@@ -67,4 +67,4 @@ lire une image **sans la lancer**. Rien n'est installé sur votre poste.
 
 30 minutes. Les indices coûtent de 10 à 25 points.
 
-Le guide : [https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/)
+Le guide : [https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/#mettre-en-pratique](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/#mettre-en-pratique)
