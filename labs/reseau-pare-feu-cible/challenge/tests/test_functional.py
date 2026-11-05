@@ -67,14 +67,38 @@ def _cause(stderr: str) -> str:
 
     Le traceback n'est pas perdu : sans assertion, c'est que la sonde a cassé
     autrement, et la trace brute est alors la seule information disponible.
+
+    UNE ASSERTION SANS MESSAGE EST RECONNUE, et ne pas la reconnaître était un
+    défaut mesuré le 2026-11-05. Python n'écrit les deux-points QUE s'il y a un
+    message : `AssertionError: pourquoi` avec, et `AssertionError` tout court
+    sans. Un filtre sur « AssertionError: » laissait donc tomber le second cas
+    dans le repli, qui rend la trace brute, et la docstring ci-dessus affirmait
+    le contraire. Dix assertions de la sonde étaient dans ce cas, et ce que
+    l'apprenant lisait valait :
+
+        File "<string>", line 5, in <module>
+        File "<string>", line 4, in assess
+        AssertionError
+
+    Les dix portent désormais un message. Ce traitement reste, parce qu'une
+    assertion nue réapparaîtra un jour : elle est alors signalée comme telle,
+    plutôt que déguisée en trace.
     """
     lignes = [
         ligne.strip()
         for ligne in stderr.splitlines()
-        if ligne.strip().startswith("AssertionError:")
+        if ligne.strip().startswith("AssertionError")
     ]
     if lignes:
-        return lignes[-1].removeprefix("AssertionError:").strip()
+        nu = lignes[-1].removeprefix("AssertionError").lstrip(":").strip()
+        if nu:
+            return nu
+        return message(
+            en="the probe refused without saying why: an assertion carries no "
+               "message. Not your fault, report it.",
+            fr="la sonde a refusé sans dire pourquoi : une assertion ne porte "
+               "aucun message. Ce n'est pas votre faute, signalez-le.",
+        )
     bruit = ("Warning: Permanently added", "Traceback (most recent call last)")
     utiles = [
         ligne for ligne in stderr.splitlines()
