@@ -2432,12 +2432,12 @@
    "status": "failed",
    "total": 5
   },
-  "date": "2026-11-03",
+  "date": "2026-11-05",
   "docker": "29.9.2",
-  "duree_s": 228,
+  "duree_s": 224,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
    "avant le travail : 0/5",
    "après la solution : 5/5",
    "après clean et run : 0/5",
@@ -2689,12 +2689,12 @@
    "status": "failed",
    "total": 6
   },
-  "date": "2026-11-03",
+  "date": "2026-11-05",
   "docker": "29.9.2",
-  "duree_s": 119,
+  "duree_s": 109,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
    "avant le travail : 0/6",
    "après la solution : 6/6",
    "après clean et run : 0/6",
@@ -2943,12 +2943,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-03",
+  "date": "2026-11-05",
   "docker": "29.9.2",
-  "duree_s": 113,
+  "duree_s": 110,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 1 volume(s)",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
@@ -3221,6 +3221,70 @@
    "skipped": 0,
    "status": "failed",
    "total": 3
+  },
+  "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "images-exporter-sans-demon": {
+  "apres": {
+   "echecs": [],
+   "passed": 5,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 5
+  },
+  "avant": {
+   "echecs": [
+    "test_l_archive_arm64_porte_bien_arm64_et_non_l_architecture_de_l_hote",
+    "test_l_archive_oci_est_au_format_oci_et_porte_l_image_attendue",
+    "test_l_image_rechargee_porte_son_nom_et_ses_couches",
+    "test_le_demon_n_a_jamais_tire_l_image_livree",
+    "test_les_deux_formats_sont_livres_et_ne_se_ressemblent_pas"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "date": "2026-11-05",
+  "docker": "29.9.2",
+  "duree_s": 67,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/5",
+   "après la solution : 5/5",
+   "après clean et run : 0/5",
+   "moteur rendu intact"
+  ],
+  "host": "docker.lab",
+  "id": "images-exporter-sans-demon",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-images-exporter-sans-demon.log",
+  "moteurs": {
+   "docker.lab": {
+    "docker": "29.9.2",
+    "store": "containerd"
+   }
+  },
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_l_archive_arm64_porte_bien_arm64_et_non_l_architecture_de_l_hote",
+    "test_l_archive_oci_est_au_format_oci_et_porte_l_image_attendue",
+    "test_l_image_rechargee_porte_son_nom_et_ses_couches",
+    "test_le_demon_n_a_jamais_tire_l_image_livree",
+    "test_les_deux_formats_sont_livres_et_ne_se_ressemblent_pas"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
   },
   "store": "containerd",
   "verdict": "VALIDE"
