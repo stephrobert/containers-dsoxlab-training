@@ -10,7 +10,7 @@ Le service utilise des journaux json-file plafonnés à 1 Kio et trois fichiers 
 
 ## Limites de sécurité
 
-Seuls les conteneurs, volumes et fichiers du lab sont modifiés. Les exercices système utilisent des comptes dédiés ou restaurent la configuration initiale du démon. La pression disque est simulée par un volume borné de 16 Mio et ne remplit jamais le système de fichiers de l’hôte.
+Seuls les conteneurs, volumes et fichiers du lab sont modifiés. Les exercices système utilisent des comptes dédiés ou restaurent la configuration initiale du démon.
 
 ## Validation
 

@@ -6,15 +6,20 @@ Qualifier le démon non privilégié, son réseau et ses données persistantes.
 
 ## Ce que vous allez pratiquer
 
-Le service dédié est actif et son propriétaire réel est non privilégié. Le
-service HTTP rootless répond, son réseau refuse le pair extérieur et ses
-données survivent à une recréation. L'émulation d'UID et le stockage d'images
-distinct doivent être expliqués sans confondre root dans le conteneur et root
-sur la VM.
+Démarrer un démon Docker sans privilèges : un service **utilisateur** porté par
+un compte système sans session, ce qui demande de lui fournir son répertoire
+d'exécution et son bus. C'est le seul geste du lab, et le seul que les
+contrôles vous demandent.
+
+Les contrôles fabriquent ensuite eux-mêmes un réseau, un volume et un service
+HTTP sur ce moteur pour prouver qu'il fonctionne réellement. Vous n'avez rien
+de tout cela à construire : sachez en revanche expliquer la correspondance des
+UID, le stockage d'images distinct et les limites du réseau rootless, sans
+confondre root dans le conteneur et root sur la VM.
 
 ## Limites de sécurité
 
-Seuls les conteneurs, volumes et fichiers du lab sont modifiés. Les exercices système utilisent des comptes dédiés ou restaurent la configuration initiale du démon. La pression disque est simulée par un volume borné de 16 Mio et ne remplit jamais le système de fichiers de l’hôte.
+Seuls les conteneurs, volumes et fichiers du lab sont modifiés. Les exercices système utilisent des comptes dédiés ou restaurent la configuration initiale du démon.
 
 ## Validation
 
