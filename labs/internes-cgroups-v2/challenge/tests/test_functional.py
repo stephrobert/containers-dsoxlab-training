@@ -249,14 +249,27 @@ def test_la_reponse_dit_ce_qu_un_conteneur_sans_limite_porte(host) -> None:
     # y est enseignée : la question se répondait sans toucher à la machine.
     #
     # `pids.max` D'UN CONTENEUR SANS LIMITE N'EST PAS « max ». Mesuré le
-    # 2026-11-05 : il vaut 2265 sur cette machine, stable sur trois conteneurs,
-    # et il ne dérive ni de kernel.pid_max (4194304), ni de threads-max (15103),
-    # ni du cgroup parent (max). Il ne se calcule donc pas de tête, et il diffère
-    # d'une machine à l'autre : le contrôle le LIT au lieu de l'écrire en dur.
+    # 2026-11-05 : il vaut 2265 sur cette machine, stable sur trois conteneurs.
     #
-    # Et il enseigne quelque chose : un conteneur « sans limite » porte quand
-    # même un plafond de processus, posé par le moteur. L'absence de limite
-    # mémoire et l'absence de limite de processus ne se ressemblent pas.
+    # ET CE N'EST PAS LE MOTEUR QUI LE POSE, contrairement à ce qu'un premier
+    # commentaire affirmait ici. C'est **systemd**, par son `DefaultTasksMax`,
+    # dont `/etc/systemd/system.conf` documente le défaut : `15%`. La règle est
+    # 15 % du plus petit de `kernel.pid_max`, `kernel.threads-max` et du
+    # `pids.max` racine. Vérifié par le calcul et par systemd lui-même :
+    #
+    #     kernel.threads-max         15103
+    #     15 % de threads-max         2265
+    #     DefaultTasksMax             2265
+    #     TasksMax du scope           2265
+    #     pids.max du cgroup          2265
+    #
+    # Confirmé sur une seconde machine par la session du site : threads-max
+    # 22621, DefaultTasksMax 3393, et un conteneur sans limite à 3393.
+    #
+    # Le nombre ne se devine donc pas de tête, et il diffère d'une machine à
+    # l'autre : le contrôle le LIT au lieu de l'écrire en dur. Et il enseigne
+    # que l'absence de limite demandée à Docker n'est pas l'absence de limite :
+    # le gestionnaire de services en pose une, que personne n'a réclamée.
     plafond = _valeur(host, chemin, "pids.max")
     if not plafond:
         pytest.skip(message(

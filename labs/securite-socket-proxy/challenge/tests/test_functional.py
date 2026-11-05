@@ -1,6 +1,6 @@
 """Interposer un proxy filtrant devant l'API Docker, et le prouver.
 
-SIX CONTRÔLES, un par objectif de la leçon. Chacun mesure un LIVRABLE de
+SEPT CONTRÔLES, un par objectif de la leçon. Chacun mesure un LIVRABLE de
 l'apprenant, et non un fait du système : un contrôle qui serait vrai quoi que
 fasse l'apprenant ne contrôle rien, et ce lab n'en avait qu'un seul là où la
 leçon enseigne six choses.
@@ -162,7 +162,7 @@ def _variables(proxy: dict) -> dict[str, str]:
     return paires
 
 
-# ───────────────────────────── les six contrôles ────────────────────────────
+# ───────────────────────────── les sept contrôles ────────────────────────────
 
 
 def test_le_socket_en_lecture_seule_n_a_pas_protege_le_temoin(host) -> None:
