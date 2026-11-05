@@ -148,12 +148,12 @@
    "status": "failed",
    "total": 11
   },
-  "date": "2026-11-02",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 619,
+  "duree_s": 624,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
    "avant le travail : 0/11",
    "après la solution : 11/11",
    "après clean et run : 0/11",
@@ -2093,74 +2093,6 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
- "donnees-postgres-sauvegarde": {
-  "apres": {
-   "echecs": [],
-   "passed": 5,
-   "recorded": true,
-   "score": 100,
-   "skipped": 0,
-   "status": "passed",
-   "total": 5
-  },
-  "avant": {
-   "echecs": [
-    "test_la_base_restauree_porte_toutes_les_lignes",
-    "test_la_sauvegarde_a_ete_transferee_a_l_identique",
-    "test_la_sauvegarde_existe_au_format_personnalise",
-    "test_la_sauvegarde_se_restaure_dans_une_base_vierge",
-    "test_le_service_cible_repond_et_porte_la_base_marquee"
-   ],
-   "passed": 0,
-   "recorded": true,
-   "score": 0,
-   "skipped": 0,
-   "status": "failed",
-   "total": 5
-  },
-  "date": "2026-11-04",
-  "docker": "29.9.2",
-  "duree_s": 55,
-  "ecarts": [],
-  "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
-   "avant le travail : 0/5",
-   "après la solution : 5/5",
-   "après clean et run : 0/5",
-   "moteur rendu intact"
-  ],
-  "host": "docker.lab",
-  "id": "donnees-postgres-sauvegarde",
-  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-donnees-postgres-sauvegarde.log",
-  "moteurs": {
-   "docker-client.lab": {
-    "docker": "29.9.2",
-    "store": "containerd"
-   },
-   "docker.lab": {
-    "docker": "29.9.2",
-    "store": "containerd"
-   }
-  },
-  "raisons": [],
-  "rejeu": {
-   "echecs": [
-    "test_la_base_restauree_porte_toutes_les_lignes",
-    "test_la_sauvegarde_a_ete_transferee_a_l_identique",
-    "test_la_sauvegarde_existe_au_format_personnalise",
-    "test_la_sauvegarde_se_restaure_dans_une_base_vierge",
-    "test_le_service_cible_repond_et_porte_la_base_marquee"
-   ],
-   "passed": 0,
-   "recorded": true,
-   "score": 0,
-   "skipped": 0,
-   "status": "failed",
-   "total": 5
-  },
-  "store": "containerd",
-  "verdict": "VALIDE"
- },
  "donnees-volume-orphelin": {
   "apres": {
    "echecs": [],
@@ -2937,7 +2869,7 @@
    "echecs": [
     "test_l_outil_passe_par_un_proxy_de_lecture_seule",
     "test_la_place_est_rendue_et_le_volume_utile_est_intact",
-    "test_le_demon_n_ecoute_aucun_socket_tcp_sans_tls",
+    "test_le_demon_n_ecoute_aucun_socket_tcp",
     "test_le_demon_tourne_avec_une_rotation_des_journaux",
     "test_le_groupe_docker_ne_porte_que_ceux_qui_doivent_y_etre"
    ],
@@ -2948,12 +2880,12 @@
    "status": "failed",
    "total": 5
   },
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "docker": "29.9.2",
-  "duree_s": 130,
+  "duree_s": 133,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
    "avant le travail : 0/5",
    "après la solution : 5/5",
    "après clean et run : 0/5",
@@ -2973,7 +2905,7 @@
    "echecs": [
     "test_l_outil_passe_par_un_proxy_de_lecture_seule",
     "test_la_place_est_rendue_et_le_volume_utile_est_intact",
-    "test_le_demon_n_ecoute_aucun_socket_tcp_sans_tls",
+    "test_le_demon_n_ecoute_aucun_socket_tcp",
     "test_le_demon_tourne_avec_une_rotation_des_journaux",
     "test_le_groupe_docker_ne_porte_que_ceux_qui_doivent_y_etre"
    ],
