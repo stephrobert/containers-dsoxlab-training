@@ -11,7 +11,7 @@ skills:                       # REQUIS, non vide
   - registry
 distros:                      # REQUIS, non vide
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/exporter-sans-demon-avec-skopeo/#mettre-en-pratique   # REQUIS, http(s)
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/exporter-sans-demon-avec-skopeo/   # REQUIS, http(s). Sans ancre : la section « Mettre en pratique » qui portera le bloc Lab n'existe pas encore, et une ancre fausse dépose le lecteur en haut de page sans le dire.
 lab_type: lab
 estimated_time: 30m
 runtime:
