@@ -26,7 +26,9 @@ Renseignez les trois lignes de `/opt/lab-namespaces/reponses.txt` :
 ```text
 pid_hote=<le PID que ce MÊME processus porte sur L'HÔTE>
 ns_pid=<l'identifiant du namespace PID de `cloisonne`, de la forme pid:[...]>
-partage=<le NOM du seul namespace que `cloisonne` partage avec l'hôte>
+partage=<l'IDENTIFIANT COMPLET du seul namespace que `cloisonne` partage
+         avec l'hôte, de la forme nom:[...] : le nom seul ne suffit pas,
+         parce qu'il se trouve dans la leçon et pas sur votre machine>
 ```
 
 Puis lancez un conteneur nommé `indiscret` qui **voit** les processus de l'hôte,

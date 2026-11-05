@@ -28,12 +28,16 @@ Le lab précédent montrait ce qu'un conteneur **voit**. Celui-ci montre ce qu'i
 peut **consommer**, et c'est un mécanisme complètement différent : les cgroups
 comptent et plafonnent, là où les namespaces restreignent une vue.
 
-Renseignez les trois lignes de `/opt/lab-cgroups/reponses.txt` :
+Renseignez les quatre lignes de `/opt/lab-cgroups/reponses.txt` :
 
 ```text
 chemin=<le chemin ABSOLU du cgroup de `mesure`, sur l'hôte>
 memoire_max=<la limite mémoire que ce cgroup déclare, telle quelle>
 sans_limite=<ce que le MÊME fichier contient pour `libre`>
+sans_limite_pids=<ce que `pids.max` contient pour `libre`, dans le même
+                  cgroup : un conteneur lancé sans aucune limite porte
+                  quand même un plafond de processus, et ce n'est pas
+                  la même valeur que pour la mémoire>
 ```
 
 Puis lancez un conteneur nommé `bride`, avec **deux** limites à la fois : 128m

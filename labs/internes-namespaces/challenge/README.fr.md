@@ -31,7 +31,9 @@ celui de l'hôte serait celui dont ce namespace est isolé.
 
 ## 3. Le namespace partagé avec l'hôte
 
-À la ligne `partage=`, un nom parmi les sept.
+À la ligne `partage=`, l'identifiant complet, de la forme `nom:[...]`. Le
+nom seul ne suffit pas : il est dans la leçon, l'inode n'est que sur votre
+machine, et il est identique des deux côtés.
 
 Il y en a sept : `pid`, `net`, `mnt`, `uts`, `ipc`, `user`, `cgroup`. **Six
 diffèrent entre le conteneur et l'hôte. Un est identique.**

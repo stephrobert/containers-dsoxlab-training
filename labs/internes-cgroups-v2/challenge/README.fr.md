@@ -29,7 +29,9 @@ retouche et sans conversion.
 
 ## 3. Ce que le même fichier contient pour `libre`
 
-À la ligne `sans_limite=`.
+À la ligne `sans_limite=`, et à la ligne `sans_limite_pids=` le `pids.max`
+du même cgroup : un conteneur sans limite porte quand même un plafond de
+processus, qui dépend de la machine et n'est dans aucune leçon.
 
 Lisez le **même** fichier, dans le cgroup de l'autre conteneur. Vous chercherez
 spontanément un nombre, et il n'y en a pas : c'est la question la plus utile du
