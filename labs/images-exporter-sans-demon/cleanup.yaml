@@ -1,0 +1,55 @@
+---
+# Joué par `dsoxlab clean` : il rend la machine telle qu'il l'a trouvée, et
+# rien de plus.
+#
+# ATTENTION AUX APOSTROPHES DANS LES BLOCS `shell:`. Ansible découpe le contenu
+# d'un bloc shell avant de l'envoyer, et une apostrophe française y ouvre une
+# quote qui ne se referme jamais : le playbook échoue au CHARGEMENT, sur
+# « failed at splitting arguments, either an unbalanced jinja2 block or
+# quotes ». Mesuré ici le 2026-11-05, sur un commentaire qui disait
+# « L'image chargée ». Les commentaires à l'intérieur des blocs shell sont donc
+# écrits sans apostrophes, comme ceux des sondes du catalogue.
+- name: Nettoyer le lab images-exporter-sans-demon
+  hosts: lab_target
+  become: true
+  vars:
+    lab: images-exporter-sans-demon
+    travail: /opt/dsoxlab-images-exporter-sans-demon
+    skopeo_img: quay.io/skopeo/stable:v1.22.3@sha256:2681eccb8b02c495b013c2669cbf7f41d5c0b0b0e644e7c69bd3ea9bcb20641f
+    sujet: busybox:1.37.0-musl
+  tasks:
+    # ON NE RETIRE QUE CE QU'ON A POSÉ, et on le retire d'après les marqueurs du
+    # setup, jamais d'après une supposition : une image qui était là avant nous
+    # appartient à la machine, pas au lab.
+    - name: Retirer les images, selon ce que le setup avait noté
+      ansible.builtin.shell: |
+        set -eu
+        # Image chargee par apprenant depuis son archive : elle ne vient que de
+        # ce lab, elle part sans condition.
+        docker rmi -f 'livraison.test/socle:1.0' >/dev/null 2>&1 || true
+        # Image a livrer : remise si elle etait la avant nous, retiree sinon.
+        if test -e '/var/tmp/dsoxlab-{{ lab }}.sujet-a-remettre'; then
+          docker pull -q '{{ sujet }}' >/dev/null 2>&1 || true
+        else
+          docker rmi -f '{{ sujet }}' >/dev/null 2>&1 || true
+        fi
+        # Image de skopeo : retiree seulement si le setup avait du la tirer.
+        if test -e '/var/tmp/dsoxlab-{{ lab }}.skopeo-a-rendre'; then
+          docker rmi -f '{{ skopeo_img }}' >/dev/null 2>&1 || true
+        fi
+        rm -f '/var/tmp/dsoxlab-{{ lab }}.skopeo-a-rendre'
+        rm -f '/var/tmp/dsoxlab-{{ lab }}.sujet-a-remettre'
+      changed_when: true
+
+    - name: Retirer l'espace de travail, s'il nous appartient
+      ansible.builtin.shell: |
+        set -eu
+        # Trois gardes avant un rm -rf : le chemin existe, il est un vrai
+        # repertoire et non un lien, et son marqueur nomme CE lab.
+        if test -e '{{ travail }}' || test -L '{{ travail }}'; then
+          test -d '{{ travail }}'
+          test ! -L '{{ travail }}'
+          test "$(cat '{{ travail }}/.owner')" = '{{ lab }}'
+          rm -rf '{{ travail }}'
+        fi
+      changed_when: true

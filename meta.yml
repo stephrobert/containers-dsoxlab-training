@@ -195,6 +195,7 @@ sections:
       - registry-locale-tls
       - registry-authentification
       - registry-droits-minimaux
+      - images-exporter-sans-demon
       - registry-air-gap
       - epreuve-livrer-une-image
       - epreuve-reconstruire-une-image-pour-deux-architectures

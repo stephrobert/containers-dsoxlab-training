@@ -1,0 +1,25 @@
+# Lab images-exporter-sans-demon. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-exporter-sans-demon                      # REQUIS
+title: "Export an image without the daemon, and keep what must survive"   # REQUIS
+level: c3                     # REQUIS
+description: "Copy a pinned image straight from the registry to an OCI archive without the daemon ever pulling it, name the destination so the load gives back a usable image, and produce another architecture than the host's."
+skills:                       # REQUIS, non vide
+  - skopeo
+  - images
+  - oci
+  - registry
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/exporter-sans-demon-avec-skopeo/#mettre-en-pratique   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab        # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

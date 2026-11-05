@@ -1,0 +1,5 @@
+# Surcharge française du lab images-exporter-sans-demon. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Exporter une image sans le démon, et garder ce qui doit survivre"
+description: "Copier une image épinglée du registre vers une archive OCI sans que le démon la tire jamais, nommer la destination pour que le chargement rende une image utilisable, et produire une autre architecture que celle de l'hôte."
