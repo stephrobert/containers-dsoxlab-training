@@ -122,20 +122,20 @@ vers un parcours distinct.
 
 | id | type | val | doc_url ancré |
 | --- | --- | --- | --- |
-| `docker-verifier-son-moteur` | lab | f | `moteurs-conteneurs/docker/installation/#vérification-de-linstallation` |
-| `docker-premier-conteneur` | lab | f | `moteurs-conteneurs/docker/cli/#lancer-et-gérer-les-conteneurs-docker` |
-| `docker-cycle-de-vie` | lab | f | `moteurs-conteneurs/docker/concepts/#cycle-de-vie-dun-conteneur` |
-| `container-entrypoint-et-cmd` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#le-cycle-de-vie-dun-conteneur` |
-| `container-signaux-et-pid-1` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#stop-vs-kill--quelle-différence-` |
-| `docker-inspecter-un-conteneur` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#les-commandes-indispensables` |
-| `docker-anatomie-dune-image` | lab | f | `images-conteneurs/#comment-est-construite-une-image-de-conteneur-` |
-| `reseau-bridge-par-defaut` | lab | f | `moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation` |
-| `reseau-bridge-dedie` | lab | f | `moteurs-conteneurs/docker/network/#le-réseau-bridge--la-fondation` |
-| `reseau-publication-de-ports` | lab | f+s | `moteurs-conteneurs/docker/network/#bonnes-pratiques-réseau` |
-| `reseau-interne` | lab | f+s | `moteurs-conteneurs/docker/network/#le-réseau-none--isolation-totale` |
-| `remettre-un-conteneur-en-service` | challenge | f | `moteurs-conteneurs/docker/network/#dépannage-réseau-docker` |
-| `donnees-volumes-et-montages` | lab | f | `moteurs-conteneurs/docker/volumes/#vue-densemble-des-types-de-volumes` |
-| `donnees-permissions-uid-gid` | lab | f | `moteurs-conteneurs/docker/volumes/#les-volumes-standards` |
+| `docker-verifier-son-moteur` | lab | f | voir `lab.yaml` |
+| `docker-premier-conteneur` | lab | f | voir `lab.yaml` |
+| `docker-cycle-de-vie` | lab | f | voir `lab.yaml` |
+| `container-entrypoint-et-cmd` | lab | f | voir `lab.yaml` |
+| `container-signaux-et-pid-1` | lab | f | voir `lab.yaml` |
+| `docker-inspecter-un-conteneur` | lab | f | voir `lab.yaml` |
+| `docker-anatomie-dune-image` | lab | f | voir `lab.yaml` |
+| `reseau-bridge-par-defaut` | lab | f | voir `lab.yaml` |
+| `reseau-bridge-dedie` | lab | f | voir `lab.yaml` |
+| `reseau-publication-de-ports` | lab | f+s | voir `lab.yaml` |
+| `reseau-interne` | lab | f+s | voir `lab.yaml` |
+| `remettre-un-conteneur-en-service` | challenge | f | voir `lab.yaml` |
+| `donnees-volumes-et-montages` | lab | f | voir `lab.yaml` |
+| `donnees-permissions-uid-gid` | lab | f | voir `lab.yaml` |
 
 `docker-premier-conteneur` est le lab d'entrée du catalogue : il doit se jouer
 en moins d'une minute, sans rien construire, sinon il décourage avant
@@ -150,16 +150,16 @@ sont une autre compétence, et ils sont dans `compose-application`.
 
 | id | type | val | prér. | doc_url ancré |
 | --- | --- | --- | --- | --- |
-| `internes-namespaces` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#namespaces--isoler-ce-que-le-conteneur-voit` |
-| `internes-cgroups-v2` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
+| `internes-namespaces` | lab | f | - | voir `lab.yaml` |
+| `internes-cgroups-v2` | lab | f | - | voir `lab.yaml` |
 | `internes-stockage-des-images` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/` |
-| `internes-chaine-dexecution` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#comment-ces-mécanismes-fonctionnent-ensemble` |
-| `container-limite-cpu` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
-| `container-ulimits-et-shm` | lab | f | - | `moteurs-conteneurs/docker/sous-le-capot/#cgroups--limiter-ce-que-le-conteneur-utilise` |
-| `troubleshoot-exit-127` | lab | f | - | `moteurs-conteneurs/docker/execution-depannage/#décoder-les-exit-codes` |
-| `troubleshoot-conflit-de-port` | lab | f | - | `moteurs-conteneurs/docker/execution-depannage/#checklist-de-debug-réseau` |
-| `troubleshoot-permission-refusee` | lab | f | `donnees-permissions-uid-gid` | `moteurs-conteneurs/docker/volumes/#les-volumes-standards` |
-| `troubleshoot-boucle-de-redemarrage` | lab | f | - | `moteurs-conteneurs/docker/execution-depannage/#restart-policies--redémarrer-automatiquement` |
+| `internes-chaine-dexecution` | lab | f | - | voir `lab.yaml` |
+| `container-limite-cpu` | lab | f | - | voir `lab.yaml` |
+| `container-ulimits-et-shm` | lab | f | - | voir `lab.yaml` |
+| `troubleshoot-exit-127` | lab | f | - | voir `lab.yaml` |
+| `troubleshoot-conflit-de-port` | lab | f | - | voir `lab.yaml` |
+| `troubleshoot-permission-refusee` | lab | f | `donnees-permissions-uid-gid` | voir `lab.yaml` |
+| `troubleshoot-boucle-de-redemarrage` | lab | f | - | voir `lab.yaml` |
 
 `internes-stockage-des-images` a une raison d'exister que l'audit a trouvée :
 sur le poste de mesure, la même image pesait **83 Mio par l'API et 329 Mio par
@@ -183,15 +183,15 @@ incidents qui touchent l'hôte, eux, sont au niveau c4.
 | --- | --- | --- | --- |
 | **`images-identifier-image`** | lab | f | `images-conteneurs/ecrire-dockerfile/` |
 | **`images-premiere-image`** | lab | f | `images-conteneurs/ecrire-dockerfile/` |
-| `images-ordre-des-couches` | lab | f | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-1--maximiser-le-cache-avec-lordre-des-instructions` |
-| `images-contexte-de-build` | lab | f+s | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-2--utiliser-dockerignore` |
+| `images-ordre-des-couches` | lab | f | voir `lab.yaml` |
+| `images-contexte-de-build` | lab | f+s | voir `lab.yaml` |
 | `images-optimiser-la-taille` | lab | f | `images-conteneurs/optimiser-taille-image/` |
-| `images-migrer-vers-alpine` | lab | f | `images-conteneurs/optimiser-taille-image/#choisissez-la-bonne-image-de-base` |
-| `images-build-multi-etapes` | lab | f | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-3--multi-stage-build-pour-des-images-légères` |
-| `images-non-root` | lab | f+s | `images-conteneurs/dockerfile-bonnes-pratiques/#principe-4--exécuter-en-non-root` |
-| `images-healthcheck` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#surveiller-la-santé-avec-healthcheck` |
-| `buildkit-cache-monte` | lab | f | `images-conteneurs/build/buildkit/#cache-avancé` |
-| `buildkit-secret-de-build` | challenge | f+s | `moteurs-conteneurs/docker/secrets/#buildkit--secrets-au-moment-du-build` |
+| `images-migrer-vers-alpine` | lab | f | voir `lab.yaml` |
+| `images-build-multi-etapes` | lab | f | voir `lab.yaml` |
+| `images-non-root` | lab | f+s | voir `lab.yaml` |
+| `images-healthcheck` | lab | f | voir `lab.yaml` |
+| `buildkit-cache-monte` | lab | f | voir `lab.yaml` |
+| `buildkit-secret-de-build` | challenge | f+s | voir `lab.yaml` |
 
 `images-identifier-image` a été **le premier lab écrit** de ce catalogue,
 attesté `VALIDE` le 2026-10-28. Il réalise le contrat `conteneurs-11` du
@@ -222,12 +222,12 @@ Entièrement absent de l'ancien dépôt, pour 2 505 lignes de guides disponibles
 
 | id | type | val | doc_url ancré |
 | --- | --- | --- | --- |
-| `registry-tag-push-pull` | lab | f | `registres/#docker-push--envoyer-une-image-vers-la-registry` |
-| `registry-tag-contre-digest` | lab | f+s | `registres/#tags-vs-digests--la-distinction-critique` |
-| `images-epingler-par-digest` | lab | f+s | `registres/#tags-vs-digests--la-distinction-critique` |
-| `registry-locale-tls` | lab | f+s | `registres/distribution/#configurer-tls` |
-| `registry-authentification` | lab | f+s | `registres/distribution/#configurer-lauthentification` |
-| `registry-air-gap` | challenge | f | `outils/skopeo/#environnements-air-gap-déconnectés` |
+| `registry-tag-push-pull` | lab | f | voir `lab.yaml` |
+| `registry-tag-contre-digest` | lab | f+s | voir `lab.yaml` |
+| `images-epingler-par-digest` | lab | f+s | voir `lab.yaml` |
+| `registry-locale-tls` | lab | f+s | voir `lab.yaml` |
+| `registry-authentification` | lab | f+s | voir `lab.yaml` |
+| `registry-air-gap` | challenge | f | voir `lab.yaml` |
 
 `registry-locale-tls` et `registry-authentification` touchent la configuration
 du démon pour lui faire accepter un certificat. C'était l'argument qui les
@@ -246,15 +246,15 @@ utilisable ailleurs, sans accès au registre d'origine.
 
 | id | type | val | doc_url ancré |
 | --- | --- | --- | --- |
-| `compose-premiere-stack` | lab | f | `orchestrateurs/docker-compose/#votre-premier-composeyaml` |
-| `compose-resolution-des-variables` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-isolation-reseau` | lab | f+s | `orchestrateurs/docker-compose/#concepts-clés` |
-| `compose-persistance` | lab | f | `orchestrateurs/docker-compose/#concepts-clés` |
-| `compose-tache-de-migration` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-secrets` | lab | f+s | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-sante-et-dependances` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-ressources` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
-| `compose-plusieurs-environnements` | lab | f | `orchestrateurs/docker-compose/#configuration-avancée` |
+| `compose-premiere-stack` | lab | f | voir `lab.yaml` |
+| `compose-resolution-des-variables` | lab | f | voir `lab.yaml` |
+| `compose-isolation-reseau` | lab | f+s | voir `lab.yaml` |
+| `compose-persistance` | lab | f | voir `lab.yaml` |
+| `compose-tache-de-migration` | lab | f | voir `lab.yaml` |
+| `compose-secrets` | lab | f+s | voir `lab.yaml` |
+| `compose-sante-et-dependances` | lab | f | voir `lab.yaml` |
+| `compose-ressources` | lab | f | voir `lab.yaml` |
+| `compose-plusieurs-environnements` | lab | f | voir `lab.yaml` |
 
 **Ce bloc tient sur un guide de 798 lignes dont les sections sont larges.**
 Les ancres ci-dessus sont justes, mais `#configuration-avancée` sert six labs :
@@ -293,22 +293,22 @@ désormais cette place auprès de la leçon C32.
 | id | type | val | doc_url ancré |
 | --- | --- | --- | --- |
 | `docker-configurer-le-demon` | lab | f | `moteurs-conteneurs/docker/daemon-config/` |
-| `docker-contexte-ssh` | lab | f+s | `moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe` |
-| `docker-rotation-des-journaux` | lab | f | `moteurs-conteneurs/docker/daemon-config/#logging-drivers` |
-| `securite-groupe-docker` | lab | f+s | `moteurs-conteneurs/docker/securite/#comprendre-le-modèle-de-menaces-docker` |
-| `securite-socket-lecture-seule` | challenge | f+s | `moteurs-conteneurs/docker/socket-proxy/#pourquoi-ro-ne-suffit-pas` |
+| `docker-contexte-ssh` | lab | f+s | voir `lab.yaml` |
+| `docker-rotation-des-journaux` | lab | f | voir `lab.yaml` |
+| `securite-groupe-docker` | lab | f+s | voir `lab.yaml` |
+| `securite-socket-lecture-seule` | challenge | f+s | voir `lab.yaml` |
 | `securite-socket-proxy` | lab | f+s | `moteurs-conteneurs/docker/socket-proxy/` |
-| `securite-rootless` | lab | f+s | `moteurs-conteneurs/docker/securite/#rootless-mode` |
-| `securite-capabilities` | lab | f+s | `moteurs-conteneurs/docker/sous-le-capot/#capabilities--fragmenter-les-privilèges-root` |
-| `securite-no-new-privileges` | lab | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
-| `securite-seccomp` | lab | f+s | `moteurs-conteneurs/docker/securite/#profils-seccomp` |
-| `securite-apparmor` | lab | f+s | `moteurs-conteneurs/docker/securite/#apparmor-et-selinux` |
-| `container-systeme-en-lecture-seule` | lab | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
-| `container-limite-de-processus` | lab | f+s | `moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime` |
-| `secrets-au-runtime` | lab | f+s | `moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes` |
-| `container-memoire-et-oom` | lab | f | `moteurs-conteneurs/docker/execution-depannage/#diagnostic-approfondi--le-cas-oom-kill` |
-| `troubleshoot-disque-plein` | challenge | f | `moteurs-conteneurs/docker/daemon-config/#optimisations-production` |
-| `donnees-volume-orphelin` | challenge | f | `moteurs-conteneurs/docker/volumes/#bonnes-pratiques-de-gestion-des-volumes` |
+| `securite-rootless` | lab | f+s | voir `lab.yaml` |
+| `securite-capabilities` | lab | f+s | voir `lab.yaml` |
+| `securite-no-new-privileges` | lab | f+s | voir `lab.yaml` |
+| `securite-seccomp` | lab | f+s | voir `lab.yaml` |
+| `securite-apparmor` | lab | f+s | voir `lab.yaml` |
+| `container-systeme-en-lecture-seule` | lab | f+s | voir `lab.yaml` |
+| `container-limite-de-processus` | lab | f+s | voir `lab.yaml` |
+| `secrets-au-runtime` | lab | f+s | voir `lab.yaml` |
+| `container-memoire-et-oom` | lab | f | voir `lab.yaml` |
+| `troubleshoot-disque-plein` | challenge | f | voir `lab.yaml` |
+| `donnees-volume-orphelin` | challenge | f | voir `lab.yaml` |
 
 C'est le module le plus chargé du backlog, et c'est cohérent : il réunit les
 sept leçons qui vont du démon au diagnostic, et la sécurité n'y est pas un
@@ -350,8 +350,8 @@ donc un second hôte, et elle attendra qu'un guide la couvre.
 
 | id | type | val | prér. | doc_url ancré |
 | --- | --- | --- | --- | --- |
-| `compose-dans-une-ci` | challenge | f | - | `orchestrateurs/docker-compose/#commandes-essentielles` |
-| `image-scan-de-vulnerabilites` | lab | f+s | - | `registres/quay-io/#publier-une-image-sur-quayio` |
+| `compose-dans-une-ci` | challenge | f | - | voir `lab.yaml` |
+| `image-scan-de-vulnerabilites` | lab | f+s | - | voir `lab.yaml` |
 | `capstone-chaine-complete` | capstone | f+s | les capstones des trois niveaux précédents | - |
 
 `image-scan-de-vulnerabilites` doit corriger l'erreur de l'ancien TP3 : le lab
