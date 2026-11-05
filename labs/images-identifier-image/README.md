@@ -54,4 +54,4 @@ machine.
 
 30 minutes. Hints cost from 10 to 25 points.
 
-The guide: [https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/)
+The guide: [https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/#mettre-en-pratique](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/#mettre-en-pratique)
