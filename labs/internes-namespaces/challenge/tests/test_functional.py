@@ -224,19 +224,38 @@ def test_la_reponse_nomme_le_namespace_partage_avec_l_hote(host, pid_hote) -> No
            "à ceux du processus 1 de l'hôte : l'un des sept est identique des "
            "deux côtés.",
     )
-    propre = annonce.replace("namespace", "").strip(" :[]")
-    assert propre in partages, message(
-        en=f"`{annonce}` is not the namespace shared with the host.\n"
-           f"  shared: {', '.join(partages)}\n"
-           "The answer is a name among the seven, and it is found by comparing "
-           "the two sides, not by guessing. The one that is shared is also the "
-           "one that explains why root in a container is a security subject.",
-        fr=f"`{annonce}` n'est pas le namespace partagé avec l'hôte.\n"
-           f"  partagé : {', '.join(partages)}\n"
-           "La réponse est un nom parmi les sept, et elle se trouve en "
-           "comparant les deux côtés, pas en devinant. Celui qui est partagé "
-           "est aussi celui qui explique pourquoi root dans un conteneur est un "
-           "sujet de sécurité.",
+    # LE NOM NE SUFFIT PLUS, ET L'INODE EST EXIGÉ AVEC LUI.
+    #
+    # Le nom seul se trouve dans la leçon, qui enseigne que `user` est le
+    # namespace que Docker n'isole pas par défaut : la question se répondait
+    # donc sans toucher à la machine, et mesurait une lecture.
+    #
+    # Mesuré le 2026-11-05 : le namespace partagé porte `user:[4026531837]` des
+    # deux côtés sur cette machine, et cette valeur n'est dans aucune leçon.
+    #
+    # Le nom reste exigé, parce qu'il porte la leçon de sécurité du lab : le
+    # namespace partagé est celui qui explique pourquoi root dans un conteneur
+    # est un sujet. On ajoute la part mesurable, on ne remplace pas la part
+    # enseignante.
+    nom_attendu = partages[0]
+    attendu = _namespace(host, pid_hote, nom_attendu).lower()
+    assert annonce.strip() == attendu, message(
+        en=f"`{annonce}` is not the full identifier of the namespace shared "
+           f"with the host.\n"
+           f"  shared namespace : {nom_attendu}\n"
+           f"  expected form    : {nom_attendu}:[<inode>]\n"
+           "The name alone is in the lesson; the inode is only on this machine, "
+           "and it is identical on both sides, which is the whole point. Read "
+           f"it with `readlink /proc/<pid>/ns/{nom_attendu}`, on the "
+           "container's host PID and on PID 1.",
+        fr=f"`{annonce}` n'est pas l'identifiant complet du namespace partagé "
+           f"avec l'hôte.\n"
+           f"  namespace partagé : {nom_attendu}\n"
+           f"  forme attendue    : {nom_attendu}:[<inode>]\n"
+           "Le nom seul est dans la leçon ; l'inode n'est que sur cette "
+           "machine, et il est identique des deux côtés, ce qui est tout "
+           f"l'enjeu. Lisez-le avec `readlink /proc/<pid>/ns/{nom_attendu}`, "
+           "sur le PID hôte du conteneur et sur le PID 1.",
     )
 
 

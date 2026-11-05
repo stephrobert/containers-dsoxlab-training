@@ -26,7 +26,9 @@ Fill in the three lines of `/opt/lab-namespaces/reponses.txt`:
 ```text
 pid_hote=<the PID that SAME process carries on the HOST>
 ns_pid=<the identifier of `cloisonne`'s PID namespace, of the form pid:[...]>
-partage=<the NAME of the only namespace `cloisonne` shares with the host>
+partage=<the FULL IDENTIFIER of the only namespace `cloisonne` shares
+         with the host, of the form name:[...]: the name alone is not
+         enough, since it is in the lesson and not on your machine>
 ```
 
 Then start a container named `indiscret` that **sees** the host's processes, and

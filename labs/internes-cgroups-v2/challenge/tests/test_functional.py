@@ -245,6 +245,45 @@ def test_la_reponse_dit_ce_qu_un_conteneur_sans_limite_porte(host) -> None:
            "limite puisse prendre toute la mémoire de la machine.",
     )
 
+    # ET UNE VALEUR QUE LA LEÇON NE DONNE PAS, parce que la précédente, « max »,
+    # y est enseignée : la question se répondait sans toucher à la machine.
+    #
+    # `pids.max` D'UN CONTENEUR SANS LIMITE N'EST PAS « max ». Mesuré le
+    # 2026-11-05 : il vaut 2265 sur cette machine, stable sur trois conteneurs,
+    # et il ne dérive ni de kernel.pid_max (4194304), ni de threads-max (15103),
+    # ni du cgroup parent (max). Il ne se calcule donc pas de tête, et il diffère
+    # d'une machine à l'autre : le contrôle le LIT au lieu de l'écrire en dur.
+    #
+    # Et il enseigne quelque chose : un conteneur « sans limite » porte quand
+    # même un plafond de processus, posé par le moteur. L'absence de limite
+    # mémoire et l'absence de limite de processus ne se ressemblent pas.
+    plafond = _valeur(host, chemin, "pids.max")
+    if not plafond:
+        pytest.skip(message(
+            en=f"{chemin}/pids.max is unreadable: the setup did not finish",
+            fr=f"{chemin}/pids.max est illisible : le setup n'a pas abouti",
+        ))
+
+    annonce_pids = _lire_reponses(host).get("sans_limite_pids", "")
+    assert annonce_pids, message(
+        en="the `sans_limite_pids=` line is empty. Read `pids.max` in the SAME "
+           f"cgroup as `{SANS_LIMITE}`: a container started without any limit "
+           "still carries a process ceiling, and it is not `max`.",
+        fr="la ligne `sans_limite_pids=` est vide. Lisez `pids.max` dans le MÊME "
+           f"cgroup que `{SANS_LIMITE}` : un conteneur lancé sans aucune limite "
+           "porte quand même un plafond de processus, et ce n'est pas `max`.",
+    )
+    assert annonce_pids == plafond, message(
+        en=f"`{SANS_LIMITE}` declares `{plafond}` processes at most, not "
+           f"`{annonce_pids}`.\n"
+           "That number is in no lesson: it depends on this machine, and the "
+           "engine poses it even when no limit was asked for.",
+        fr=f"`{SANS_LIMITE}` déclare `{plafond}` processus au maximum, et non "
+           f"`{annonce_pids}`.\n"
+           "Ce nombre n'est dans aucune leçon : il dépend de cette machine, et "
+           "le moteur le pose même quand aucune limite n'a été demandée.",
+    )
+
 
 def test_le_conteneur_bride_porte_les_deux_plafonds(host) -> None:
     """Deux limites d'un seul geste, et toutes deux lues dans le cgroup.

@@ -29,7 +29,9 @@ trace. The expected answer is the file's content, unedited and unconverted.
 
 ## 3. What the same file contains for `libre`
 
-On the `sans_limite=` line.
+On the `sans_limite=` line, and on the `sans_limite_pids=` line the
+`pids.max` of the same cgroup: a container without a limit still carries a
+process ceiling, which depends on the machine and is in no lesson.
 
 Read the **same** file, in the other container's cgroup. You will spontaneously
 look for a number, and there is none: it is the lab's most useful question, and

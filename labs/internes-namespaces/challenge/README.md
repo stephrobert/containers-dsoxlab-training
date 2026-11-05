@@ -30,7 +30,9 @@ be the one that namespace is isolated from.
 
 ## 3. The namespace shared with the host
 
-On the `partage=` line, one name among the seven.
+On the `partage=` line, the full identifier, of the form `name:[...]`. The
+name alone is not enough: it is in the lesson, the inode is only on your
+machine, and it is identical on both sides.
 
 There are seven: `pid`, `net`, `mnt`, `uts`, `ipc`, `user`, `cgroup`. **Six
 differ between the container and the host. One is identical.**

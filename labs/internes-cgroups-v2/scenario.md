@@ -28,12 +28,16 @@ The previous lab showed what a container **sees**. This one shows what it may
 **consume**, and it is a completely different mechanism: cgroups count and cap,
 where namespaces restrict a view.
 
-Fill in the three lines of `/opt/lab-cgroups/reponses.txt`:
+Fill in the four lines of `/opt/lab-cgroups/reponses.txt`:
 
 ```text
 chemin=<the ABSOLUTE path of `mesure`'s cgroup, on the host>
 memoire_max=<the memory limit that cgroup declares, as it is>
 sans_limite=<what the SAME file contains for `libre`>
+sans_limite_pids=<what `pids.max` contains for `libre`, in the same
+                  cgroup: a container started without any limit still
+                  carries a process ceiling, and it is not the same
+                  value as for memory>
 ```
 
 Then start a container named `bride`, with **two** limits at once: 128m of
