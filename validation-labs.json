@@ -4780,12 +4780,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-04",
+  "date": "2026-11-08",
   "docker": "29.9.2",
-  "duree_s": 54,
+  "duree_s": 53,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -4961,12 +4961,12 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-04",
+  "date": "2026-11-08",
   "docker": "29.9.2",
-  "duree_s": 31,
+  "duree_s": 39,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/2",
    "après la solution : 2/2",
    "après clean et run : 0/2",
@@ -5274,12 +5274,12 @@
    "status": "failed",
    "total": 7
   },
-  "date": "2026-11-05",
+  "date": "2026-11-08",
   "docker": "29.9.2",
-  "duree_s": 129,
+  "duree_s": 128,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/7",
    "après la solution : 7/7",
    "après clean et run : 0/7",
