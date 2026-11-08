@@ -1627,9 +1627,9 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-04",
+  "date": "2026-11-05",
   "docker": "29.9.2",
-  "duree_s": 68,
+  "duree_s": 62,
   "ecarts": [],
   "etapes": [
    "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
@@ -1685,9 +1685,9 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-04",
+  "date": "2026-11-05",
   "docker": "29.9.2",
-  "duree_s": 56,
+  "duree_s": 51,
   "ecarts": [],
   "etapes": [
    "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
@@ -5060,34 +5060,40 @@
  "securite-rootless": {
   "apres": {
    "echecs": [],
-   "passed": 2,
+   "passed": 8,
    "recorded": true,
    "score": 100,
    "skipped": 0,
    "status": "passed",
-   "total": 2
+   "total": 8
   },
   "avant": {
    "echecs": [
-    "test_dedicated_daemon_is_active_and_rootless",
-    "test_rootless_network_and_data_survive_container_recreation"
+    "test_la_publication_reste_sur_un_port_loopback_non_privilegie",
+    "test_le_demon_dedie_annonce_le_mode_rootless",
+    "test_le_demon_rootless_cree_son_reseau_et_son_volume",
+    "test_le_processus_du_service_appartient_au_compte_non_privilegie",
+    "test_le_service_dedie_est_actif",
+    "test_le_stockage_d_images_du_demon_rootless_est_distinct",
+    "test_un_pair_du_reseau_joint_le_service_et_un_pair_sans_reseau_est_refuse",
+    "test_une_donnee_nouvelle_survit_a_deux_recreations_du_conteneur"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 2
+   "total": 8
   },
-  "date": "2026-11-02",
+  "date": "2026-11-05",
   "docker": "29.9.2",
-  "duree_s": 74,
+  "duree_s": 78,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
-   "avant le travail : 0/2",
-   "après la solution : 2/2",
-   "après clean et run : 0/2",
+   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "avant le travail : 0/8",
+   "après la solution : 8/8",
+   "après clean et run : 0/8",
    "moteur rendu intact"
   ],
   "host": "docker.lab",
@@ -5102,15 +5108,21 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_dedicated_daemon_is_active_and_rootless",
-    "test_rootless_network_and_data_survive_container_recreation"
+    "test_la_publication_reste_sur_un_port_loopback_non_privilegie",
+    "test_le_demon_dedie_annonce_le_mode_rootless",
+    "test_le_demon_rootless_cree_son_reseau_et_son_volume",
+    "test_le_processus_du_service_appartient_au_compte_non_privilegie",
+    "test_le_service_dedie_est_actif",
+    "test_le_stockage_d_images_du_demon_rootless_est_distinct",
+    "test_un_pair_du_reseau_joint_le_service_et_un_pair_sans_reseau_est_refuse",
+    "test_une_donnee_nouvelle_survit_a_deux_recreations_du_conteneur"
    ],
    "passed": 0,
    "recorded": true,
    "score": 0,
    "skipped": 0,
    "status": "failed",
-   "total": 2
+   "total": 8
   },
   "store": "containerd",
   "verdict": "VALIDE"
