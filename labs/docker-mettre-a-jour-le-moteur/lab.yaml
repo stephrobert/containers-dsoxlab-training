@@ -1,0 +1,24 @@
+# Lab docker-mettre-a-jour-le-moteur. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: docker-mettre-a-jour-le-moteur                      # REQUIS
+title: "Move the engine up without the gateway noticing"   # REQUIS
+level: c6                     # REQUIS
+description: "Move Docker Engine from 29.8.2 to exactly 29.9.2 on a host that serves traffic: keep the engine packages held, add live-restore without losing the log options, and leave the running service and its data untouched."
+skills:                       # REQUIS, non vide
+  - docker
+  - apt
+  - live-restore
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/mettre-a-jour-le-moteur/#mettre-en-pratique   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 35m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab        # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

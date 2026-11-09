@@ -8,7 +8,7 @@ skills:
   - logging
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#mettre-en-pratique
 lab_type: lab
 estimated_time: 30m
 runtime:

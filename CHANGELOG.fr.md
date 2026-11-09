@@ -17,6 +17,27 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Ajouté
 
+- **`images-tester-le-contrat` (C19, niveau c5).** L'apprenant écrit un script de
+  tests extérieur, `tester-contrat.sh`, qui accepte une image correcte et refuse
+  des images cassées de natures différentes. Ce qui est noté est le script, joué
+  contre un jeu d'images : une image correcte dont l'apprenant part, un ancien
+  build que l'énoncé nomme, et sept images cassées que les contrôles construisent
+  eux-mêmes au moment de noter (dossier de données à root, erreur signalée avec
+  le code 0, variable obligatoire non vérifiée, processus en root, écriture hors
+  du dossier de données, SIGTERM ignoré, compteur perdu à l'arrêt). Six contrôles
+  de poids égal ; chaque refus ne compte que si le même script accepte l'image
+  correcte, si bien qu'un script qui rend toujours 0 ou toujours 1 obtient zéro.
+  Attesté dans les deux sens sur Docker 29.9.2.
+
+- **`docker-mettre-a-jour-le-moteur` (C35c, niveau c6).** Le moteur passe de 29.8.2
+  à 29.9.2 exactement sur un hôte qui porte un service témoin. Cinq contrôles sur
+  l'état final : la version exacte (et non le candidat du dépôt, 29.9.3), les six
+  paquets toujours retenus, `live-restore` actif avec les options de journal
+  d'origine conservées, le témoin jamais relancé (processus, heure de démarrage,
+  compteur de battements ininterrompu) et sa donnée intacte. La montée est notée,
+  le retour arrière ne l'est pas. Le setup ramène le moteur en 29.8.2 et le
+  cleanup rend au catalogue le 29.9.2, six paquets retenus, sans `daemon.json`.
+
 - **Un garde-fou sur les exigences critiques**
   (`tests/test_exigence_critique_declaree.py`, câblé en hook). Une promesse
   « aucun total ne compense » écrite dans un énoncé doit avoir sa déclaration
@@ -50,6 +71,21 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
   sabotage, et chacun échoue quand il doit échouer.
 
 ### Modifié
+
+- **`securite-capabilities` enseigne une exception réelle.** Il exigeait
+  `NET_BIND_SERVICE`, qui n'existe pas sous Docker : mesuré sur Engine 29.9.2, un
+  conteneur sans aucune capability écoute sur le port 80, parce que le moteur pose
+  `net.ipv4.ip_unprivileged_port_start=0` dans son espace de noms réseau. Le lab
+  recrée désormais un lanceur de travaux qui s'arrête au démarrage quand toutes
+  les capabilities sont retirées (son `chroot` est refusé) et en demande une seule
+  en retour, `SYS_CHROOT`. Trois contrôles : l'ensemble déclaré et l'absence de
+  mode privilégié, le masque effectif `0x40000` avec le rapport du lanceur
+  lui-même, et un vrai changement de propriétaire qui doit échouer. Même
+  identifiant, nouveau titre.
+
+- **Trois `doc_url` suivent les leçons réécrites.** `secrets-au-runtime`,
+  `docker-contexte-ssh` et `docker-configurer-le-demon` visent désormais la section
+  `#mettre-en-pratique` de leur page, la forme des autres labs du catalogue.
 
 - **Le contrôle des ancres de `doc_url` a désormais trois issues, au lieu de
   deux** (`scripts/verifier-ancres.py`, test
