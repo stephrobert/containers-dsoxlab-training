@@ -52,9 +52,9 @@ jobs:
           persist-credentials: false
 
       - name: Plumber compliance scan
-        uses: getplumber/plumber@d1133cdac48cfdf0c0004637ae4af38bcf9f16c7 # v0.7.11
+        uses: getplumber/plumber@ec8cb3a7edd6a324b33e85109b627b2df6023d94 # v0.7.23
         with:
-          version: "v0.4.3"
+          version: "v0.7.23"
           verify-attestation: "true"   # check the binary's SLSA provenance before running
           # Gate on the Plumber Score itself. `threshold` is DEPRECATED and its
           # value 100 is explicitly "treated as unset" by the action - it gated
