@@ -1,5 +1,14 @@
 # Surcharge française de l'épreuve epreuve-reprendre-un-hote-docker. Elle ne porte QUE
-# `title` et `description` : tout autre champ y est ignoré en silence, parce que
-# le contrat ne se traduit pas.
+# `title`, `description` et les libellés `criteria` (`id`, `label`) : tout autre champ y
+# est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "Reprendre un hôte Docker que personne n'a suivi"
 description: "Reprendre un hôte Docker laissé sans suivi : imposer une rotation des journaux et redémarrer le démon, rendre la place occupée pour rien sans perdre le volume de l'application, trancher qui peut encore parler au moteur, poser un proxy de lecture seule devant le socket, et fermer l'API TCP."
+criteria:
+  - id: journaux-bornes-application-active
+    label: "Les journaux des conteneurs sont bornés et l'application tourne"
+  - id: place-rendue-donnee-intacte
+    label: "La place inutile est rendue et la donnée de l'application est intacte"
+  - id: acces-au-moteur
+    label: "Seuls les comptes et les canaux légitimes atteignent le moteur"
+  - id: outil-en-lecture
+    label: "L'outil lit le moteur sans pouvoir le piloter"

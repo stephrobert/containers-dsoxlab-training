@@ -29,6 +29,37 @@ exam_blocking_checks:
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
   - test_l_inventaire_ne_publie_aucun_port
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: vitrine-locale
+    label: "The storefront is reachable only from the machine itself"
+    tests:
+      - test_la_vitrine_ne_publie_que_sur_l_interface_demandee
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/
+  - id: base-sous-un-nom-de-service
+    label: "The database answers to a service name distinct from its container name"
+    tests:
+      - test_la_base_repond_a_un_alias_distinct_de_son_nom
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/
+  - id: base-inaccessible
+    label: "The database cannot be reached from outside"
+    tests:
+      - test_la_base_est_sur_un_reseau_sans_issue
+      - test_l_inventaire_ne_publie_aucun_port
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-interne/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/
+  - id: requete-metier
+    label: "The business request still succeeds despite the isolation"
+    tests:
+      - test_la_requete_metier_aboutit_malgre_l_isolement
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-interne/
 estimated_time: 30m
 runtime:
   type: vm

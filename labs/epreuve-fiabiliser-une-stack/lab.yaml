@@ -33,6 +33,42 @@ exam_blocking_checks:
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
   - test_le_mot_de_passe_n_est_ni_dans_l_environnement_ni_dans_l_image
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: demarrage-a-froid
+    label: "The stack answers on the first try after a cold start"
+    tests:
+      - test_la_stack_repond_du_premier_coup_apres_un_demarrage_a_froid
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sante-et-ordre-de-demarrage/
+  - id: secret-sans-fuite
+    label: "The password reaches the vault without sitting in the environment, the image or the resolved configuration"
+    tests:
+      - test_le_mot_de_passe_n_est_ni_dans_l_environnement_ni_dans_l_image
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/secrets/
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/variables-et-environnements/
+  - id: memoire-bornee
+    label: "Every service carries an enforced memory limit"
+    tests:
+      - test_chaque_service_porte_une_limite_memoire_appliquee
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/ressources-et-redemarrage/
+  - id: reprise-automatique
+    label: "A service that dies comes back by itself"
+    tests:
+      - test_un_service_qui_meurt_repart_seul
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/ressources-et-redemarrage/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/
+  - id: variantes-distinctes
+    label: "The development and deployment variants say different things"
+    tests:
+      - test_les_deux_variantes_disent_des_choses_differentes
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/variantes-de-deploiement/
 estimated_time: 45m
 runtime:
   type: vm

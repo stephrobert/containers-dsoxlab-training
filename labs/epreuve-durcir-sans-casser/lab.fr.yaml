@@ -1,5 +1,16 @@
 # Surcharge française de l'épreuve epreuve-durcir-sans-casser. Elle ne porte QUE
-# `title` et `description` : tout autre champ y est ignoré en silence, parce que
-# le contrat ne se traduit pas.
+# `title`, `description` et les libellés `criteria` (`id`, `label`) : tout autre champ y
+# est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "Durcir un service sans le casser"
 description: "Retirer à un service les droits dont il n'a pas besoin, poser une racine en lecture seule avec des chemins d'écriture déclarés, sortir son secret de l'environnement sans le perdre, rétablir un flux bloqué sans désactiver le pare-feu, et garder le seul volume qui compte."
+criteria:
+  - id: droits-reduits
+    label: "Le service tourne avec des droits réduits et répond toujours"
+  - id: racine-protegee
+    label: "Le système de fichiers du service est protégé et ses écritures légitimes passent"
+  - id: secret-sans-fuite
+    label: "Le secret parvient au service sans traîner dans son environnement ni dans l'image"
+  - id: flux-et-protection
+    label: "Le flux attendu aboutit et l'hôte reste protégé"
+  - id: donnees-utiles
+    label: "La donnée utile est servie et les volumes jetables sont retirés"

@@ -1,6 +1,13 @@
-# Surcharge francaise : `title` et `description` SEULEMENT, tout autre champ y est
-# ignore par le parseur.
+# Surcharge francaise : `title`, `description` et les libelles `criteria` (`id`,
+# `label`) SEULEMENT, tout autre champ y est ignore par le parseur.
 title: Livrer une image qu'un client vierge exécute vraiment
 description: Construire, publier, puis tirer une image par son digest depuis un second hôte vierge
   avec un compte en lecture seule, prouver qu'elle répond là-bas, et prouver que le secret de
   build n'a survécu dans aucune couche.
+criteria:
+  - id: livraison-utilisable
+    label: "La livraison est publiée et un client nu la récupère et l'exécute"
+  - id: secret-de-build
+    label: "Le secret de construction a servi sans laisser de trace dans l'image"
+  - id: droits-du-registre
+    label: "Un compte en lecture seule ne peut pas publier dans le registre"

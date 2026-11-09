@@ -16,6 +16,72 @@ exam_blocking_checks:
   - test_network_isolation_and_postgresql_real_write
   - test_runtime_nonroot_secret_limits_and_health_dependency
   - test_registry_manifest_digest_pull_and_deployed_identity
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: livraison-verifiable
+    label: "The image is delivered under an identity the registry confirms, and its contents can be checked"
+    tests:
+      - test_registry_manifest_digest_pull_and_deployed_identity
+      - test_sbom_matches_real_installed_packages_and_source
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/
+      - https://www.stephane-robert.info/docs/conteneurisation/supply-chain-images/
+  - id: construction-sobre
+    label: "The build keeps its secret out of the image and ships only what runs"
+    tests:
+      - test_buildkit_multistage_secret_receipt_and_runtime_minimisation
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build-multi-etapes/
+  - id: service-durci
+    label: "The service runs with reduced rights and bounded resources, and starts only when its dependency is healthy"
+    tests:
+      - test_runtime_nonroot_secret_limits_and_health_dependency
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sante-et-ordre-de-demarrage/
+  - id: base-isolee-et-ecriture
+    label: "The database stays isolated and the service really writes to it"
+    tests:
+      - test_network_isolation_and_postgresql_real_write
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-interne/
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/reseaux/
+  - id: donnees-conservees
+    label: "The data survives the replacement of the containers"
+    tests:
+      - test_data_survives_database_and_api_container_replacement
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/donnees-persistantes/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/
+  - id: restauration-seconde-machine
+    label: "The application and its new data are restored and served on a second machine"
+    tests:
+      - test_restore_application_and_new_data_on_a_fresh_second_vm
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sauvegarder-et-restaurer/
+  - id: maintien-en-service
+    label: "The application holds through a dependency outage, a bad release and a targeted maintenance"
+    tests:
+      - test_dependency_interruption_recovers_without_restarting_the_api
+      - test_targeted_maintenance_preserves_live_reads_and_a_restorable_backup
+      - test_bad_release_rolls_back_without_losing_data_and_incompatible_schema_is_refused
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/mettre-a-jour-et-revenir-en-arriere/
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sante-et-ordre-de-demarrage/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/donnees-orphelines/
+  - id: incidents-repares
+    label: "The recovery script repairs eight unannounced incidents without data loss"
+    tests:
+      - test_eight_real_incidents_recover_without_data_loss
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/preparer-l-exploitation/
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/journaux-et-saturation/
 estimated_time: 180m
 runtime:
   type: vm

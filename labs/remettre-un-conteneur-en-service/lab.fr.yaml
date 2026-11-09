@@ -1,5 +1,12 @@
-# Surcharge française du challenge remettre-un-conteneur-en-service. Elle ne porte QUE `title` et
-# `description` : tout autre champ y est ignoré en silence, parce que le
-# contrat ne se traduit pas.
+# Surcharge française de l'épreuve remettre-un-conteneur-en-service. Elle ne porte QUE
+# `title`, `description` et les libellés `criteria` (`id`, `label`) : tout autre champ y
+# est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "La boutique ne trouve plus son catalogue"
 description: "Réparer résolution, accès et exposition réels, puis recréer le catalogue sans perdre une donnée métier nouvelle persistante."
+criteria:
+  - id: recreation-sans-perte
+    label: "Remplacer le conteneur de la base ne perd aucune donnée et la réponse métier tient"
+  - id: noms-resolus
+    label: "L'application joint sa base sous le nom qu'elle utilise, l'exploitation garde le nom réel"
+  - id: base-non-publiee
+    label: "La base ne publie aucun port"

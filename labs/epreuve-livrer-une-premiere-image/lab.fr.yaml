@@ -1,5 +1,14 @@
 # Surcharge française de l'épreuve epreuve-livrer-une-premiere-image. Elle ne porte QUE
-# `title` et `description` : tout autre champ y est ignoré en silence, parce que
-# le contrat ne se traduit pas.
+# `title`, `description` et les libellés `criteria` (`id`, `label`) : tout autre champ y
+# est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "Livrer une première image publiable"
 description: "Écrire le Dockerfile d'une application fournie : elle doit répondre sans option d'identité, tourner sous un UID numérique non nul propriétaire de ses données, laisser identifiants et fichiers de travail hors de toute couche, rester sous un seuil de taille mesuré, et être publiée par son digest."
+criteria:
+  - id: image-non-privilegiee
+    label: "L'image s'exécute telle quelle, sous une identité non privilégiée propriétaire de ses données"
+  - id: jeton-hors-des-couches
+    label: "Le jeton du dépôt privé ne figure dans aucune couche de l'image"
+  - id: image-sobre
+    label: "L'image ne livre que ce dont l'application a besoin"
+  - id: publication-identifiee
+    label: "L'image est publiée et l'identité consignée est celle que le registre sert"

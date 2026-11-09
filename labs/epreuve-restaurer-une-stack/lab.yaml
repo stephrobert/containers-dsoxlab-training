@@ -40,3 +40,28 @@ exam_blocking_checks:
   # moteur depuis dsoxlab 0.7.0. Chaque nom a ete verifie sur
   # ce que le controle AFFIRME, et non sur son intitule.
   - test_le_temoin_a_ete_restaure
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: pile-remontee
+    label: "The stack is back up elsewhere and a request crosses its three tiers"
+    tests:
+      - test_les_trois_etages_tournent_sur_le_client_et_la_requete_les_traverse
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sauvegarder-et-restaurer/
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
+  - id: temoin-restaure
+    label: "The witness data is restored and served"
+    tests:
+      - test_le_temoin_a_ete_restaure
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/sauvegarder-et-restaurer/
+  - id: reseau-de-donnees-isole
+    label: "The data network stays isolated"
+    tests:
+      - test_le_reseau_de_donnees_est_reste_isole
+      - test_la_sonde_sur_le_reseau_public_n_atteint_pas_la_base
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/reseaux/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-interne/

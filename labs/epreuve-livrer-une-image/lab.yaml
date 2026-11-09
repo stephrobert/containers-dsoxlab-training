@@ -34,3 +34,28 @@ exam_blocking_checks:
   # moteur depuis dsoxlab 0.7.0. Chaque nom a ete verifie sur
   # ce que le controle AFFIRME, et non sur son intitule.
   - test_le_secret_a_servi_et_ne_survit_dans_aucune_couche
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: livraison-utilisable
+    label: "The delivery is published and a bare client can pull it and run it"
+    tests:
+      - test_la_livraison_est_publiee_et_designee_par_son_digest
+      - test_le_client_nu_tire_par_digest_et_execute
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/epingler-et-livrer-hors-ligne/
+  - id: secret-de-build
+    label: "The build secret was used and left no trace in the image"
+    tests:
+      - test_le_secret_a_servi_et_ne_survit_dans_aucune_couche
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/
+  - id: droits-du-registre
+    label: "A read-only account cannot publish to the registry"
+    tests:
+      - test_le_compte_en_lecture_seule_ne_peut_pas_publier
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/registres/distribution/

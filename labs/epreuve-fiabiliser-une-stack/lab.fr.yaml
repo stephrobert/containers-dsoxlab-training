@@ -1,5 +1,16 @@
 # Surcharge française de l'épreuve epreuve-fiabiliser-une-stack. Elle ne porte QUE
-# `title` et `description` : tout autre champ y est ignoré en silence, parce que
-# le contrat ne se traduit pas.
+# `title`, `description` et les libellés `criteria` (`id`, `label`) : tout autre champ y
+# est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "La stack qui ne marche qu'à la deuxième tentative"
 description: "Faire démarrer une stack Compose correctement du premier coup : attendre le service dont elle dépend, sortir le mot de passe de l'environnement sans le perdre, appliquer une limite mémoire, garder une politique de redémarrage, et séparer le déploiement du développement."
+criteria:
+  - id: demarrage-a-froid
+    label: "La stack répond du premier coup après un démarrage à froid"
+  - id: secret-sans-fuite
+    label: "Le mot de passe parvient au coffre sans traîner dans l'environnement, l'image ni la configuration résolue"
+  - id: memoire-bornee
+    label: "Chaque service porte une limite de mémoire appliquée"
+  - id: reprise-automatique
+    label: "Un service qui meurt repart seul"
+  - id: variantes-distinctes
+    label: "Les variantes de développement et de déploiement disent des choses différentes"

@@ -1,6 +1,13 @@
-# Surcharge francaise : `title` et `description` SEULEMENT, tout autre champ y est
-# ignore par le parseur.
+# Surcharge francaise : `title`, `description` et les libelles `criteria` (`id`,
+# `label`) SEULEMENT, tout autre champ y est ignore par le parseur.
 title: Restaurer une stack sur un autre hôte, données comprises
 description: 'Une requête métier traverse le frontal, l''API et la base. Une panne est injectée
   sans être annoncée : rétablir le service ET la donnée témoin sur un hôte distinct, sans retirer
   l''isolation du réseau de données.'
+criteria:
+  - id: pile-remontee
+    label: "La pile est remontée ailleurs et la requête traverse ses trois étages"
+  - id: temoin-restaure
+    label: "La donnée témoin est restaurée et servie"
+  - id: reseau-de-donnees-isole
+    label: "Le réseau de données reste isolé"

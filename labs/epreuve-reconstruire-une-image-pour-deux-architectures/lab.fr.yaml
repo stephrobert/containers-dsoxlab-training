@@ -1,5 +1,17 @@
-# Surcharge française de l'épreuve. Elle ne porte QUE `title` et `description` :
-# tout autre champ y est ignoré en silence, parce que le contrat ne se traduit
-# pas.
+# Surcharge française de l'épreuve epreuve-reconstruire-une-image-pour-deux-
+# architectures. Elle ne porte QUE `title`, `description` et les libellés `criteria`
+# (`id`, `label`) : tout autre champ y est ignoré en silence, parce que le contrat ne se
+# traduit pas.
 title: "Une seule image, quatre exigences, deux architectures"
 description: "Reconstruire une image lourde en une seule étape pour qu'une seule image soit à la fois multi-étapes sans son compilateur, sous un seuil de taille mesuré, sans son jeton de construction dans les couches ni dans l'historique, et servie pour deux architectures qui s'exécutent toutes les deux, avec le digest de l'index consigné."
+criteria:
+  - id: image-sans-outils-de-build
+    label: "L'image livrée ne porte que ce qu'il faut pour s'exécuter"
+  - id: jeton-hors-historique
+    label: "Le jeton ne figure ni dans l'historique ni dans les couches de l'image"
+  - id: dependance-privee
+    label: "La dépendance privée provient bien du dépôt"
+  - id: deux-architectures
+    label: "L'image est publiée pour deux architectures et chacune s'exécute"
+  - id: identite-consignee
+    label: "L'identité consignée correspond à ce que le registre sert"
