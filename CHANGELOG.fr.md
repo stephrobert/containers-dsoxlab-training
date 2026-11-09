@@ -17,6 +17,15 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Ajouté
 
+- **Les quatorze épreuves déclarent leurs critères et les leçons à réviser.**
+  Chaque épreuve regroupe ses tests en critères nommés par la capacité mesurée
+  (`criteria:`, libellés EN dans `lab.yaml`, FR dans `lab.fr.yaml`), chacun
+  rattaché aux leçons du parcours Docker qui l'enseignent (`lessons`). Une
+  épreuve ne donne que le verdict par critère pendant le `check` ; les leçons
+  ne sont jamais affichées par le moteur, le site les montre une fois le
+  résultat envoyé, sans désigner le critère en cause. Énoncés, tests,
+  indices et solutions inchangés.
+
 - **`images-tester-le-contrat` (C19, niveau c5).** L'apprenant écrit un script de
   tests extérieur, `tester-contrat.sh`, qui accepte une image correcte et refuse
   des images cassées de natures différentes. Ce qui est noté est le script, joué
@@ -71,6 +80,9 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
   sabotage, et chacun échoue quand il doit échouer.
 
 ### Modifié
+
+- **Plancher de dsoxlab relevé à 0.8.0** (CI et pre-commit) : `criteria` n'existe
+  pas avant, et une version antérieure le refuse.
 
 - **`securite-capabilities` enseigne une exception réelle.** Il exigeait
   `NET_BIND_SERVICE`, qui n'existe pas sous Docker : mesuré sur Engine 29.9.2, un
