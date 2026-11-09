@@ -1,5 +1,14 @@
 # Surcharge française de l'épreuve epreuve-contenir-un-conteneur-gourmand. Elle ne porte
-# QUE `title` et `description` : tout autre champ y est ignoré en silence, parce
-# que le contrat ne se traduit pas.
+# QUE `title`, `description` et les libellés `criteria` (`id`, `label`) : tout autre
+# champ y est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "Le traitement qui emporte la machine avec lui"
 description: "Contenir un traitement qui s'emballe par des limites de mémoire, de processeur et de processus, prouver que la limite tient pendant une pointe, garder le service qui répond, et ne perdre aucun résultat antérieur."
+criteria:
+  - id: limites-appliquees
+    label: "Les limites de mémoire, de processeur et de processus sont posées et réellement appliquées"
+  - id: pointe-contenue
+    label: "Une pointe est contenue par la limite et le service continue de répondre"
+  - id: resultats-conserves
+    label: "Les résultats antérieurs sont intacts et aucun n'est tronqué"
+  - id: processus-cote-hote
+    label: "Le relevé relie le conteneur à son processus et à son runtime sur l'hôte"

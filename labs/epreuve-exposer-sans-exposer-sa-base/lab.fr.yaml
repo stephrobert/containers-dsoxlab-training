@@ -1,5 +1,14 @@
-# Surcharge française de l'épreuve epreuve-exposer-sans-exposer-sa-base. Elle ne porte QUE
-# `title` et `description` : tout autre champ y est ignoré en silence, parce que
-# le contrat ne se traduit pas.
+# Surcharge française de l'épreuve epreuve-exposer-sans-exposer-sa-base. Elle ne porte
+# QUE `title`, `description` et les libellés `criteria` (`id`, `label`) : tout autre
+# champ y est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "Exposer une application sans exposer sa base"
 description: "Publier le frontal sur la seule interface demandée, faire répondre la base à un nom de service, la poser sur un réseau sans issue, ne lui laisser aucun port publié, et obtenir quand même la réponse métier de bout en bout."
+criteria:
+  - id: vitrine-locale
+    label: "La vitrine n'est joignable que depuis la machine"
+  - id: base-sous-un-nom-de-service
+    label: "La base répond à un nom de service distinct du nom de son conteneur"
+  - id: base-inaccessible
+    label: "La base n'est pas joignable de l'extérieur"
+  - id: requete-metier
+    label: "La requête métier aboutit malgré l'isolement"

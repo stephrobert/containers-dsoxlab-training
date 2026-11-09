@@ -29,6 +29,36 @@ exam_blocking_checks:
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
   - test_le_temoin_est_conserve_arrete_et_ses_journaux_lisibles
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: moteur-accessible
+    label: "The engine is running and your account can use it"
+    tests:
+      - test_le_moteur_tourne_est_active_et_le_compte_lui_parle
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/installation/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/anatomie/
+  - id: service-demande
+    label: "The requested service runs and answers with its configured value"
+    tests:
+      - test_le_service_tourne_et_rend_la_valeur_demandee
+      - test_l_ancien_conteneur_homonyme_a_disparu
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/
+  - id: temoin-conserve
+    label: "The incident witness container is preserved with readable logs"
+    tests:
+      - test_le_temoin_est_conserve_arrete_et_ses_journaux_lisibles
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/
+  - id: lancement-predit
+    label: "The program and arguments of a launch are announced correctly"
+    tests:
+      - test_la_prediction_annonce_le_programme_et_les_arguments_effectifs
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/
 estimated_time: 30m
 runtime:
   type: vm

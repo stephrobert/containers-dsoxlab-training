@@ -32,6 +32,39 @@ exam_blocking_checks:
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
   - test_la_place_est_rendue_et_le_volume_utile_est_intact
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: journaux-bornes-application-active
+    label: "Container logs are bounded and the application is running"
+    tests:
+      - test_le_demon_tourne_avec_une_rotation_des_journaux
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/
+  - id: place-rendue-donnee-intacte
+    label: "Wasted disk space is reclaimed and the application's data is intact"
+    tests:
+      - test_la_place_est_rendue_et_le_volume_utile_est_intact
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/donnees-orphelines/
+  - id: acces-au-moteur
+    label: "Only legitimate accounts and channels can reach the engine"
+    tests:
+      - test_le_groupe_docker_ne_porte_que_ceux_qui_doivent_y_etre
+      - test_le_demon_n_ecoute_aucun_socket_tcp
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/
+  - id: outil-en-lecture
+    label: "The tool reads the engine without being able to drive it"
+    tests:
+      - test_l_outil_passe_par_un_proxy_de_lecture_seule
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/
 estimated_time: 60m
 runtime:
   type: vm

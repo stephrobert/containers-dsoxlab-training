@@ -87,7 +87,13 @@ def fichiers_suivis() -> list[Path]:
         check=False,
     )
     if issue.returncode != 0:
-        pytest.skip("git ne répond pas : le périmètre du balayage est indéterminé")
+        # Appelé à l'import du module (`FICHIERS` plus bas) : sans
+        # `allow_module_level`, pytest refuse la collecte au lieu de sauter, ce
+        # que `scripts/pre-vol.sh` rencontre sur son export sans `.git`.
+        pytest.skip(
+            "git ne répond pas : le périmètre du balayage est indéterminé",
+            allow_module_level=True,
+        )
     chemins = [RACINE / nom for nom in issue.stdout.split("\0") if nom]
     return sorted(
         c for c in chemins if c.is_file() and c.suffix not in SUFFIXES_IGNORES

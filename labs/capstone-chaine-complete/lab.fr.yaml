@@ -1,2 +1,22 @@
+# Surcharge française de l'épreuve capstone-chaine-complete. Elle ne porte QUE `title`,
+# `description` et les libellés `criteria` (`id`, `label`) : tout autre champ y est
+# ignoré en silence, parce que le contrat ne se traduit pas.
 title: "Livrer et rétablir une application isolée de bout en bout"
 description: "Construire et déployer par digest, rétablir les pannes, restaurer sur seconde VM et maintenir sans perdre lectures métier ni données."
+criteria:
+  - id: livraison-verifiable
+    label: "L'image est livrée sous une identité que le registre confirme, et son contenu se vérifie"
+  - id: construction-sobre
+    label: "La construction garde son secret hors de l'image et ne livre que ce qui s'exécute"
+  - id: service-durci
+    label: "Le service tourne avec des droits et des ressources bornés, et ne démarre que lorsque sa dépendance est saine"
+  - id: base-isolee-et-ecriture
+    label: "La base reste isolée et le service y écrit réellement"
+  - id: donnees-conservees
+    label: "Les données survivent au remplacement des conteneurs"
+  - id: restauration-seconde-machine
+    label: "L'application et ses nouvelles données sont restaurées et servies sur une seconde machine"
+  - id: maintien-en-service
+    label: "L'application tient pendant une dépendance coupée, une mauvaise version et une maintenance ciblée"
+  - id: incidents-repares
+    label: "Le script de reprise répare huit pannes non annoncées sans perte de donnée"

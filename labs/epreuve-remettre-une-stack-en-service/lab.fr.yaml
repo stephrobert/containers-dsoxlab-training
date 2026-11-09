@@ -1,2 +1,16 @@
+# Surcharge française de l'épreuve epreuve-remettre-une-stack-en-service. Elle ne porte
+# QUE `title`, `description` et les libellés `criteria` (`id`, `label`) : tout autre
+# champ y est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "Remettre une stack Compose en service"
 description: "Reconstruire une composition perdue : deux services dans un projet nommé, un frontal qui joint ses données par leur nom de service, une seule façade publiée sur la boucle locale, une donnée qui survit à la recréation de la pile, et des valeurs lues dans le fichier d'environnement fourni."
+criteria:
+  - id: projet-en-marche
+    label: "Le projet nommé tourne avec ses deux services"
+  - id: jonction-par-nom
+    label: "Les services se joignent par leur nom de service"
+  - id: facade-unique
+    label: "Seule la façade est publiée, et uniquement en local"
+  - id: donnee-apres-recreation
+    label: "Une donnée écrite avant une recréation est servie après"
+  - id: configuration-resolue
+    label: "La configuration effective est complète et utilise l'interpolation"

@@ -200,14 +200,15 @@ jobs:
       # dsoxlab est un OUTIL, jamais une dépendance de ce dépôt : c'est la
       # règle commune aux six catalogues.
       #
-      # LE PLANCHER EST 0.7.0 DEPUIS QUE LES ÉPREUVES DÉCLARENT LEUR EXIGENCE
-      # CRITIQUE. `exam_blocking_checks` n'existe pas avant, et une version
+      # LE PLANCHER EST 0.8.0 DEPUIS QUE LES ÉPREUVES DÉCLARENT LEURS CRITÈRES
+      # (`criteria:` et `criteria[].lessons`). Avant, depuis 0.7.0, c'était
+      # leur exigence critique : `exam_blocking_checks` n'existe pas avant, et une version
       # antérieure ne l'ignore pas : elle le REFUSE, « ne fait pas partie du
       # contrat », mesuré sur la 0.6.1. Sans ce plancher, la CI échouerait sur
       # un message qui accuse le catalogue au lieu de dire qu'il lui faut une
       # version plus récente de l'outil.
       - name: Le contrat de chaque lab
-        run: uvx 'dsoxlab>=0.7.0' validate-structure
+        run: uvx 'dsoxlab>=0.8.0' validate-structure
 
       - name: Le catalogue des README est à jour
         run: uv run --no-sync python scripts/gen_catalog.py --check

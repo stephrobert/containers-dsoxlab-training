@@ -18,6 +18,14 @@ of the Docker engine and in which storage mode. That is what
 
 ### Added
 
+- **The fourteen exams declare their criteria and the lessons to review.**
+  Each exam groups its tests into criteria named after the measured capability
+  (`criteria:`, EN labels in `lab.yaml`, FR in `lab.fr.yaml`), each linked to
+  the Docker course lessons that teach it (`lessons`). An exam only gives the
+  verdict per criterion during `check`; the engine never displays the lessons,
+  the site shows them once the result is sent, without naming the failed
+  criterion. Briefs, tests, hints and solutions unchanged.
+
 - **`images-tester-le-contrat` (C19, level c5).** The learner writes an external
   test script, `tester-contrat.sh`, that accepts a correct image and refuses
   broken ones of different kinds. What is graded is the script, played against
@@ -71,6 +79,9 @@ of the Docker engine and in which storage mode. That is what
   checks were bench-tested by sabotage, and each fails when it must.
 
 ### Changed
+
+- **dsoxlab floor raised to 0.8.0** (CI and pre-commit): `criteria` does not
+  exist before, and an older version refuses it.
 
 - **`securite-capabilities` teaches a real exception.** It required
   `NET_BIND_SERVICE`, which does not exist under Docker: measured on Engine

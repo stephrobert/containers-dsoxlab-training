@@ -34,6 +34,41 @@ exam_blocking_checks:
   # exigence critique avait echoue.
   - test_le_secret_n_est_ni_dans_l_environnement_ni_dans_l_image
   - test_le_flux_aboutit_et_le_pare_feu_reste_actif
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: droits-reduits
+    label: "The service runs with reduced rights and still answers"
+    tests:
+      - test_le_service_a_perdu_ses_droits_et_repond_encore
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/
+  - id: racine-protegee
+    label: "The service's filesystem is protected and its legitimate writes still work"
+    tests:
+      - test_la_racine_est_en_lecture_seule_et_les_ecritures_sont_declarees
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/racine-en-lecture-seule/
+  - id: secret-sans-fuite
+    label: "The secret reaches the service without sitting in its environment or image"
+    tests:
+      - test_le_secret_n_est_ni_dans_l_environnement_ni_dans_l_image
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/
+  - id: flux-et-protection
+    label: "The expected flow works and the host stays protected"
+    tests:
+      - test_le_flux_aboutit_et_le_pare_feu_reste_actif
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-et-pare-feu/
+  - id: donnees-utiles
+    label: "The useful data is served and the disposable volumes are gone"
+    tests:
+      - test_le_volume_utile_est_servi_et_les_jetables_sont_retires
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/donnees-orphelines/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/
 estimated_time: 60m
 runtime:
   type: vm
