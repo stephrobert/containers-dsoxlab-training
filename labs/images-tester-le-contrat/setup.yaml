@@ -1,0 +1,225 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un service, le guichet, livré avec son
+# contexte de build, et DEUX images déjà construites : `guichet:1.0`, qui
+# respecte le contrat, et `guichet:0.9`, un ancien build que le contrat refuse.
+# L'apprenant écrit un script de tests extérieur, et c'est CE SCRIPT que les
+# contrôles jouent, contre ces deux images et contre d'autres qu'il n'a jamais
+# vues : elles sont construites par les contrôles eux-mêmes, au moment de noter.
+#
+# LE SERVICE EST UN PETIT PROGRAMME PYTHON, comme celui de la leçon, et c'est
+# tout ce qu'il a en commun avec elle : autre nom, autre port (8099), autres
+# routes, autre variable obligatoire, autre utilisateur (10042), autre dossier
+# de données, et un contrat qui porte une donnée à retrouver après l'arrêt. La
+# leçon montre un script qui refuse six images ; ce lab note un script écrit
+# pour un service que la leçon ne montre pas, contre des défauts qu'elle ne
+# montre pas non plus.
+#
+# L'IMAGE DE BASE EST ÉPINGLÉE PAR SON DIGEST, relevé sur le registre le
+# 2026-11-09 : `python:3.15.2-slim` est un tag que l'éditeur peut republier.
+- name: Préparer le lab images-tester-le-contrat
+  hosts: lab_target
+  become: true
+  vars:
+    lab: images-tester-le-contrat
+    travail: /opt/dsoxlab-images-tester-le-contrat
+    base: >-
+      python:3.15.2-slim@sha256:8c13a3f37a6a5b71498228e902c4b9f51c1f7900d49fabf71f9a650c6120e0d0
+  tasks:
+    - name: Exiger le moteur et refuser les collisions
+      ansible.builtin.shell: |
+        set -eu
+        docker info >/dev/null
+        test ! -L "{{ travail }}"
+      changed_when: false
+
+    # UN LAB NE REND QUE CE QU'IL A POSÉ. L'image de base est partagée avec
+    # d'autres labs : on note si elle était déjà là, pour que le cleanup ne
+    # retire que celle qu'il a tirée. Mesuré le 2026-11-01 : sept labs ROUGE
+    # sur ce seul motif.
+    - name: Noter si l'image de base était déjà présente
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ base }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-{{ lab }}.base-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-{{ lab }}.base-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Repartir d'une table rase, un passage précédent a pu laisser ses images
+      ansible.builtin.shell:
+        cmd: >
+          docker ps -aq --filter ancestor=guichet:1.0 --filter ancestor=guichet:0.9
+          | xargs -r docker rm -f >/dev/null 2>&1;
+          docker rmi -f guichet:0.9 guichet:1.0 >/dev/null 2>&1 || true
+      changed_when: false
+
+    - name: Retirer l'atelier d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ travail }}"
+        state: absent
+
+    - name: Tirer l'image de base, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ base }}
+      register: tirage
+      until: tirage.rc == 0
+      retries: 2
+      delay: 5
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    - name: Créer l'atelier et le contexte du guichet
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0755"
+      loop:
+        - "{{ travail }}"
+        - "{{ travail }}/guichet"
+
+    # LE GUICHET DÉLIVRE DES TICKETS NUMÉROTÉS, et son contrat tient en cinq
+    # attentes qu'un utilisateur de l'image a le droit d'avoir sans lire ce
+    # fichier : il refuse de démarrer sans GUICHET_SITE, il répond sur /ouvert,
+    # il compte les tickets, il ne demande aucun privilège, et il retrouve son
+    # compteur après un arrêt.
+    #
+    # LE COMPTEUR N'EST ÉCRIT QU'À LA FERMETURE, et c'est voulu : un service qui
+    # garde son état en mémoire et le vide à l'arrêt est courant, et c'est ce
+    # qui rend l'arrêt propre mesurable. Un guichet tué par SIGKILL perd ses
+    # tickets, un guichet qui ne les écrit pas aussi.
+    - name: Déposer le programme du guichet
+      ansible.builtin.copy:
+        dest: "{{ travail }}/guichet/guichet.py"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0644"
+        content: |
+          import os
+          import signal
+          import sys
+          import threading
+          from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+          site = os.environ.get("GUICHET_SITE")
+          if not site:
+              print("erreur: la variable GUICHET_SITE est obligatoire", file=sys.stderr)
+              sys.exit(64)
+
+          ecoute = os.environ.get("GUICHET_ECOUTE", "0.0.0.0")
+          donnees = "/var/lib/guichet"
+          fichier = os.path.join(donnees, "tickets")
+
+          # Le dossier de donnees doit etre inscriptible des le demarrage : un
+          # guichet qui ne pourrait pas ecrire a la fermeture perdrait ses tickets.
+          open(os.path.join(donnees, ".verrou"), "w").close()
+
+          verrou = threading.Lock()
+          try:
+              with open(fichier) as f:
+                  delivres = int(f.read().strip() or 0)
+          except FileNotFoundError:
+              delivres = 0
+
+
+          class Guichet(BaseHTTPRequestHandler):
+              def repondre(self, code, texte):
+                  corps = (texte + "\n").encode()
+                  self.send_response(code)
+                  self.send_header("Content-Length", str(len(corps)))
+                  self.end_headers()
+                  self.wfile.write(corps)
+
+              def do_GET(self):
+                  if self.path == "/ouvert":
+                      self.repondre(200, "ouvert site=" + site)
+                  elif self.path == "/tickets":
+                      self.repondre(200, str(delivres))
+                  else:
+                      self.repondre(404, "inconnu")
+
+              def do_POST(self):
+                  global delivres
+                  if self.path != "/ticket":
+                      self.repondre(404, "inconnu")
+                      return
+                  with verrou:
+                      delivres += 1
+                      numero = delivres
+                  self.repondre(201, str(numero))
+
+              def log_message(self, *args):
+                  pass
+
+
+          serveur = ThreadingHTTPServer((ecoute, 8099), Guichet)
+
+
+          def fermer(signum, frame):
+              threading.Thread(target=serveur.shutdown).start()
+
+
+          signal.signal(signal.SIGTERM, fermer)
+          print("guichet ouvert", flush=True)
+          serveur.serve_forever()
+
+          # Fermeture : le compteur n'est ecrit qu'ici, apres l'arret du serveur.
+          with open(fichier, "w") as f:
+              f.write(str(delivres))
+          print("guichet ferme", flush=True)
+          sys.exit(0)
+
+    - name: Déposer le Dockerfile de l'image conforme
+      ansible.builtin.copy:
+        dest: "{{ travail }}/guichet/Dockerfile"
+        owner: "{{ ansible_user | default('ansible') }}"
+        mode: "0644"
+        content: |
+          FROM {{ base }}
+          ENV PYTHONUNBUFFERED=1
+          WORKDIR /app
+          COPY guichet.py /app/guichet.py
+          RUN mkdir -p /var/lib/guichet && chown 10042:10042 /var/lib/guichet
+          USER 10042
+          EXPOSE 8099
+          CMD ["python", "/app/guichet.py"]
+
+    - name: Construire l'image conforme
+      ansible.builtin.command:
+        cmd: docker build -t guichet:1.0 {{ travail }}/guichet
+      changed_when: true
+
+    # `guichet:0.9` EST UN ANCIEN BUILD QUE LE CONTRAT REFUSE : il démarre et
+    # répond DANS le conteneur, mais il n'écoute que sur 127.0.0.1, donc rien ne
+    # l'atteint par le port publié. Une seule variable d'environnement le
+    # sépare de l'image conforme, ce qui le rend invisible à un `docker ps`.
+    - name: Construire l'ancien build, que le contrat doit refuser
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          printf 'FROM guichet:1.0\nENV GUICHET_ECOUTE=127.0.0.1\n' | docker build -q -t guichet:0.9 - >/dev/null
+      changed_when: true
+
+    - name: Installer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: "{{ travail }}/MISSION.md"
+        mode: "0644"
+
+    - name: Marquer l'atelier comme appartenant à ce lab
+      ansible.builtin.copy:
+        dest: "{{ travail }}/.owner"
+        content: "{{ lab }}\n"
+        mode: "0644"
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé : le script de l'apprenant ne doit pas exister.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: >
+          docker image inspect guichet:1.0 >/dev/null 2>&1
+          && docker image inspect guichet:0.9 >/dev/null 2>&1
+          && ! test -e {{ travail }}/tester-contrat.sh
+      changed_when: false

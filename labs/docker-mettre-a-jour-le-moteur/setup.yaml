@@ -1,0 +1,259 @@
+---
+# Joué par `dsoxlab run` avant d'ouvrir la session : il pose la situation que
+# le scénario décrit.
+#
+# CE QUE CE SETUP FABRIQUE, ET POURQUOI. Un hôte Debian 13 dont le moteur est
+# ramené à docker-ce 29.8.2, depuis le dépôt officiel de Docker, avec ses six
+# paquets retenus par `apt-mark hold`, un `daemon.json` d'origine qui règle la
+# rotation des journaux, et un service témoin qui écrit un battement par
+# seconde dans un volume à côté d'une donnée. C'est la situation d'un hôte réel
+# qu'il faut monter en 29.9.2 sans couper son service.
+#
+# LE DÉPART EST EN 29.8.2, ET LE CANDIDAT DU DÉPÔT EST 29.9.3. Mesuré le
+# 2026-11-09 : `apt-cache policy docker-ce` annonce 29.9.3 comme candidat. Un
+# apprenant qui lève la retenue et lance `apt-get install docker-ce` obtient
+# donc 29.9.3, pas la version visée, et le contrôle de version le refuse.
+#
+# LE SERVICE TÉMOIN EST RELANCÉ PAR LE DÉMON SANS LIVE-RESTORE. Il porte
+# `--restart unless-stopped`, comme un service réel : si l'apprenant monte le
+# moteur sans avoir posé `live-restore`, le redémarrage du démon arrête le
+# conteneur puis le relance avec un nouveau processus. C'est ce que mesurent les
+# contrôles du témoin, et c'est le piège du lab : aucun message n'avertit.
+#
+# LES VALEURS DE RÉFÉRENCE SONT ÉCRITES ICI, ET LUES PAR LES CONTRÔLES. Le
+# processus et l'heure de démarrage du témoin, l'empreinte de sa donnée et les
+# options d'origine du démon sont relevés une fois le témoin lancé, dans un
+# fichier lisible mais inscriptible par root seul : un contrôle compare l'état
+# final à cet état de départ, sans rien écrire en dur.
+- name: Préparer le lab docker-mettre-a-jour-le-moteur
+  hosts: lab_target
+  become: true
+  vars:
+    lab: docker-mettre-a-jour-le-moteur
+    travail: /opt/dsoxlab-docker-mettre-a-jour-le-moteur
+    reference: /var/lib/dsoxlab-docker-mettre-a-jour-le-moteur
+    depart: "5:29.8.2-1~debian.13~trixie"
+    cible: "5:29.9.2-1~debian.13~trixie"
+    paquets_moteur:
+      - docker-ce
+      - docker-ce-cli
+      - docker-ce-rootless-extras
+    paquets_retenus:
+      - docker-ce
+      - docker-ce-cli
+      - docker-ce-rootless-extras
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    socle: >-
+      alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    temoin: passerelle-sms
+    volume: volume-passerelle
+    options_origine:
+      log-driver: json-file
+      log-opts:
+        max-size: 7m
+        max-file: "4"
+  tasks:
+    - name: Exiger le moteur et refuser les collisions
+      ansible.builtin.shell: |
+        set -eu
+        docker info >/dev/null
+        test ! -L "{{ travail }}"
+        test ! -L "{{ reference }}"
+        test -z "$(docker ps -aq --filter name={{ temoin }})"
+      changed_when: false
+
+    # UN LAB NE REND QUE CE QU'IL A POSÉ. L'image de base est partagée avec
+    # d'autres labs : on note si elle était déjà là, pour que le cleanup ne
+    # retire que celle qu'il a tirée.
+    - name: Noter si le socle public était déjà présent
+      ansible.builtin.shell: |
+        set -eu
+        if docker image inspect '{{ socle }}' >/dev/null 2>&1; then
+          rm -f '/var/tmp/dsoxlab-{{ lab }}.socle-a-rendre'
+        else
+          : > '/var/tmp/dsoxlab-{{ lab }}.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer l'atelier et les références d'un passage précédent
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ travail }}"
+        - "{{ reference }}"
+
+    - name: Créer l'atelier de l'apprenant et le répertoire des références
+      ansible.builtin.file:
+        path: "{{ item.chemin }}"
+        state: directory
+        owner: "{{ item.proprietaire }}"
+        mode: "0755"
+      loop:
+        - chemin: "{{ travail }}"
+          proprietaire: "{{ ansible_user | default('ansible') }}"
+        - chemin: "{{ reference }}"
+          proprietaire: root
+
+    - name: Tirer le socle, par son digest
+      ansible.builtin.command:
+        cmd: docker pull {{ socle }}
+      register: tirage
+      until: tirage.rc == 0
+      retries: 2
+      delay: 5
+      changed_when: "'Downloaded newer image' in tirage.stdout"
+
+    # LE MOTEUR EST RAMENÉ EN 29.8.2 sans lever les retenues : le module apt
+    # accepte de changer un paquet retenu avec `allow_change_held_packages`, et
+    # la sélection `hold` reste posée après l'opération. Les trois autres
+    # paquets (containerd.io et les deux plugins) ne bougent pas : la leçon ne
+    # mesure rien sur eux, et le lab non plus.
+    # LA LIMITE DE DÉMARRAGE DE SYSTEMD COMPTE LES REDÉMARRAGES RAPPROCHÉS : trois
+    # en une minute, et l'unité refuse le suivant. Un setup qui suit un cleanup
+    # les cumule, et le moteur reste arrêté sans qu'aucune erreur ne parle du
+    # démon. `reset-failed` remet le compteur à zéro ; il est sans effet quand
+    # l'unité va bien.
+    - name: Remettre à zéro la limite de démarrage de l'unité
+      ansible.builtin.command:
+        cmd: systemctl reset-failed docker.service docker.socket
+      changed_when: false
+      failed_when: false
+
+    - name: Ramener le moteur à la version de départ
+      ansible.builtin.apt:
+        name:
+          - "docker-ce={{ depart }}"
+          - "docker-ce-cli={{ depart }}"
+          - "docker-ce-rootless-extras={{ depart }}"
+        state: present
+        allow_downgrade: true
+        allow_change_held_packages: true
+        update_cache: true
+
+    - name: Retenir les six paquets, comme le fait la leçon d'installation
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop: "{{ paquets_retenus }}"
+
+    # LA CONFIGURATION D'ORIGINE PORTE DES OPTIONS DE JOURNAL, et pas de
+    # `live-restore` : c'est ce que l'apprenant doit conserver en l'ajoutant.
+    # Un `daemon.json` réécrit à la place d'être fusionné les perdrait sans que
+    # rien le signale.
+    - name: Poser le daemon.json d'origine
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: "0644"
+        content: "{{ options_origine | to_nice_json }}\n"
+
+    # LA LIMITE DE DÉMARRAGE DE SYSTEMD COMPTE LES REDÉMARRAGES RAPPROCHÉS : trois
+    # en une minute, et l'unité refuse le suivant. Un setup qui suit un cleanup
+    # les cumule, et le moteur reste arrêté sans qu'aucune erreur ne parle du
+    # démon. `reset-failed` remet le compteur à zéro ; il est sans effet quand
+    # l'unité va bien.
+    - name: Remettre à zéro la limite de démarrage de l'unité
+      ansible.builtin.command:
+        cmd: systemctl reset-failed docker.service docker.socket
+      changed_when: false
+      failed_when: false
+
+    - name: Redémarrer le moteur sur sa configuration d'origine
+      ansible.builtin.systemd_service:
+        name: docker
+        state: restarted
+
+    - name: Attendre que le moteur réponde en 29.8.2
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker version --format '{% raw %}{{.Server.Version}}{% endraw %}')" = "29.8.2"
+      register: moteur_pret
+      until: moteur_pret.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Tirer la donnée du témoin et le jeton de son service
+      ansible.builtin.set_fact:
+        jeton: "{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase', 'digits'], length=10) }}"
+
+    - name: Créer le volume du témoin et y déposer sa donnée
+      ansible.builtin.shell: |
+        set -eu
+        docker volume create {{ volume }} >/dev/null
+        docker run --rm -v {{ volume }}:/data {{ socle }} sh -c 'printf "abonne;numero\ndurand;0611{{ jeton }}\nmartin;0722{{ jeton }}\n" > /data/abonnes.csv'
+      changed_when: true
+
+    # LE TÉMOIN BAT UN POULS PAR SECONDE : une ligne `numéro horodatage`, où le
+    # numéro repart à 1 si le service est relancé. Une relance se lit donc de
+    # trois façons indépendantes : le processus change, l'heure de démarrage
+    # change, et le compteur retombe.
+    - name: Lancer le service témoin
+      ansible.builtin.shell: |
+        set -eu
+        docker run -d --name {{ temoin }} --restart unless-stopped -v {{ volume }}:/data {{ socle }} \
+          sh -c 'i=0; while true; do i=$((i+1)); echo "$i $(date +%s)" >> /data/pouls; sleep 1; done' >/dev/null
+      changed_when: true
+
+    - name: Laisser le témoin battre quelques secondes
+      ansible.builtin.pause:
+        seconds: 4
+
+    - name: Relever l'état de départ du témoin
+      ansible.builtin.shell: |
+        set -eu
+        docker inspect -f '{% raw %}{{.State.StartedAt}}|{{.State.Pid}}{% endraw %}' {{ temoin }}
+      register: etat_temoin
+      changed_when: false
+
+    - name: Relever l'empreinte de la donnée
+      ansible.builtin.shell: |
+        set -eu
+        docker exec {{ temoin }} sha256sum /data/abonnes.csv | cut -d' ' -f1
+      register: empreinte
+      changed_when: false
+
+    - name: Écrire les valeurs de départ, que les contrôles liront
+      ansible.builtin.copy:
+        dest: "{{ reference }}/reference.json"
+        owner: root
+        group: root
+        mode: "0644"
+        content: "{{ valeurs | to_nice_json }}\n"
+      vars:
+        valeurs:
+          temoin: "{{ temoin }}"
+          depart: "{{ depart }}"
+          cible: "{{ cible }}"
+          demarre_le: "{{ etat_temoin.stdout.split('|')[0] }}"
+          pid: "{{ etat_temoin.stdout.split('|')[1] }}"
+          empreinte: "{{ empreinte.stdout }}"
+          options: "{{ options_origine }}"
+
+    - name: Installer la mission
+      ansible.builtin.copy:
+        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: "{{ travail }}/MISSION.md"
+        mode: "0644"
+
+    - name: Marquer l'atelier comme appartenant à ce lab
+      ansible.builtin.copy:
+        dest: "{{ travail }}/.owner"
+        content: "{{ lab }}\n"
+        mode: "0644"
+
+    # SANS CETTE VÉRIFICATION, un passage mal nettoyé rendrait le lab déjà
+    # résolu avant d'être posé.
+    - name: Vérifier que la situation est bien celle que le scénario décrit
+      ansible.builtin.shell:
+        cmd: |
+          set -eu
+          test "$(docker version --format '{% raw %}{{.Server.Version}}{% endraw %}')" = "29.8.2"
+          test "$(docker info --format '{% raw %}{{.LiveRestoreEnabled}}{% endraw %}')" = "false"
+          test "$(docker inspect -f '{% raw %}{{.State.Running}}{% endraw %}' {{ temoin }})" = "true"
+          test "$(apt-mark showhold | wc -l)" -ge 6
+      changed_when: false
