@@ -42,3 +42,17 @@ ancres:
     pourquoi: >-
       la leçon C35c est publiée sans bloc Lab : la section Mettre en pratique
       est ajoutée avec ce lab, et n'existe pas encore en production
+  - lab: securite-capabilities
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/
+    depuis: 2026-11-09
+    pourquoi: >-
+      la leçon C38 est réécrite le 2026-11-09 et portera la section Mettre en
+      pratique ; l'ancienne ancre linux-capabilities disparaît avec l'ancien guide
+  - lab: securite-no-new-privileges
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/
+    depuis: 2026-11-09
+    pourquoi: >-
+      la leçon C38 est réécrite le 2026-11-09 et portera la section Mettre en
+      pratique ; l'ancienne ancre bonnes-pratiques-runtime disparaît avec l'ancien guide
