@@ -28,6 +28,42 @@ exam_blocking_checks:
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
   - test_le_rapport_complet_est_copie_sur_l_hote
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: collecteur-en-marche
+    label: "The collector is running from the supplied image"
+    tests:
+      - test_le_collecteur_tourne_avec_l_image_fournie
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/
+  - id: expediteur-stable
+    label: "The forwarder is stable and keeps its restart policy"
+    tests:
+      - test_l_expediteur_ne_redemarre_plus_et_garde_sa_politique
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/
+  - id: arret-propre-du-scribe
+    label: "The scribe stops promptly and cleanly, with its report complete"
+    tests:
+      - test_le_scribe_s_arrete_proprement_et_son_rapport_est_entier
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cycle-de-vie-et-signaux/
+  - id: rapport-conserve
+    label: "The complete report is kept on the host"
+    tests:
+      - test_le_rapport_complet_est_copie_sur_l_hote
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/inspecter-un-conteneur/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cycle-de-vie-et-signaux/
+  - id: hote-propre
+    label: "No container of the lab is left stopped"
+    tests:
+      - test_aucun_conteneur_du_lab_ne_traine_a_l_arret
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cli/
 estimated_time: 45m
 runtime:
   type: vm

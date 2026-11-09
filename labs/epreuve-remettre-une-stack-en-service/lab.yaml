@@ -17,6 +17,42 @@ exam_blocking_checks:
   # une recréation doit être servie après. C'est la seule chose
   # qu'une composition perd pour de bon.
   - test_une_donnee_ecrite_avant_une_recreation_est_servie_apres
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: projet-en-marche
+    label: "The named project runs with its two services"
+    tests:
+      - test_le_projet_porte_ses_deux_services_et_ils_tournent
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
+  - id: jonction-par-nom
+    label: "The services reach each other by service name"
+    tests:
+      - test_la_requete_metier_joint_les_donnees_par_leur_nom_de_service
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/reseaux/
+  - id: facade-unique
+    label: "Only the front service is published, and only locally"
+    tests:
+      - test_seul_le_frontal_publie_et_sur_la_boucle_locale
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/reseaux/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/
+  - id: donnee-apres-recreation
+    label: "Data written before a recreation is served afterwards"
+    tests:
+      - test_une_donnee_ecrite_avant_une_recreation_est_servie_apres
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/donnees-persistantes/
+  - id: configuration-resolue
+    label: "The effective configuration is complete and uses interpolation"
+    tests:
+      - test_la_composition_resolue_ne_porte_aucune_variable_en_suspens
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/variables-et-environnements/
 estimated_time: 45m
 runtime:
   type: vm

@@ -26,6 +26,31 @@ exam_blocking_checks:
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
   - test_la_recreation_conserve_la_donnee_et_la_reponse_metier
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: recreation-sans-perte
+    label: "Replacing the database container loses no data and the business answer holds"
+    tests:
+      - test_la_recreation_conserve_la_donnee_et_la_reponse_metier
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cycle-de-vie-et-signaux/
+  - id: noms-resolus
+    label: "The application reaches its database by the name it uses, and operations keep the real name"
+    tests:
+      - test_le_nom_attendu_par_l_application_se_resout
+      - test_l_application_joint_sa_base_par_ce_nom
+      - test_le_nom_reel_de_la_base_se_resout_aussi
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/
+  - id: base-non-publiee
+    label: "The database publishes no port"
+    tests:
+      - test_la_base_ne_publie_aucun_port
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/
 estimated_time: 45m
 runtime:
   type: vm

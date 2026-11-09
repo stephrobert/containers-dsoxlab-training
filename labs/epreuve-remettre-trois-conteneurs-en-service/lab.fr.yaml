@@ -1,5 +1,16 @@
 # Surcharge française de l'épreuve epreuve-remettre-trois-conteneurs-en-service. Elle ne
-# porte QUE `title` et `description` : tout autre champ y est ignoré en silence,
-# parce que le contrat ne se traduit pas.
+# porte QUE `title`, `description` et les libellés `criteria` (`id`, `label`) : tout
+# autre champ y est ignoré en silence, parce que le contrat ne se traduit pas.
 title: "Trois conteneurs en panne, trois causes différentes"
 description: "Remettre en service trois conteneurs tombés pour trois raisons indépendantes, conserver ce qui rendait l'une des pannes visible, et récupérer intact un rapport que l'un d'eux n'a jamais fini d'écrire."
+criteria:
+  - id: collecteur-en-marche
+    label: "Le collecteur tourne avec l'image fournie"
+  - id: expediteur-stable
+    label: "L'expéditeur est stable et garde sa politique de redémarrage"
+  - id: arret-propre-du-scribe
+    label: "Le scribe s'arrête vite et proprement, son rapport est complet"
+  - id: rapport-conserve
+    label: "Le rapport complet est conservé sur l'hôte"
+  - id: hote-propre
+    label: "Aucun conteneur du lab ne reste à l'arrêt"

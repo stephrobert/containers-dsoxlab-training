@@ -32,6 +32,43 @@ exam_blocking_checks:
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
   - test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: image-sans-outils-de-build
+    label: "The delivered image carries only what it needs to run"
+    tests:
+      - test_l_image_livree_ne_porte_plus_le_compilateur
+      - test_la_taille_reste_sous_le_seuil_mesure
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build-multi-etapes/
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/optimiser-taille-image/
+  - id: jeton-hors-historique
+    label: "The token appears neither in the image history nor in its layers"
+    tests:
+      - test_le_jeton_n_est_ni_dans_l_historique_ni_dans_les_couches
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/
+  - id: dependance-privee
+    label: "The private dependency really comes from the repository"
+    tests:
+      - test_la_dependance_privee_est_bien_celle_du_depot
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/
+  - id: deux-architectures
+    label: "The image is published for two architectures and each one runs"
+    tests:
+      - test_l_index_porte_les_deux_architectures_et_chacune_s_execute
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/multi-architecture/
+  - id: identite-consignee
+    label: "The recorded identity matches what the registry serves"
+    tests:
+      - test_le_digest_consigne_est_celui_de_l_index
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/identite-d-une-image/
+      - https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/multi-architecture/
 estimated_time: 60m
 runtime:
   type: vm

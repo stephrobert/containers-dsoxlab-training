@@ -28,6 +28,39 @@ exam_blocking_checks:
   # passait ce seuil de 75 : l'epreuve etait recue alors que son
   # exigence critique avait echoue.
   - test_les_resultats_anterieurs_sont_intacts_et_aucun_n_est_tronque
+# Critères : un nom stable et un libellé par capacité que l'épreuve mesure, et les
+# leçons où la réviser. Le moteur ne les montre jamais pendant `check` (une épreuve
+# ne donne rien) : le site les lit après l'envoi du résultat.
+criteria:
+  - id: limites-appliquees
+    label: "Memory, CPU and process limits are set and actually enforced"
+    tests:
+      - test_les_trois_limites_sont_posees_et_appliquees
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/brider-un-conteneur/
+  - id: pointe-contenue
+    label: "A spike is contained by the limit and the service keeps answering"
+    tests:
+      - test_la_pointe_est_contenue_par_la_limite
+      - test_le_traitement_repond_encore_apres_la_pointe
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/
+  - id: resultats-conserves
+    label: "Earlier results are intact and none is truncated"
+    tests:
+      - test_les_resultats_anterieurs_sont_intacts_et_aucun_n_est_tronque
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/volumes/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/cycle-de-vie-et-signaux/
+  - id: processus-cote-hote
+    label: "The report links the container to its host process and runtime"
+    tests:
+      - test_le_releve_dit_le_pid_hote_et_le_runtime
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/chaine-d-execution/
+      - https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/sous-le-capot/
 estimated_time: 45m
 runtime:
   type: vm
