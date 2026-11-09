@@ -1,0 +1,5 @@
+# Surcharge française du lab images-tester-le-contrat. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Écrire les tests qui refusent une image cassée"
+description: "Écrire un script de tests extérieur qui accepte une image correcte et refuse des images cassées de natures différentes : injoignable, mal configurée, trop privilégiée, mal arrêtée."

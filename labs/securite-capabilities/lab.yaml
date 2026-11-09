@@ -1,14 +1,14 @@
 id: securite-capabilities
-title: "Drop all but one Linux capability"
+title: "Give a service back the one capability it really needs"
 level: c6
-description: "Recreate the service with all capabilities dropped except NET_BIND_SERVICE."
+description: "Recreate a service that stops when every capability is dropped, giving back only the one it needs, without privileged mode and without a superfluous capability, and prove what it can no longer do."
 skills:
   - docker
   - capabilities
   - least-privilege
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#linux-capabilities
+doc_url: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#mettre-en-pratique
 lab_type: lab
 estimated_time: 30m
 runtime:

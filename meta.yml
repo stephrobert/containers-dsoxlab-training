@@ -178,6 +178,7 @@ sections:
       - images-build-multi-etapes
       - images-non-root
       - images-healthcheck
+      - images-tester-le-contrat
       - buildkit-cache-monte
       - buildkit-secret-de-build
       - images-multi-architecture
@@ -249,6 +250,7 @@ sections:
       - docker-configurer-le-demon
       - docker-contexte-ssh
       - docker-rotation-des-journaux
+      - docker-mettre-a-jour-le-moteur
       - securite-groupe-docker
       - securite-socket-lecture-seule
       - securite-socket-proxy

@@ -1,40 +1,46 @@
-"""Des capabilities réduites à une seule, déclarées, appliquées, et éprouvées.
+"""Une seule capability rendue, la bonne, déclarée, appliquée, et éprouvée.
 
-Pourquoi trois contrôles là où il n'y en avait qu'un
----------------------------------------------------
+CE QUE LE LAB ENSEIGNE. Qu'un service qui s'arrête quand on lui retire toutes
+ses capabilities en demande UNE, qu'il se trouve en lisant ce qui est refusé, et
+que le reste doit rester retiré. Le lanceur confine ses travaux avec `chroot` :
+la capability qu'il lui faut est `SYS_CHROOT`, bit 18.
 
-Le fichier précédent portait **un** `def test_` et six assertions enchaînées, et
-il mesurait les trois bonnes choses : ce que Docker a retenu, ce que le noyau
-applique, et ce que le conteneur peut encore faire. Le défaut était le masquage,
-plus un effet de bord que personne n'avait relevé.
+CE QUE LA VERSION PRÉCÉDENTE ENSEIGNAIT, ET POURQUOI ELLE A ÉTÉ REFAITE. Elle
+exigeait `NET_BIND_SERVICE`, présentée comme la seule exception d'un service qui
+écoute sur un port privilégié. C'est faux sous Docker : mesuré le 2026-11-02 sur
+Engine 29.9.2, un conteneur sans AUCUNE capability écoute sur le port 80, parce
+que le moteur pose `net.ipv4.ip_unprivileged_port_start=0` dans l'espace de
+noms réseau du conteneur. Le lab apprenait une exception qui n'existe pas.
 
-LE MASQUAGE. La première assertion qui tombait masquait les cinq suivantes, et
-son message tenait en trois mots : « Un service actif requis ». Un apprenant
-ayant posé les bonnes capabilities mais dont le projet avait été relancé sous un
-autre nom lisait cela, et n'apprenait rien de son travail.
+MESURÉ SUR docker.lab LE 2026-11-09 (Engine 29.9.2, Compose 5.6.1), le même
+service alpine dans cinq configurations :
 
-L'EFFET DE BORD. La sonde tente un `chown 123:123 /proof`. Sur l'état de départ,
-où le conteneur a encore `CAP_CHOWN`, **elle réussit** : le contrôle laissait donc
-`/proof` appartenant à 123 après être passé. L'assertion suivante le constatait et
-échouait, ce qui donnait le bon verdict pour la mauvaise raison, et surtout le
-lab restait modifié. Le troisième contrôle restaure désormais le propriétaire
-quand sa propre sonde a abouti : un contrôle qui change l'état qu'il mesure n'est
-pas un contrôle, c'est une intervention.
+| Configuration | Le lanceur | Masque effectif de PID 1 |
+| défaut de Docker | fonctionne | 0xa80425fb |
+| tout retiré | s'arrête au démarrage | 0x0 |
+| tout retiré, SYS_CHROOT rendue | fonctionne | 0x40000 |
+| tout retiré, CHOWN rendue | s'arrête au démarrage | 0x1 |
+| tout retiré, SYS_CHROOT et CHOWN | fonctionne ET un chown réussit | 0x40001 |
 
-Les trois contrôles mesurent trois choses indépendantes :
+La dernière ligne est le piège : un service qui marche avec une capability de
+trop passe tous les contrôles fonctionnels. Seuls le masque effectif et un geste
+réel la distinguent du minimum.
 
-1. les capabilities **déclarées** à Docker ;
-2. le masque que le **noyau applique** à PID 1 ;
-3. ce que le conteneur **ne peut plus faire**, éprouvé par un geste réel.
+TROIS CONTRÔLES, TROIS PREUVES INDÉPENDANTES :
 
-1 et 2 ne sont pas redondants. Docker 29 normalise les noms avec leur préfixe
-`CAP_`, et une déclaration peut être retenue sans que le masque effectif
-corresponde : c'est `CapEff` qui dit ce dont le processus dispose vraiment. Le
-troisième ne lit rien, il essaie, et c'est la seule preuve qui ne dépende
-d'aucune lecture.
+1. ce qui a été DÉCLARÉ à Docker, et que le conteneur n'est pas privilégié ;
+2. ce que le NOYAU applique à PID 1, et que le lanceur tourne vraiment ;
+3. ce que le conteneur ne peut PLUS faire, éprouvé par un geste réel.
+
+POURQUOI LE FONCTIONNEMENT EST FUSIONNÉ AVEC LE MASQUE. « Le lanceur tourne »
+est vrai AVANT tout travail, avec les capabilities par défaut : seul, il ne
+mesurerait rien. Joint au masque exact, il ne peut être atteint qu'après le
+travail. Le mode privilégié le fait aussi tourner, ce qui est la raison pour
+laquelle le premier contrôle le refuse nommément.
 """
 
 import json
+import time
 
 import pytest
 
@@ -43,7 +49,8 @@ from conftest import lab_host, message
 LAB = "securite-capabilities"
 PROJET = f"dsoxlab-{LAB}"
 PREUVE = "/proof"
-BIT_NET_BIND_SERVICE = 1 << 10  # CAP_NET_BIND_SERVICE, soit 0x400.
+ETAT = "/run/lanceur/etat"
+BIT_SYS_CHROOT = 1 << 18  # CAP_SYS_CHROOT, soit 0x40000.
 
 
 @pytest.fixture
@@ -66,13 +73,13 @@ def _worker(host) -> tuple[str, dict]:
     assert trouve.rc == 0 and len(ids) == 1, message(
         en=(
             f"Exactly one running `worker` service is required in project "
-            f"{PROJET}, found {len(ids)}. Bring the project back up under that "
-            "exact name before reducing its capabilities."
+            f"{PROJET}, found {len(ids)}. If the launcher stopped, read its "
+            "logs: they name the operation the kernel refuses."
         ),
         fr=(
             f"Un seul service `worker` actif est requis dans le projet "
-            f"{PROJET}, {len(ids)} trouvé(s). Relancez le projet sous ce nom "
-            "exact avant de réduire ses capabilities."
+            f"{PROJET}, {len(ids)} trouvé(s). Si le lanceur s'est arrêté, "
+            "lisez ses journaux : ils nomment l'opération que le noyau refuse."
         ),
     )
     cid = ids[0]
@@ -87,11 +94,10 @@ def _worker(host) -> tuple[str, dict]:
 def _canonique(noms) -> list[str]:
     """Les noms de capabilities sous la forme que Docker 29 rend.
 
-    Docker 29 NORMALISE avec le préfixe `CAP_` : `--cap-add NET_BIND_SERVICE`
-    ressort en `[CAP_NET_BIND_SERVICE]`. On compare donc des noms canoniques,
-    ce qui accepte les deux écritures côté apprenant sans rien relâcher. `ALL`
-    reste `ALL` : ce n'est pas une capability, c'est le mot qui les désigne
-    toutes.
+    Docker 29 NORMALISE avec le préfixe `CAP_` : `--cap-add SYS_CHROOT` ressort
+    en `[CAP_SYS_CHROOT]`. On compare donc des noms canoniques, ce qui accepte
+    les deux écritures côté apprenant sans rien relâcher. `ALL` reste `ALL` : ce
+    n'est pas une capability, c'est le mot qui les désigne toutes.
     """
     return sorted(
         n if n == "ALL" else "CAP_" + n.removeprefix("CAP_")
@@ -99,11 +105,29 @@ def _canonique(noms) -> list[str]:
     )
 
 
-def test_les_capabilities_declarees_ne_gardent_que_net_bind_service(host):
-    """Ce qui a été demandé à Docker."""
+def test_une_seule_capability_est_rendue_et_le_conteneur_n_est_pas_privilegie(host):
+    """Ce qui a été demandé à Docker : tout retirer, rendre UNE capability.
+
+    Le mode privilégié est refusé nommément : il rend toutes les capabilities,
+    quoi que dise `cap_drop`, et ferait tourner le lanceur sans que rien ait été
+    compris. Une capability rendue en plus de la bonne est refusée avec son nom :
+    c'est celle qu'on rajoute « parce qu'elle va souvent avec ».
+    """
     _cid, info = _worker(host)
     config = info["HostConfig"]
 
+    assert not config.get("Privileged"), message(
+        en=(
+            "The worker runs in privileged mode. It gives every capability "
+            "back, whatever `cap_drop` says, and removes the point of the "
+            "exercise: recreate it without `privileged`."
+        ),
+        fr=(
+            "Le worker tourne en mode privilégié. Il rend toutes les "
+            "capabilities, quoi que dise `cap_drop`, et ôte son sens à "
+            "l'exercice : recréez-le sans `privileged`."
+        ),
+    )
     retirees = _canonique(config["CapDrop"])
     assert retirees == ["ALL"], message(
         en=(
@@ -119,27 +143,41 @@ def test_les_capabilities_declarees_ne_gardent_que_net_bind_service(host):
         ),
     )
     ajoutees = _canonique(config["CapAdd"])
-    assert ajoutees == ["CAP_NET_BIND_SERVICE"], message(
+    en_trop = [n for n in ajoutees if n != "CAP_SYS_CHROOT"]
+    assert not en_trop, message(
         en=(
-            f"The worker adds back {ajoutees or '[]'} instead of "
-            "['CAP_NET_BIND_SERVICE']. Listening on a privileged port is its only "
-            "need; changing owners is not part of its work."
+            f"The worker gives back {en_trop} besides what the launcher needs. "
+            "A service that works with one capability too many passes every "
+            "functional check: the minimum is one capability."
         ),
         fr=(
-            f"Le worker rajoute {ajoutees or '[]'} au lieu de "
-            "['CAP_NET_BIND_SERVICE']. Écouter sur un port privilégié est son "
-            "seul besoin ; changer de propriétaire ne fait pas partie de son "
-            "travail."
+            f"Le worker rend {en_trop} en plus de ce dont le lanceur a besoin. "
+            "Un service qui marche avec une capability de trop passe tous les "
+            "contrôles fonctionnels : le minimum est une seule capability."
+        ),
+    )
+    assert ajoutees == ["CAP_SYS_CHROOT"], message(
+        en=(
+            f"The worker gives back {ajoutees or '[]'}, and the launcher stays "
+            "down. Read its logs: the refused operation names the capability "
+            "it needs."
+        ),
+        fr=(
+            f"Le worker rend {ajoutees or '[]'}, et le lanceur reste arrêté. "
+            "Lisez ses journaux : l'opération refusée nomme la capability dont "
+            "il a besoin."
         ),
     )
 
 
-def test_le_noyau_n_applique_que_ce_bit_a_pid_1(host):
-    """Ce que le noyau applique, qui est la seule vérité.
+def test_le_noyau_n_applique_que_ce_bit_a_pid_1_et_le_lanceur_tourne(host):
+    """Ce que le noyau applique, qui est la seule vérité, et le lanceur qui vit.
 
     Une déclaration peut être retenue par Docker sans que le masque effectif
     corresponde. `CapEff` dit ce dont le processus dispose vraiment, et il se lit
-    dans `/proc/1/status`.
+    dans `/proc/1/status`. Le rapport du lanceur est lu DEUX fois, à trois
+    secondes d'écart : un compteur qui monte dit que le `chroot` réussit encore,
+    pas seulement qu'il a réussi une fois au démarrage.
     """
     cid, _info = _worker(host)
 
@@ -154,18 +192,42 @@ def test_le_noyau_n_applique_que_ce_bit_a_pid_1(host):
         fr="/proc/1/status ne porte aucune ligne CapEff. Ce n'est pas votre faute : le contrôle ne peut rien mesurer, signalez-le.",
     )
     effectif = int(lignes[0].split()[1], 16)
-    assert effectif == BIT_NET_BIND_SERVICE, message(
+    assert effectif == BIT_SYS_CHROOT, message(
         en=(
             f"PID 1 carries the effective mask 0x{effectif:x} instead of "
-            f"0x{BIT_NET_BIND_SERVICE:x}. Only bit 10 may remain: what Docker "
+            f"0x{BIT_SYS_CHROOT:x}. Only bit 18 may remain: what Docker "
             "retained and what the kernel applies can differ, and the kernel is "
             "authoritative."
         ),
         fr=(
             f"PID 1 porte le masque effectif 0x{effectif:x} au lieu de "
-            f"0x{BIT_NET_BIND_SERVICE:x}. Seul le bit 10 doit rester : ce que "
-            "Docker a retenu et ce que le noyau applique peuvent différer, et "
+            f"0x{BIT_SYS_CHROOT:x}. Seul le bit 18 doit rester : ce que "
+            "Docker a retenu et ce que le noyau applique peuvent diverger, et "
             "c'est le noyau qui fait foi."
+        ),
+    )
+
+    def _etat() -> tuple[str, int]:
+        rapport = host.run("docker exec %s cat %s", cid, ETAT).stdout.split()
+        if len(rapport) == 2 and rapport[0] == "ok" and rapport[1].isdigit():
+            return "ok", int(rapport[1])
+        return (rapport[0] if rapport else "absent"), 0
+
+    premier = _etat()
+    time.sleep(3)
+    second = _etat()
+    assert premier[0] == "ok" and second[0] == "ok" and second[1] > premier[1], message(
+        en=(
+            f"The launcher does not report a working state ({premier[0]} then "
+            f"{second[0]}, count {premier[1]} then {second[1]}). With the "
+            "single capability given back, its `chroot` must succeed every "
+            "second."
+        ),
+        fr=(
+            f"Le lanceur ne rend pas compte d'un état de marche ({premier[0]} "
+            f"puis {second[0]}, compteur {premier[1]} puis {second[1]}). Avec "
+            "la seule capability rendue, son `chroot` doit réussir chaque "
+            "seconde."
         ),
     )
 
@@ -175,7 +237,9 @@ def test_un_changement_de_proprietaire_est_reellement_refuse(host):
 
     Les deux contrôles précédents lisent ; celui-ci essaie. C'est la seule preuve
     qui ne dépende d'aucune lecture, et c'est elle qui compte pour l'exploitant :
-    un masque juste sur le papier n'empêche rien s'il n'est pas appliqué.
+    un masque juste sur le papier n'empêche rien s'il n'est pas appliqué. Le
+    `chown` est aussi le geste que fait réussir la capability qu'on rajoute par
+    habitude : c'est le cas que ce contrôle attrape.
     """
     cid, _info = _worker(host)
 
@@ -207,10 +271,9 @@ def test_un_changement_de_proprietaire_est_reellement_refuse(host):
         # ON RESTAURE CE QUE LA SONDE A PU CHANGER.
         #
         # Sur l'état de départ, le conteneur a encore `CAP_CHOWN` et ce `chown`
-        # RÉUSSIT : la version précédente de ce contrôle laissait donc `/proof`
-        # appartenant à 123 après être passée. Elle le constatait ensuite et
-        # échouait, ce qui donnait le bon verdict pour la mauvaise raison, et
-        # laissait le lab modifié pour la suite.
+        # RÉUSSIT : un contrôle qui laisserait `/proof` appartenant à 123 après
+        # être passé donnerait le bon verdict pour la mauvaise raison, et
+        # laisserait le lab modifié pour la suite.
         #
         # Un contrôle qui change l'état qu'il mesure n'est pas un contrôle, c'est
         # une intervention.

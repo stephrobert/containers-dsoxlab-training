@@ -258,6 +258,7 @@ consensus and its control state to protect.
 | `images-build-multi-etapes` | What comes from the base cannot be removed | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build-multi-etapes/#mettre-en-pratique) |
 | `images-non-root` | USER changes the identity, and no right | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/utilisateur-et-permissions/) |
 | `images-healthcheck` | 'Up' says nothing about the service | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/tester-une-image/#mettre-en-pratique) |
+| `images-tester-le-contrat` | Write the tests that turn a broken image away | c5 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/tester-une-image/#mettre-en-pratique) |
 | `buildkit-cache-monte` | Reuse dependencies when the build step runs again | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/#mettre-en-pratique) |
 | `buildkit-secret-de-build` | Fetch a private dependency without shipping the build secret | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/build/buildkit/#mettre-en-pratique) |
 | `images-multi-architecture` | Publish two architectures and execute both | c2 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/multi-architecture/#mettre-en-pratique) |
@@ -308,21 +309,22 @@ consensus and its control state to protect.
 
 | Lab (id) | Title | Level | Certif | Runtime | Companion guide |
 |---|---|---|---|---|---|
-| `docker-configurer-le-demon` | Configure persistent Docker log defaults | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/) |
-| `docker-contexte-ssh` | Create an SSH Docker context | c6 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#structure-et-syntaxe) |
+| `docker-configurer-le-demon` | Configure persistent Docker log defaults | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#mettre-en-pratique) |
+| `docker-contexte-ssh` | Create an SSH Docker context | c6 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/daemon-config/#mettre-en-pratique) |
 | `docker-rotation-des-journaux` | Rotate one container log | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/#mettre-en-pratique) |
+| `docker-mettre-a-jour-le-moteur` | Move the engine up without the gateway noticing | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/mettre-a-jour-le-moteur/#mettre-en-pratique) |
 | `securite-groupe-docker` | Remove an unnecessary Docker grant | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/#mettre-en-pratique) |
 | `securite-socket-lecture-seule` | Remove direct Docker socket access | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/#mettre-en-pratique) |
 | `securite-socket-proxy` | Restrict a Docker API socket proxy | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/) |
 | `securite-rootless` | Qualify a rootless Docker engine | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/rootless/#mettre-en-pratique) |
-| `securite-capabilities` | Drop all but one Linux capability | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#linux-capabilities) |
-| `securite-no-new-privileges` | Prevent privilege gain at runtime | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
+| `securite-capabilities` | Give a service back the one capability it really needs | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#mettre-en-pratique) |
+| `securite-no-new-privileges` | Prevent privilege gain at runtime | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#mettre-en-pratique) |
 | `securite-seccomp` | Measure a targeted seccomp syscall denial | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique) |
 | `securite-apparmor` | Write an AppArmor policy that refuses by default | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique) |
 | `container-systeme-en-lecture-seule` | Use a read-only container root filesystem | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/racine-en-lecture-seule/#mettre-en-pratique) |
 | `reseau-pare-feu-cible` | Repair one routed firewall path without dropping protections | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-et-pare-feu/#mettre-en-pratique) |
 | `container-limite-de-processus` | Bound the container process count | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/#mettre-en-pratique) |
-| `secrets-au-runtime` | Keep a runtime token out of Env | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#injection-au-runtime--autres-méthodes) |
+| `secrets-au-runtime` | Keep a runtime token out of Env | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/#mettre-en-pratique) |
 | `container-memoire-et-oom` | Set a hard memory ceiling | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/memoire-et-taches/#mettre-en-pratique) |
 | `troubleshoot-disque-plein` | Recover space in a bounded ENOSPC sandbox | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/journaux-et-espace-disque/#mettre-en-pratique) |
 | `donnees-volume-orphelin` | Recover retained orphan data and remove only disposable data | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/donnees-orphelines/#mettre-en-pratique) |
@@ -338,7 +340,7 @@ consensus and its control state to protect.
 | `capstone-chaine-complete` | Deliver and recover an isolated application end to end | c6 | - | 2 VMs | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/#passer-lépreuve) |
 | `epreuve-durcir-sans-casser` | Harden a service without breaking it | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/#passer-lépreuve) |
 
-_91 labs, table generated by `scripts/gen_catalog.py`._
+_93 labs, table generated by `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Where this catalogue stands

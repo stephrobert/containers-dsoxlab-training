@@ -1,0 +1,5 @@
+# Surcharge française du lab docker-mettre-a-jour-le-moteur. Elle ne porte QUE `title` et
+# `description` : tout autre champ y est ignoré en silence, parce que le
+# contrat ne se traduit pas.
+title: "Monter le moteur sans que la passerelle s'en aperçoive"
+description: "Monter Docker Engine de 29.8.2 à 29.9.2 exactement sur un hôte qui sert du trafic : garder les paquets du moteur retenus, ajouter live-restore sans perdre les options de journal, et laisser le service en marche et ses données intacts."

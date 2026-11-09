@@ -1,0 +1,136 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# CE LAB MODIFIE LE MOTEUR LUI-MÊME, et c'est ce qui le distingue de ses
+# voisins : il le ramène en 29.8.2 au départ, l'apprenant le monte en 29.9.2.
+# Le catalogue entier suppose le moteur en 29.9.2, version posée par
+# `infra/bootstrap.yaml`. Ce cleanup REND donc le moteur à cette version, avec
+# ses six paquets retenus, et retire le `daemon.json` que le lab avait posé :
+# le suivant ne doit hériter ni d'un moteur plus ancien, ni d'un `live-restore`
+# qu'il n'a pas demandé.
+#
+# LE TÉMOIN PART AVANT LE MOTEUR : on ne peut pas retirer un conteneur d'un
+# démon qu'on a déjà arrêté.
+- name: Défaire le lab docker-mettre-a-jour-le-moteur
+  hosts: lab_target
+  become: true
+  vars:
+    lab: docker-mettre-a-jour-le-moteur
+    travail: /opt/dsoxlab-docker-mettre-a-jour-le-moteur
+    reference: /var/lib/dsoxlab-docker-mettre-a-jour-le-moteur
+    cible: "5:29.9.2-1~debian.13~trixie"
+    socle: >-
+      alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    paquets_retenus:
+      - docker-ce
+      - docker-ce-cli
+      - docker-ce-rootless-extras
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+  tasks:
+    - name: Retirer le témoin et son volume
+      ansible.builtin.shell:
+        cmd: |
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker rm -f passerelle-sms >/dev/null 2>&1
+          docker volume rm -f volume-passerelle >/dev/null 2>&1
+          exit 0
+      changed_when: false
+
+    - name: Repérer les fichiers que la configuration et les sauvegardes ont laissés
+      ansible.builtin.find:
+        paths:
+          - /etc/docker
+          - /root
+        patterns:
+          - "daemon.json*"
+          - "sauvegarde*"
+        file_type: any
+        recurse: false
+      register: restes
+
+    - name: Retirer le daemon.json du lab, ses copies et les sauvegardes de l'apprenant
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ restes.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+
+    # LA LIMITE DE DÉMARRAGE DE SYSTEMD COMPTE LES REDÉMARRAGES RAPPROCHÉS : trois
+    # en une minute, et l'unité refuse le suivant. Un setup qui suit un cleanup
+    # les cumule, et le moteur reste arrêté sans qu'aucune erreur ne parle du
+    # démon. `reset-failed` remet le compteur à zéro ; il est sans effet quand
+    # l'unité va bien.
+    - name: Remettre à zéro la limite de démarrage de l'unité
+      ansible.builtin.command:
+        cmd: systemctl reset-failed docker.service docker.socket
+      changed_when: false
+      failed_when: false
+
+    - name: Rendre le moteur à la version du socle du catalogue
+      ansible.builtin.apt:
+        name:
+          - "docker-ce={{ cible }}"
+          - "docker-ce-cli={{ cible }}"
+          - "docker-ce-rootless-extras={{ cible }}"
+        state: present
+        allow_downgrade: true
+        allow_change_held_packages: true
+
+    - name: Retenir de nouveau les six paquets
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop: "{{ paquets_retenus }}"
+
+    # LE REDÉMARRAGE EST DÉLIBÉRÉ, même quand le moteur était déjà en 29.9.2 :
+    # sans lui, un `live-restore` activé par un rechargement resterait actif
+    # dans le démon alors que le fichier qui le portait a disparu.
+    # LA LIMITE DE DÉMARRAGE DE SYSTEMD COMPTE LES REDÉMARRAGES RAPPROCHÉS : trois
+    # en une minute, et l'unité refuse le suivant. Un setup qui suit un cleanup
+    # les cumule, et le moteur reste arrêté sans qu'aucune erreur ne parle du
+    # démon. `reset-failed` remet le compteur à zéro ; il est sans effet quand
+    # l'unité va bien.
+    - name: Remettre à zéro la limite de démarrage de l'unité
+      ansible.builtin.command:
+        cmd: systemctl reset-failed docker.service docker.socket
+      changed_when: false
+      failed_when: false
+
+    - name: Redémarrer le moteur sur une configuration vide
+      ansible.builtin.systemd_service:
+        name: docker
+        state: restarted
+
+    - name: Attendre que le moteur réponde en 29.9.2
+      ansible.builtin.shell:
+        cmd: >
+          test "$(docker version --format '{% raw %}{{.Server.Version}}{% endraw %}')" = "29.9.2"
+      register: moteur_pret
+      until: moteur_pret.rc == 0
+      retries: 15
+      delay: 2
+      changed_when: false
+
+    - name: Rendre le socle public, et seulement si ce lab l'a tiré
+      # Voir la tâche jumelle du setup : sans ce test, le lab retire une image
+      # que d'autres partagent, ou laisse celle qu'il a tirée.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-{{ lab }}.socle-a-rendre'; then
+          docker image rm -f '{{ socle }}' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-{{ lab }}.socle-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer l'atelier et les références
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ travail }}"
+        - "{{ reference }}"
