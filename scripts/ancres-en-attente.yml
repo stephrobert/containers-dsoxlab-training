@@ -1,0 +1,23 @@
+# Les ancres que la leçon doit porter, et que la production ne sert pas encore.
+#
+# POURQUOI CE FICHIER EXISTE
+#
+# `scripts/verifier-ancres.py` interroge la production. Une ancre posée par une
+# leçon en cours de réécriture est signalée fausse ici tant que la leçon n'est
+# pas publiée. Plutôt qu'une tolérance implicite, chaque cas est NOMMÉ, DATÉ et
+# MOTIVÉ.
+#
+# CE QUI EMPÊCHE CE FICHIER DE DEVENIR UN DÉPOTOIR
+#
+# Le contrôle ÉCHOUE sur une entrée devenue inutile : dès que l'ancre résout en
+# production, il exige son retrait ; et si le lab ne porte plus cette ancre, il
+# signale l'entrée morte.
+
+ancres:
+  - lab: secrets-au-runtime
+    ancre: mettre-en-pratique
+    page: https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/secrets/
+    depuis: 2026-11-09
+    pourquoi: >-
+      la leçon C41 est réécrite la nuit du 2026-11-09 et portera la section
+      Mettre en pratique ; absente de la production et de la source ce jour
