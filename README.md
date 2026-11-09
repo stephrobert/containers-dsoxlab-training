@@ -317,8 +317,8 @@ consensus and its control state to protect.
 | `securite-socket-lecture-seule` | Remove direct Docker socket access | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/retirer-les-acces-directs/#mettre-en-pratique) |
 | `securite-socket-proxy` | Restrict a Docker API socket proxy | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/socket-proxy/) |
 | `securite-rootless` | Qualify a rootless Docker engine | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/rootless/#mettre-en-pratique) |
-| `securite-capabilities` | Give a service back the one capability it really needs | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#linux-capabilities) |
-| `securite-no-new-privileges` | Prevent privilege gain at runtime | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#bonnes-pratiques-runtime) |
+| `securite-capabilities` | Give a service back the one capability it really needs | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#mettre-en-pratique) |
+| `securite-no-new-privileges` | Prevent privilege gain at runtime | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/securite/#mettre-en-pratique) |
 | `securite-seccomp` | Measure a targeted seccomp syscall denial | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique) |
 | `securite-apparmor` | Write an AppArmor policy that refuses by default | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/seccomp-et-apparmor/#mettre-en-pratique) |
 | `container-systeme-en-lecture-seule` | Use a read-only container root filesystem | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/racine-en-lecture-seule/#mettre-en-pratique) |
