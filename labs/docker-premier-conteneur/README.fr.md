@@ -21,7 +21,7 @@ un état indistinguable d'un ménage réussi.
 | Posé par le setup | État de départ | Geste attendu | Contrôle |
 | --- | --- | --- | --- |
 | `vitrine` | `running` | l'arrêter | 3, et il refuse la suppression |
-| `rebut` | `created` | le supprimer | 4 |
+| `rebut` | `exited` | le supprimer | 4 |
 | *rien* | absent | lancer `premier` | 1 et 2 |
 
 Le contrôle 3 distingue les deux fautes dans son message, parce qu'elles
@@ -40,7 +40,7 @@ l'exercice, puisqu'un conteneur dont la commande se termine s'arrête aussitôt.
 
 Un test doit porter sur ce que l'état de départ ne porte PAS. Les quatre
 contrôles sont donc faux au départ, et une tâche du setup le **vérifie** avant
-de rendre la main : `vitrine running`, `rebut created`, et aucun `premier`.
+de rendre la main : `vitrine running`, `rebut exited`, et aucun `premier`.
 Sans ce contrôle, un passage précédent mal nettoyé rendrait le lab déjà résolu
 avant d'être posé.
 
