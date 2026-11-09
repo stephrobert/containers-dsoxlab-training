@@ -93,11 +93,12 @@
           sh -c "echo vitrine-en-service; sleep infinity"
       changed_when: true
 
-    # Créé puis arrêté : il EXISTE sans tourner. C'est l'état qui surprend, et
-    # celui que le quatrième contrôle demande de faire disparaître.
-    - name: Créer le conteneur que l'apprenant devra SUPPRIMER
+    # Lancé au premier plan puis sorti : il a tourné, il est ARRÊTÉ (exited) et il
+    # EXISTE encore. C'est l'état qui surprend, et celui que le quatrième contrôle
+    # demande de faire disparaître.
+    - name: Lancer puis laisser s'arrêter le conteneur que l'apprenant devra SUPPRIMER
       ansible.builtin.command:
-        cmd: docker create --name rebut {{ tag_local }} sh -c "echo rebut"
+        cmd: docker run --name rebut {{ tag_local }} sh -c "echo rebut"
       changed_when: true
 
     - name: Vérifier que la situation est bien celle que le scénario décrit
@@ -107,7 +108,7 @@
       changed_when: false
       failed_when: >
         'vitrine running' not in situation.stdout
-        or 'rebut created' not in situation.stdout
+        or 'rebut exited' not in situation.stdout
         or 'premier' in situation.stdout
 
     - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue

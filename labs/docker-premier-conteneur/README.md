@@ -20,7 +20,7 @@ indistinguishable from a successful clean-up.
 | Laid out by the setup | Starting state | Expected action | Check |
 | --- | --- | --- | --- |
 | `vitrine` | `running` | stop it | 3, and it refuses removal |
-| `rebut` | `created` | remove it | 4 |
+| `rebut` | `exited` | remove it | 4 |
 | *nothing* | absent | run `premier` | 1 and 2 |
 
 Check 3 distinguishes the two mistakes in its message, because they call for
@@ -39,7 +39,7 @@ whose command finishes stops right away.
 
 A test must bear on what the starting state does NOT carry. All four checks are
 therefore false at the start, and a setup task **verifies** it before handing
-over: `vitrine running`, `rebut created`, and no `premier`. Without that check,
+over: `vitrine running`, `rebut exited`, and no `premier`. Without that check,
 a badly cleaned previous run would leave the lab already solved before being
 laid out.
 
