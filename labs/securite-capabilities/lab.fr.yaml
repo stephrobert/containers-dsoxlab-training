@@ -1,2 +1,2 @@
-title: "Retirer toutes les capabilities sauf une"
-description: "Recréer le service sans capabilities sauf NET_BIND_SERVICE et vérifier son masque effectif."
+title: "Rendre à un service la seule capability dont il a besoin"
+description: "Recréer un service qui s'arrête quand toutes les capabilities sont retirées, en ne lui rendant que celle dont il a besoin, sans mode privilégié et sans capability superflue, et prouver ce qu'il ne peut plus faire."
