@@ -55,7 +55,7 @@ fi
 
 # Le contrat, lu sur l'export et non sur le disque de travail. C'est CE contrôle
 # qui voit un lab dont un fichier requis n'est pas versionné.
-if (cd "${EXPORT}" && LAB_HOME="${EXPORT}" uvx 'dsoxlab>=0.5.0' validate-structure \
+if (cd "${EXPORT}" && LAB_HOME="${EXPORT}" uvx 'dsoxlab>=0.8.0' validate-structure \
         > "${JOURNAUX}/structure.log" 2>&1); then
     ok "dsoxlab validate-structure sur l'export"
 else
