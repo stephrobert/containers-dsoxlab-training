@@ -1,0 +1,24 @@
+# Lab images-tester-le-contrat. Les champs marqués REQUIS sont exigés par le validator : sans eux,
+# le lab est refusé, ou pire, disparaît du catalogue sans un mot.
+id: images-tester-le-contrat                      # REQUIS
+title: "Write the tests that turn a broken image away"   # REQUIS
+level: c5                     # REQUIS
+description: "Write an external test script that accepts a correct image and refuses broken ones of different kinds: unreachable, badly configured, too privileged, badly stopped."
+skills:                       # REQUIS, non vide
+  - docker
+  - dockerfile
+  - tests
+distros:                      # REQUIS, non vide
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/tester-une-image/#mettre-en-pratique   # REQUIS, http(s)
+lab_type: lab
+estimated_time: 40m
+runtime:
+  type: vm
+  targets:                    # REQUIS pour vm, non vide
+    - name: cible
+      host: docker.lab        # doit exister dans meta.yml: infra.hosts[]
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

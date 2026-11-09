@@ -1,0 +1,69 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : il défait ce que setup.yaml a
+# posé, pour que le lab se rejoue à l'identique.
+#
+# LES CONTENEURS PARTENT AVANT LES IMAGES, et les volumes en dernier : un
+# volume nommé qu'un script de test aurait créé et laissé survit au conteneur
+# qui le montait. Le script de l'apprenant est censé les retirer lui-même ; si
+# le sien ne le fait pas, c'est ici qu'on les retrouve, par leurs préfixes.
+- name: Défaire le lab images-tester-le-contrat
+  hosts: lab_target
+  become: true
+  vars:
+    lab: images-tester-le-contrat
+    travail: /opt/dsoxlab-images-tester-le-contrat
+    base: >-
+      python:3.15.2-slim@sha256:8c13a3f37a6a5b71498228e902c4b9f51c1f7900d49fabf71f9a650c6120e0d0
+  tasks:
+    - name: Retirer les conteneurs du lab, ceux des contrôles et ceux du script
+      ansible.builtin.shell:
+        cmd: |
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker ps -aq --filter ancestor=guichet:1.0 --filter ancestor=guichet:0.9 | xargs -r docker rm -f >/dev/null 2>&1
+          docker ps -aq --filter name=contrat- --filter name=dsoxlab-images-tester-le-contrat- | xargs -r docker rm -f >/dev/null 2>&1
+          exit 0
+      changed_when: false
+
+    - name: Retirer les images des contrôles, puis celles du lab
+      ansible.builtin.shell:
+        cmd: |
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker image ls --format '{% raw %}{{.Repository}}:{{.Tag}}{% endraw %}' | grep '^dsoxlab-images-tester-le-contrat-' | xargs -r docker rmi -f >/dev/null 2>&1
+          docker rmi -f guichet:0.9 guichet:1.0 >/dev/null 2>&1
+          exit 0
+      changed_when: false
+
+    - name: Retirer les volumes que le script de l'apprenant aurait laissés
+      ansible.builtin.shell:
+        cmd: |
+          if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+          docker volume ls -q | grep -E '^(contrat-|dsoxlab-images-tester-le-contrat-)' | xargs -r docker volume rm -f >/dev/null 2>&1
+          exit 0
+      changed_when: false
+
+    - name: Retirer le cache de construction, qui survivrait aux images
+      ansible.builtin.shell:
+        cmd: docker builder prune -af || true
+      changed_when: false
+
+    - name: Retirer les couches orphelines
+      ansible.builtin.shell:
+        cmd: docker image prune -f || true
+      changed_when: false
+
+    - name: Rendre l'image de base, et seulement si ce lab l'a tirée
+      # Voir la tâche jumelle du setup : sans ce test, le lab retire une image
+      # que d'autres partagent, ou laisse celle qu'il a tirée.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        if test -e '/var/tmp/dsoxlab-{{ lab }}.base-a-rendre'; then
+          docker image rm -f '{{ base }}' >/dev/null 2>&1 || true
+          rm -f '/var/tmp/dsoxlab-{{ lab }}.base-a-rendre'
+        fi
+      changed_when: false
+
+    - name: Retirer l'atelier entier, script de l'apprenant compris, et l'énoncé
+      ansible.builtin.file:
+        path: "{{ travail }}"
+        state: absent

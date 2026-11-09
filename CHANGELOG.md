@@ -18,6 +18,27 @@ of the Docker engine and in which storage mode. That is what
 
 ### Added
 
+- **`images-tester-le-contrat` (C19, level c5).** The learner writes an external
+  test script, `tester-contrat.sh`, that accepts a correct image and refuses
+  broken ones of different kinds. What is graded is the script, played against
+  an image set: one correct image the learner built from, an older build the
+  brief names, and seven broken images the checks build themselves at grading
+  time (data directory owned by root, error reported with exit code 0, no check
+  of the mandatory variable, process in root, write outside the data directory,
+  SIGTERM ignored, counter lost at stop). Six checks of equal weight; every
+  refusal only counts if the same script accepts the correct image, so a script
+  that always exits 0 or always exits 1 scores zero. Attested in both
+  directions on Docker 29.9.2.
+
+- **`docker-mettre-a-jour-le-moteur` (C35c, level c6).** The engine goes from
+  29.8.2 to exactly 29.9.2 on a host that serves a witness service. Five checks
+  on the final state: the exact version (not the repository candidate 29.9.3),
+  the six packages still held, `live-restore` active with the original log
+  options kept, the witness never restarted (process, start time, unbroken
+  heartbeat counter) and its data intact. The climb is graded, the way back is
+  not. The setup puts the engine back to 29.8.2 and the cleanup gives the
+  catalogue 29.9.2 back, six packages held, no `daemon.json`.
+
 - **A guard on critical requirements**
   (`tests/test_exigence_critique_declaree.py`, wired to a hook). A promise that
   "no total makes up for" something, written in a brief, must have its
@@ -50,6 +71,21 @@ of the Docker engine and in which storage mode. That is what
   checks were bench-tested by sabotage, and each fails when it must.
 
 ### Changed
+
+- **`securite-capabilities` teaches a real exception.** It required
+  `NET_BIND_SERVICE`, which does not exist under Docker: measured on Engine
+  29.9.2, a container with no capability at all listens on port 80, because the
+  engine sets `net.ipv4.ip_unprivileged_port_start=0` in its network namespace.
+  The lab now recreates a job launcher that stops at startup when every
+  capability is dropped (its `chroot` is refused) and needs exactly one back,
+  `SYS_CHROOT`. Three checks: the declared set and no privileged mode, the
+  effective mask `0x40000` together with the launcher's own report, and a real
+  ownership change that must fail. Same identifier, new title.
+
+- **Three `doc_url`s follow the rewritten lessons.** `secrets-au-runtime`,
+  `docker-contexte-ssh` and `docker-configurer-le-demon` now point at the
+  `#mettre-en-pratique` section of their page, the form of the other labs of the
+  catalogue.
 
 - **The `doc_url` anchor check now has three outcomes instead of two**
   (`scripts/verifier-ancres.py`, with `tests/test_ancres_trois_issues.py` wired
