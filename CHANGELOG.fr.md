@@ -15,6 +15,17 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ## [Unreleased]
 
+### Modifié
+
+- Le README ne recopie plus la documentation du moteur dsoxlab (contrat, cycle
+  de vie d'un lab) : il renvoie aux pages où le moteur se documente lui-même
+  (dsoxlab#201). La table du cycle de vie disait que `run` copie le point de
+  départ dans `challenge/work` et que `clean` retire le répertoire de travail :
+  c'est le runtime `shell`, et tous les labs sont ici `vm`, où `run` joue
+  `setup.yaml` sur la machine et `clean` joue `cleanup.yaml`. Le CONTRIBUTING
+  dit désormais que `fixtures/` arrive sur la machine par le `setup.yaml` du
+  lab, puisque dsoxlab ne copie rien pour un lab `vm`.
+
 ### Ajouté
 
 - **Les quatorze épreuves déclarent leurs critères et les leçons à réviser.**

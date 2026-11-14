@@ -110,35 +110,27 @@ mettre l'outil à jour, tant que la version du contrat correspond.
 
 ## Comment ça marche
 
-### Le contrat déclaratif, à deux niveaux
+### Le moteur, documenté là où il vit
 
-Le catalogue est décrit par des données, pas par du code, et c'est ce qui garde
-le moteur `dsoxlab` indépendant du domaine :
+Ce catalogue se joue avec `dsoxlab`, qui documente lui-même son contrat et ses
+commandes. Ce README ne les répète pas, pour ne pas dériver quand le moteur
+change (issue dsoxlab #201) :
 
-- **`meta.yml`** à la racine déclare l'identité du dépôt et l'**ordre** des
-  huit sections affichées par `list-labs`, qui portent les identifiants des
-  modules de la formation, plus le parcours Swarm déclaré hors tronc ;
-- **`lab.yaml`** par lab déclare ses `skills`, son `level`, son `runtime`
-  (type, fixtures, services), ses `distros`, son `doc_url` et un bloc
-  `validation`. Un `lab.fr.yaml` surcharge `title` et `description` en
-  français, et rien d'autre.
+- le contrat : `meta.yml`, `lab.yaml`, `lab.<langue>.yaml`, les runtimes et
+  leurs champs : [contrat](https://github.com/stephrobert/dsoxlab/blob/main/docs/contract-v1.fr.md) ;
+- les commandes et la vie d'un lab, de `run` à `check` :
+  [commandes](https://github.com/stephrobert/dsoxlab/blob/main/docs/commands.fr.md) et [jouer un lab](https://github.com/stephrobert/dsoxlab/blob/main/docs/learner.fr.md) ;
+- écrire un lab, et ce que contrôle `validate-structure` :
+  [guide de l'auteur](https://github.com/stephrobert/dsoxlab/blob/main/docs/catalog-author.fr.md).
 
-`dsoxlab validate-structure` contrôle tout le contrat, et les sections
-déclarées dans `meta.yml` sans lab sont précisément la façon dont ce catalogue
-dit ce qu'il doit encore.
+Le `meta.yml` ordonne les huit sections affichées par `list-labs`, qui
+portent les identifiants des modules de la formation, plus le parcours Swarm
+déclaré hors tronc. Les sections qu'il déclare sans lab sont précisément la
+façon dont ce catalogue dit ce qu'il doit encore.
 
-### Le cycle de vie d'un lab
-
-| Commande | Ce qu'elle fait |
-| --- | --- |
-| `dsoxlab list-labs` | le catalogue, dans l'ordre pédagogique |
-| `dsoxlab run <id>` | copie le point de départ dans `challenge/work` |
-| `dsoxlab challenge <id>` | la mission : ce qu'il faut obtenir, pas comment |
-| `dsoxlab check <id>` | joue les tests et rend un score sur 100 |
-| `dsoxlab hint <id>` | un indice, à un coût qui se déduit du score |
-| `dsoxlab submit <id>` | enregistre le résultat définitivement |
-| `dsoxlab progress` | où vous en êtes, lab par lab |
-| `dsoxlab clean <id>` | retire le répertoire de travail |
+Tous les labs sont ici `vm` : `dsoxlab run` joue le `setup.yaml` du lab sur
+la machine et y ouvre la session, et `dsoxlab clean` joue son
+`cleanup.yaml`. Rien n'est copié dans un `challenge/work` local.
 
 ### Les runtimes
 
