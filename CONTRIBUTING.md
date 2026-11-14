@@ -62,13 +62,14 @@ VM cycles: never run two attestations concurrently.
 | `challenge/README.md`, `.fr.md` | the **brief**, as numbered requirements |
 | `challenge/hints.yaml` | four base64 hints, bilingual, at increasing cost |
 | `challenge/tests/test_functional.py` | the proof. The name is set by the contract |
-| `fixtures/` | the starting point, copied into `challenge/work` by `dsoxlab run` |
+| `fixtures/` | the starting point, laid on the machine by the lab's own `setup.yaml` |
 | `solution/` | the reference solution, laid on top for validation |
 
-A fixture **declared** in `lab.yaml` must exist in `fixtures/`, and a fixture
-present but not declared is **not** copied. The first case is refused by
-`dsoxlab validate-structure`; the second leaves an incomplete working directory
-without any message saying so.
+Every lab here is `vm`, and dsoxlab copies nothing for a `vm` lab:
+`runtime.fixtures` and `runtime.workdir` only apply to the `shell` runtime
+(see the [contract](https://github.com/stephrobert/dsoxlab/blob/main/docs/contract-v1.md)).
+So `setup.yaml` puts each file of `fixtures/` on the machine with an explicit
+task, and a file that no task names never reaches the VM.
 
 ## What gets a contribution refused
 

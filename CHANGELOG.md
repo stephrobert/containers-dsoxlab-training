@@ -16,6 +16,17 @@ of the Docker engine and in which storage mode. That is what
 
 ## [Unreleased]
 
+### Changed
+
+- The README no longer copies the dsoxlab engine documentation (contract,
+  lab life cycle): it links to the pages where the engine documents itself
+  (dsoxlab#201). The lifecycle table said that `run` copies the starting
+  point into `challenge/work` and that `clean` removes the working directory:
+  that is the `shell` runtime, and every lab here is `vm`, where `run` plays
+  `setup.yaml` on the machine and `clean` plays `cleanup.yaml`. CONTRIBUTING
+  now says that `fixtures/` reaches the machine through the lab's own
+  `setup.yaml`, since dsoxlab copies nothing for a `vm` lab.
+
 ### Added
 
 - **The fourteen exams declare their criteria and the lessons to review.**

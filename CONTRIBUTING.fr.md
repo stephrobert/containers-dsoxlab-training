@@ -64,13 +64,15 @@ attestations concurrentes.
 | `challenge/README.md`, `.fr.md` | l'**énoncé**, en exigences numérotées |
 | `challenge/hints.yaml` | quatre indices en base64, bilingues, à coût croissant |
 | `challenge/tests/test_functional.py` | la preuve. Le nom est imposé par le contrat |
-| `fixtures/` | le point de départ, copié dans `challenge/work` par `dsoxlab run` |
+| `fixtures/` | le point de départ, posé sur la machine par le `setup.yaml` du lab |
 | `solution/` | la solution de référence, posée par-dessus pour la validation |
 
-Une fixture **déclarée** dans `lab.yaml` doit exister dans `fixtures/`, et une
-fixture présente mais non déclarée n'est **pas** copiée. Le premier cas est
-refusé par `dsoxlab validate-structure`, le second donne un répertoire de
-travail incomplet sans qu'aucun message le dise.
+Tous les labs sont ici `vm`, et dsoxlab ne copie rien pour un lab `vm` :
+`runtime.fixtures` et `runtime.workdir` ne valent que pour le runtime `shell`
+(voir le [contrat](https://github.com/stephrobert/dsoxlab/blob/main/docs/contract-v1.fr.md)).
+C'est donc le `setup.yaml` qui pose chaque fichier de `fixtures/` sur la
+machine, par une tâche explicite, et un fichier qu'aucune tâche ne nomme
+n'arrive jamais sur la VM.
 
 ## Ce qui fait refuser une contribution
 

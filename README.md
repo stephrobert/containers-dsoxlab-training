@@ -109,34 +109,27 @@ the contract version matches.
 
 ## How it works
 
-### The declarative contract (two levels)
+### The engine, documented where it lives
 
-The catalogue is described by data, not code, which is what keeps the `dsoxlab`
-engine domain-agnostic:
+This catalog is played by `dsoxlab`, which documents its own contract and
+commands. This README does not repeat them, so that it cannot drift when the
+engine changes (dsoxlab issue #201):
 
-- **`meta.yml`** at the root declares the repository identity and the **order**
-  of the eight sections shown by `list-labs`, which carry the ids of the
-  course modules, plus the Swarm path declared outside the course;
-- **`lab.yaml`** per lab declares its `skills`, `level`, `runtime` (type,
-  fixtures, services), `distros`, `doc_url` and a `validation` block. A
-  `lab.fr.yaml` overrides `title` and `description` in French, and nothing else.
+- the contract: `meta.yml`, `lab.yaml`, `lab.<lang>.yaml`, the runtimes and
+  their fields: [contract](https://github.com/stephrobert/dsoxlab/blob/main/docs/contract-v1.md);
+- the commands and the life of a lab, from `run` to `check`:
+  [commands](https://github.com/stephrobert/dsoxlab/blob/main/docs/commands.md) and [playing a lab](https://github.com/stephrobert/dsoxlab/blob/main/docs/learner.md);
+- writing a lab, and what `validate-structure` checks:
+  [catalog author guide](https://github.com/stephrobert/dsoxlab/blob/main/docs/catalog-author.md).
 
-`dsoxlab validate-structure` checks the whole contract, and the sections
-declared in `meta.yml` with no lab yet are exactly how this catalogue states
-what it still owes.
+`meta.yml` orders the eight sections shown by `list-labs`, which carry the
+ids of the course modules, plus the Swarm path declared outside the course.
+The sections declared there with no lab yet are exactly how this catalogue
+states what it still owes.
 
-### The lab lifecycle
-
-| Command | What it does |
-| --- | --- |
-| `dsoxlab list-labs` | the catalogue, in teaching order |
-| `dsoxlab run <id>` | copies the starting point into `challenge/work` |
-| `dsoxlab challenge <id>` | the mission: what to reach, not how |
-| `dsoxlab check <id>` | runs the tests and returns a score out of 100 |
-| `dsoxlab hint <id>` | one hint, at a cost deducted from the score |
-| `dsoxlab submit <id>` | records the result for good |
-| `dsoxlab progress` | where you stand, lab by lab |
-| `dsoxlab clean <id>` | removes the working directory |
+Every lab here is `vm`: `dsoxlab run` plays the lab's `setup.yaml` on the
+machine and opens the session there, and `dsoxlab clean` plays its
+`cleanup.yaml`. Nothing is copied into a local `challenge/work`.
 
 ### Runtimes
 
