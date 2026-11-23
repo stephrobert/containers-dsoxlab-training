@@ -85,6 +85,18 @@ infra:
       ram_mb: 2048
       vcpu: 2
       disk_gb: 20
+  # Le niveau 1 « Introduction aux conteneurs » se joue SANS Docker : un
+  # conteneur fabriqué à la main (unshare, cgroups), puis runc, skopeo, Podman
+  # et containerd. oci.lab n'est monté que par les labs qui le citent, et le
+  # rôle sans-docker le fait sortir du socle (infra/bootstrap.yaml), qui
+  # installerait sinon le moteur sur tout hôte monté.
+  optional_hosts:
+    - name: oci.lab
+      distro: debian13
+      role: sans-docker
+      ram_mb: 2048
+      vcpu: 2
+      disk_gb: 20
   providers:
     kvm:
       libvirt_uri: "qemu:///system"
@@ -117,6 +129,17 @@ infra:
 # promet un lab absent se voit à l'usage, pas à la relecture. Le backlog
 # complet vit dans `ROADMAP.md`, rangé sous ces mêmes huit modules.
 sections:
+  # ── Niveau 1 : introduction aux conteneurs, SANS Docker ──────────────────
+  # Plan de fusion du 2026-11-22 (src/data/parcours/docker.yaml, bloc
+  # projet.cadrage_2026_11_22) : les fondamentaux deviennent le niveau 1, en
+  # trois modules, isoler, image et executer. Les labs se jouent sur oci.lab.
+  - id: isoler
+    title: "Isolate a process"
+    description: >-
+      Build a container by hand with the kernel's namespaces, then limit it
+      with cgroups and capabilities: what an engine does, without an engine.
+    labs:
+      - conteneur-fabriquer-a-la-main
   # ── Niveau c1 : utiliser et comprendre les conteneurs ────────────────────
   - id: conteneurs-utilisation
     title: "Use containers"

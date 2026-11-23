@@ -191,6 +191,24 @@ import json
 import sys
 from conftest import lab_host
 host = lab_host(sys.argv[1])
+# UN HÔTE SANS DOCKER (le niveau 1 se joue sur oci.lab, sans moteur) se
+# photographie par ce qu'un conteneur fabriqué à la main peut laisser : les
+# entrées de /srv, les namespaces de processus, les montages sous /srv et les
+# cgroups de premier niveau. Les catégories Docker y sont vides.
+if host.run("command -v docker").rc != 0:
+    def lignes(cmd):
+        result = host.run(cmd)
+        return sorted(line.strip() for line in result.stdout.splitlines() if line.strip())
+    systeme = (
+        ["srv:" + x for x in lignes("sudo ls -A /srv")]
+        + ["pidns:" + x for x in lignes("sudo lsns -n -t pid -o NS")]
+        + ["montage:" + x for x in lignes("findmnt -rn -o TARGET | grep '^/srv' || true")]
+        + ["cgroup:" + x for x in lignes(
+            "sudo find /sys/fs/cgroup -mindepth 1 -maxdepth 1 -type d -printf '%f\\n'")]
+    )
+    print(json.dumps({"images": [], "conteneurs": [], "volumes": [], "reseaux": [],
+                      "docker": "absent", "store": "aucun", "systeme": sorted(systeme)}))
+    sys.exit(0)
 def read(args):
     result = host.run("docker " + args)
     if result.rc != 0:
@@ -244,7 +262,10 @@ def _a_comparer(categorie: str, noms) -> set:
 def ecarts(avant: dict, apres: dict) -> list[str]:
     """Ce que le lab a laissé derrière lui, nommé objet par objet."""
     trouves = []
-    for categorie in ("images", "conteneurs", "volumes", "reseaux"):
+    categories = ["images", "conteneurs", "volumes", "reseaux"]
+    if "systeme" in avant and "systeme" in apres:
+        categories.append("systeme")
+    for categorie in categories:
         def garder(noms, _c=categorie):
             return _a_comparer(_c, noms)
         restes = sorted(garder(apres[categorie]) - garder(avant[categorie]))

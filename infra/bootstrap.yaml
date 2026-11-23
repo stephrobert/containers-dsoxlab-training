@@ -31,6 +31,15 @@
       # launcher is the SUBJECT of that lab, so the baseline must provide it.
       docker-ce-rootless-extras: "5:29.9.2-1~debian.13~trixie"
   tasks:
+    # LE NIVEAU 1 SE JOUE SANS DOCKER. Ses labs fabriquent un conteneur à la
+    # main (unshare, cgroups, runc) sur oci.lab, un hôte optionnel du meta.yml
+    # dont le rôle est `sans-docker`. dsoxlab joue ce socle sur tout hôte
+    # optionnel qu'il monte : sans cette sortie, oci.lab recevrait le moteur que
+    # la formation n'introduit qu'au niveau 2. Le rôle, et non le nom, décide.
+    - name: Leave hosts that must stay without Docker
+      ansible.builtin.meta: end_host
+      when: (role | default('')) == 'sans-docker'
+
     - name: Install the packages needed to fetch a signed repository
       ansible.builtin.apt:
         name: [ca-certificates, curl, gnupg]

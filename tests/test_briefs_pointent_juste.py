@@ -98,8 +98,14 @@ def tous_les_labs() -> list[str]:
 
 
 def hotes_declares() -> set[str]:
+    """Les hôtes communs et les hôtes optionnels (dsoxlab 0.9.0).
+
+    Un hôte optionnel est monté par le `run` du lab qui le cite : un énoncé
+    peut donc le nommer.
+    """
     infra = lire_yaml(META).get("infra") or {}
-    return {h["name"] for h in (infra.get("hosts") or []) if h.get("name")}
+    hotes = (infra.get("hosts") or []) + (infra.get("optional_hosts") or [])
+    return {h["name"] for h in hotes if h.get("name")}
 
 
 def workdir_declare(rel: str) -> str:

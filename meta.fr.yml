@@ -27,6 +27,13 @@ repo:
 # sections face a huit modules. Le `title` reste libre, et c'est lui que
 # l'apprenant lit.
 sections:
+  - id: isoler
+    title: "Isoler un processus"
+    description: >-
+      Fabriquer un conteneur à la main avec les namespaces du noyau, puis le
+      limiter avec les cgroups et les capabilities : ce que fait un moteur,
+      sans moteur.
+
   - id: conteneurs-utilisation
     title: "Utiliser les conteneurs"
     description: >-

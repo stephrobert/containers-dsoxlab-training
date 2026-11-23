@@ -1,0 +1,34 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : défait le conteneur fabriqué à
+# la main et le dépôt posé par setup.yaml.
+#
+# L'ORDRE COMPTE. Les processus dont la racine est /srv/atelier d'abord : tant
+# qu'ils vivent, leur namespace de processus existe, et le validateur le
+# compterait comme une trace. Puis les montages éventuels sous /srv/atelier,
+# puis les fichiers.
+- name: Défaire le lab conteneur-fabriquer-a-la-main
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Arrêter les processus du conteneur
+      ansible.builtin.shell: |
+        set -eu
+        for p in $(ls /proc | grep -E '^[0-9]+$'); do
+          if [ "$(readlink /proc/$p/root 2>/dev/null)" = /srv/atelier ]; then kill -KILL "$p" 2>/dev/null || true; fi
+        done
+        sleep 1
+      changed_when: true
+
+    - name: Démonter ce qui resterait sous /srv/atelier
+      ansible.builtin.shell: |
+        findmnt -rn -o TARGET | grep '^/srv/atelier' | sort -r | xargs -r umount -l || true
+      changed_when: true
+
+    - name: Retirer les fichiers du lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /srv/atelier
+        - /srv/depot
+        - /opt/MISSION.md
