@@ -139,7 +139,7 @@
           TEMOIN='{{ image_temoin }}'
     - name: Install this lab's bilingual mission
       ansible.builtin.copy:
-        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        src: "challenge/README{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
         dest: "{{ atelier }}/MISSION.md"
         mode: "0640"
         owner: "{{ ansible_user | default('ansible') }}"
