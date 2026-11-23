@@ -204,7 +204,7 @@ consensus and its control state to protect.
 
 | Lab (id) | Title | Level | Certif | Runtime | Companion guide |
 |---|---|---|---|---|---|
-| `conteneur-fabriquer-a-la-main` | Build a container by hand with the kernel's own tools | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/#mettre-en-pratique) |
+| `conteneur-fabriquer-a-la-main` | Build a container by hand with the kernel's own tools | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/) |
 
 ### Use containers
 

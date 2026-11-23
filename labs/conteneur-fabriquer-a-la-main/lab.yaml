@@ -19,7 +19,7 @@ skills:
   - rootfs
 distros:
   - debian13
-doc_url: https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/#mettre-en-pratique
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/
 lab_type: lab
 estimated_time: 30m
 runtime:

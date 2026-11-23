@@ -205,7 +205,7 @@ consensus et son état de contrôle à protéger.
 
 | Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
 |---|---|---|---|---|---|
-| `conteneur-fabriquer-a-la-main` | Fabriquer un conteneur à la main avec les outils du noyau | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/#mettre-en-pratique) |
+| `conteneur-fabriquer-a-la-main` | Fabriquer un conteneur à la main avec les outils du noyau | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/) |
 
 ### Utiliser les conteneurs
 

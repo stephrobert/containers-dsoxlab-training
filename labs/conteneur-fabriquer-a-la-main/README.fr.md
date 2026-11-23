@@ -68,8 +68,8 @@ ip -brief link
 ```
 
 ```text
-lo               DOWN           00:00:00:00:00:00 <LOOPBACK> 
-lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+lo               DOWN           00:00:00:00:00:00 <LOOPBACK>
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
 enp1s0           UP             52:54:d1:29:00:12 <BROADCAST,MULTICAST,UP,LOWER_UP>
 ```
 
