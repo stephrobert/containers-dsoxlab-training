@@ -204,7 +204,7 @@
 
     - name: Installer la mission
       ansible.builtin.copy:
-        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        src: "challenge/README{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
         dest: "{{ travail }}/MISSION.md"
         mode: "0644"
 

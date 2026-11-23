@@ -68,6 +68,13 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: setup-sources-existent
+        name: chaque fichier qu'un setup copie existe dans le lab
+        entry: uv run --no-sync pytest tests/test_setup_sources_existent.py -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: style-apprenant
         name: pas d'emoji ni de tiret cadratin dans ce que l'apprenant lit
         entry: uv run --no-sync pytest tests/test_style_apprenant.py -q

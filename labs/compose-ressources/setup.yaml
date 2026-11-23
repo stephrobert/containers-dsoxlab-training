@@ -53,6 +53,6 @@
         mode: "0755"
     - name: Déposer la mission
       ansible.builtin.copy:
-        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        src: "challenge/README{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
         dest: /opt/MISSION.md
         mode: "0644"

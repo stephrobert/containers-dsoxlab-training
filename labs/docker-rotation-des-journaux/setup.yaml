@@ -66,6 +66,6 @@
         {{ pinned_image }} sh -c 'i=0; while [ "$i" -lt 100 ]; do printf "%0100d\n" "$i"; i=$((i+1)); done; while :; do sleep 3600; done'
     - name: Install this lab's bilingual mission
       ansible.builtin.copy:
-        src: "scenario{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        src: "challenge/README{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
         dest: /opt/dsoxlab-docker-rotation-des-journaux/MISSION.md
         mode: "0644"
