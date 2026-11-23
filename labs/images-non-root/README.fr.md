@@ -1,80 +1,210 @@
-# images-non-root : `USER` change l'identité, et aucun droit
+# Faire tourner une image sans root
 
-## Ce que ce lab éprouve
+La leçon montre que `USER` change l'identité sans donner aucun droit, comment
+donner un répertoire au bon uid, ce que fait `COPY --chown`, et pourquoi
+déclarer un uid numérique. Ce cours vous fait mesurer ce que coûte un
+`RUN chown` mal placé, voir la différence entre un volume nommé et un
+répertoire de l'hôte monté dans le conteneur, écrire dans ce répertoire sous
+votre propre uid, et entrer en root dans un conteneur non-root pour le
+diagnostiquer.
 
-Que `USER` ne change **aucun droit** sur ce qui a déjà été déposé. Les
-répertoires créés avant lui appartiennent à root, et l'application cesse
-d'écrire au moment même où elle cesse d'être privilégiée.
+Vous travaillez dans `~/essai-droits`, avec des images `essai-droits:*` et
+l'uid d'essai `30100`. Le challenge porte sur une autre application et un
+autre uid : vous le ferez seul, à la fin.
 
-## Mesuré avant d'être écrit
+Page associée : [Utilisateur et permissions dans une image](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/utilisateur-et-permissions/).
 
-Sur `docker.lab`, le 2026-10-30, la même application sous trois écritures :
+## 🔧 Avant de commencer
 
-| Écriture | uid | Écriture dans /donnees |
-| --- | --- | --- |
-| sans `USER` | 0 | ok |
-| `USER` seul | 10001 | **refusée**, « Permission denied » |
-| `USER` + propriétaire aligné | 10001 | ok |
+Lancez le lab :
 
-Et les deux fausses réponses ont été **éprouvées** : `USER appli` au lieu de
-l'uid numérique rend **3/4**, et `chmod 777` au lieu du `chown` rend **3/4**
-aussi. Chacune n'est refusée que par le contrôle qui porte sur elle.
+```bash
+dsoxlab run images-non-root
+```
 
-## Deux mesures qui ont décidé de ce que le lab ne note pas
+Vous êtes maintenant connecté à `docker.lab`, une Debian 13 où le moteur
+Docker tourne. Créez le répertoire d'essai et rangez le socle du cours dans
+une variable. **Gardez le même terminal jusqu'au nettoyage** : la variable
+n'existe que dans lui.
 
-**`docker run --user 0:0` sur l'image non-root rend uid=0.** Le `USER` du
-Dockerfile est donc une valeur par défaut, pas une garantie. C'est pourquoi les
-contrôles lancent l'image **sans aucune option d'identité** : avec l'option,
-n'importe quelle image passerait, et le lab noterait la commande au lieu de
-l'image.
+```bash
+mkdir -p ~/essai-droits && cd ~/essai-droits
+ALPINE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+```
 
-**Un non-root écoute sur le port 80** dans un conteneur, mesuré. On lit souvent
-qu'il faut être root sous 1024 ; le moteur accorde la capacité correspondante
-par défaut. Aucun contrôle ne porte donc sur les ports : **ce serait mesurer une
-croyance**, et un lab qui note une croyance l'enseigne.
+Les sorties de ce cours ont été relevées sur cette machine le 23 novembre 2026,
+avec Docker Engine 29.9.2.
 
-## Pourquoi le moyen est noté, et pas seulement l'effet
+## 📏 Exercice 1 : ce que coûte un `RUN chown`
 
-Deux réponses font écrire l'application : lui donner le répertoire, ou l'ouvrir
-à tout le monde. La seconde marche parfaitement, et elle est refusée.
+La leçon dit que `COPY --chown` économise une couche. Mesurez ce que cette
+couche pèse. Créez un fichier de 10 Mo, puis construisez deux images qui le
+donnent à l'uid `30100` : l'une par un `RUN chown` après le `COPY`, l'autre
+par `COPY --chown`.
 
-Rendre un répertoire inscriptible par n'importe qui pour qu'un processus non
-privilégié y écrive défait exactement ce que le passage en non-root cherchait.
-Le deuxième contrôle mesure donc l'effet, et le troisième le moyen.
+```bash
+head -c 10000000 /dev/urandom > donnees.bin
+printf 'FROM %s\nCOPY donnees.bin /srv/donnees.bin\nRUN chown 30100:30100 /srv/donnees.bin\n' "$ALPINE" > Dockerfile.run
+printf 'FROM %s\nCOPY --chown=30100:30100 donnees.bin /srv/donnees.bin\n' "$ALPINE" > Dockerfile.copy
+docker build -q -t essai-droits:run -f Dockerfile.run .
+docker build -q -t essai-droits:copy -f Dockerfile.copy .
+docker history --format '{{.Size}}\t{{.CreatedBy}}' essai-droits:run | head -2 | cut -c1-60
+docker history --format '{{.Size}}\t{{.CreatedBy}}' essai-droits:copy | head -1 | cut -c1-60
+docker image ls --format '{{.Repository}}:{{.Tag}} {{.Size}}' | grep '^essai-droits'
+```
 
-C'est la même structure que `troubleshoot-permission-refusee`, et pour la même
-raison : un lab de sécurité qui accepte le raccourci enseigne le raccourci.
+```text
+sha256:5966fe639b6fdeafad9523ccb581fc65497c6b6b150aecdba01fc95473b3f228
+sha256:8ffd04df14162c70dd34f88abb267d33fc024fdaf43726e9f90b2086786b317c
+10MB	RUN /bin/sh -c chown 30100:30100 /srv/donnee…
+10MB	COPY donnees.bin /srv/donnees.bin # buildkit
+10MB	COPY --chown=30100:30100 donnees.bin /srv/do…
+essai-droits:copy 33MB
+essai-droits:run 53MB
+```
 
-## Pourquoi l'uid numérique est exigé
+Le `RUN chown` ne modifie pas le fichier sur place : il en écrit une nouvelle
+copie dans une nouvelle couche. Le même fichier de 10 Mo est donc stocké deux
+fois, et l'image pèse 20 Mo de plus. `COPY --chown` pose le propriétaire au
+moment de la copie, en une seule couche.
 
-Un `USER appli` se résout dans le `/etc/passwd` de l'image. Un orchestrateur
-qui refuse les conteneurs root ne lit pas ce fichier : il lit la déclaration, et
-il ne peut pas prouver qu'un nom n'est pas root.
+## 📂 Exercice 2 : volume nommé ou répertoire de l'hôte
 
-Ce point n'a **pas** été mesuré ici, faute d'orchestrateur sur la machine du
-lab : c'est la raison de la règle, pas une mesure. Ce qui est mesuré, c'est que
-`USER appli` donne `.Config.User = 'appli'` et que `USER 10001:10001` donne
-`'10001:10001'` : la déclaration est bien ce que l'image transmet.
+Construisez une image non-root qui écrit dans `/srv/carnet`, un répertoire
+donné à l'uid `30100`. Lancez-la d'abord sur un volume nommé, puis sur un
+répertoire de votre dossier personnel monté à la même place :
 
-## Un défaut de lecture, attrapé par le cycle
+```bash
+cat > Dockerfile.nonroot <<EOF
+FROM $ALPINE
+RUN mkdir -p /srv/carnet && chown 30100:30100 /srv/carnet
+USER 30100:30100
+CMD ["sh", "-c", "date > /srv/carnet/derniere && echo ecrit"]
+EOF
+docker build -q -t essai-droits:nonroot -f Dockerfile.nonroot .
+docker volume create essai-carnet >/dev/null
+docker run --rm -v essai-carnet:/srv/carnet essai-droits:nonroot
+docker run --rm -v essai-carnet:/srv/carnet --entrypoint stat essai-droits:nonroot -c '%u:%g %n' /srv/carnet
+mkdir -p ~/essai-droits/hote
+docker run --rm -v ~/essai-droits/hote:/srv/carnet essai-droits:nonroot; echo "code=$?"
+stat -c '%u:%g %n' ~/essai-droits/hote
+```
 
-Le troisième contrôle refusait la solution de référence en annonçant un uid
-impossible, « 10001 gid=10001 ». L'extracteur découpait chaque ligne sur son
-premier `=`, et la ligne `uid=10001 gid=10001` en porte deux. Le découpage se
-fait désormais par mots.
+```text
+sha256:9f90851f878c1fd9ff25cc9d1fd952dc08b7e78003fdcbe62e262c1bfd20e666
+ecrit
+30100:30100 /srv/carnet
+sh: can't create /srv/carnet/derniere: Permission denied
+code=1
+1001:1001 /home/ansible/essai-droits/hote
+```
 
-Le défaut est instructif : le contrôle **mesurait juste et lisait faux**, et son
-message accusait l'apprenant d'un écart qui n'existait pas.
+Le volume nommé, vide à sa création, a reçu le propriétaire du répertoire de
+l'image (`30100:30100`) : Docker recopie ce répertoire dans le volume la
+première fois. L'écriture passe. Le répertoire de l'hôte, lui, est monté
+**tel quel** : il appartient à votre compte (uid 1001 ici), et l'uid `30100` du
+conteneur n'a pas le droit d'y écrire. Le `chown` du Dockerfile ne s'applique
+pas à un répertoire de l'hôte.
 
-## L'état de départ est cassé, et c'est la règle du dépôt
+## ✍️ Exercice 3 : écrire dans le répertoire de l'hôte sous votre uid
 
-Le setup ne construit pas l'image : les quatre contrôles sont faux avant tout
-travail. Une tâche vérifie que le socle existe, que l'image de l'apprenant
-n'existe pas, et que le Dockerfile de départ ne porte **aucun** `USER`.
+Pour écrire dans un répertoire de l'hôte, le processus doit avoir un uid qui y
+a le droit. Lancez la même image sous votre propre uid, avec `--user` :
 
-## Ce que le lab n'exige pas
+```bash
+docker run --rm --user "$(id -u):$(id -g)" -v ~/essai-droits/hote:/srv/carnet essai-droits:nonroot; echo "code=$?"
+ls -ln ~/essai-droits/hote | tail -1 | awk '{print $3":"$4, $9}'
+```
 
-Un uid précis, ni un nom d'utilisateur, ni un mode exact. Seuls comptent un uid
-non nul, un répertoire qui appartient à l'application, un mode qui n'ouvre pas
-l'écriture à tous, et une déclaration numérique. Le jeton est tiré par le setup :
-rien n'est écrit en dur dans les contrôles.
+```text
+ecrit
+code=0
+1001:1001 derniere
+```
+
+L'écriture passe, et le fichier créé vous appartient sur l'hôte : vous pourrez
+le lire et le supprimer sans `sudo`. C'est la réponse habituelle pour un outil
+qui écrit dans votre répertoire de travail. Ce n'est pas celle d'une image de
+service : elle doit écrire sans qu'on lui passe d'option, comme dans
+l'exercice 2.
+
+## 🩺 Exercice 4 : entrer en root dans un conteneur non-root
+
+Un conteneur non-root ne peut rien modifier hors de ce qui lui appartient,
+même pour un diagnostic. Lancez l'image en arrière-plan, puis comparez une
+commande ordinaire et une commande lancée avec `docker exec -u 0` :
+
+```bash
+docker run -d --name essai-veille essai-droits:nonroot sleep 300 >/dev/null
+docker exec essai-veille id
+docker exec essai-veille sh -c 'touch /etc/essai'; echo "code=$?"
+docker exec -u 0 essai-veille id
+docker exec -u 0 essai-veille sh -c 'touch /etc/essai && echo ecrit-en-root'
+```
+
+```text
+uid=30100 gid=30100 groups=30100
+touch: /etc/essai: Permission denied
+code=1
+uid=0(root) gid=0(root) groups=0(root),1(bin),2(daemon),3(sys),4(adm),6(disk),10(wheel),11(floppy),20(dialout),26(tape),27(video)
+ecrit-en-root
+```
+
+`docker exec` reprend l'uid de l'image, `30100`, et ne peut pas écrire dans
+`/etc`. Avec `-u 0`, la même commande tourne en root, dans le même conteneur.
+C'est utile pour diagnostiquer, et c'est aussi pour cela qu'un accès au moteur
+Docker vaut un accès root : le `USER` de l'image ne protège pas d'un
+administrateur du moteur.
+
+## 🧹 Nettoyage
+
+Supprimez le conteneur, les images, le volume et le répertoire d'essai. Les
+deux dernières commandes comptent les images et les volumes `essai-*` qui
+restent :
+
+```bash
+cd ~
+docker rm -f essai-veille >/dev/null
+docker rmi essai-droits:run essai-droits:copy essai-droits:nonroot | grep -c Untagged
+docker volume rm essai-carnet
+rm -rf ~/essai-droits
+docker images --format '{{.Repository}}' | grep -c '^essai-'; docker volume ls -q | grep -c '^essai-'
+```
+
+```text
+3
+essai-carnet
+0
+0
+```
+
+Plus rien de ce cours. Quittez ensuite la machine et remettez le lab à zéro.
+`dsoxlab reset` rejoue le nettoyage puis la préparation du lab : vous
+retrouvez exactement l'état de départ du challenge. Il vous demande de
+confirmer : répondez `y`.
+
+```bash
+exit
+dsoxlab reset images-non-root
+dsoxlab check images-non-root
+```
+
+```text
+╭─── Résultat : images-non-root ────╮
+│  0 / 100 pts                      │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests  │
+╰───────────────────────────────────╯
+```
+
+0 sur 4 : c'est le résultat attendu. Le challenge vous attend, intact.
+
+## 🎯 Le challenge
+
+À vous, seul cette fois : faire tourner une application sous un uid non nul
+déclaré par l'image, sans qu'elle perde le droit d'écrire son journal, et
+sans ouvrir son répertoire à tout le monde.
+
+```bash
+dsoxlab run images-non-root
+dsoxlab challenge images-non-root
+```
