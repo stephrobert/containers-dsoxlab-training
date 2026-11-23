@@ -1,99 +1,204 @@
-# images-contexte-de-build: a file that exists, and cannot be found
+# Master the build context
 
-## What this lab tests
+The lesson explains that `docker build` only sees its context, how to widen
+it with `-f`, and how to keep a sensitive file out of it. This course has you
+check what the builder really receives, write exclusions with an exception,
+extract from an image a file that was deleted, and build with no context at
+all.
 
-That a `COPY` cannot leave the build context, and that **the message no longer
-says so**. The file exists, the engine says it cannot be found, and the hour
-lost hunting for a typo is the cost of that sentence.
+You work in scratch directories of your home directory, with `essai-*`
+images. The challenge uses another repository and another Dockerfile: you
+will do it on your own, at the end.
 
-## Measured before being written
+Related page: [Write a Dockerfile](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/ecrire-dockerfile/) (in French).
 
-On `docker.lab`, on 2026-10-30, the same Dockerfile under both builders:
+## 🔧 Before you start
 
-| Builder | Message |
-| --- | --- |
-| buildkit, the default | `"/commun/version.txt": not found` |
-| classic, `DOCKER_BUILDKIT=0` | `forbidden path outside the build context` |
+Start the lab:
 
-The second named the cause. The first says "not found", because the `..` is
-normalised then dropped: the engine only looks inside the context, and reports
-what it sees, not what is there. **The message degraded when the builder
-changed**, and that is why so many answers found online talk about a missing
-file.
+```bash
+dsoxlab run images-contexte-de-build
+```
 
-And the lazy answer was **put to the test**: copying the shared file into the
-application's directory scores **3/4**, with the fourth check refusing on its
-own. Had it scored 4/4, the lab's constraint would have been nothing but a
-sentence in a brief.
+You are now connected to `docker.lab`, a Debian 13 machine where the Docker
+engine runs. The outputs in this course were captured on this machine on
+23 November 2026, with Docker Engine 29.9.2.
 
-## A measurement that changed the lab I was about to write
+## 📦 Exercise 1: see what the builder receives
 
-The first design graded the **weight of the context**: a large directory in the
-repository, and the exclusion to lighten the transfer. The measurement took it
-apart.
+The context is what `docker build` sends to the builder. To see it, write a
+Dockerfile that copies the whole context and then lists what it received.
+The `--progress=plain` option shows the output of `RUN` commands.
 
-Under buildkit, with 20 MB of archives in the repository, `transferring context`
-reports **2 bytes**, and the image weighs **exactly** the size of the base, with
-and without the exclusion. Buildkit only sends what the `COPY` instructions
-need.
+```bash
+mkdir -p ~/essai-contexte/journaux ~/essai-contexte/brouillons && cd ~/essai-contexte
+echo rapport > rapport.txt
+echo a > journaux/lundi.log
+echo b > journaux/garder.log
+echo c > brouillons/idee.txt
+cat > Dockerfile <<'EOF'
+FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+COPY . /contexte
+RUN find /contexte -type f | sort
+EOF
+docker build --no-cache --progress=plain -t essai-contexte:1 . 2>&1 | grep -E '^#[0-9]+ [0-9.]+ /contexte|transferring context'
+```
 
-Grading transfer time would therefore have measured a belief, and the lab would
-have taught an argument that has become false. What stays true lies elsewhere:
-widening the context puts the whole repository within reach of a `COPY .`, the
-secret included.
+```text
+#3 transferring context: 2B done
+#5 transferring context: 436B done
+#7 0.125 /contexte/Dockerfile
+#7 0.125 /contexte/brouillons/idee.txt
+#7 0.125 /contexte/journaux/garder.log
+#7 0.125 /contexte/journaux/lundi.log
+#7 0.125 /contexte/rapport.txt
+```
 
-## Why a build script
+The first `transferring context` line is about the Dockerfile, the second
+about the context: a few hundred bytes. The five files of the directory
+arrived, Dockerfile included: a `COPY .` takes everything the context holds.
 
-The other three checks **replay it**, and it is the only way to verify that the
-shared file is still the single source: without a script, the build command
-exists nowhere, and all one could do is reread the Dockerfile, which would grade
-the form.
+## 🚫 Exercise 2: exclude by patterns, with an exception
 
-The check plays it in a **copy** of the repository, hence the requirement of
-relative paths. An absolute path would point back at the original repository,
-and would build something other than what is being measured.
+A `.dockerignore` accepts patterns. Leave out the drafts directory and all
+`.log` files, except `journaux/garder.log`, which you bring back with a `!`.
+Then build again:
 
-## Why the learner's tag is saved
+```bash
+cat > .dockerignore <<'EOF'
+brouillons/
+**/*.log
+!journaux/garder.log
+EOF
+docker build --no-cache --progress=plain -t essai-contexte:2 . 2>&1 | grep -E '^#[0-9]+ [0-9.]+ /contexte'
+```
 
-The script rebuilds under the expected name: playing it in a copy **overwrites**
-the learner's image.
+```text
+#7 0.134 /contexte/.dockerignore
+#7 0.134 /contexte/Dockerfile
+#7 0.134 /contexte/journaux/garder.log
+#7 0.134 /contexte/rapport.txt
+```
 
-Without a safeguard, the next `check` would find an image carrying the check's
-version, and the second check would refuse correct work. So the tag is set aside
-before, and given back after. Verified afterwards: the image still carries its
-original version, and no backup tag remains.
+`brouillons/` and `lundi.log` are no longer sent. `garder.log` comes back
+thanks to the `!` line, which must come **after** the pattern it corrects:
+lines are read in order, and the last one that matches wins. The
+`.dockerignore` itself enters the image, because nothing excludes it.
 
-**A test does not leave the system in a state it produced itself**, and it is
-the same rule governing the sandbox rebuilds of `images-ordre-des-couches`.
+## 🔍 Exercise 3: a deleted file stays in the image
 
-## Why the secret is searched by its content
+The lesson says that adding a `RUN rm` does not remove a file from the image.
+Check it yourself: copy a private note, delete it in the next instruction,
+then look for its content in the image layers.
 
-The check looks for the secret's string **everywhere** in the image, not merely
-at its original path.
+```bash
+mkdir -p ~/essai-couche && cd ~/essai-couche
+echo MotDePasse-Essai-42 > note-privee.txt
+cat > Dockerfile <<'EOF'
+FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+COPY note-privee.txt /tmp/
+RUN rm /tmp/note-privee.txt
+EOF
+docker build -q -t essai-couche:1 .
+docker run --rm essai-couche:1 ls -A /tmp | wc -l
+docker history --format '{{.CreatedBy}}' essai-couche:1 | head -3
+```
 
-Searching for a path is worked around by moving the file, and that workaround
-teaches nothing: what matters is that the secret is nowhere. A lab grading the
-path would teach how to file a secret elsewhere rather than how to keep it out.
+```text
+sha256:29f1eb12fb14943246c233acf5ab71ab73ef926810d823403be1a3f7a38412a5
+0
+RUN /bin/sh -c rm /tmp/note-privee.txt # bui…
+COPY note-privee.txt /tmp/ # buildkit
+CMD ["/bin/sh"]
+```
 
-## The starting state is broken, and that is the repository's rule
+In a container started from the image, `/tmp` is empty: 0 files. But
+`docker history` shows that the `COPY` layer still exists, under the `RUN rm`
+layer. Now export the image with `docker save`, then look for the password in
+each of its layers:
 
-The initial build **fails**, and the expected script does not exist: the four
-checks are therefore false before any work. A setup task verifies that the build
-does fail, that the script is absent, and that the shared file and the secret
-are in place: without it, a badly cleaned pass would leave the lab already
-solved.
+```bash
+mkdir extrait && docker save essai-couche:1 | tar -x -C extrait
+for c in $(find extrait/blobs -type f); do tar -xOf "$c" 2>/dev/null | grep -a -q MotDePasse-Essai-42 && echo "trouvé dans la couche $(basename "$c" | cut -c1-12)"; done
+```
 
-## A cleanup trap, paid in advance
+```text
+trouvé dans la couche 4b0310bcf1a4
+```
 
-The repository goes away **as a whole**: it carries the fixed Dockerfile, the
-script, and possibly a copy of the shared file. And the **builder's cache** goes
-with it, which `docker image prune` does not touch: this lab's checks rebuild,
-and a surviving cache would serve an image whose context is no longer the one
-being measured.
+The password can be read in one of the image layers. Anyone who gets the
+image finds it the same way. The `RUN rm` only added a layer that hides the
+file. Only an exclusion from the context would have kept it out.
 
-## What the lab does not require
+## 🧱 Exercise 4: build with no context at all
 
-A path. The Dockerfile can be pointed at by an option or moved, the exclusion
-can go through a dedicated file or through targeted copies. The token and the
-version are drawn by the setup and read back from the repository at grading
-time: nothing is hard-coded in the checks.
+`docker build -` reads the Dockerfile from standard input, and sends **no**
+context. Build two Dockerfiles this way: one only does a `RUN`, the other a
+`COPY`.
+
+```bash
+mkdir -p ~/essai-sans && cd ~/essai-sans
+printf 'FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a\nRUN echo construit sans contexte\n' > Dockerfile.run
+printf 'FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a\nCOPY rapport.txt /\n' > Dockerfile.copy
+docker build -q -t essai-sans:run - < Dockerfile.run
+docker build -t essai-sans:copy - < Dockerfile.copy 2>&1 | tail -1
+```
+
+```text
+sha256:9b3605b0165e869f05b025e042ed49d6dc0ed81550e51616b077818d4a63c4e1
+ERROR: failed to build: failed to solve: failed to compute cache key: failed to calculate checksum of ref rkzv83qyclf9yx7nyebxnoute::h2ug2pc3u64fwu6cyb4md7ca9: "/rapport.txt": not found
+```
+
+The first one builds: a `RUN` needs no file. The second one fails with
+`not found`, the same message as in the lesson, although there is no typo:
+without a context, `COPY` has nowhere to look. In front of this message,
+always ask yourself first what the builder received.
+
+## 🧹 Clean-up
+
+Delete the scratch images and directories. The last command counts the
+`essai-*` images left:
+
+```bash
+cd ~
+docker rmi essai-contexte:1 essai-contexte:2 essai-couche:1 essai-sans:run | grep -c Untagged
+rm -rf ~/essai-contexte ~/essai-couche ~/essai-sans
+docker images --format '{{.Repository}}' | grep -c '^essai-'
+```
+
+```text
+4
+0
+```
+
+No scratch image left. Then leave the machine and reset the lab.
+`dsoxlab reset` replays the clean-up and then the lab preparation: you get
+back exactly the starting state of the challenge. It asks you to confirm:
+answer `y`.
+
+```bash
+exit
+dsoxlab reset images-contexte-de-build
+dsoxlab check images-contexte-de-build
+```
+
+```text
+╭─ Result: images-contexte-de-build ─╮
+│  0 / 100 pts                       │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests   │
+╰────────────────────────────────────╯
+```
+
+0 out of 4: that is the expected result. The challenge is waiting for you,
+untouched.
+
+## 🎯 The challenge
+
+Your turn, on your own this time: build an application whose Dockerfile
+needs a shared file outside its directory, without letting a secret that
+sits next to it into the image.
+
+```bash
+dsoxlab run images-contexte-de-build
+dsoxlab challenge images-contexte-de-build
+```
