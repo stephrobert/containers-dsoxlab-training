@@ -80,6 +80,24 @@
     # Les tirer ici et non pendant l'exercice : le lab mesure un filtrage, pas
     # la bande passante de la machine. Et un `docker run` qui tire l'image au
     # vol ferait dépendre le premier essai du réseau.
+    - name: Record the pinned images missing before the lab
+      # UN LAB REND TOUTE IMAGE QU'IL A TIRÉE, et seulement celles-là. Mesuré le
+      # 2026-11-23 sur une VM neuve : le validateur comptait « image laissé »,
+      # parce que le cleanup supposait ces images déjà présentes avant le lab.
+      # La liste n'est jamais vidée ici : un second run sans clean ne doit pas
+      # faire oublier ce que le premier a tiré.
+      ansible.builtin.shell: |
+        set -eu
+        liste=/var/tmp/dsoxlab-securite-socket-proxy.images-a-rendre
+        touch "$liste"
+        for image in "{{ image_proxy }}" "{{ image_client }}" "{{ image_temoin }}"; do
+          if ! docker image inspect "$image" >/dev/null 2>&1; then
+            grep -qxF "$image" "$liste" || echo "$image" >> "$liste"
+          fi
+        done
+      changed_when: false
+      failed_when: false
+
     - name: Pull the pinned images the lab needs
       ansible.builtin.command:
         cmd: "docker pull {{ item }}"

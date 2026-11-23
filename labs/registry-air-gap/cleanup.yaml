@@ -30,6 +30,21 @@
           if test -n "$images"; then docker image rm -f $images; fi
       changed_when: false
 
+    - name: Rendre les images que ce lab a tirées
+      # En dernier : une image utilisée par un conteneur ne se retire pas.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        liste=/var/tmp/dsoxlab-registry-air-gap.images-a-rendre
+        if test -s "$liste"; then
+          while read -r image; do
+            docker image rm -f "$image" >/dev/null 2>&1 || true
+          done < "$liste"
+        fi
+        rm -f "$liste"
+      changed_when: false
+      failed_when: false
+
     - name: Retirer les fichiers propres au lab
       ansible.builtin.file:
         path: "{{ item }}"
