@@ -22,12 +22,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 89,
+  "duree_s": 77,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -71,8 +71,10 @@
   },
   "avant": {
    "echecs": [
+    "test_fresh_identity_rebuilds_without_leaks",
     "test_product_and_secret_absent_from_image",
-    "test_secret_never_enters_the_build_context"
+    "test_secret_never_enters_the_build_context",
+    "test_wrong_and_missing_secrets_are_rejected"
    ],
    "passed": 0,
    "recorded": true,
@@ -81,12 +83,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-05",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 70,
+  "duree_s": 72,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
@@ -104,8 +106,10 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
+    "test_fresh_identity_rebuilds_without_leaks",
     "test_product_and_secret_absent_from_image",
-    "test_secret_never_enters_the_build_context"
+    "test_secret_never_enters_the_build_context",
+    "test_wrong_and_missing_secrets_are_rejected"
    ],
    "passed": 0,
    "recorded": true,
@@ -148,12 +152,12 @@
    "status": "failed",
    "total": 11
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 624,
+  "duree_s": 637,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/11",
    "après la solution : 11/11",
    "après clean et run : 0/11",
@@ -283,12 +287,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-02",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 232,
+  "duree_s": 213,
   "ecarts": [],
   "etapes": [
-   "état photographié : 6 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
@@ -344,12 +348,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 110,
+  "duree_s": 106,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -393,8 +397,7 @@
   },
   "avant": {
    "echecs": [
-    "test_fresh_data_survives_container_replacement[down-up]",
-    "test_fresh_data_survives_container_replacement[recreate]",
+    "test_fresh_data_survives_container_replacement",
     "test_named_volume_contains_the_initial_application_data"
    ],
    "passed": 0,
@@ -404,12 +407,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 99,
+  "duree_s": 97,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -427,8 +430,7 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_fresh_data_survives_container_replacement[down-up]",
-    "test_fresh_data_survives_container_replacement[recreate]",
+    "test_fresh_data_survives_container_replacement",
     "test_named_volume_contains_the_initial_application_data"
    ],
    "passed": 0,
@@ -453,8 +455,7 @@
   },
   "avant": {
    "echecs": [
-    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other[dev]",
-    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other[prod]",
+    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other",
     "test_two_merged_deployments_have_distinct_effective_configuration"
    ],
    "passed": 0,
@@ -464,12 +465,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 134,
+  "duree_s": 132,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -491,8 +492,7 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other[dev]",
-    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other[prod]",
+    "test_replacing_one_environment_keeps_its_data_and_does_not_touch_the_other",
     "test_two_merged_deployments_have_distinct_effective_configuration"
    ],
    "passed": 0,
@@ -528,12 +528,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 70,
+  "duree_s": 67,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -650,12 +650,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 89,
+  "duree_s": 87,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -710,12 +710,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 69,
+  "duree_s": 67,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -832,12 +832,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 171,
+  "duree_s": 168,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -956,12 +956,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 63,
+  "duree_s": 59,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -1016,12 +1016,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 72,
+  "duree_s": 69,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 3 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -1261,12 +1261,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 89,
+  "duree_s": 88,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
@@ -1323,12 +1323,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
   "duree_s": 48,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
@@ -1445,12 +1445,12 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
   "duree_s": 40,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/2",
    "après la solution : 2/2",
    "après clean et run : 0/2",
@@ -1627,12 +1627,12 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-09",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 59,
+  "duree_s": 60,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/2",
    "après la solution : 2/2",
    "après clean et run : 0/2",
@@ -1685,12 +1685,12 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-09",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 49,
+  "duree_s": 50,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/2",
    "après la solution : 2/2",
    "après clean et run : 0/2",
@@ -1874,12 +1874,12 @@
    "status": "failed",
    "total": 5
   },
-  "date": "2026-11-09",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 89,
+  "duree_s": 98,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/5",
    "après la solution : 5/5",
    "après clean et run : 0/5",
@@ -1996,12 +1996,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-14",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 27,
+  "duree_s": 28,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -2180,12 +2180,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 50,
+  "duree_s": 45,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -2880,12 +2880,12 @@
    "status": "failed",
    "total": 5
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 91,
+  "duree_s": 90,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/5",
    "après la solution : 5/5",
    "après clean et run : 0/5",
@@ -3072,12 +3072,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-02",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 46,
+  "duree_s": 47,
   "ecarts": [],
   "etapes": [
-   "état photographié : 2 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -3245,7 +3245,9 @@
   },
   "avant": {
    "echecs": [
-    "test_approved_base_and_source_are_delivered"
+    "test_approved_base_and_source_are_delivered",
+    "test_moving_the_base_tag_does_not_change_base_layers",
+    "test_source_changes_rebuild_the_product"
    ],
    "passed": 0,
    "recorded": true,
@@ -3254,12 +3256,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 67,
+  "duree_s": 66,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -3277,7 +3279,9 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_approved_base_and_source_are_delivered"
+    "test_approved_base_and_source_are_delivered",
+    "test_moving_the_base_tag_does_not_change_base_layers",
+    "test_source_changes_rebuild_the_product"
    ],
    "passed": 0,
    "recorded": true,
@@ -3314,12 +3318,12 @@
    "status": "failed",
    "total": 5
   },
-  "date": "2026-11-05",
+  "date": "2026-11-23",
   "docker": "29.9.2",
   "duree_s": 66,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/5",
    "après la solution : 5/5",
    "après clean et run : 0/5",
@@ -3551,8 +3555,7 @@
   },
   "avant": {
    "echecs": [
-    "test_each_platform_executes_the_real_workload_and_rejects_invalid_input[amd64]",
-    "test_each_platform_executes_the_real_workload_and_rejects_invalid_input[arm64]",
+    "test_each_platform_executes_the_real_workload_and_rejects_invalid_input",
     "test_published_index_identifies_two_distinct_platforms"
    ],
    "passed": 0,
@@ -3562,12 +3565,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-05",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 42,
+  "duree_s": 109,
   "ecarts": [],
   "etapes": [
-   "état photographié : 13 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -3585,8 +3588,7 @@
   "raisons": [],
   "rejeu": {
    "echecs": [
-    "test_each_platform_executes_the_real_workload_and_rejects_invalid_input[amd64]",
-    "test_each_platform_executes_the_real_workload_and_rejects_invalid_input[arm64]",
+    "test_each_platform_executes_the_real_workload_and_rejects_invalid_input",
     "test_published_index_identifies_two_distinct_platforms"
    ],
    "passed": 0,
@@ -3871,12 +3873,12 @@
    "status": "failed",
    "total": 6
   },
-  "date": "2026-11-08",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 231,
+  "duree_s": 214,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 7 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/6",
    "après la solution : 6/6",
    "après clean et run : 0/6",
@@ -4181,9 +4183,9 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 58,
+  "duree_s": 54,
   "ecarts": [],
   "etapes": [
    "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
@@ -4240,12 +4242,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 64,
+  "duree_s": 61,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -4362,12 +4364,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 51,
+  "duree_s": 49,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -4422,12 +4424,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 50,
+  "duree_s": 48,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -4481,12 +4483,12 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-03",
+  "date": "2026-11-23",
   "docker": "29.9.2",
   "duree_s": 44,
   "ecarts": [],
   "etapes": [
-   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/2",
    "après la solution : 2/2",
    "après clean et run : 0/2",
@@ -4910,12 +4912,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-08",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 53,
+  "duree_s": 56,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -4971,12 +4973,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 43,
+  "duree_s": 44,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
@@ -5032,12 +5034,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-09",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 45,
+  "duree_s": 46,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -5091,12 +5093,12 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-08",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 39,
+  "duree_s": 31,
   "ecarts": [],
   "etapes": [
-   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/2",
    "après la solution : 2/2",
    "après clean et run : 0/2",
@@ -5150,12 +5152,12 @@
    "status": "failed",
    "total": 3
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 50,
+  "duree_s": 63,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/3",
    "après la solution : 3/3",
    "après clean et run : 0/3",
@@ -5215,12 +5217,12 @@
    "status": "failed",
    "total": 8
   },
-  "date": "2026-11-05",
+  "date": "2026-11-23",
   "docker": "29.9.2",
   "duree_s": 78,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/8",
    "après la solution : 8/8",
    "après clean et run : 0/8",
@@ -5281,12 +5283,12 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 53,
+  "duree_s": 51,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/4",
    "après la solution : 4/4",
    "après clean et run : 0/4",
@@ -5341,12 +5343,12 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 33,
+  "duree_s": 37,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 8 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/2",
    "après la solution : 2/2",
    "après clean et run : 0/2",
@@ -5404,12 +5406,12 @@
    "status": "failed",
    "total": 7
   },
-  "date": "2026-11-08",
+  "date": "2026-11-23",
   "docker": "29.9.2",
-  "duree_s": 128,
+  "duree_s": 125,
   "ecarts": [],
   "etapes": [
-   "état photographié : 3 image(s), 0 conteneur(s), 0 volume(s)",
+   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/7",
    "après la solution : 7/7",
    "après clean et run : 0/7",
@@ -5591,12 +5593,12 @@
    "status": "failed",
    "total": 2
   },
-  "date": "2026-11-04",
+  "date": "2026-11-23",
   "docker": "29.9.2",
   "duree_s": 32,
   "ecarts": [],
   "etapes": [
-   "état photographié : 12 image(s), 0 conteneur(s), 2 volume(s)",
+   "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
    "avant le travail : 0/2",
    "après la solution : 2/2",
    "après clean et run : 0/2",
