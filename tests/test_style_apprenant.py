@@ -107,7 +107,7 @@ def test_pas_d_emoji_hors_des_briefs(fichier: Path) -> None:
     texte = fichier.read_text(encoding="utf-8", errors="ignore")
     if fichier.name in ("README.md", "README.fr.md") and fichier.parent.parent == LABS:
         # Un cours : les titres peuvent porter un emoji, le corps jamais.
-        texte = "\n".join(l for l in texte.splitlines() if not l.startswith("#"))
+        texte = "\n".join(ligne for ligne in texte.splitlines() if not ligne.startswith("#"))
     trouves = sorted(set(EMOJI.findall(texte)))
     assert not trouves, (
         f"{rel} porte {len(trouves)} pictogramme(s) : {trouves}\n\n"
