@@ -8,11 +8,13 @@
 # regarderait que le label les laisserait debout, et le cycle de validation
 # verrait un écart qu'il attribuerait au lab suivant.
 #
-# CE QU'IL NE RETIRE PAS, ET POURQUOI. Les trois images épinglées restent : elles
-# sont tirées par le setup, elles sont lourdes, et le prochain tour les
-# retrouverait de toute façon. La photographie du validateur les voit déjà
-# présentes avant le lab, donc elles ne créent pas d'écart. En revanche, aucun
-# conteneur ni réseau ne doit survivre.
+# LES IMAGES TIRÉES PAR LE SETUP SONT RENDUES, et seulement elles. Ce cleanup les
+# laissait, en supposant que la photographie du validateur les voyait déjà
+# présentes avant le lab. C'était vrai sur une machine où un tour précédent les
+# avait tirées, et faux sur une VM neuve : mesuré le 2026-11-23, « image
+# laissé » pour le proxy et le client. Le setup note les images absentes avant
+# de tirer, et la dernière tâche de ce cleanup retire celles-là. Aucun
+# conteneur ni réseau ne doit survivre non plus.
 #
 # LES NOMS RETIRÉS SONT CEUX QUE L'ÉNONCÉ IMPOSE, et c'est ce qui rend le geste
 # sûr : le setup a refusé de démarrer si l'un d'eux existait déjà, donc tout
@@ -66,6 +68,21 @@
         executable: /bin/sh
       changed_when: false
       failed_when: false
+    - name: Return the images this lab pulled
+      # En dernier : une image utilisée par un conteneur ne se retire pas.
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v docker >/dev/null 2>&1; then exit 0; fi
+        liste=/var/tmp/dsoxlab-securite-socket-proxy.images-a-rendre
+        if test -s "$liste"; then
+          while read -r image; do
+            docker image rm -f "$image" >/dev/null 2>&1 || true
+          done < "$liste"
+        fi
+        rm -f "$liste"
+      changed_when: false
+      failed_when: false
+
     - name: Remove the unique work directory created for this lab
       ansible.builtin.file:
         path: "{{ atelier }}"
