@@ -78,8 +78,6 @@ CHEMIN_CITE = re.compile(r"`(challenge/[A-Za-z0-9_./-]+)`")
 TEXTES = (
     "README.md",
     "README.fr.md",
-    "scenario.md",
-    "scenario.fr.md",
     "challenge/README.md",
     "challenge/README.fr.md",
 )

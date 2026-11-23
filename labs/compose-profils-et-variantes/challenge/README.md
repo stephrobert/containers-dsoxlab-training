@@ -1,4 +1,29 @@
-# What is asked
+# Scenario
+
+The team has a single Compose file, and two ways of using it. In development the
+sources are mounted into the container: you edit, you reload, you do not
+rebuild. In deployment nothing is mounted, and the image carries everything.
+
+For six months both uses have lived in the same file, with commented-out lines
+that get uncommented "just for one test".
+
+Last month a rollout went out with the mount still active. The service was
+reading a host directory that did not exist on the production machine: it
+started, it answered, and it served a version three weeks old. Nobody saw it for
+two days, because the file itself looked right.
+
+You are asked to separate the two uses for good, and to leave nothing to
+uncommenting.
+
+## Mission
+
+Derive from the base file a development variant that mounts the sources, and a
+deployment variant that mounts none. Leave the second one in service.
+
+The base file is not to be modified. What is expected in detail is in
+`/opt/lab-variantes/MISSION.md`.
+
+## What is asked
 
 On `docker.lab`, a disposable Debian 13. In `/opt/lab-variantes`, a base
 `compose.yaml` **you do not modify**, and two things that do not state the same
@@ -13,13 +38,13 @@ or the host's disk.
 
 It listens on `127.0.0.1:18081`.
 
-## 1. A development variant, which mounts the sources
+### 1. A development variant, which mounts the sources
 
 Write `/opt/lab-variantes/compose.dev.yaml`, to be **derived** from the base
 file and not copied from it. It mounts `/opt/lab-variantes/src` onto `/app/src`
 in the container, so that a change on disk shows without rebuilding.
 
-## 2. A deployment variant, which mounts none
+### 2. A deployment variant, which mounts none
 
 Write `/opt/lab-variantes/compose.deploiement.yaml`, derived from the same base
 file. It mounts **nothing**: the service reads the image's version there.
@@ -28,13 +53,13 @@ A development mount left behind in deployment is the classic incident. It does
 not show in the base file, it shows in the **effective configuration**, and that
 is where the check looks.
 
-## 3. The deployment, up
+### 3. The deployment, up
 
 Leave the **deployment** variant in service, in the Compose project
 `dsoxlab-variantes`. That is the expected final state, and the service must
 answer the **image**'s version there.
 
-## 4. The optional service, under its profile
+### 4. The optional service, under its profile
 
 The base file declares a `debug` service under the `debug` profile. Check that
 it stays **absent** from both variants' effective configuration as long as that
@@ -42,13 +67,13 @@ profile is not requested, and **present** as soon as it is.
 
 You have nothing to write for this: you have to not break it while deriving.
 
-## The expected final state
+### The expected final state
 
 The deployment variant is running, with no mount at all, and serves the image's
 version. Both variant files exist, derive from the base file, and the base file
 is unchanged.
 
-## What is not graded
+### What is not graded
 
 How you derive: `include`, `extends`, several `-f`, or a `COMPOSE_FILE`. The
 check reads the effective configuration, which is the only thing that counts,

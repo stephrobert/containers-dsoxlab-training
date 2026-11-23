@@ -68,11 +68,12 @@ def _fichiers_lus() -> list[Path]:
     return sorted(LABS.rglob("*.md"))
 
 
-# Six par lab au minimum : les deux README, les deux scénarios et les deux
-# énoncés du challenge. Le seuil suit le nombre de labs, ce qui vaut mieux
+# Quatre par lab au minimum : les deux README et les deux énoncés du
+# challenge. Ils étaient six avant que dsoxlab 0.9.9 ne fonde le scénario dans
+# l'énoncé. Le seuil suit le nombre de labs, ce qui vaut mieux
 # qu'un nombre en dur : celui du catalogue Terraform, 200, ne voudrait rien dire
 # dans un catalogue qui commence.
-MINIMUM_PAR_LAB = 6
+MINIMUM_PAR_LAB = 4
 
 
 def test_il_y_a_des_textes_a_lire() -> None:
@@ -83,8 +84,8 @@ def test_il_y_a_des_textes_a_lire() -> None:
     attendu = MINIMUM_PAR_LAB * len(labs)
     assert len(trouves) >= attendu, (
         f"{len(trouves)} fichier(s) .md pour {len(labs)} lab(s), {attendu} "
-        "attendus au minimum.\n\nChaque lab porte au moins ses deux README, "
-        "ses deux scénarios et ses deux énoncés de challenge. En dessous, il en "
+        "attendus au minimum.\n\nChaque lab porte au moins ses deux README "
+        "et ses deux énoncés de challenge. En dessous, il en "
         "manque, ou le glob ne regarde plus au bon endroit."
     )
 

@@ -1,4 +1,74 @@
-# Ce qui est demandé
+# Le conteneur ne démarre pas, et les journaux sont vides
+
+## La situation
+
+Trois heures du matin, une sauvegarde n'a pas tourné. Le conteneur est arrêté.
+Vous faites le geste réflexe, vous demandez ses journaux, et vous obtenez
+**rien**. Pas une erreur, pas un avertissement : une sortie vide.
+
+L'image a été construite hier, et la tentation est immédiate : c'est l'image. On
+reconstruit, on relance, et ça échoue pareil. On passe une heure à chercher dans
+le Dockerfile ce qui n'y est pas.
+
+Un conteneur qui échoue laisse pourtant **toujours** un diagnostic. Il n'est
+simplement pas là où on le cherche, et le code de sortie disait déjà où regarder.
+
+## L'objectif
+
+Se construire la grille. Trois conteneurs sont arrêtés, et les trois ont échoué
+pour **trois raisons différentes** :
+
+```text
+panne-a   une commande qui n'existe pas
+panne-b   un fichier qui existe mais n'est pas exécutable
+panne-c   une commande qui s'exécute et échoue
+```
+
+Deux de leurs codes de sortie se ressemblent assez pour qu'on les confonde, et
+le troisième n'a rien à voir.
+
+Renseignez les trois lignes de `/opt/lab-exit/reponses.txt` :
+
+```text
+code_a=<le code de sortie de panne-a>
+code_b=<le code de sortie de panne-b>
+statut_a=<le STATUT de panne-a, tel que le moteur le déclare>
+```
+
+Puis **réparez** : lancez un conteneur nommé `repare`, **sur la même image**, qui
+tourne.
+
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.
+
+## La troisième question est la plus utile
+
+Regardez bien le statut de `panne-a`. **Ce n'est pas celui que vous attendez d'un
+conteneur qui s'est arrêté**, et cela dit quelque chose d'important sur ce qui
+s'est passé.
+
+Regardez aussi les journaux des trois. L'un d'eux ne dit rien du tout, et son
+diagnostic est ailleurs : dans l'inspection du conteneur, un champ que personne
+ne lit jamais.
+
+Ces deux observations expliquent l'une l'autre, et ensemble elles expliquent
+l'heure perdue du scénario.
+
+## Pourquoi la réparation se fait sur la même image
+
+Parce que c'est la conclusion la plus rentable d'un dépannage : savoir ce qui
+**n'est pas** responsable écarte la moitié des pistes.
+
+Les trois pannes venaient de ce qu'on demandait au conteneur de lancer, pas de
+ce que l'image contenait. Réparer en changeant d'image prouverait l'inverse de
+la leçon, et le contrôle le refuse.
+
+## Ce qui est noté
+
+L'**état du système**. Les trois valeurs attendues sont lues sur les conteneurs
+au moment de la notation, et aucune n'est écrite dans les contrôles : le jour où
+ce lab changera de panne, ils suivront au lieu de devenir faux.
+
+## Ce qui est demandé
 
 Sur `docker.lab`, une Debian 13 jetable, moteur en service. **Trois conteneurs
 sont arrêtés**, et les trois ont échoué pour trois raisons différentes :
@@ -15,7 +85,7 @@ le troisième n'a rien à voir.
 Les trois premières réponses vont dans `/opt/lab-exit/reponses.txt`, une ligne
 par entrée, sans espace autour du signe égal.
 
-## 1. Le code de sortie de `panne-a`
+### 1. Le code de sortie de `panne-a`
 
 À la ligne `code_a=`.
 
@@ -23,7 +93,7 @@ Ce code ne dit rien du conteneur ni de l'image : il dit qu'une **commande** n'a
 pas été trouvée. La nuance change tout le diagnostic, parce qu'elle oriente vers
 le nom qu'on a écrit et non vers ce qu'on a construit.
 
-## 2. Le code de sortie de `panne-b`
+### 2. Le code de sortie de `panne-b`
 
 À la ligne `code_b=`.
 
@@ -32,14 +102,14 @@ Le code est un voisin du précédent, et c'est cette proximité qui les fait
 confondre : l'un renvoie au nom de la commande, l'autre à ses permissions ou à
 son format.
 
-## 3. Le statut de `panne-a`
+### 3. Le statut de `panne-a`
 
 À la ligne `statut_a=`, tel que le moteur le déclare.
 
 **Regardez-le bien.** Ce n'est pas le statut d'un conteneur qui s'est arrêté, et
 cela dit quelque chose d'important sur ce qui s'est passé.
 
-## Regardez aussi les journaux des trois
+### Regardez aussi les journaux des trois
 
 L'un d'eux ne dit **rien du tout**. Ce n'est pas une anomalie : c'est la
 conséquence directe de la réponse à la question 3, et son diagnostic est
@@ -48,7 +118,7 @@ ailleurs, dans l'inspection du conteneur, un champ que personne ne lit jamais.
 Cherchez-le. Il nomme la cause en une ligne, et c'est l'heure perdue du scénario
 qu'il vous fera économiser.
 
-## 4. Réparez, sur la même image
+### 4. Réparez, sur la même image
 
 Lancez un conteneur nommé `repare`, **sur la même image** que les pannes, qui
 **tourne**.
@@ -60,7 +130,7 @@ Les trois pannes venaient de ce qu'on demandait au conteneur de lancer, pas de c
 que l'image contenait. **Savoir ce qui n'est pas responsable écarte la moitié des
 pistes.**
 
-## Ce qui n'est pas noté
+### Ce qui n'est pas noté
 
 La commande que vous avez tapée. Les codes se lisent de plusieurs façons, et la
 réparation se fait avec n'importe quelle commande qui existe et qui dure.

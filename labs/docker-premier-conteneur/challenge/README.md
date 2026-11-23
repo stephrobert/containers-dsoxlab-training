@@ -1,4 +1,47 @@
-# What is asked
+# Three containers, three states, and one confusion to clear
+
+## The situation
+
+You arrive on a machine where someone has already been working. Two containers
+are there, and they are not in the same state:
+
+```text
+vitrine   it is running
+rebut     it exists, stopped
+```
+
+That second state is the disconcerting one, and it is the subject of this lab:
+**a stopped container has not disappeared**. It still holds its name, its logs
+are still readable, and it will show up in any listing that is not limited to
+running containers. Many people believe they have cleaned up by stopping, then
+hit a name already taken without understanding why.
+
+## The goal
+
+Three actions, and nothing more. The image you need is already on the machine:
+there is nothing to pull from a registry and nothing to build.
+
+1. **Run** a container named `premier`, which is **running**, and whose logs
+   carry the exact line `premier-est-la`.
+2. **Stop** `vitrine`, without removing it.
+3. **Remove** `rebut`.
+
+The brief also sits on the machine, in `/opt/MISSION.md`.
+
+Mind the first action: a container whose command finishes stops right away.
+"Started" is therefore not enough, it has to still be running when we look.
+
+## What is graded
+
+The **state of the engine**, never the commands typed. A running container, the
+contents of its logs, a stopped container that still exists, a name that is
+gone. The second and third actions are graded **separately**, because that is
+exactly where the confusion sits.
+
+Nothing in this lab has to survive a reboot: these are states of the engine,
+not of the machine.
+
+## What is asked
 
 On `docker.lab`, a throwaway Debian 13 with the engine running. The
 `lab-base:1.0` image is already present: **nothing to pull, nothing to build**.
@@ -10,7 +53,7 @@ vitrine   it is running
 rebut     it exists, stopped
 ```
 
-## 1. Run a container that is running
+### 1. Run a container that is running
 
 A container named **`premier`**, in the `running` state at the time of the
 check.
@@ -19,7 +62,7 @@ The trap is immediate: a container whose command finishes stops right away.
 Running the image as it is will not do, you have to give it something that
 keeps it alive.
 
-## 2. Its logs carry the requested line
+### 2. Its logs carry the requested line
 
 Exactly `premier-est-la`, in the logs of `premier`.
 
@@ -27,7 +70,7 @@ A container's logs are the **output of its main process**: nothing else fills
 them. What you ask the container to print ends up there, and that is what
 separates "I ran an image" from "I ran an image and told it what to do".
 
-## 3. Stop `vitrine`, without removing it
+### 3. Stop `vitrine`, without removing it
 
 It must **still exist** and no longer be running. Removing it is a graded
 mistake: the check says so explicitly, because it is the error this lab exists
@@ -36,7 +79,7 @@ to clear.
 Stopping ends the container's process while keeping the container, with its
 logs and its name.
 
-## 4. Remove `rebut`
+### 4. Remove `rebut`
 
 Its name must be gone from the listing, the one that shows stopped containers
 **too**.
@@ -45,7 +88,7 @@ That is the observable consequence of a removal, and it is also why a stopped
 container gets in the way: as long as it exists, it keeps its name, and no
 other container can take it.
 
-## What is not graded
+### What is not graded
 
 The command you typed. A container can be run ten ways, and a stop can come
 from a `stop`, a signal or a `kill`: the check looks at the resulting state,

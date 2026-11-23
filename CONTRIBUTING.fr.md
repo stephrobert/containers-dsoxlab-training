@@ -59,9 +59,8 @@ attestations concurrentes.
 | --- | --- |
 | `lab.yaml` | le contrat : `level` = la compétence, `doc_url` = la leçon **ancrée** |
 | `lab.fr.yaml` | `title` et `description` en français, et **rien d'autre** |
-| `scenario.md`, `.fr.md` | la **situation** et l'objectif, jamais un mode d'emploi |
-| `README.md`, `.fr.md` | le tutoriel : le mécanisme, sur des exemples jetables |
-| `challenge/README.md`, `.fr.md` | l'**énoncé**, en exigences numérotées |
+| `README.md`, `.fr.md` | pour un lab guidé, le **cours** : exercices numérotés sur des objets d'essai, sorties réelles, nettoyage final ; pour un challenge ou un capstone, une présentation courte |
+| `challenge/README.md`, `.fr.md` | l'**énoncé** : la situation, puis les exigences numérotées et la façon dont elles sont vérifiées. `scenario.md` n'existe plus depuis dsoxlab 0.9.9 |
 | `challenge/hints.yaml` | quatre indices en base64, bilingues, à coût croissant |
 | `challenge/tests/test_functional.py` | la preuve. Le nom est imposé par le contrat |
 | `fixtures/` | le point de départ, posé sur la machine par le `setup.yaml` du lab |
@@ -156,7 +155,7 @@ d'erreur de Docker quatre fois plus court que le vrai.
 
 ### Un emoji ou un tiret cadratin
 
-Interdits dans ce que l'apprenant lit : scénarios, README, indices, messages
+Interdits dans ce que l'apprenant lit : énoncés, README, indices, messages
 d'assertion. Un hook le vérifie.
 
 ## Trois affirmations à ne jamais reproduire

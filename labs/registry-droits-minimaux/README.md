@@ -54,4 +54,4 @@ reject wrong credentials and hostname, and remove the private CA temporarily
 to prove Docker cannot bypass it. Cleanup restores preexisting registry trust
 and removes only added images and lab-owned paths and containers.
 
-[Mission](scenario.md) · [Requirements](challenge/README.md)
+[Mission](challenge/README.md) · [Requirements](challenge/README.md)

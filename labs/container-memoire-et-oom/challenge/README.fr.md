@@ -1,4 +1,25 @@
-# Cahier des charges
+# Un OOM limité à un seul cgroup
+
+Le worker démarre avec un plafond sûr de 96 Mio. Le contrat de déploiement
+impose plutôt 32 Mio de RAM, sans swap, avec l'OOM killer actif.
+
+Dans `/opt/dsoxlab-container-memoire-et-oom`, appliquez ce budget à `worker`
+dans le projet `dsoxlab-container-memoire-et-oom`. Une sonde d'allocation bornée
+doit être tuée dans le cgroup du conteneur, tandis que son petit PID 1 survit.
+
+Le contrôle vérifie les deux limites et la marge hôte avant d'allouer. Il observe
+`memory.events`, pas un code de sortie supposé. Ne stressez pas l'hôte, ne
+changez pas le swap hôte et n'utilisez pas d'allocateur non borné.
+
+Cette consigne portait aussi « ne désactivez pas l'OOM killer ». Elle est
+retirée parce qu'elle décrivait un geste qui n'existe pas ici : en cgroup v2,
+le noyau ne sait pas le désactiver, et Docker écarte l'option avec un
+avertissement. Interdire l'impossible laisse croire qu'on y échappe.
+Le même PID 1 doit rester actif sans redémarrage, et un reçu applicatif frais
+doit rester lisible après l'incident. L'essai retire seulement son propre reçu ;
+cette conservation pendant l'incident ne garantit pas la survie à un reboot.
+
+## Cahier des charges
 
 Travaillez sur `docker.lab`, dans `/opt/dsoxlab-container-memoire-et-oom`.
 
@@ -8,7 +29,7 @@ pids et CPU du projet. Ni modification du swap hôte, ni allocateur non borné.
 
 Quatre contrôles indépendants mesurent quatre choses différentes.
 
-## 1. Les limites déclarées bornent la mémoire et interdisent le swap
+### 1. Les limites déclarées bornent la mémoire et interdisent le swap
 
 `Memory` et `MemorySwap` valent tous deux 33554432, soit 32 Mio.
 
@@ -37,7 +58,7 @@ exigence qui ne peut pas être violée ne contrôle rien ; ce qu'elle visait est
 mesuré par le contrôle 3, qui observe un OOM réel. Un OOM compté **est** la
 preuve que le tueur est actif.
 
-## 2. Le cgroup applique vraiment la borne
+### 2. Le cgroup applique vraiment la borne
 
 Dans le conteneur, `memory.max` vaut 33554432 et `memory.swap.max` vaut 0.
 
@@ -45,7 +66,7 @@ Le contrôle précédent lit ce qu'on a **demandé** au démon, celui-ci ce que 
 noyau a **retenu**. Une déclaration que le noyau n'a pas retenue ne borne rien,
 et c'est le cgroup qui fait foi.
 
-## 3. Une allocation excessive subit un OOM réel
+### 3. Une allocation excessive subit un OOM réel
 
 Une sonde bornée est lancée dans le conteneur. Elle doit être tuée, et surtout
 le compteur `oom_kill` de `memory.events` doit **augmenter**.
@@ -69,7 +90,7 @@ cgroup, le rapport entre la pointe et la taille tend vers **1,53**, et non
 vers 2 comme une lecture rapide du doublement le laisse croire. Une sonde de
 32 Mio pointe à 49 Mio : au-dessus de 32, sous 96.
 
-## 4. Le service survit à l'OOM et garde son état
+### 4. Le service survit à l'OOM et garde son état
 
 Trois choses, après un OOM provoqué par ce contrôle : le worker tourne encore,
 son `StartedAt` n'a pas changé, et un reçu écrit **avant** l'incident se relit
@@ -86,7 +107,7 @@ qu'on le joue seul, et c'est aussi pourquoi il vérifie lui-même qu'un OOM a bi
 eu lieu : sans incident, la survie ne se distingue pas du fait que rien ne s'est
 produit.
 
-## Ce qui n'est pas noté, et pourquoi on vous le dit
+### Ce qui n'est pas noté, et pourquoi on vous le dit
 
 Trois vérifications précèdent les mesures sans être des exigences : qu'un seul
 `worker` tourne, qu'il porte son label, et que l'hôte ait assez de mémoire

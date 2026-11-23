@@ -1,4 +1,79 @@
-# What is asked
+# Two containers refuse to start, for two reasons
+
+## The situation
+
+A deployment fails. Two services do not start, and both messages mention a
+port. You relaunch, it fails the same way. You relaunch again, and this time the
+message **changes**: it now mentions a name already in use.
+
+You think you broke something else in the meantime. You spend twenty minutes on
+the wrong problem.
+
+Then you look for the first port's culprit, and you find it in one command. You
+look for the second one the same way, and **there is nothing**. The container
+list is silent, and the port is taken all the same.
+
+## The goal
+
+Make both messages speak. Two containers refused to start, each on an already
+taken port, and a third one is there as a witness:
+
+```text
+intrus-a        wanted the host's port 18200
+intrus-b        wanted the host's port 18201
+temoin-refuse   wanted port 18200 too, and you will NOT REPAIR IT
+```
+
+**Compare the two error messages** the engine returned for `intrus-a` and
+`intrus-b`. They do not say the same thing, and that is the whole key to the
+diagnosis: one comes from the engine, which knows what it has already reserved,
+the other comes from the system, which refuses to listen.
+
+Fill in the three lines of `/opt/lab-conflit/reponses.txt`:
+
+```text
+statut_intrus=<temoin-refuse's STATUS, as the engine declares it>
+coupable_a=<the NAME of the container occupying port 18200>
+coupable_b=<the NAME OF THE PROGRAM occupying port 18201>
+```
+
+For the third one, **do not look on Docker's side**: it shows nothing, and that
+is precisely what wastes time. A system tool names it in one line.
+
+The brief is also written to `/opt/MISSION.md`.
+
+## The first question explains the changing message
+
+A refused container is **created all the same**. Its status says so, and it
+therefore occupies its name.
+
+That is why the second attempt fails on a completely different message, about a
+name already in use: two messages for a single cause, and you look for two
+problems. The scenario's twenty minutes are right there.
+
+## The repair, and this is where the lab has an opinion
+
+Both containers must **run**, and publish their port 80 on a host port **other**
+than the one that was taken.
+
+And both culprits must still be **there**: the container that runs, and the
+host's program that listens.
+
+Freeing the port would be the spontaneous move, and it is the wrong one.
+**Nothing said they were useless**, and a taken port is often taken for a
+reason. You do not cut a running service to start another one: it is the
+newcomer you move.
+
+## What is graded
+
+The **state of the system**. The three expected values are read at grading time,
+and none is written into the checks.
+
+The fourth check verifies both halves of the repair: that the intruders run
+**elsewhere**, and that the culprits are intact. Without the second, the most
+destructive answer would pass, and the lab would teach exactly what to avoid.
+
+## What is asked
 
 On `docker.lab`, a throwaway Debian 13 with the engine running. **Three
 containers refused to start**, each on an already taken port:
@@ -16,7 +91,7 @@ diagnosis.
 The first three answers go into `/opt/lab-conflit/reponses.txt`, one line per
 entry, with no spaces around the equals sign.
 
-## 1. `temoin-refuse`'s status
+### 1. `temoin-refuse`'s status
 
 On the `statut_intrus=` line.
 
@@ -28,7 +103,7 @@ not exist.
 **Do not repair `temoin-refuse`**: it stays as it is so that its status remains
 readable to the end.
 
-## 2. The container occupying port 18200
+### 2. The container occupying port 18200
 
 On the `coupable_a=` line.
 
@@ -38,7 +113,7 @@ container list names it at once.
 
 That is the easy case.
 
-## 3. The program occupying port 18201
+### 3. The program occupying port 18201
 
 On the `coupable_b=` line.
 
@@ -52,7 +127,7 @@ line.
 
 You have to be root for it to name it.
 
-## 4. Repair, without cutting anything
+### 4. Repair, without cutting anything
 
 The containers `intrus-a` and `intrus-b` must **run**, and publish their port 80
 on a host port **other** than the one that was taken.
@@ -67,12 +142,12 @@ newcomer you move.
 
 The check verifies both halves.
 
-## One detail that is not a conflict
+### One detail that is not a conflict
 
 Two containers can publish the same **container** port on two different host
 ports. It is the **host's** port that is unique, not the container's.
 
-## What is not graded
+### What is not graded
 
 The command you typed. The culprits can be found in several ways, and the move
 is done by recreating the container on a free port, by any means.

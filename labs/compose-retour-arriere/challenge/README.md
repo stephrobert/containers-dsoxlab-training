@@ -1,4 +1,29 @@
-# What is asked
+# Scenario
+
+The team's reference service runs on `docker.lab`, deployed by Compose, pinned
+by digest, with its data volume. It keeps records, and it already holds one:
+production did not wait for you to arrive.
+
+Three releases are available, and you are given their digests. `2.0` is a
+routine evolution. `3.0`, however, **migrates the state's schema**, and that is
+written in its release notes, on one line nobody reads.
+
+The day before the rollout, your manager asks the only question that matters:
+"if this goes wrong, can we roll back?"
+
+You answer yes. That is true for `2.0`. It stops being true after `3.0`, and
+nobody on the team can say from exactly which moment.
+
+## Mission
+
+Deploy `2.0` by its digest, write a record, roll back to `1.0` without losing
+anything. Then deploy `3.0`, and **establish** that the rollback is no longer
+possible, recording what the machine answers.
+
+What is expected in detail, and the format of the record of findings, are in
+`/opt/lab-retour/MISSION.md`.
+
+## What is asked
 
 On `docker.lab`, a disposable Debian 13. In `/opt/lab-retour`, a Compose stack
 is **already running**: one service pinned by digest, one data volume, and one
@@ -22,7 +47,7 @@ it, or you create a second one, named after your directory: it will get a
 **brand-new, empty** volume, the service will start from a blank state, and the
 witness record will be gone. Nothing will tell you.
 
-## 1. Deploy 2.0, by its digest
+### 1. Deploy 2.0, by its digest
 
 Move the stack to `2.0`, **by digest** and not by a tag. A tag does not say what
 is running, a digest does.
@@ -30,7 +55,7 @@ is running, a digest does.
 The data volume does not change: the earlier record must still be there after
 the switch.
 
-## 2. Write under 2.0, then roll back to 1.0 without losing anything
+### 2. Write under 2.0, then roll back to 1.0 without losing anything
 
 Add a record while `2.0` is running, then **roll back to 1.0**.
 
@@ -38,14 +63,14 @@ Both records, the one from before you arrived and yours, must survive the move
 out and the move back. That is the whole point of a rollback: it brings back the
 code, not the data.
 
-## 3. Deploy 3.0, and measure what it costs
+### 3. Deploy 3.0, and measure what it costs
 
 Move the stack to `3.0`. It **migrates** the state to schema 2, and says so in
 its log.
 
 Both records must still be there, in their migrated form.
 
-## 4. Establish that the rollback is no longer possible
+### 4. Establish that the rollback is no longer possible
 
 Try to go back to `2.0`. It **refuses**, and that is the right behaviour: a
 release must not damage state it does not understand.
@@ -64,13 +89,13 @@ message names **two** of them, the release and the schema. The **exit code** is
 not in the message and has no business being there: a process does not announce
 its own code, it returns it. You ask the shell for it.
 
-## The expected final state
+### The expected final state
 
 `3.0` is running, the state is at schema 2, both records are there, and the
 record of findings is filled in. That state is what is graded, not the path you
 took.
 
-## What is not graded
+### What is not graded
 
 The commands you typed, nor the order in which you tried them. A rollback can be
 done in several ways, and `2.0`'s refusal can be observed in several ways too.
