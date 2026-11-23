@@ -1,107 +1,211 @@
-# images-ordre-des-couches: a correct Dockerfile, and an expensive one
+# Order a Dockerfile for the cache
 
-## What this lab tests
+The lesson shows how the builder decides to reuse a layer, in which order to
+write the instructions, and how a `.dockerignore` keeps the cache stable.
+This course has you see three things it does not show: the position of an
+`ARG` can make an installation run again, a `RUN` can stay frozen by the
+cache and be refreshed from a chosen point, and `docker builder prune` does
+not empty the cache your images still use.
 
-That the order of a Dockerfile's instructions decides what the cache can serve,
-and that **the defect is invisible**: the image produced is correct either way.
-Only its rebuild cost changes.
+You work in `~/essai-cache`, with `essai-cache:*` images. The challenge uses
+another application and another Dockerfile: you will do it on your own, at
+the end.
 
-That is what makes this defect so widespread. Nothing looks broken, so nothing
-seems to need fixing, and continuous integration takes six minutes to redo work
-that nobody modified.
+Related page: [Dockerfile best practices](https://www.stephane-robert.info/docs/conteneurs/images-conteneurs/dockerfile-bonnes-pratiques/) (in French).
 
-## Measured before being written
+## 🔧 Before you start
 
-On `docker.lab`, on 2026-10-30, on the same context with two orders:
+Start the lab:
 
-| Order | code changed | manifest changed |
-| --- | --- | --- |
-| copy the context then install | work **redone** (3 s) | redone |
-| manifest, install, then code | **served by the cache** (1 s) | redone |
+```bash
+dsoxlab run images-ordre-des-couches
+```
 
-And the naive answer was **put to the test**: the starting Dockerfile, built as
-it stands under the expected name, scores **2/4**. The two green checks are the
-ones not bearing on the order, and the two red ones name the cause. A lab whose
-naive answer scored 4/4 would measure nothing.
+You are now connected to `docker.lab`, a Debian 13 machine where the Docker
+engine runs. Create the scratch directory, store the base image in a
+variable, and define a small `etapes` function. It reads the output of a
+build and prints each step, followed by `CACHED` when the builder reused it.
+**Keep the same terminal until the clean-up**: the variable and the function
+only exist in it.
 
-## The fingerprint, and why not the layer identifier
+```bash
+mkdir -p ~/essai-cache && cd ~/essai-cache
+ALPINE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+etapes() { awk '/^#[0-9]+ \[[0-9]\/[0-9]\]/ { n=$1; sub(/^#[0-9]+ /, ""); if ($0 !~ /^\[1\//) { ligne[n]=$0; ordre[++k]=n } next } /^#[0-9]+ CACHED/ { cache[$1]=1 } END { for (i=1;i<=k;i++) print ligne[ordre[i]] (cache[ordre[i]] ? "  CACHED" : "") }'; }
+```
 
-The installation tool draws sixteen random bytes and writes them into the
-image. Two images carrying the **same** fingerprint did not replay the
-instruction: the layer comes from the cache.
+The outputs in this course were captured on this machine on 23 November
+2026, with Docker Engine 29.9.2.
 
-The first draft of these tests compared the layer identifiers from `docker
-history`. Measured the same day: under buildkit they all read `<missing>` for
-intermediate layers, and the comparison concluded "reused" on work that had
-been redone. **An indicator returning the same value everywhere measures
-nothing**, and it concluded green.
+## 🏷️ Exercise 1: the position of an `ARG`
 
-## Why the expensive work does not depend on the network
+An `ARG` is a value passed to the build with `--build-arg`. It is visible to
+the `RUN` instructions that follow it, and changing it can make them run
+again. Write a Dockerfile that declares `ETIQUETTE` at the top, before an
+installation that does not use it. Build once, then build again with a new,
+unique value taken from the clock:
 
-`installer` is a tool laid down in the base image: it reads the manifest and
-sleeps one second per line.
+```bash
+cat > Dockerfile.haut <<EOF
+FROM $ALPINE
+ARG ETIQUETTE=a
+RUN apk add --no-cache jq >/dev/null && jq --version
+RUN echo "etiquette=\$ETIQUETTE" > /etiquette
+EOF
+docker build -q -t essai-cache:haut -f Dockerfile.haut . >/dev/null
+docker build --progress=plain -t essai-cache:haut -f Dockerfile.haut --build-arg ETIQUETTE="$(date +%s)" . 2>&1 | etapes
+```
 
-A lab doing a real `apt-get` or `pip install` would measure the day's bandwidth
-and would fail on a machine without outbound access **while blaming the
-learner**. The cost is simulated, and it is real: three seconds are enough to
-make the gain visible.
+```text
+[2/3] RUN apk add --no-cache jq >/dev/null && jq --version
+[3/3] RUN echo "etiquette=1795458824" > /etiquette
+```
 
-## Why both halves are graded
+The `jq` installation ran again, although it does not use `ETIQUETTE`:
+declared above it, the value is part of its environment, and so of what the
+builder compares. Move the `ARG` right before the step that uses it, and try
+again:
 
-The cache must serve when the code changes, and it must **stop** serving when
-the manifest changes.
+```bash
+cat > Dockerfile.bas <<EOF
+FROM $ALPINE
+RUN apk add --no-cache jq >/dev/null && jq --version
+ARG ETIQUETTE=a
+RUN echo "etiquette=\$ETIQUETTE" > /etiquette
+EOF
+docker build -q -t essai-cache:bas -f Dockerfile.bas . >/dev/null
+docker build --progress=plain -t essai-cache:bas -f Dockerfile.bas --build-arg ETIQUETTE="$(date +%s)" . 2>&1 | etapes
+```
 
-Copying the manifest after the installation would make the third check green
-and have the cache serve even when the dependencies change: the image would
-stay frozen on the old ones, and nobody would see it before production. A check
-looking only at the first half would therefore reward the costlier of the two
-faults.
+```text
+[2/3] RUN apk add --no-cache jq >/dev/null && jq --version  CACHED
+[3/3] RUN echo "etiquette=1795458826" > /etiquette
+```
 
-The fourth one also verifies that the new dependency is **really installed**:
-redoing work with no effect would otherwise pass for a success.
+This time, the installation is served by the cache, and only the last step
+runs again. An `ARG` is therefore declared as close as possible to the step
+that uses it, just as a file is copied as close as possible to the step that
+reads it.
 
-## Why the draft is in the context
+## 🕰️ Exercise 2: a frozen `RUN`, and refreshing it from a point
 
-A copy of the whole context does not copy "the code", it copies **everything**,
-the Dockerfile included. Those files swell the image, and above all each of them
-invalidates the cache when it changes: editing the Dockerfile would be enough
-to redo the installation.
+The lesson warns that a `RUN` whose text does not change is always served by
+the cache. Make it visible with a command that records the time. The
+Dockerfile records two times, separated by an `ARG RAFRAICHIR`:
 
-The check does not say how to exclude them. An exclusion file and a targeted
-copy give the same state, and it is the state that is graded.
+```bash
+cat > Dockerfile.date <<EOF
+FROM $ALPINE
+RUN date +%H:%M:%S > /construit-a
+ARG RAFRAICHIR=0
+RUN date +%H:%M:%S > /rafraichi-a
+EOF
+docker build -q -t essai-cache:date -f Dockerfile.date . >/dev/null
+docker run --rm essai-cache:date cat /construit-a /rafraichi-a
+sleep 3; docker build -q -t essai-cache:date -f Dockerfile.date . >/dev/null
+docker run --rm essai-cache:date cat /construit-a /rafraichi-a
+sleep 3; docker build -q -t essai-cache:date -f Dockerfile.date --build-arg RAFRAICHIR="$(date +%s)" . >/dev/null
+docker run --rm essai-cache:date cat /construit-a /rafraichi-a
+```
 
-## Why the checks rebuild in a copy
+```text
+18:31:41
+18:33:47
+18:31:41
+18:33:47
+18:31:41
+18:33:55
+```
 
-Modifying the learner's directory in order to grade it would be doubly wrong:
-it would destroy their work, and the verdict would bear on a state the test
-produced itself.
+The second build gives the same times as the first: nothing ran, both
+layers come from the cache. On the third one, the value of `RAFRAICHIR`
+changes: the second time is new, the first one is still that of the very
+first build. Placed right before the steps to refresh (a package update, for
+example), such an `ARG` makes them run again without rebuilding everything
+else. `--no-cache`, on the other hand, rebuilds everything.
 
-The modification is an **append at the end of a file**: the code stays
-executable, the manifest stays readable, and the image stays buildable.
+## 🧹 Exercise 3: what `docker builder prune` really empties
 
-## The starting state is broken, and that is the repository's rule
+`docker builder prune` deletes the build cache. Run it, then rebuild
+`essai-cache:bas` with a value already built:
 
-The setup **does not build** the image: the four checks are therefore false
-before any work, including the ones not bearing on the order. Building is part
-of the mission.
+```bash
+docker build -q -t essai-cache:bas -f Dockerfile.bas --build-arg ETIQUETTE=b . >/dev/null
+docker builder prune -f | tail -1
+docker build --progress=plain -t essai-cache:bas -f Dockerfile.bas --build-arg ETIQUETTE=b . 2>&1 | etapes
+```
 
-A setup task verifies that the base exists, that the learner's image does not,
-and that the starting Dockerfile does carry the wholesale copy: without it, a
-badly cleaned pass would leave the lab already solved.
+```text
+Total:	2.876MB
+[2/3] RUN apk add --no-cache jq >/dev/null && jq --version  CACHED
+[3/3] RUN echo "etiquette=b" > /etiquette  CACHED
+```
 
-## A cleanup trap, paid in advance
+The clean-up freed a little space, and yet everything stayed in the cache.
+The layers of the `essai-cache:bas` image still exist, and the builder reuses
+them. Delete the image first, then try again:
 
-**The build cache has to go with the rest.** A build's intermediate layers are
-not images: they live in the builder's cache, and a `docker image prune` does
-not touch them. Without a `builder prune`, the next pass's build would be served
-by a cache the learner did not write a line of, and the lab would measure work
-that did not happen.
+```bash
+docker rmi essai-cache:bas >/dev/null
+docker builder prune -f | tail -1
+docker build --progress=plain -t essai-cache:bas -f Dockerfile.bas --build-arg ETIQUETTE=b . 2>&1 | etapes
+```
 
-It is the slowest purge in the catalogue, and it is the price of
-reproducibility.
+```text
+Total:	1.409MB
+[2/3] RUN apk add --no-cache jq >/dev/null && jq --version
+[3/3] RUN echo "etiquette=b" > /etiquette
+```
 
-## What the lab does not require
+This time, both steps run again. `docker builder prune` only removes the
+cache that no image uses: to really start from scratch, delete the images,
+or build with `--no-cache`.
 
-A path. The token is drawn by the setup and read back from the source at grading
-time; the dependencies are read back from the manifest. Nothing is hard-coded in
-the checks, and nothing is graded on a form.
+## 🧹 Clean-up
+
+Delete the scratch images and directory. The last command counts the
+`essai-*` images left:
+
+```bash
+cd ~
+docker rmi essai-cache:haut essai-cache:bas essai-cache:date | grep -c Untagged
+rm -rf ~/essai-cache
+docker images --format '{{.Repository}}' | grep -c '^essai-'
+```
+
+```text
+3
+0
+```
+
+No scratch image left. Then leave the machine and reset the lab.
+`dsoxlab reset` replays the clean-up and then the lab preparation: you get
+back exactly the starting state of the challenge. It asks you to confirm:
+answer `y`.
+
+```bash
+exit
+dsoxlab reset images-ordre-des-couches
+dsoxlab check images-ordre-des-couches
+```
+
+```text
+╭─ Result: images-ordre-des-couches ─╮
+│  0 / 100 pts                       │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests   │
+╰────────────────────────────────────╯
+```
+
+0 out of 4: that is the expected result. The challenge is waiting for you,
+untouched.
+
+## 🎯 The challenge
+
+Your turn, on your own this time: reorder the Dockerfile of an application
+so that a code change no longer runs the installation again, while a
+dependency change still does.
+
+```bash
+dsoxlab run images-ordre-des-couches
+dsoxlab challenge images-ordre-des-couches
+```
