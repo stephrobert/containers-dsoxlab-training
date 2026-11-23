@@ -35,9 +35,9 @@ def _sources(setup: Path) -> list[str]:
         for tache in (play.get("tasks") or []) + (play.get("pre_tasks") or []):
             for module in ("ansible.builtin.copy", "copy", "ansible.builtin.template", "template"):
                 params = tache.get(module)
-                if isinstance(params, dict) and isinstance(params.get("src"), str):
-                    if not params.get("remote_src"):
-                        sources.append(params["src"])
+                if (isinstance(params, dict) and isinstance(params.get("src"), str)
+                        and not params.get("remote_src")):
+                    sources.append(params["src"])
     return sources
 
 
