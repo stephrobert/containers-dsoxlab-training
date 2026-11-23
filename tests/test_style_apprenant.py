@@ -10,7 +10,7 @@ une page anglaise en amène, et il se distingue mal d'un tiret ordinaire à la
 relecture. Il n'appartient pas à la typographie de ce dépôt, et l'issue #20 le
 rappelle à propos d'une simple cellule vide de tableau.
 
-DEUX ADAPTATIONS À CE DÉPÔT, ET ELLES SONT MESURÉES
+TROIS ADAPTATIONS À CE DÉPÔT, ET ELLES SONT MESURÉES
 
 1. **Les emoji sont tolérés dans `challenge/README*`.** Mesuré le 2026-09-25 :
    174 briefs en portent, comme repères de section (objectif, validation,
@@ -21,6 +21,12 @@ DEUX ADAPTATIONS À CE DÉPÔT, ET ELLES SONT MESURÉES
 2. **Les flèches `←` et `→` ne sont pas surveillées.** Six README les emploient
    dans des tableaux, avec un sens (une direction, une correspondance), là où un
    pictogramme n'en a pas.
+
+3. **Les emoji sont tolérés dans les TITRES des cours** (`README.md` et
+   `README.fr.md` à la racine d'un lab), et seulement sur les lignes de titre
+   Markdown. Décision de Stéphane du 2026-11-19 pour toutes les formations (« ça
+   le rend plus friendly »), déjà appliquée au catalogue kubernetes : un titre
+   d'exercice porte un pictogramme, le corps du cours n'en porte aucun.
 
 LA DETTE, ET POURQUOI ELLE EST NOMMÉE
 
@@ -98,11 +104,15 @@ def test_pas_d_emoji_hors_des_briefs(fichier: Path) -> None:
     if rel.endswith(TOLERE_LES_EMOJI):
         pytest.skip("brief : l'emoji y est la convention du dépôt")
 
-    trouves = sorted(set(EMOJI.findall(fichier.read_text(encoding="utf-8", errors="ignore"))))
+    texte = fichier.read_text(encoding="utf-8", errors="ignore")
+    if fichier.name in ("README.md", "README.fr.md") and fichier.parent.parent == LABS:
+        # Un cours : les titres peuvent porter un emoji, le corps jamais.
+        texte = "\n".join(ligne for ligne in texte.splitlines() if not ligne.startswith("#"))
+    trouves = sorted(set(EMOJI.findall(texte)))
     assert not trouves, (
         f"{rel} porte {len(trouves)} pictogramme(s) : {trouves}\n\n"
         "Ce que l'apprenant lit s'en passe, hors des briefs `challenge/README`, "
-        "où ils servent de repères de section."
+        "où ils servent de repères de section, et des titres des cours."
     )
 
 
