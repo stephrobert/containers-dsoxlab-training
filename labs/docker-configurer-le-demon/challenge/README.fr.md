@@ -1,3 +1,11 @@
-# Contrat fonctionnel : docker-configurer-le-demon
+# Scénario
+
+Les nouveaux conteneurs n’ont aucune limite de rétention. Conservez le pilote json-file par défaut, plafonnez les fichiers à 1 Mio et gardez deux fichiers. Les autres réglages du démon doivent être préservés.
+
+## Mission
+
+Les nouveaux conteneurs utilisent les valeurs demandées ; le nettoyage restaure la configuration initiale du démon.
+
+## Contrat fonctionnel : docker-configurer-le-demon
 
 Les tests inspectent l’état effectif sur l’hôte distant `docker.lab`. Ils refusent l’état initial et ne réussissent que si la mission est accomplie. Les ressources de test sont bornées et portent l’étiquette unique du lab.

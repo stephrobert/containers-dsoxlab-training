@@ -57,9 +57,8 @@ VM cycles: never run two attestations concurrently.
 | --- | --- |
 | `lab.yaml` | the contract: `level` = the skill, `doc_url` = the **anchored** lesson |
 | `lab.fr.yaml` | `title` and `description` in French, and **nothing else** |
-| `scenario.md`, `.fr.md` | the **situation** and the objective, never a walkthrough |
-| `README.md`, `.fr.md` | the tutorial: the mechanism, on throwaway examples |
-| `challenge/README.md`, `.fr.md` | the **brief**, as numbered requirements |
+| `README.md`, `.fr.md` | for a guided lab, the **course**: numbered exercises on scratch objects, real outputs, a final clean-up; for a challenge or capstone, a short introduction |
+| `challenge/README.md`, `.fr.md` | the **brief**: the situation, then the numbered requirements and how they are checked. `scenario.md` no longer exists since dsoxlab 0.9.9 |
 | `challenge/hints.yaml` | four base64 hints, bilingual, at increasing cost |
 | `challenge/tests/test_functional.py` | the proof. The name is set by the contract |
 | `fixtures/` | the starting point, laid on the machine by the lab's own `setup.yaml` |
@@ -151,7 +150,7 @@ real one.
 
 ### An emoji or an em dash
 
-Forbidden in what the learner reads: scenarios, READMEs, hints, assertion
+Forbidden in what the learner reads: briefs, READMEs, hints, assertion
 messages. A hook checks it.
 
 ## Three statements never to reproduce

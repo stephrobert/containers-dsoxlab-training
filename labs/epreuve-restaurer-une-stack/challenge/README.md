@@ -1,4 +1,28 @@
-# What is asked
+# Scenario
+
+A customer calls: the service no longer answers. You open the console of the
+host that carried it, and what you see looks like nothing you expected.
+
+The decision is made before you have finished looking: that host is no longer
+trusted, the service comes back up elsewhere. You have the other machine, the
+stack's file, the image, and a backup taken before the fault.
+
+You also have one instruction nobody will repeat: the database was reachable
+only through the API, and it must stay that way. That is what the security file
+states, and that is what will be read back if the incident escalates.
+
+## Mission
+
+Establish the real state, bring the service back up on the other host, restore
+the witness record, and do not lose the data network's isolation along the way.
+
+This is a **challenge**: the pass mark is 75%. What is expected in detail is in
+`/opt/lab-restauration/MISSION.md`, on the host the service has to come back up
+on.
+
+**One requirement is made up for by no total: the witness record must be restored AND served through the front end.** Present but not served does not count: data that cannot be handed back is not restored, it is merely there.
+
+## What is asked
 
 Two machines. `docker.lab` carried the stack; it is **no longer trusted**.
 `docker-client.lab` is the host the service has to come back up on.
@@ -26,18 +50,18 @@ list of tiers crossed.
 
 This is a **challenge**: the pass mark is 75%.
 
-## 1. Establish the real state
+### 1. Establish the real state
 
 Nothing tells you what was destroyed, and that is deliberate. Start by measuring
 it rather than assuming it: containers, volumes, networks, and what the backup
 contains.
 
-## 2. Bring the service back up on `docker-client.lab`
+### 2. Bring the service back up on `docker-client.lab`
 
 The three tiers must run, in the Compose project `dsoxlab-restauration`, and the
 business request must cross `front`, `api` and `db` in that order.
 
-## 3. Restore the witness record
+### 3. Restore the witness record
 
 One record had been written **through the front end** before the fault. It must
 be served again by the restored stack, and read by the same path: data you
@@ -45,7 +69,7 @@ cannot serve is not restored, it is merely present.
 
 The backup is in `/opt/lab-restauration/sauvegarde/`.
 
-## 4. Do not lose the isolation along the way
+### 4. Do not lose the isolation along the way
 
 The network carrying `db` must stay **internal**, and `db` must publish no port.
 
@@ -54,12 +78,12 @@ restoration "work". It is refused here, and the check does not read your file: i
 measures on the engine, verifying that a probe placed on the public network does
 not reach `db`, and that `api` does.
 
-## The expected final state
+### The expected final state
 
 On `docker-client.lab`: the three tiers up, the business request crossing them,
 the witness served, the data network internal and `db` with no published port.
 
-## What is not graded
+### What is not graded
 
 How you restore the data, nor the order in which you bring the tiers back up.
 The check reads the state of both machines.

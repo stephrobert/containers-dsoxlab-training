@@ -1,4 +1,94 @@
-# What is asked
+# 79 MB for a three-hundred-byte script
+
+## The situation
+
+An application image weighs 79 MB. You look at what it contains: a
+three-hundred-byte shell script, and four numbers in a file.
+
+The rest is the base. A full distribution, with its package manager, its C
+library, its manual pages, to do an addition.
+
+Changing the `FROM` line takes a second. And the image no longer starts, on a
+message that blames the script.
+
+## The goal
+
+The image `appli:lourde` works: run it, it prints its token, a sum and a
+maximum. Then weigh it.
+
+An Alpine base is already on the machine, under the name `lab-socle-leger:1.0`,
+and it weighs 8 MB. Build `appli:legere` on it.
+
+```text
+print the same token, the same sum and the same maximum as appli:lourde
+weigh a fraction of appli:lourde
+be built on the light base
+COMPUTE, not recite
+```
+
+The context is in `/opt/lab-migration/appli`. Do not modify `appli:lourde`: it
+is the reference you are compared against.
+
+The brief is also laid down in `/opt/MISSION.md`.
+
+## Changing the `FROM` line will not be enough
+
+Try it, and read the message.
+
+```text
+exec /usr/local/bin/traiter: no such file or directory
+```
+
+Through `sh` it is sharper still, and it carries the code 127 already met:
+
+```text
+sh: /usr/local/bin/traiter: not found
+```
+
+Go and check: the script is there, executable. **So it is not the script that is
+missing.** What is missing is the interpreter its shebang calls for, and the
+kernel returns the error under the name of the file it was handed.
+
+It is the same mechanism as `troubleshoot-exit-127`, and the same family of
+misleading message as `images-contexte-de-build`: **the engine reports what it
+sees, not what is there.**
+
+## Migrating means adapting
+
+The script uses two constructs its old base gave it and the new one does not
+have. No change of `FROM` will put them there.
+
+You have two routes, and both pass the checks: rewrite what depended on the old
+base, or install on the new one what is missing. The first is the one this lab
+argues for: adding a 2 MB interpreter for two constructs, one of which fits in a
+loop, amounts to paying for the base you have just left.
+
+## What is measured
+
+| Base | Size |
+| --- | --- |
+| `debian:13-slim` | 78.9 MB |
+| `alpine:3.22` | 8.3 MB, 9.5 times less |
+
+Measured on this machine, on 2026-10-30. And the POSIX equivalent of the script
+gives the same result on both bases: `somme=26 max=11` on either side.
+
+## What is graded
+
+The **system state**, at four places that do not overlap: the result on the
+repository's data, the base actually used (read in the layers), the weight
+relative to the reference, and the computation on data the image **has never
+seen**.
+
+That last check is there because the other three would pass on an application
+printing a frozen result. The repository's data does not change during a
+session; the check's data does.
+
+No threshold and no result is written in the repository: the data is drawn on
+every pass, the result is recomputed at grading time, and the weight ceiling is
+derived from the reference image.
+
+## What is asked
 
 On `docker.lab`, a throwaway Debian 13 with the engine running. Two images and
 two bases are already there:
@@ -14,7 +104,7 @@ The context is in `/opt/lab-migration/appli`.
 **Start by running `appli:lourde` and weighing it.** Then change the `FROM` line
 and build: read the message.
 
-## 1. The light image must give the right result
+### 1. The light image must give the right result
 
 `appli:legere` must print the same token, the same sum and the same maximum as
 the reference.
@@ -26,7 +116,7 @@ written somewhere.
 If the message names the script and says it cannot be found, **go and check**:
 it is there, executable. What is missing is the interpreter of its shebang.
 
-## 2. It must be built on the light base
+### 2. It must be built on the light base
 
 The check compares the **layers**: the light base's must be the prefix of the
 image's.
@@ -35,7 +125,7 @@ An image can perfectly well work and weigh the right amount without having
 changed base. The mission is to migrate, and that is read in the layers, not in
 a version file.
 
-## 3. It must weigh a fraction of the reference
+### 3. It must weigh a fraction of the reference
 
 The threshold is **derived** from `appli:lourde`, weighed at grading time: a
 third of it. The light base weighs 8 MB against 79, so the margin is very wide.
@@ -43,7 +133,7 @@ third of it. The light base weighs 8 MB against 79, so the margin is very wide.
 An image that stays this heavy has not changed base, or carries along what the
 base already provides.
 
-## 4. It must compute, not recite
+### 4. It must compute, not recite
 
 The check gives it data it **has never seen**, through a mount on `/donnees`,
 and expects the right result.
@@ -52,7 +142,7 @@ The first three checks would pass on an application printing a frozen result:
 the repository's data does not change during a session. That is why this one
 exists.
 
-## Migrating means adapting
+### Migrating means adapting
 
 The script uses two constructs its old base gave it. You have two routes, and
 both pass the checks:
@@ -64,7 +154,7 @@ The first is the one this lab argues for: adding a 2 MB interpreter for two
 constructs, one of which fits in a loop, amounts to paying for the base you have
 just left. The choice remains yours.
 
-## What is not graded
+### What is not graded
 
 The command you typed, and the path you chose. Do not modify `appli:lourde`: it
 is the reference you are compared against.

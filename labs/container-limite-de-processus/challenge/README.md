@@ -1,4 +1,19 @@
-# Brief
+# Contain process creation
+
+The worker has a safe starter ceiling of 32 tasks, but its operational budget is
+16. A process ceiling must be a cgroup limit, not just a shell's ulimit.
+
+In `/opt/dsoxlab-container-limite-de-processus`, apply the 16-task budget to
+`worker` in project `dsoxlab-container-limite-de-processus`. Keep it running and
+retain the memory and CPU guards.
+
+The checker launches at most 24 short-lived sleep children, only after verifying
+the effective cap. This is not a fork bomb. Never use recursion, unbounded loops
+that fork, or host-wide process limits.
+After the finite burst ends, the original service must resume without restarting
+or losing a freshly written application receipt. Only the trial receipt is removed.
+
+## Brief
 
 Work on `docker.lab`, in `/opt/dsoxlab-container-limite-de-processus`.
 
@@ -8,7 +23,7 @@ the guarded burst itself; do not run an unbounded stressor.
 
 Four independent checks measure four different things.
 
-## 1. The declared limits carry the task budget
+### 1. The declared limits carry the task budget
 
 `PidsLimit` is exactly 16, and the memory cap stays positive and no larger than
 64 MiB.
@@ -18,7 +33,7 @@ deliberate: it is set from the start, so a separate check would pass before any
 work and hand out points for nothing. Bounding tasks must not cost the memory
 guard, but that is a requirement you preserve, not one you satisfy.
 
-## 2. The cgroup actually applies the task cap
+### 2. The cgroup actually applies the task cap
 
 Inside the container, `pids.max` is 16.
 
@@ -27,7 +42,7 @@ kernel **retained**. It is also what separates a cgroup limit from a shell
 `ulimit`: the latter binds only the descendants of the shell that set it and
 disappears with it, so it does not bound the service.
 
-## 3. A bounded burst is refused by the kernel
+### 3. A bounded burst is refused by the kernel
 
 Twenty-four two-second `sleep` children are started, then waited on.
 `pids.events`'s `max` counter must **increase**.
@@ -40,7 +55,7 @@ overflows under 16. Under 32 the counter stays at 0; under 16 it goes to 1.
 A non-zero exit code would prove nothing by itself. Only this counter says the
 kernel refused a creation.
 
-## 4. The service survives saturation and keeps its state
+### 4. The service survives saturation and keeps its state
 
 Three things, after a burst this check triggers itself: the worker is still
 running, its `StartedAt` has not changed, and a receipt written **before** the
@@ -75,7 +90,7 @@ This check triggers **its own** burst rather than reusing check 3's, and it
 verifies for itself that saturation happened: with no incident, survival cannot
 be told from nothing having occurred.
 
-## What is not graded, and why we tell you
+### What is not graded, and why we tell you
 
 Three verifications precede the measurements without being requirements: that
 exactly one `worker` runs, that it carries its label, and that `pids.events` is

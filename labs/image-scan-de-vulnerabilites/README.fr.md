@@ -1,6 +1,6 @@
 # Vrais scans d'images hors ligne
 
-Lab guidé c4, 45 minutes. Lire [la mission](scenario.fr.md) et
+Lab guidé c4, 45 minutes. Lire [la mission](challenge/README.fr.md) et
 [la provenance](fixtures/PROVENANCE.md). Vraies sorties debsecan sur de vrais
 paquets Debian, ni CVE inventée ni pari sur une image publique mutable.
 

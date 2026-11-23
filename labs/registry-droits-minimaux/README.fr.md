@@ -57,4 +57,4 @@ temporairement la CA pour prouver que Docker ne la contourne pas. Le nettoyage
 restaure la confiance préexistante et retire seulement les images ajoutées,
 les chemins et les conteneurs possédés par le lab.
 
-[Mission](scenario.fr.md) · [Exigences](challenge/README.fr.md)
+[Mission](challenge/README.fr.md) · [Exigences](challenge/README.fr.md)

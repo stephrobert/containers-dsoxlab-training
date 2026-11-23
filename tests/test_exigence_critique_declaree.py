@@ -57,8 +57,6 @@ TYPES_QUI_EVALUENT = {"challenge", "capstone"}
 
 #: Les fichiers où une promesse peut être écrite, et qu'un apprenant lit.
 DOCUMENTS = (
-    "scenario.fr.md",
-    "scenario.md",
     "challenge/README.fr.md",
     "challenge/README.md",
     "challenge/tests/test_functional.py",
@@ -173,7 +171,7 @@ def test_le_controle_attrape_une_promesse_orpheline(tmp_path: Path) -> None:
             "id": "epreuve-fabriquee", "title": "X", "level": "c1",
             "lab_type": "challenge", "exam_passing_score": 75,
         }), encoding="utf-8")
-    (faux / "scenario.fr.md").write_text(
+    (faux / "challenge/README.fr.md").write_text(
         "Une exigence n'est compensée par aucun total : perdre la donnée fait "
         "échouer l'épreuve.\n", encoding="utf-8")
 

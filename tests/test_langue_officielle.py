@@ -99,8 +99,6 @@ MARQUEURS_DE_GABARIT = (
 FICHIERS_DE_LECTURE = (
     "README.md",
     "README.fr.md",
-    "scenario.md",
-    "scenario.fr.md",
     "challenge/README.md",
     "challenge/README.fr.md",
     "lab.yaml",

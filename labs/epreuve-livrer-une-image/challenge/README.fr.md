@@ -1,4 +1,29 @@
-# Ce qui est demandé
+# Scénario
+
+Votre équipe livre une image à un partenaire. Il n'a pas votre dépôt, ni votre
+cache, ni le droit d'écrire dans votre registre : il a une machine, la confiance
+de votre autorité, et un compte en lecture seule.
+
+La dernière livraison s'est mal passée de deux façons à la fois. L'image ne
+démarrait pas chez lui, parce qu'elle dépendait d'un fichier qui n'existait que
+sur la machine de construction. Et un auditeur a retrouvé le jeton de build dans
+une couche, en lisant l'historique de l'image : il n'avait rien à décoder, c'était
+écrit.
+
+On vous demande de refaire la livraison, et de la rendre vérifiable.
+
+## Mission
+
+Construisez l'image sans que le secret de construction survive dans une couche,
+publiez-la, consignez sa référence par digest, et faites-la tourner sur le client
+nu par ce digest.
+
+C'est une **épreuve** : le seuil de réussite est de 75 %. Le détail de ce qui
+est attendu est dans `/opt/lab-livraison/MISSION.md`.
+
+**Une exigence n'est compensée par aucun total : un secret qui survit dans une couche fait échouer l'épreuve.** Une image se tire, s'ouvre et se lit par quiconque la reçoit ; un secret qui y voyage est déjà divulgué, même si plus rien ne le montre dans la vue finale.
+
+## Ce qui est demandé
 
 Deux machines. `docker.lab` construit et publie : elle porte le contexte de
 construction, le secret, et le compte de publication. `docker-client.lab` est un
@@ -12,7 +37,7 @@ dans `/opt/lab-livraison/identifiants-lecture.json` sur le client.
 
 C'est une **épreuve** : le seuil de réussite est de 75 %.
 
-## 1. Construire l'image sans que le secret survive
+### 1. Construire l'image sans que le secret survive
 
 Le contexte est dans `/opt/lab-livraison/build`. Le `Dockerfile` est à compléter.
 
@@ -25,7 +50,7 @@ temps d'une instruction n'y entre pas ; un secret copié, passé en argument de
 construction ou posé en variable d'environnement y entre, et se relit dans
 l'historique de l'image.
 
-## 2. Publier dans le registre, avec le compte qui en a le droit
+### 2. Publier dans le registre, avec le compte qui en a le droit
 
 Poussez l'image sous `livraison.lab.test:15401/livraison/appli:1.0`.
 
@@ -40,7 +65,7 @@ empreinte_du_secret=<l'empreinte SHA-256 du fichier de secret>
 La référence est celle que le registre sert, **par digest** : c'est la seule qui
 désigne une image et non une étiquette déplaçable.
 
-## 3. La faire tourner sur le client nu, par ce digest
+### 3. La faire tourner sur le client nu, par ce digest
 
 Sur `docker-client.lab`, tirez l'image **par le digest de la livraison** avec le
 compte en lecture seule, et faites-la tourner sous le nom
@@ -50,7 +75,7 @@ Elle doit répondre l'empreinte sur son port 8080. C'est ce qui prouve qu'elle e
 réellement utilisable ailleurs, et pas seulement sur la machine qui l'a
 construite.
 
-## 4. Établir que le client ne peut pas publier
+### 4. Établir que le client ne peut pas publier
 
 Un compte en lecture seule ne doit pas pouvoir pousser. Vérifiez-le, et sachez
 le vérifier : repousser une image que le registre possède déjà ne prouve rien,
@@ -58,12 +83,12 @@ le client n'écrit alors rien du tout.
 
 Ce contrôle est mesuré sur la machine, vous n'avez rien à consigner pour lui.
 
-## L'état final attendu
+### L'état final attendu
 
 L'image est publiée, la livraison est remplie, le conteneur tourne sur le client
 nu et répond l'empreinte, et le secret ne se trouve dans aucune couche.
 
-## Ce qui n'est pas noté
+### Ce qui n'est pas noté
 
 Le nombre d'étapes de votre construction, la façon dont vous montez le secret,
 ni les commandes que vous avez tapées. Le contrôle lit l'image produite et

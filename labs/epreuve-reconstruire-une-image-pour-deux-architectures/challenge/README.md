@@ -1,16 +1,85 @@
-# Test: rebuild an image for two architectures
+# One image, four demands, two architectures
+
+The `deux-arch:1.0` image works. It weighs about 200 MB, its `Dockerfile` is a
+single stage, the private repository token goes through an `ARG`, and it only
+exists for one architecture.
+
+**This is a chaining test.** The four moves were seen separately along the
+course; here they have to come together in **one single image**. A light image
+whose secret has leaked is worth nothing, and a clean image that serves only one
+architecture does not deploy.
+
+## What is expected at the end
+
+The four demands are measured by **six checks of equal weight**: two of them
+carry two checks each, because each has two sides. A slimmed image must deliver
+the business payload **and** stay under the threshold; a secret must not leak
+**and** must have been used.
+
+1. The **published** image contains neither the compiler nor the base image's
+   package manager, and running it serves the business workload.
+2. Its size stays **under the threshold** this lab measured on this machine, by
+   building a multi-stage reference of its own.
+3. The token appears **neither in the layers nor in
+   `docker history --no-trunc`**. This is the one demand that **no total makes
+   up for**: if the secret leaks, the exercise is refused whatever the score.
+4. The **private dependency** is present in the image, which is only possible if
+   the token was **used**. Removing the token without using it costs this check,
+   and this check only: it is not a leak.
+5. The lab's registry, on `127.0.0.1:15002`, serves an **index** carrying
+   `linux/amd64` **and** `linux/arm64`, and **both of them run**.
+6. The **index's** digest is recorded in `/opt/lab-deux-arch/digest.txt`, on a
+   single line, in the form `sha256:...`.
+
+**Emulation of foreign architectures is already in place**: this lab set it up.
+You do not have to install it.
+
+The full brief is also on the machine, in `/opt/lab-deux-arch/MISSION.md`.
+
+## Three points so you do not look in the wrong place
+
+**The binary can be compiled statically**, and an image whose binary is static
+needs no system around it: no compiler, no package manager, no shell. That is the
+route which satisfies the first demand without contortion, because a base image's
+package manager is always present in it.
+
+**The token is used to produce the dependency**, and in this lab the dependency
+**is** the token's digest, its first sixteen characters. This is said plainly: a
+real network repository would change nothing about what is measured, which is
+that the secret was **used** and did not **leak**.
+
+**The published index carries more than two entries.** The build tool adds its
+attestations, which appear as `unknown` platforms. That is normal, and the check
+looks for both architectures **among** the entries.
+
+## How you are graded
+
+Six checks of equal weight, and **only the final state counts**. The checks
+apply to **the image pulled from the registry**, not to a local image: pushing
+without keeping anything locally is the normal way to do it, and the test must
+not punish it.
+
+The pass mark is **75 out of 100**. One requirement is made up for by no total:
+**the token readable in the history fails the test**, even with everything else
+in place. A `--build-arg` leaves its value there, and anyone who pulls the image
+reads it back. The image itself looks clean, which makes this the most discreet
+leak in the trade.
+
+Four hints are available, and **they cost points**: `dsoxlab hint`.
+
+## Test: rebuild an image for two architectures
 
 An image that works, in a single stage, with its compiler, its token in the
 history, and one architecture. All of it has to be redone **in one single
 image**.
 
-## The six checks
+### The six checks
 
 They are of equal weight, and each rests on a verifiable fact. **They apply to
 the image pulled from the registry**, because pushing without keeping anything
 locally is the normal way to do it.
 
-### 1. Neither compiler nor package manager in the published image
+#### 1. Neither compiler nor package manager in the published image
 
 They only served to build, and they then travel to everyone who pulls the image.
 
@@ -19,13 +88,13 @@ it while keeping a working binary is the multi-stage move. A binary linked
 dynamically against libraries left in the build stage does not start: that is the
 classic mistake.
 
-### 2. Size under the measured threshold
+#### 2. Size under the measured threshold
 
 The threshold comes from a **multi-stage** reference build made on this machine
 during `dsoxlab run`. It is not written into the test: a hard-coded size would
 expire at the first update of the base image.
 
-### 3. The token nowhere
+#### 3. The token nowhere
 
 **This is the critical requirement, and the only one: no total makes up for
 it.**
@@ -36,7 +105,7 @@ occurrences with `--build-arg`, zero with a mounted secret. **The layers**,
 because a secret written to a file then deleted still travels in the layer that
 carried it.
 
-### 4. The private dependency is the repository's
+#### 4. The private dependency is the repository's
 
 Removing the token without using it gives a clean, useless image: the dependency
 can only be right if the secret was **used**.
@@ -46,7 +115,7 @@ learner who removed the token without using it shipped a clean image, kept 83
 points, and was refused by a check that talks about a **leak** when nothing had
 leaked. **Losing this check costs its points, and nothing more.**
 
-### 5. The index carries both architectures, and both run
+#### 5. The index carries both architectures, and both run
 
 The check looks for `amd64` and `arm64` **among** the manifests, without
 requiring a count: the build tool adds its attestations, which appear as
@@ -56,7 +125,7 @@ requiring a count: the build tool adds its attestations, which appear as
 worse than a single-platform index: it promises a deployment that will fail for
 whoever relies on it.
 
-### 6. The recorded digest is the index's
+#### 6. The recorded digest is the index's
 
 That is the distinction this check exists to measure. The index has its own
 digest, and that is the one you pin: it designates both architectures at once and
@@ -66,7 +135,7 @@ platform, and a deployment pinned on it fails everywhere else.
 If you record an image's digest, the message will say so: that is the instructive
 mistake, and naming it is better than reporting a difference.
 
-## The marking
+### The marking
 
 Six checks of equal weight, pass mark **75 out of 100**, and **only the final
 state counts**.

@@ -51,4 +51,4 @@ text. The approved identity must succeed. A second identity signed by the
 same CA must fail, as must a self-issued certificate claiming the approved
 URI, a signature made by another key, and altered bytes.
 
-[Mission](scenario.md) · [Requirements](challenge/README.md)
+[Mission](challenge/README.md) · [Requirements](challenge/README.md)

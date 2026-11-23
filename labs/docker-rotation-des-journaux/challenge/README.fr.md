@@ -1,4 +1,12 @@
-# Contrat fonctionnel : docker-rotation-des-journaux
+# Scénario
+
+Un conteneur de démonstration émet un flux borné mais autorise un journal trop volumineux. Ne modifiez pas les valeurs globales ; seul ce service est concerné.
+
+## Mission
+
+Le service utilise des journaux json-file plafonnés à 1 Kio et trois fichiers conservés.
+
+## Contrat fonctionnel : docker-rotation-des-journaux
 
 Travaillez sur `docker.lab`. Le service `dsoxlab-log-rotation` doit rester actif
 et conserver son label `dsoxlab.lab`.
@@ -6,7 +14,7 @@ et conserver son label `dsoxlab.lab`.
 Trois contrôles indépendants mesurent trois choses différentes, et le premier ne
 suffit pas.
 
-## 1. Le pilote déclaré borne les journaux
+### 1. Le pilote déclaré borne les journaux
 
 Le service utilise le pilote `json-file`, avec `max-size=1k` et `max-file=3`.
 
@@ -15,7 +23,7 @@ version précédente de ce lab. Un plafond accepté par le démon et jamais appl
 l'aurait satisfaite, et vous auriez eu le point sans que votre journal soit
 borné.
 
-## 2. Les lignes les plus anciennes ont été jetées
+### 2. Les lignes les plus anciennes ont été jetées
 
 Le service émet cent lignes numérotées de 0 à 99, puis dort. Si la rotation
 mord, la première n'est plus lisible et la centième l'est encore.
@@ -31,7 +39,7 @@ Le contrôle exige aussi que la **centième** ligne soit présente : une rotatio
 qui jetterait les lignes récentes au lieu des anciennes ne rendrait pas le
 service consultable.
 
-## 3. Le volume retenu tient dans le budget déclaré
+### 3. Le volume retenu tient dans le budget déclaré
 
 Le contenu retenu ne dépasse pas ce que trois fichiers de 1 Kio peuvent
 conserver.
@@ -47,7 +55,7 @@ d'environnement. Le contenu rendu par `docker logs` est de toute façon plus pet
 que les fichiers JSON qui l'encapsulent : s'il dépasse le budget, les fichiers le
 dépassent aussi.
 
-## Ce qui n'est pas noté, et pourquoi on vous le dit
+### Ce qui n'est pas noté, et pourquoi on vous le dit
 
 Deux vérifications précèdent les mesures sans être des exigences : que le service
 existe et porte son label, et que ses journaux soient lisibles. Sans elles aucun

@@ -1,4 +1,61 @@
-# Brief
+# Move the engine up, and the gateway never notices
+
+## The situation
+
+An SMS gateway has been running on this host for weeks. It writes one heartbeat
+per second to a volume, next to the subscriber list it serves, and it comes
+back by itself if its container stops.
+
+The engine under it is Docker 29.8.2, installed from the official repository,
+with its packages held so that nothing moves it by accident. The maintenance
+window is tonight, and the decision is made: **29.9.2**, no other version.
+
+The repository now offers something newer than 29.9.2. Nobody wants that one
+tonight.
+
+The team has one condition. The gateway must not restart, not for a second,
+and the subscriber list must come out exactly as it went in. Restarting the
+daemon is part of any engine update, and a container that comes back after a
+daemon restart is a container that was stopped first.
+
+## The goal
+
+The brief is laid down in `/opt/dsoxlab-docker-mettre-a-jour-le-moteur/MISSION.md`.
+The gateway container is `passerelle-sms`, its volume `volume-passerelle`.
+
+Bring the engine to **29.9.2 exactly**, and leave the host in this state:
+
+```text
+engine         Docker 29.9.2, server and client, the engine packages in that version
+packages       the six Docker packages held, as before
+live-restore   active, the daemon having read it, the log options of the original
+               configuration still there
+gateway        never restarted: same process, same start time, heartbeat unbroken
+data           the subscriber list identical, byte for byte
+```
+
+## What you will find
+
+`/etc/docker/daemon.json` already exists and carries the host's log rotation:
+it is configuration that belongs to this host, and it must still be there
+afterwards.
+
+The engine is held by `apt-mark hold`: `apt-get` refuses to change a held
+package, and it does so on purpose.
+
+## What is graded
+
+The **final state** of the host. How you got there is yours: the checks read
+the engine, its packages, its configuration and the gateway, never the
+commands you typed.
+
+What is **not** graded is the way back. Going back to the previous version is
+taught by the lesson, and it is not asked here.
+
+Nothing in the checks leaves anything behind on the host: the cleanup gives
+the catalogue its own engine version back.
+
+## Brief
 
 Work on `docker.lab`, in `/opt/dsoxlab-docker-mettre-a-jour-le-moteur` (the
 brief is also in `MISSION.md`). The host runs Docker 29.8.2 and a gateway,
@@ -8,35 +65,35 @@ Bring the engine to **29.9.2** and leave the host in the state below. Each
 requirement is read on the final state, and the first three are false before any
 work.
 
-## 1. The engine is in 29.9.2, exactly
+### 1. The engine is in 29.9.2, exactly
 
 Server, client and the `docker-ce` package are in 29.9.2. The repository offers
 a newer candidate, which is not the target.
 
-## 2. The engine packages stay held, in the new version
+### 2. The engine packages stay held, in the new version
 
 `docker-ce`, `docker-ce-cli` and `docker-ce-rootless-extras` are in 29.9.2, and
 the six Docker packages are held, as they were. The other three
 (`containerd.io` and the two plugins) are not part of the climb.
 
-## 3. `live-restore` is active, and the log options are still there
+### 3. `live-restore` is active, and the log options are still there
 
 `/etc/docker/daemon.json` carries `"live-restore": true` **and** the log
 options it had at the start. The running daemon reports the setting as active:
 a file the daemon has not read protects no container.
 
-## 4. The gateway was never restarted
+### 4. The gateway was never restarted
 
 Same process, same start time, and a heartbeat counter that goes up by one,
 without a break, from the first line of its file. This check is only judged
 once the engine is in 29.9.2: before that, nothing has touched the gateway.
 
-## 5. The data is intact
+### 5. The data is intact
 
 The subscriber list in the volume is identical to the starting one, byte for
 byte. Judged like the previous check, once the engine is in 29.9.2.
 
-## What is not graded
+### What is not graded
 
 The way back to 29.8.2: the lesson teaches it, this lab does not ask for it.
 Nor the backups you take, nor the commands you type: only the final state counts.

@@ -1,4 +1,12 @@
-# Functional contract: docker-rotation-des-journaux
+# Scenario
+
+A demonstration container emits a bounded stream but allows an oversized log file. Do not change daemon-wide defaults; only this service is in scope.
+
+## Mission
+
+The service uses json-file logs capped at 1 KiB with three retained files.
+
+## Functional contract: docker-rotation-des-journaux
 
 Work on `docker.lab`. The `dsoxlab-log-rotation` service must stay running and
 keep its `dsoxlab.lab` label.
@@ -6,7 +14,7 @@ keep its `dsoxlab.lab` label.
 Three independent checks measure three different things, and the first is not
 enough.
 
-## 1. The declared driver bounds the logs
+### 1. The declared driver bounds the logs
 
 The service uses the `json-file` driver, with `max-size=1k` and `max-file=3`.
 
@@ -15,7 +23,7 @@ version of this lab measured. A cap accepted by the daemon and never applied
 would have satisfied it, and you would have scored the point without your
 journal being bounded.
 
-## 2. The oldest lines have been dropped
+### 2. The oldest lines have been dropped
 
 The service emits one hundred lines numbered 0 to 99, then sleeps. If rotation
 bites, the first is no longer readable and the hundredth still is.
@@ -32,7 +40,7 @@ The check also requires the **hundredth** line to be present: a rotation
 dropping recent lines instead of old ones would not leave the service
 inspectable.
 
-## 3. The retained volume fits the declared budget
+### 3. The retained volume fits the declared budget
 
 The retained content does not exceed what three files of 1 kiB can keep.
 
@@ -45,7 +53,7 @@ the log files requires root, which would make the verification depend on an
 environment detail. The content returned by `docker logs` is smaller than the
 JSON files wrapping it anyway: if it exceeds the budget, the files exceed it too.
 
-## What is not graded, and why we tell you
+### What is not graded, and why we tell you
 
 Two verifications precede the measurements without being requirements: that the
 service exists and carries its label, and that its logs are readable. Without

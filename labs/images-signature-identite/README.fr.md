@@ -56,4 +56,4 @@ réussir. Une seconde identité signée par la même CA doit échouer, comme
 un certificat auto-émis revendiquant l'URI approuvé, une signature faite
 par une autre clé et des octets altérés.
 
-[Mission](scenario.fr.md) · [Exigences](challenge/README.fr.md)
+[Mission](challenge/README.fr.md) · [Exigences](challenge/README.fr.md)

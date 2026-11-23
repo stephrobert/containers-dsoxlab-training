@@ -1,4 +1,51 @@
-# What is asked
+# The argument was passed, and it did not have the same effect
+
+## The situation
+
+A team ships two images that do the same job. On the first, passing an argument
+to `docker run` changes the command executed. On the second, the same argument
+replaces nothing: it adds to what was already running.
+
+Nobody understands why, and the discussion circles around the idea that one of
+the two images must be "badly made". Both are correct. They simply do not
+declare their command the same way, and that difference cannot be seen by
+looking at the image: it is seen in what happens when you pass it something.
+
+Two rules explain everything. This lab does not state them for you: it has you
+produce the four situations where they show.
+
+## The goal
+
+Both images are already built on the machine, and **their Dockerfiles are
+readable** in `/opt/lab-entrypoint`:
+
+```text
+img-cmd:1.0          declares only a CMD
+img-entrypoint:1.0   declares an ENTRYPOINT and a CMD
+```
+
+Produce four containers. Each must **remain**: it is in its logs that what ran
+is read, and a `--rm` would erase the evidence.
+
+| Container | From | What its logs must show |
+| --- | --- | --- |
+| `defaut` | `img-cmd:1.0`, no argument | `defaut-de-limage` |
+| `remplace` | `img-cmd:1.0` | `remplacement-total`, **instead of** the default |
+| `complete` | `img-entrypoint:1.0` | the entrypoint prefix **and** `complement-cmd` |
+| `contourne` | `img-entrypoint:1.0` | `sans-prefixe`, **without** the prefix |
+
+The brief also sits in `/opt/MISSION.md`.
+
+## What is graded
+
+What was **executed**, read in the logs of the four containers. Not what the
+images declare: the setup wrote that, and checking it would teach you nothing.
+
+Each check also verifies an **absence**, and that is what makes it serious: a
+container whose logs carry both the default and your text has replaced nothing,
+and a container that keeps the prefix has overridden nothing.
+
+## What is asked
 
 On `docker.lab`, a throwaway Debian 13 with the engine running. Two images are
 already built, and **their Dockerfiles are readable** in `/opt/lab-entrypoint`:
@@ -12,7 +59,7 @@ img-entrypoint:1.0   declares an ENTRYPOINT and a CMD
 Four containers to produce, and **no `--rm`**: it is in the logs that what ran
 is read.
 
-## 1. `defaut`: the reference point
+### 1. `defaut`: the reference point
 
 From `img-cmd:1.0`, **with no argument**. Its logs must carry
 `defaut-de-limage`.
@@ -20,7 +67,7 @@ From `img-cmd:1.0`, **with no argument**. Its logs must carry
 A `CMD` is what the image executes when nothing is asked of it. Nothing else is
 graded here: it is the reference the next three compare against.
 
-## 2. `remplace`: a CMD does not resist
+### 2. `remplace`: a CMD does not resist
 
 From `img-cmd:1.0`, its logs must carry `remplacement-total`, and **not**
 `defaut-de-limage`.
@@ -32,7 +79,7 @@ container will try to execute it.
 The absence of the default is graded as much as the presence of your text: it is
 what proves the replacement.
 
-## 3. `complete`: an ENTRYPOINT does resist
+### 3. `complete`: an ENTRYPOINT does resist
 
 From `img-entrypoint:1.0`, its logs must carry the entrypoint prefix **and**
 `complement-cmd`.
@@ -41,7 +88,7 @@ The same action as point 2 no longer has the same effect: the argument replaces
 nothing, it becomes the entrypoint's argument, taking the CMD's place. That is
 the surprising point, and the whole subject of the lab.
 
-## 4. `contourne`: the rule has a way out
+### 4. `contourne`: the rule has a way out
 
 From `img-entrypoint:1.0`, its logs must carry `sans-prefixe` and **not** the
 prefix.
@@ -51,7 +98,7 @@ Passing an argument is not enough: you would fall back on case 3. That is what
 separates it from a `CMD`: overriding is a deliberate action, not a side
 effect.
 
-## What is not graded
+### What is not graded
 
 The command you typed, nor the form you use. Two of the four results are
 reached as well in exec form as in shell form, and both count.

@@ -1,6 +1,6 @@
 # Compose in local CI
 
-Challenge, c4, 45 minutes. Read [the mission](scenario.md).
+Challenge, c4, 45 minutes. Read [the mission](challenge/README.md).
 Run real integration tests without a hosted runner; the evaluator checks exit
 codes, fresh committed source and cleanup on both paths. Accepted image archives
 are reloaded and bound to actual OCI revision, source commit and archive SHA-256;

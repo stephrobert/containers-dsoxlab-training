@@ -1,11 +1,25 @@
-# Cahier des charges
+# ENOSPC dans un système de fichiers borné
+
+`/sandbox` du worker est un tmpfs de 16 Mio, pas une partition hôte.
+Un remplissage fini a consommé la capacité disponible. `/sandbox/keep.txt`
+est utile ; `/sandbox/fill.bin` est jetable.
+
+Dans `/opt/dsoxlab-troubleshoot-disque-plein`, récupérez de l'espace modifiable
+dans le `worker` existant, projet `dsoxlab-troubleshoot-disque-plein`, sans
+perdre le reçu ni augmenter le plafond.
+
+Ne recréez pas le conteneur pour effacer ses données, ne redimensionnez pas le
+sandbox, ne remplissez aucun chemin hôte et n'utilisez pas prune global.
+Le contrôle écrit au plus 1 Mio dans le sandbox vérifié, puis retire sa sonde.
+
+## Cahier des charges
 
 Travaillez sur `docker.lab`, dans `/opt/dsoxlab-troubleshoot-disque-plein`, dans
 le `worker` **existant** du projet `dsoxlab-troubleshoot-disque-plein`.
 
 Deux contrôles seulement, et c'est une contrainte, non un choix de confort.
 
-## 1. Le remplissage jetable a été retiré, sans perdre le reçu
+### 1. Le remplissage jetable a été retiré, sans perdre le reçu
 
 `/sandbox/fill.bin` est absent, et `/sandbox/keep.txt` porte encore son contenu
 `keep-this-receipt`.
@@ -15,7 +29,7 @@ récupérer de l'espace sans jeter ce qui compte. Vider le bac à sable en entie
 récupère bien de l'espace, en détruisant ce que l'exercice demandait de
 protéger.
 
-## 2. L'espace récupéré permet une écriture réelle
+### 2. L'espace récupéré permet une écriture réelle
 
 Le contrôle écrit un Mio dans `/sandbox`, vérifie que le fichier pèse réellement
 1048576 octets, puis retire sa sonde dans tous les cas.
@@ -25,7 +39,7 @@ demandé, et c'est la taille réelle du fichier qui tranche. Le setup garantit
 l'état de départ en exigeant qu'une sonde de 4 Kio **échoue**, donc ce contrôle
 refuse bien avant tout travail.
 
-## Ce qui n'est pas noté, et pourquoi on vous le dit
+### Ce qui n'est pas noté, et pourquoi on vous le dit
 
 Trois exigences de ce lab sont **déjà satisfaites au départ** : le conteneur
 d'origine existe, `/sandbox` est un tmpfs de 16 Mio, et le reçu est présent. Ce

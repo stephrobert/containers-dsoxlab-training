@@ -1,4 +1,20 @@
-# Cahier des charges
+# Contenir la création de processus
+
+Le worker démarre avec un plafond sûr de 32 tâches, mais son budget opérationnel
+est de 16. Le plafond doit être une limite de cgroup, pas seulement un ulimit
+de shell.
+
+Dans `/opt/dsoxlab-container-limite-de-processus`, appliquez le budget de
+16 tâches à `worker` dans le projet `dsoxlab-container-limite-de-processus`.
+Gardez le service actif et les garde-fous mémoire et CPU.
+
+Le contrôle lance au plus 24 enfants sleep de courte durée, uniquement après
+vérification du plafond effectif. Ce n'est pas une fork bomb. Ni récursion,
+ni boucle de fork non bornée, ni limite de processus globale sur l'hôte.
+Après la rafale finie, le service original doit reprendre sans redémarrage ni
+perte d'un reçu applicatif frais. Seul le reçu de l'essai est retiré.
+
+## Cahier des charges
 
 Travaillez sur `docker.lab`, dans `/opt/dsoxlab-container-limite-de-processus`.
 
@@ -8,7 +24,7 @@ lui-même la rafale protégée ; n'exécutez aucun stresseur non borné.
 
 Quatre contrôles indépendants mesurent quatre choses différentes.
 
-## 1. Les limites déclarées portent le budget de tâches
+### 1. Les limites déclarées portent le budget de tâches
 
 `PidsLimit` vaut exactement 16, et la limite mémoire reste positive et au plus
 égale à 64 Mio.
@@ -19,7 +35,7 @@ tout travail et donnerait des points pour rien. Borner les tâches ne doit pas
 coûter le garde-fou mémoire, mais ce n'est pas une exigence qu'on satisfait, c'en
 est une qu'on préserve.
 
-## 2. Le cgroup applique vraiment le plafond de tâches
+### 2. Le cgroup applique vraiment le plafond de tâches
 
 Dans le conteneur, `pids.max` vaut 16.
 
@@ -28,7 +44,7 @@ noyau a **retenu**. C'est aussi ce qui distingue une limite de cgroup d'un
 `ulimit` de shell : ce dernier ne lie que les descendants du shell qui l'a posé
 et disparaît avec lui, si bien qu'il ne borne pas le service.
 
-## 3. Une rafale bornée est refusée par le noyau
+### 3. Une rafale bornée est refusée par le noyau
 
 Vingt-quatre enfants `sleep` de deux secondes sont lancés, puis attendus. Le
 compteur `max` de `pids.events` doit **augmenter**.
@@ -41,7 +57,7 @@ déborde sous 16. Sous 32, le compteur reste à 0 ; sous 16, il passe à 1.
 Un code de sortie non nul ne prouverait rien par lui-même. Seul ce compteur dit
 que le noyau a refusé une création.
 
-## 4. Le service survit à la saturation et garde son état
+### 4. Le service survit à la saturation et garde son état
 
 Trois choses, après une rafale que ce contrôle provoque lui-même : le worker
 tourne encore, son `StartedAt` n'a pas changé, et un reçu écrit **avant** la
@@ -76,7 +92,7 @@ Ce contrôle provoque **sa propre** rafale plutôt que de réutiliser celle du
 contrôle 3, et il vérifie lui-même qu'une saturation a eu lieu : sans incident,
 la survie ne se distingue pas du fait que rien ne s'est produit.
 
-## Ce qui n'est pas noté, et pourquoi on vous le dit
+### Ce qui n'est pas noté, et pourquoi on vous le dit
 
 Trois vérifications précèdent les mesures sans être des exigences : qu'un seul
 `worker` tourne, qu'il porte son label, et que `pids.events` soit lisible. Sans

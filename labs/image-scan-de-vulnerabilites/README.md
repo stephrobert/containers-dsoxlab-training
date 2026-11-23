@@ -1,6 +1,6 @@
 # Real offline image vulnerability scans
 
-Guided c4 lab, 45 minutes. Read [the mission](scenario.md) and
+Guided c4 lab, 45 minutes. Read [the mission](challenge/README.md) and
 [fixture provenance](fixtures/PROVENANCE.md). Real debsecan output from actual
 Debian packages, not invented CVEs or predictions about mutable public images.
 
