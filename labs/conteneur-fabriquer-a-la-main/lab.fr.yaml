@@ -1,0 +1,2 @@
+title: "Fabriquer un conteneur à la main avec les outils du noyau"
+description: "Vérifier un système de fichiers racine par sa somme SHA-256, puis lancer un processus dans ses propres namespaces avec unshare, sous le nom de machine demandé, en PID 1, avec un vrai /dev/null."

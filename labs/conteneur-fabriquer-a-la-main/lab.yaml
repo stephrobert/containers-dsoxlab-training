@@ -1,0 +1,33 @@
+# Lab guidé de la leçon « Fabriquer un conteneur à la main », module isoler
+# du niveau 1 « Introduction aux conteneurs ». Commandé par la session du site
+# le 2026-11-23 (seconde commande Docker, décision de Stéphane).
+#
+# Le niveau 1 se joue SANS Docker, sur oci.lab, hôte optionnel du meta.yml de
+# rôle sans-docker, que le socle laisse sans moteur. Le setup pose deux copies
+# de l'archive du minirootfs Alpine 3.24.2, dont une altérée, et la somme
+# d'Alpine. L'apprenant vérifie, extrait dans /srv/atelier, crée /dev/null et
+# lance un conteneur détaché par unshare. Outils mesurés le 2026-11-23 :
+# util-linux 2.41.5 (unshare, nsenter), Debian 13.8, noyau 6.12.
+id: conteneur-fabriquer-a-la-main
+title: "Build a container by hand with the kernel's own tools"
+level: c1
+description: "Check a root filesystem by its SHA-256, then run a process in its own namespaces with unshare, under the requested host name, as PID 1, with a real /dev/null."
+skills:
+  - namespaces
+  - unshare
+  - nsenter
+  - rootfs
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/#mettre-en-pratique
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: oci.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

@@ -1,0 +1,77 @@
+---
+# Joué par `dsoxlab run` : pose la situation du lab conteneur-fabriquer-a-la-main
+# sur oci.lab, une Debian 13 SANS Docker (niveau 1, rôle sans-docker).
+#
+# CE QUE CE SETUP POSE. Un dépôt /srv/depot avec deux copies de l'archive du
+# minirootfs Alpine 3.24.2, et la somme SHA-256 publiée par Alpine. L'une des
+# copies est altérée : son busybox porte un octet de plus. Choisir l'archive par
+# sa somme est la première exigence, et elle se lit ensuite dans le rootfs.
+#
+# POURQUOI L'ARCHIVE EST TIRÉE ICI. Le travail de l'apprenant ne doit pas
+# dépendre du réseau : un lab qui échoue parce que le miroir a hoqueté
+# n'apprend rien.
+#
+# CE QU'IL NE POSE PAS. /srv/atelier, le conteneur : c'est le travail. Un
+# passage précédent est d'abord défait, processus compris.
+- name: Préparer le lab conteneur-fabriquer-a-la-main
+  hosts: lab_target
+  become: true
+  vars:
+    archive: alpine-minirootfs-3.24.2-x86_64.tar.gz
+    url: https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86_64/alpine-minirootfs-3.24.2-x86_64.tar.gz
+    somme: c5ca053cfe1d85c5b96dff8b9bc57045f7f184a30ffb6b65776409ca90388677
+  tasks:
+    - name: Refuser un hôte où Docker est installé
+      # Le niveau 1 se joue sans moteur : un hôte qui en porte un n'est pas
+      # celui du lab, et les gestes ne mesureraient pas la même chose.
+      ansible.builtin.shell: "! command -v docker"
+      changed_when: false
+
+    - name: Défaire un passage précédent
+      ansible.builtin.shell: |
+        set -eu
+        for p in $(ls /proc | grep -E '^[0-9]+$'); do
+          if [ "$(readlink /proc/$p/root 2>/dev/null)" = /srv/atelier ]; then kill -KILL "$p" 2>/dev/null || true; fi
+        done
+        sleep 1
+        findmnt -rn -o TARGET | grep '^/srv/atelier' | sort -r | xargs -r umount -l || true
+        rm -rf /srv/atelier /srv/depot
+      changed_when: true
+
+    - name: Créer les deux miroirs du dépôt
+      ansible.builtin.file:
+        path: "/srv/depot/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [miroir-a, miroir-b]
+
+    - name: Télécharger l'archive officielle, vérifiée
+      ansible.builtin.get_url:
+        url: "{{ url }}"
+        dest: "/srv/depot/miroir-b/{{ archive }}"
+        checksum: "sha256:{{ somme }}"
+        mode: "0644"
+
+    - name: Publier la somme d'Alpine à côté des miroirs
+      ansible.builtin.copy:
+        dest: /srv/depot/SHA256SUMS
+        content: "{{ somme }}  {{ archive }}\n"
+        mode: "0644"
+
+    - name: Fabriquer la copie altérée du miroir a
+      # Un octet ajouté à busybox : l'archive reste valide et s'extrait sans
+      # erreur, seule sa somme la trahit.
+      ansible.builtin.shell: |
+        set -eu
+        tmp=$(mktemp -d)
+        tar -xzf "/srv/depot/miroir-b/{{ archive }}" -C "$tmp"
+        printf 'x' >> "$tmp/bin/busybox"
+        tar -czf "/srv/depot/miroir-a/{{ archive }}" -C "$tmp" .
+        rm -rf "$tmp"
+      changed_when: true
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "challenge/README{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"
