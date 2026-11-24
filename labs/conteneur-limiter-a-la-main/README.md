@@ -157,8 +157,10 @@ The group is now empty, so it can be removed. This is the move of the
 
 ## 🔍 Exercise 5: read a capability mask
 
-The lesson mentions `capsh --decode`, which is not installed on this machine.
-You can do without it. `setpriv --list-caps` lists the capabilities in bit
+The lesson mentions `capsh --decode`. On this machine, `capsh` is installed
+(`/usr/sbin/capsh`, from the `libcap2-bin` package), but `/usr/sbin` is not
+in the `PATH` of the `ansible` user: it only runs through `sudo`. You can do
+without it. `setpriv --list-caps` lists the capabilities in bit
 order, starting from 0. Look at lines 19 to 23 of this list, numbered from 0,
 then at the masks of your shell, with and without `sudo`:
 

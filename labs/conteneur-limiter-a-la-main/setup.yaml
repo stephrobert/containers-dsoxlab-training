@@ -22,16 +22,30 @@
       ansible.builtin.shell: "! command -v docker"
       changed_when: false
 
-    - name: Vérifier que la racine des cgroups transmet cpu, memory et pids
-      # Sans eux, le cgroup quai n'aurait pas les fichiers de réglage demandés,
-      # et l'apprenant chercherait la faute dans son propre travail.
+    - name: Faire transmettre cpu, memory et pids par la racine des cgroups
+      # Sans eux, le cgroup quai n'aurait pas les fichiers de réglage demandés
+      # (cpu.max manquerait), et l'apprenant chercherait la faute dans son
+      # propre travail. L'état de départ varie : sur oci.lab, systemd avait
+      # activé cpu (DefaultCPUAccounting=yes), alors que la VM du site, montée
+      # par dsoxlab 0.11.0, ne transmettait que memory et pids (relevé du
+      # 2026-11-24). Le setup active ce qui manque et note ce qu'il a activé,
+      # pour que le cleanup le rende.
       ansible.builtin.shell: |
         set -eu
         test "$(stat -fc %T /sys/fs/cgroup)" = cgroup2fs
+        marque=/var/tmp/dsoxlab-conteneur-limiter-a-la-main.controleurs-a-rendre
+        for c in cpu memory pids; do
+          if ! grep -qw "$c" /sys/fs/cgroup/cgroup.subtree_control; then
+            echo "+$c" > /sys/fs/cgroup/cgroup.subtree_control
+            echo "$c" >> "$marque"
+            echo "active : $c"
+          fi
+        done
         for c in cpu memory pids; do
           grep -qw "$c" /sys/fs/cgroup/cgroup.subtree_control
         done
-      changed_when: false
+      register: controleurs
+      changed_when: "'active' in controleurs.stdout"
 
     - name: Défaire un passage précédent
       ansible.builtin.shell: |
