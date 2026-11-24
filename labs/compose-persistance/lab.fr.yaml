@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "Conserver les données après recréation Compose"
-description: "Utiliser un volume nommé et prouver que de nouvelles écritures survivent au remplacement et au cycle down/up."
+description: "Les données d'une application Compose, initiales comme nouvelles, sont toujours là après le remplacement de ses conteneurs."

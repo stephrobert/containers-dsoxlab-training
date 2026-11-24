@@ -1,7 +1,7 @@
 id: securite-apparmor
 title: "Write an AppArmor policy that refuses by default"
 level: c6
-description: "Write, load and attach a uniquely named enforcing profile that refuses a read by omission rather than by a deny rule."
+description: "The kernel denies a container the reading of a private file, without hindering it on what it is allowed to do."
 skills:
   - docker
   - apparmor

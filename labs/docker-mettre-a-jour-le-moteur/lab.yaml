@@ -3,7 +3,7 @@
 id: docker-mettre-a-jour-le-moteur                      # REQUIS
 title: "Move the engine up without the gateway noticing"   # REQUIS
 level: c6                     # REQUIS
-description: "Move Docker Engine from 29.8.2 to exactly 29.9.2 on a host that serves traffic: keep the engine packages held, add live-restore without losing the log options, and leave the running service and its data untouched."
+description: "Docker Engine moves from 29.8.2 to 29.9.2 without interrupting the service the host provides or touching its data."
 skills:                       # REQUIS, non vide
   - docker
   - apt

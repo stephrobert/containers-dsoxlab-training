@@ -1,7 +1,7 @@
 id: securite-groupe-docker
 title: "Remove an unnecessary Docker grant"
 level: c6
-description: "Remove only docker-group membership from the synthetic audit account."
+description: "An audit account can no longer drive the Docker engine, and the rest of its rights do not change."
 skills:
   - docker
   - linux-groups

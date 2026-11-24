@@ -3,7 +3,7 @@
 id: donnees-permissions-uid-gid                      # REQUIS
 title: "Two containers, one volume, rights that hold"            # REQUIS
 level: c3                     # REQUIS
-description: "A volume belongs to root and a non-root container cannot write to it. Replace the two usual bad answers, running as root and opening the volume to everyone, with the one that holds: aligning the shared group."
+description: "Two containers with different uids, neither of them root, write to the same volume without it being open to everyone."
 skills:                       # REQUIS, non vide
   - docker
   - volumes

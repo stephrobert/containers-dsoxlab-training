@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "Monter le moteur sans que la passerelle s'en aperçoive"
-description: "Monter Docker Engine de 29.8.2 à 29.9.2 exactement sur un hôte qui sert du trafic : garder les paquets du moteur retenus, ajouter live-restore sans perdre les options de journal, et laisser le service en marche et ses données intacts."
+description: "Docker Engine passe de la 29.8.2 à la 29.9.2 sans interrompre le service que l'hôte rend ni toucher à ses données."

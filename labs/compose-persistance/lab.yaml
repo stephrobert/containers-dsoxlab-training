@@ -3,7 +3,7 @@
 id: compose-persistance                      # REQUIS
 title: "Keep application data across Compose recreation"
 level: c4                     # REQUIS
-description: "Use a named volume and prove that new writes survive container replacement and Compose down/up."
+description: "The data of a Compose application, initial and new alike, is still there after its containers are replaced."
 skills:                       # REQUIS, non vide
   - compose-volumes
   - data-persistence
