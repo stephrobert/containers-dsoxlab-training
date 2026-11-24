@@ -207,8 +207,16 @@ jobs:
       # contrat », mesuré sur la 0.6.1. Sans ce plancher, la CI échouerait sur
       # un message qui accuse le catalogue au lieu de dire qu'il lui faut une
       # version plus récente de l'outil.
+      #
+      # DEPUIS LE 2026-11-24, CE N'EST PLUS UN PLANCHER MAIS UNE VERSION EXACTE,
+      # la même partout où ce dépôt installe dsoxlab (ce fichier et
+      # .pre-commit-config.yaml) : celle sur laquelle les labs ont été attestés.
+      # Un plancher laisse PyPI choisir, et une nouvelle version de l'outil
+      # pouvait rendre la CI rouge sans que le catalogue ait bougé.
+      # tests/test_paquets_epingles.py refuse une version flottante ou deux
+      # versions différentes.
       - name: Le contrat de chaque lab
-        run: uvx 'dsoxlab>=0.8.0' validate-structure
+        run: uvx 'dsoxlab==0.11.0' validate-structure
 
       - name: Le catalogue des README est à jour
         run: uv run --no-sync python scripts/gen_catalog.py --check
@@ -385,7 +393,7 @@ jobs:
       - name: Installer dsoxlab
         run: |
           set -euo pipefail
-          uv tool install dsoxlab
+          uv tool install 'dsoxlab==0.11.0'
           dsoxlab --version
 
       # Le moteur du runner, et son MODE DE STOCKAGE : les tailles d'image en
