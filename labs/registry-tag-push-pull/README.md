@@ -12,7 +12,7 @@ You work in `~/essai-registre`, with a practice registry on port `5099` and
 `127.0.0.1:5099/essai/*` images. The challenge uses another registry, another
 image and another repository: you will do it on your own, at the end.
 
-Related page (in French): [Publier et récupérer une image sur Docker Hub](https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/).
+Related page: [Publish and pull an image in a controlled way](https://www.stephane-robert.info/en/docs/docker/publish-and-pull-an-image/).
 
 ## 🔧 Before you start
 
@@ -31,7 +31,7 @@ the cleanup**: the variables only exist in it.
 mkdir -p ~/essai-registre && cd ~/essai-registre
 REGISTRE=registry:3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
 ALPINE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
-docker run -d --name essai-registre -p 127.0.0.1:5099:5000 -v essai-registre:/var/lib/registry "$REGISTRE" > /dev/null
+docker run -d --name essai-depot -p 127.0.0.1:5099:5000 -v essai-depot:/var/lib/registry "$REGISTRE" > /dev/null
 sleep 2
 docker version --format '{{.Server.Version}}'
 skopeo --version
@@ -42,29 +42,11 @@ skopeo --version
 skopeo version 1.18.0
 ```
 
-The outputs of this course were captured on this machine on 24 November 2026,
-with Docker Engine 29.9.2 and Skopeo 1.18.0, the Debian package the lab
-installs. The lesson runs Skopeo 1.22.3 from its container image: the
-commands of this course are the same.
+The outputs of this course come from a Docker 29.9.2 and a Skopeo 1.18.0 on
+Debian 13, on 24 November 2026. This Skopeo is the Debian package, which the
+lab installs; the lesson uses 1.22.3, run from its container image.
 
-## 📇 Exercise 1: what a registry lists
-
-A registry answers an HTTP API. Two addresses tell what it holds:
-`/v2/_catalog` lists the repositories, and `/v2/<repository>/tags/list` the
-tags of a repository. Query the practice registry, still empty:
-
-```bash
-curl -s http://127.0.0.1:5099/v2/_catalog
-```
-
-```text
-{"repositories":[]}
-```
-
-An empty list: no repository. You will come back to it after the first push,
-to see what the registry received without going through Docker.
-
-## 🏷️ Exercise 2: two tags, one content
+## 🏷️ Exercise 1: two tags, one content
 
 The lesson moves a tag to another content. The reverse also exists: one
 content can carry several tags. Build an image, give it the tags `1.0` and
@@ -82,11 +64,11 @@ docker push 127.0.0.1:5099/essai/note:courant
 ```text
 127.0.0.1:5099/essai/note:1.0
 The push refers to repository [127.0.0.1:5099/essai/note]
-7e027b7c7432: Layer already exists
-44fb8899d01e: Already exists
-44136fa355b3: Already exists
+4ae575c93a6c: Already exists
 7b229517ed22: Layer already exists
-courant: digest: sha256:9a66e9d5a29fd4c09220dda7c56bf725a8497ec2c55affe0bf56813d62254e63 size: 855
+4d5bb5333b75: Layer already exists
+44136fa355b3: Already exists
+courant: digest: sha256:9ca65cf7e6b4510edaaba37ca44790f3cf580094c72331ee0c5996064aa1d8d6 size: 855
 ```
 
 The first push, run with `-q`, only shows the pushed name. The second sent
@@ -95,10 +77,14 @@ registry had already received everything with the first one, and only added
 a name. The last line gives the digest of the `courant` tag: it is the one of
 the content pushed as `1.0`.
 
-## 📡 Exercise 3: what the registry answers
+## 📡 Exercise 2: what the registry answers
 
-Read the list of repositories and tags again, then ask the registry for the
-digest of each tag. A `HEAD` request on `/v2/<repository>/manifests/<tag>`
+A registry answers an HTTP API. On this one (the Distribution software), two
+addresses tell what it holds: `/v2/_catalog` lists the repositories, and
+`/v2/<repository>/tags/list` the tags of a repository. The first is an
+extension of Distribution, not part of the OCI specification: Docker Hub does
+not serve it. Read both lists, here without identification, then ask the
+registry for the digest of each tag. A `HEAD` request on `/v2/<repository>/manifests/<tag>`
 only returns the headers of the response, without the manifest. The
 `Docker-Content-Digest` header carries the digest:
 
@@ -114,9 +100,9 @@ done
 {"repositories":["essai/note"]}
 {"name":"essai/note","tags":["1.0","courant"]}
 Content-Type: application/vnd.oci.image.index.v1+json
-Docker-Content-Digest: sha256:9a66e9d5a29fd4c09220dda7c56bf725a8497ec2c55affe0bf56813d62254e63
+Docker-Content-Digest: sha256:9ca65cf7e6b4510edaaba37ca44790f3cf580094c72331ee0c5996064aa1d8d6
 Content-Type: application/vnd.oci.image.index.v1+json
-Docker-Content-Digest: sha256:9a66e9d5a29fd4c09220dda7c56bf725a8497ec2c55affe0bf56813d62254e63
+Docker-Content-Digest: sha256:9ca65cf7e6b4510edaaba37ca44790f3cf580094c72331ee0c5996064aa1d8d6
 ```
 
 The registry knows the `essai/note` repository and its two tags. Both tags
@@ -125,10 +111,11 @@ the registry serves an OCI index: the list that groups the image and its
 provenance attestation, as in the lesson. The `Accept` header tells the
 registry which formats the client can read.
 
-These two requests do not go through Docker. Any HTTP client can therefore
-check what a registry serves under a tag, for example in a CI.
+None of these requests go through Docker. A CI can therefore check what this
+registry serves under a tag with a plain HTTP client. Docker Hub requires a
+token, even for an anonymous client.
 
-## 🚫 Exercise 4: a name without a registry
+## 🚫 Exercise 3: a name without a registry
 
 The lesson warns that an image named without a registry goes to Docker Hub.
 Check it with a short name, keeping only the first and last lines of the
@@ -154,7 +141,7 @@ refused, and the push exits with an error. The `127.0.0.1:5099/` prefix is
 therefore what says where the image goes. Without it, Docker picks Docker Hub
 for you.
 
-## 🧪 Exercise 5: a client that has never seen the image
+## 🧪 Exercise 4: a client that has never seen the image
 
 The lesson shows that `docker pull` does not prove that a registry serves all
 the layers, since Docker already has them. Play a real new client. Skopeo
@@ -173,15 +160,16 @@ cat note.txt
 ```text
 8722432 note.tar
 Loaded image: essai-copie/note:1.0
-practice note 1795503973
-practice note 1795503973
+practice note 1795505050
+practice note 1795505050
 ```
 
-The archive holds everything the registry served. Docker loaded it as
+The archive holds the layers and the configuration of the image; the index and
+the attestation are not in it. Docker loaded it as
 `essai-copie/note:1.0`, and the container, cut from the network by
 `--network none`, shows the same note as the original file. Had the registry
-lost a layer, `skopeo copy` would have failed. This is the proof that another
-machine can recover this image.
+lost a layer, `skopeo copy` would have failed. This is the proof that
+the registry serves all the layers of the image.
 
 ## 🧹 Cleanup
 
@@ -190,8 +178,8 @@ check that nothing is left:
 
 ```bash
 cd ~
-docker rm -f essai-registre > /dev/null
-docker volume rm essai-registre
+docker rm -f essai-depot > /dev/null
+docker volume rm essai-depot
 docker image rm 127.0.0.1:5099/essai/note:1.0 127.0.0.1:5099/essai/note:courant essai-copie/note:1.0 > /dev/null
 rm -rf ~/essai-registre
 docker ps -a --format '{{.Names}}' | grep -c '^essai-'
@@ -199,7 +187,7 @@ docker images --format '{{.Repository}}' | grep -c -e '^127.0.0.1:5099/' -e '^es
 ```
 
 ```text
-essai-registre
+essai-depot
 0
 0
 ```

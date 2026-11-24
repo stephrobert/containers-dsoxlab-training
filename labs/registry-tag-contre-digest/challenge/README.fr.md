@@ -27,11 +27,14 @@ Une précision mesurée sur ce moteur, parce qu'elle surprend : **l'identifiant
 local de l'image et le digest poussé sont la même valeur**. Docker 29 sur le
 magasin containerd publie un index OCI, et c'est le digest de cet index qui vaut
 l'identifiant de l'image ; le manifeste servi n'a d'ailleurs aucune clé de
-configuration. Il n'y a donc pas deux identités à distinguer.
+configuration. Il n'y a donc pas deux identités à distinguer sur ce moteur ; ce n'est pas garanti
+par Docker.
 
 Ce qui est contrôlé, c'est la **référence de démarrage**. Lancer par un tag
-recréé donne le bon contenu et une référence qui mentira au prochain déplacement
-du tag ; lancer par le digest donne une référence qui ne peut pas mentir.
+recréé donne le bon contenu, mais une référence qui change de sens au prochain
+déplacement du tag ; lancer par le digest donne une référence qui désigne toujours
+le même contenu. Une référence `dépôt:tag@digest` convient aussi : Docker suit le
+digest et ignore le tag.
 
 Les contrôles vérifient l'image réellement exécutée, sa référence de démarrage,
 son produit et la disponibilité du manifeste d'origine avec un client

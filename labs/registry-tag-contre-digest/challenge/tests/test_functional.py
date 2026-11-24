@@ -59,7 +59,12 @@ def test_original_product_is_in_service(host):
 
 def test_runtime_reference_is_immutable(host):
     expected, container = _original(host)
-    assert container["Config"]["Image"] == expected["reference"], message(
+    # `dépôt:tag@digest` est acceptée au même titre que `dépôt@digest` : Docker
+    # suit le digest et ignore le tag (mesuré le 2026-11-24, Docker 29.9.2).
+    depot, _, digest = expected["reference"].partition("@")
+    lancee = container["Config"]["Image"]
+    epinglee = lancee.startswith((depot + "@", depot + ":")) and lancee.endswith("@" + digest)
+    assert epinglee, message(
         en="The runtime still uses a tag or image ID; use the registry reference pinned to the delivery's manifest digest.",
         fr="L'exécution utilise encore un tag ou un ID d'image ; utilisez la référence du registre épinglée au digest de manifeste du bon de livraison.",
     )

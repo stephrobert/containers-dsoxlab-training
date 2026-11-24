@@ -25,11 +25,13 @@ One detail measured on this engine, because it surprises: **an image's local
 identifier and its pushed digest are the same value**. Docker 29 on the
 containerd store publishes an OCI index, and that index's digest is the image's
 identifier; the manifest served has no configuration key at all. So there are not
-two identities to tell apart.
+two identities to tell apart on this engine; Docker does not guarantee it.
 
 What is checked is the **startup reference**. Launching by a recreated tag gives
-the right content and a reference that will lie at the tag's next move; launching
-by the digest gives a reference that cannot lie.
+the right content, but a reference whose meaning changes at the tag's next move;
+launching by the digest gives a reference that always points to the same content.
+A `repository:tag@digest` reference is fine too: Docker follows the digest and
+ignores the tag.
 
 Checks verify the image actually running, its startup reference, product and
 availability of the original manifest through an independent client.
