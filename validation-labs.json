@@ -1543,6 +1543,70 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "conteneur-fabriquer-a-la-main": {
+  "apres": {
+   "echecs": [],
+   "passed": 5,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 5
+  },
+  "avant": {
+   "echecs": [
+    "test_dev_null_est_un_vrai_peripherique",
+    "test_le_conteneur_porte_le_nom_demande_sans_toucher_l_hote",
+    "test_le_processus_est_le_pid_1_de_son_conteneur",
+    "test_le_rootfs_vient_de_l_archive_verifiee",
+    "test_un_processus_tourne_avec_ses_propres_namespaces"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "date": "2026-11-23",
+  "docker": "absent",
+  "duree_s": 42,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/5",
+   "après la solution : 5/5",
+   "après clean et run : 0/5",
+   "moteur rendu intact"
+  ],
+  "host": "oci.lab",
+  "id": "conteneur-fabriquer-a-la-main",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-conteneur-fabriquer-a-la-main.log",
+  "moteurs": {
+   "oci.lab": {
+    "docker": "absent",
+    "store": "aucun"
+   }
+  },
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_dev_null_est_un_vrai_peripherique",
+    "test_le_conteneur_porte_le_nom_demande_sans_toucher_l_hote",
+    "test_le_processus_est_le_pid_1_de_son_conteneur",
+    "test_le_rootfs_vient_de_l_archive_verifiee",
+    "test_un_processus_tourne_avec_ses_propres_namespaces"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "store": "aucun",
+  "verdict": "VALIDE"
+ },
  "docker-anatomie-dune-image": {
   "apres": {
    "echecs": [],
