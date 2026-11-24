@@ -4737,9 +4737,9 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-03",
+  "date": "2026-11-24",
   "docker": "29.9.2",
-  "duree_s": 60,
+  "duree_s": 62,
   "ecarts": [],
   "etapes": [
    "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
@@ -4748,6 +4748,7 @@
    "après clean et run : 0/4",
    "moteur rendu intact"
   ],
+  "horodatage": "2026-11-24T13:34:25+01:00",
   "host": "docker.lab",
   "id": "reseau-bridge-dedie",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-reseau-bridge-dedie.log",
@@ -4799,9 +4800,9 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-03",
+  "date": "2026-11-24",
   "docker": "29.9.2",
-  "duree_s": 60,
+  "duree_s": 58,
   "ecarts": [],
   "etapes": [
    "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
@@ -4810,6 +4811,7 @@
    "après clean et run : 0/4",
    "moteur rendu intact"
   ],
+  "horodatage": "2026-11-24T13:33:24+01:00",
   "host": "docker.lab",
   "id": "reseau-bridge-par-defaut",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-reseau-bridge-par-defaut.log",
@@ -4861,9 +4863,9 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-03",
+  "date": "2026-11-24",
   "docker": "29.9.2",
-  "duree_s": 65,
+  "duree_s": 63,
   "ecarts": [],
   "etapes": [
    "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
@@ -4872,6 +4874,7 @@
    "après clean et run : 0/4",
    "moteur rendu intact"
   ],
+  "horodatage": "2026-11-24T13:35:31+01:00",
   "host": "docker.lab",
   "id": "reseau-interne",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-reseau-interne.log",
@@ -4981,9 +4984,9 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-03",
+  "date": "2026-11-24",
   "docker": "29.9.2",
-  "duree_s": 56,
+  "duree_s": 59,
   "ecarts": [],
   "etapes": [
    "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
@@ -4992,6 +4995,7 @@
    "après clean et run : 0/4",
    "moteur rendu intact"
   ],
+  "horodatage": "2026-11-24T13:31:25+01:00",
   "host": "docker.lab",
   "id": "reseau-publication-de-ports",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-reseau-publication-de-ports.log",
@@ -5663,9 +5667,9 @@
    "status": "failed",
    "total": 4
   },
-  "date": "2026-11-03",
+  "date": "2026-11-24",
   "docker": "29.9.2",
-  "duree_s": 50,
+  "duree_s": 52,
   "ecarts": [],
   "etapes": [
    "état photographié : 10 image(s), 0 conteneur(s), 0 volume(s)",
@@ -5674,6 +5678,7 @@
    "après clean et run : 0/4",
    "moteur rendu intact"
   ],
+  "horodatage": "2026-11-24T13:32:28+01:00",
   "host": "docker.lab",
   "id": "troubleshoot-conflit-de-port",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-troubleshoot-conflit-de-port.log",
