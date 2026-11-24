@@ -1,7 +1,7 @@
 id: securite-seccomp
 title: "Measure a targeted seccomp syscall denial"
 level: c6
-description: "Derive the engine default profile so it denies getpgid(2147483647) with EPERM, still allows ordinary getpgid and getpid calls, and refuses everything the default already refused."
+description: "The kernel denies a container one precise system call, without blocking the others or reopening what was already denied."
 skills:
   - docker
   - seccomp

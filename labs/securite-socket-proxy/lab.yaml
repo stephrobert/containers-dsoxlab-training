@@ -1,7 +1,7 @@
 id: securite-socket-proxy
 title: "Restrict a Docker API socket proxy"
 level: c6
-description: "Put a pinned, hardened socket proxy in front of the Docker API: a narrow reading profile, one precise action, and no secret left in the environment."
+description: "A tool reads the state of the engine and triggers a single action on it, without being able to become root on the host."
 skills:
   - docker
   - socket-proxy

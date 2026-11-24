@@ -1,2 +1,2 @@
 title: "Retirer un accès Docker qui ne se justifie plus"
-description: "Remove only docker-group membership from the synthetic audit account."
+description: "Un compte d'audit ne peut plus piloter le moteur Docker, et le reste de ses droits ne change pas."

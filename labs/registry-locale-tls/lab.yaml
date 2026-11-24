@@ -3,7 +3,7 @@
 id: registry-locale-tls                      # REQUIS
 title: "Serve a trusted registry and pull without disabling TLS checks"
 level: c5                     # REQUIS
-description: "Enable registry TLS, install its private CA for Docker, and prove that a real pull verifies the certificate without an insecure-registry exception."
+description: "A private registry only answers over an encrypted connection, and Docker pulls an image from it while checking who it talks to."
 skills:                       # REQUIS, non vide
   - docker
   - registry

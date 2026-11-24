@@ -3,7 +3,7 @@
 id: images-optimiser-la-taille                      # REQUIS
 title: "What a layer keeps"   # REQUIS
 level: c5                     # REQUIS
-description: "Find the megabytes a container does not show: weigh an image layer by layer, move a cleanup into the instruction that created what it removes, and keep the layers shared with the base."
+description: "The image keeps all its artifacts and loses the megabytes a container does not show."
 skills:                       # REQUIS, non vide
   - docker
   - dockerfile

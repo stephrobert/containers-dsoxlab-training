@@ -1,2 +1,2 @@
 title: "Configurer les journaux du démon pour qu'ils survivent au redémarrage"
-description: "Merge bounded json-file log defaults into the daemon configuration."
+description: "Tout nouveau conteneur du moteur a des journaux de taille bornée, sans option à sa création."

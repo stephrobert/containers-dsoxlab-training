@@ -1,7 +1,7 @@
 id: donnees-volume-orphelin
 title: "Recover retained orphan data and remove only disposable data"
 level: c6
-description: "Reconnect a retained original volume read-only and delete only the uniquely labelled expendable lab orphan."
+description: "A service gets its original data back intact, and only the volume that became useless is gone."
 skills:
   - docker
   - volumes

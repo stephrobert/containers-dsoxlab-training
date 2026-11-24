@@ -3,7 +3,7 @@
 id: compose-isolation-reseau                      # REQUIS
 title: "Separate frontend and data networks with Compose"
 level: c4                     # REQUIS
-description: "Connect an API to two networks while preventing the frontend from reaching the data service directly."
+description: "The frontend shows the data served by the API, without being able to reach the data service itself, even after recreation."
 skills:                       # REQUIS, non vide
   - compose-networks
   - network-isolation

@@ -1,2 +1,2 @@
 title: "Faire tourner le journal d'un conteneur"
-description: "Replace the labelled demo service with bounded per-container json-file rotation."
+description: "Les journaux d'un service bavard ne dépassent plus le volume prévu, quoi qu'il écrive."

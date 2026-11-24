@@ -1,2 +1,2 @@
 title: "Récupérer les données orphelines et retirer seulement le jetable"
-description: "Reconnecter le volume original en lecture seule et retirer uniquement l'orphelin jetable labellisé du lab."
+description: "Un service retrouve ses données d'origine intactes, et seul le volume devenu inutile a disparu."

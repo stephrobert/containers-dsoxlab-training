@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "Séparer les réseaux de façade et de données avec Compose"
-description: "Raccorder une API à deux réseaux tout en empêchant la façade d'accéder directement au service de données."
+description: "La façade affiche les données servies par l'API, sans pouvoir joindre elle-même le service de données, y compris après recréation."

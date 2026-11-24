@@ -1,2 +1,2 @@
 title: "Mesurer un refus seccomp ciblé"
-description: "Dériver le profil par défaut du moteur pour refuser getpgid(2147483647) avec EPERM, autoriser encore les appels ordinaires getpgid et getpid, et refuser tout ce que le défaut refusait déjà."
+description: "Le noyau refuse à un conteneur un appel système précis, sans bloquer les autres ni rouvrir ce qui était déjà refusé."

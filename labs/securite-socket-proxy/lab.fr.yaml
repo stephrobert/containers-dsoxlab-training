@@ -1,2 +1,2 @@
 title: "Interposer un proxy filtrant devant l'API Docker"
-description: "Placer devant l'API Docker un proxy épinglé et durci : un profil de lecture étroit, une seule action ouverte, et plus aucun secret dans l'environnement."
+description: "Un outil lit l'état du moteur et y déclenche une seule action, sans pouvoir devenir root sur l'hôte."

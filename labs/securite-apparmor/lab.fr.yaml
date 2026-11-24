@@ -1,2 +1,2 @@
 title: "Écrire une politique AppArmor qui refuse par défaut"
-description: "Écrire, charger et attacher un profil enforce au nom unique qui refuse une lecture par omission plutôt que par une règle deny."
+description: "Le noyau refuse à un conteneur la lecture d'un fichier privé, sans le gêner sur ce qui lui est permis."
