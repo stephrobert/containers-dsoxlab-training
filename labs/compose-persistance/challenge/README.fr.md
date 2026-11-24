@@ -26,10 +26,4 @@ remplacent le conteneur et restaurent le contenu original. Reproduire simplement
 la donnée initiale dans chaque nouveau conteneur ne prouve pas la persistance.
 Le nettoyage supprime volontairement le volume de ce projet après l'exercice.
 
-## Garder les nouvelles écritures quand les conteneurs disparaissent
-
-Suivez `/opt/MISSION.md`. Écrivez `/opt/lab-compose-persist/compose.yaml` avec un
-volume nommé. Les contrôles remplacent deux fois le conteneur et exigent la
-conservation du même volume et des écritures aléatoires, puis restaurent l'original.
-Utilisez UID/GID 10001 et `/data` appartenant à
-10001:10001, mode 0700. Les accès imprévus doivent rester refusés après remplacement.
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.

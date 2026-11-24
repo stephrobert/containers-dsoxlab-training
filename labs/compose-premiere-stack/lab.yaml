@@ -3,7 +3,7 @@
 id: compose-premiere-stack                      # REQUIS
 title: "Start and recreate a two-service Compose application"
 level: c4                     # REQUIS
-description: "Describe two services in Compose, connect them by service DNS and recreate the application from its declaration."
+description: "A two-service application starts from a single declaration, and comes back identical after its containers are recreated."
 skills:                       # REQUIS, non vide
   - docker
   - compose

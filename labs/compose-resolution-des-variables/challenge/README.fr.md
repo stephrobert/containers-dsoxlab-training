@@ -34,9 +34,4 @@ Le contrôle recrée le service avec une nouvelle `APP_RELEASE` issue du shell,
 qui doit primer sur `deploy.env`, puis recrée le déploiement original.
 Ne dépendez ni du `.env` implicite ni d'une variable exportée dans votre session.
 
-## Résoudre le déploiement, puis inspecter le conteneur
-
-Suivez la mission dans `/opt/MISSION.md`. Réparez `/opt/lab-compose-vars/compose.yaml`
-sans changer les fichiers d'environnement fournis. Les trois contrôles exigent un
-service Compose démarré, une interpolation correcte, un développement au runtime
-et une recréation réussie avec surcharge de la release par le shell.
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.

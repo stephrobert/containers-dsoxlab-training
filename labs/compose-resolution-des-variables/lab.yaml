@@ -3,7 +3,7 @@
 id: compose-resolution-des-variables                      # REQUIS
 title: "Resolve Compose variables without mixing environments"
 level: c4                     # REQUIS
-description: "Separate deployment interpolation from container environment and prove shell precedence by recreating a service."
+description: "A service receives the right values although three environment files contradict each other, including when the release changes at deployment."
 skills:                       # REQUIS, non vide
   - compose-interpolation
   - container-environment

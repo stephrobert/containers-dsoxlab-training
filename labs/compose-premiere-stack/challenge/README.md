@@ -34,10 +34,4 @@ docker compose -p dsoxlab-premiere-stack \
   -f /opt/lab-compose-first/compose.yaml ps
 ```
 
-## Mission: declare, connect and recreate
-
-Create the `dsoxlab-premiere-stack` Compose project with `web` and `api`.
-Publish only web locally and make it relay the API through service DNS.
-Your declaration must survive forced recreation without manual steps.
-
-Read the scenario for image names, ports and paths.
+The brief is also written to `/opt/MISSION.md`.
