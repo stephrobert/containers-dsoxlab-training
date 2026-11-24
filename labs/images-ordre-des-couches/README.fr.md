@@ -160,6 +160,42 @@ Cette fois, les deux étapes sont refaites. `docker builder prune` ne retire que
 le cache qu'aucune image n'utilise : pour repartir vraiment de zéro, il faut
 supprimer les images, ou construire avec `--no-cache`.
 
+## 🚫 Exercice 4 : une étape trop haute
+
+À force de remonter des étapes, on en place une au-dessus du fichier dont elle a
+besoin. Provoquez l'échec, puis corrigez l'ordre :
+
+```bash
+echo 'echo "outil prêt"' > outil.sh
+cat > Dockerfile.faux <<EOF
+FROM $ALPINE
+RUN echo preparation-\$(date +%s) > /preparation
+RUN sh /outil.sh
+COPY outil.sh /outil.sh
+EOF
+docker build -t essai-cache:ordre -f Dockerfile.faux . 2>&1 | grep -oE "can't open.*|exit code: [0-9]+" | sort -u
+cat > Dockerfile.juste <<EOF
+FROM $ALPINE
+RUN echo preparation-\$(date +%s) > /preparation
+COPY outil.sh /outil.sh
+RUN sh /outil.sh
+EOF
+docker build --progress=plain -t essai-cache:ordre -f Dockerfile.juste . 2>&1 | etapes
+```
+
+```text
+can't open '/outil.sh': No such file or directory
+exit code: 2
+[2/4] RUN echo preparation-$(date +%s) > /preparation  CACHED
+[3/4] COPY outil.sh /outil.sh
+[4/4] RUN sh /outil.sh
+```
+
+Le message accuse un fichier qui existe bien sur votre disque : il n'est pas
+encore dans l'image à ce moment-là. Dans le second build, l'étape `preparation`
+est servie par le cache : un build qui échoue garde les étapes réussies avant
+l'échec. Corriger un Dockerfile ne recommence donc pas tout.
+
 ## 🧹 Nettoyage
 
 Supprimez les images et le répertoire d'essai. La dernière commande compte les
@@ -167,13 +203,13 @@ images `essai-*` qui restent :
 
 ```bash
 cd ~
-docker rmi essai-cache:haut essai-cache:bas essai-cache:date | grep -c Untagged
+docker rmi essai-cache:haut essai-cache:bas essai-cache:date essai-cache:ordre | grep -c Untagged
 rm -rf ~/essai-cache
 docker images --format '{{.Repository}}' | grep -c '^essai-'
 ```
 
 ```text
-3
+4
 0
 ```
 

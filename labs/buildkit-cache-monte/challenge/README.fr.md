@@ -35,15 +35,8 @@ docker run --rm dsoxlab-cache:finale
 
 Changez la source pour invalider l'étape : un simple deuxième build identique
 ne prouve que le cache des couches. Ne forcez pas `--no-cache` : sur la version
-BuildKit de ce banc, cette option remet aussi le montage de cache à vide.
+BuildKit installée ici, cette option remet aussi le montage de cache à vide.
 
 Les contrôles utilisent un constructeur isolé, changent la source puis la
 restaurent. Ils jugent des produits reconstruits, pas le temps écoulé ni les
 commandes tapées. `clean` retire uniquement les objets nommés de ce lab.
-
-## Mission : réutiliser les dépendances quand la source change
-
-Travaillez sur `docker.lab` dans `/opt/lab-buildkit-cache`.
-Gardez l'outil de fabrication intact et corrigez le Dockerfile : le build à
-froid fonctionne, une source différente réutilise la dépendance et l'image
-d'exécution ne contient aucun cache.

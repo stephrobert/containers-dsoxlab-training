@@ -39,9 +39,3 @@ version, that option also empties the cache mount.
 Checks use an isolated builder, change the source and restore it afterwards.
 They judge rebuilt products, not elapsed time or typed commands. `clean` removes
 only this lab's named objects.
-
-## Mission: reuse dependencies across source changes
-
-Work on `docker.lab` in `/opt/lab-buildkit-cache`.
-Keep the build tool unchanged and fix the Dockerfile so a cold build works,
-a changed source reuses the dependency, and the runtime image contains no cache.
