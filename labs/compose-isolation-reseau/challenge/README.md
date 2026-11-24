@@ -32,8 +32,4 @@ repeat the isolation test after force-recreating the application.
 replace separating network memberships. The dual-attached API can access both
 zones, so this topology is not a defense against a compromised API.
 
-## Connect the API, isolate the data
-
-Follow `/opt/MISSION.md` and write `/opt/lab-compose-net/compose.yaml`.
-Three checks measure network boundaries, live communication through both relays,
-and denied direct access before and after recreation.
+The brief is also written to `/opt/MISSION.md`.
