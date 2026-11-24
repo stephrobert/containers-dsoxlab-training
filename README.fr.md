@@ -206,6 +206,7 @@ consensus et son état de contrôle à protéger.
 | Lab (id) | Titre | Niveau | Certif | Runtime | Guide compagnon |
 |---|---|---|---|---|---|
 | `conteneur-fabriquer-a-la-main` | Fabriquer un conteneur à la main avec les outils du noyau | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/) |
+| `conteneur-limiter-a-la-main` | Limiter un conteneur fait main avec les cgroups et les capabilities | c1 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurisation/limiter-un-conteneur/) |
 
 ### Utiliser les conteneurs
 
@@ -340,7 +341,7 @@ consensus et son état de contrôle à protéger.
 | `capstone-chaine-complete` | Livrer et rétablir une application isolée de bout en bout | c6 | - | 2 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/4-reprendre-un-service-inconnu/#passer-lépreuve) |
 | `epreuve-durcir-sans-casser` | Durcir un service sans le casser | c6 | - | 1 VM | [guide](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/epreuves/durcir-sans-casser/#passer-lépreuve) |
 
-_94 labs, table générée par `scripts/gen_catalog.py`._
+_95 labs, table générée par `scripts/gen_catalog.py`._
 <!-- LABS:END -->
 
 ## Où en est ce catalogue

@@ -1,0 +1,33 @@
+# Lab guidé de la leçon « Limiter un conteneur : cgroups v2 et capabilities »,
+# module isoler du niveau 1 « Introduction aux conteneurs ». Commandé par la
+# session du site le 2026-11-23 ; leçon déclarée figée le 2026-11-24.
+#
+# Le niveau 1 se joue SANS Docker, sur oci.lab (hôte optionnel, rôle
+# sans-docker). Le setup pose un rootfs Alpine 3.24.2 vérifié dans /srv/quai,
+# avec /dev/null et /dev/zero. L'apprenant crée le cgroup quai, y pose trois
+# plafonds, y lance un conteneur détaché privé de CAP_SYS_ADMIN, et y provoque
+# un OOM. Mesuré le 2026-11-24 : util-linux 2.41.5 (unshare, setpriv), noyau
+# 6.12, cgroups v2 avec cpu, memory et pids transmis par la racine.
+id: conteneur-limiter-a-la-main
+title: "Limit a hand-made container with cgroups and capabilities"
+level: c1
+description: "Cap the memory, processes and CPU of a container in a cgroup v2, see the kernel kill a process over the memory cap, and take CAP_SYS_ADMIN away from its root."
+skills:
+  - cgroups
+  - capabilities
+  - setpriv
+  - oom
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/limiter-un-conteneur/
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: oci.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false

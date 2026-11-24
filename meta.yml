@@ -140,6 +140,7 @@ sections:
       with cgroups and capabilities: what an engine does, without an engine.
     labs:
       - conteneur-fabriquer-a-la-main
+      - conteneur-limiter-a-la-main
   # ── Niveau c1 : utiliser et comprendre les conteneurs ────────────────────
   - id: conteneurs-utilisation
     title: "Use containers"
