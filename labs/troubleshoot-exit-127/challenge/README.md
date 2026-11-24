@@ -13,59 +13,6 @@ in the Dockerfile for what is not there.
 A container that fails does, however, **always** leave a diagnosis. It simply is
 not where you look for it, and the exit code already said where to look.
 
-## The goal
-
-Build yourself the grid. Three containers are stopped, and all three failed for
-**three different reasons**:
-
-```text
-panne-a   a command that does not exist
-panne-b   a file that exists but is not executable
-panne-c   a command that runs and fails
-```
-
-Two of their exit codes are close enough to be confused, and the third has
-nothing to do with them.
-
-Fill in the three lines of `/opt/lab-exit/reponses.txt`:
-
-```text
-code_a=<panne-a's exit code>
-code_b=<panne-b's exit code>
-statut_a=<panne-a's STATUS, as the engine declares it>
-```
-
-Then **repair**: start a container named `repare`, **on the same image**, that
-runs.
-
-The brief is also written to `/opt/MISSION.md`.
-
-## The third question is the most useful one
-
-Look carefully at `panne-a`'s status. **It is not what you expect from a
-container that stopped**, and that says something important about what happened.
-
-Look at all three logs too. One of them says nothing at all, and its diagnosis
-is elsewhere: in the container's inspection, a field nobody ever reads.
-
-Those two observations explain each other, and together they explain the lost
-hour in the scenario.
-
-## Why the repair uses the same image
-
-Because it is the most profitable conclusion of any troubleshooting: knowing
-what is **not** responsible rules out half the leads.
-
-All three failures came from what the container was asked to run, not from what
-the image contained. Repairing by changing image would prove the opposite of the
-lesson, and the check refuses it.
-
-## What is graded
-
-The **state of the system**. The three expected values are read from the
-containers at grading time, and none is written into the checks: the day this lab
-changes its failures, they will follow instead of becoming wrong.
-
 ## What is asked
 
 On `docker.lab`, a throwaway Debian 13 with the engine running. **Three
@@ -82,6 +29,8 @@ nothing to do with them.
 
 The first three answers go into `/opt/lab-exit/reponses.txt`, one line per
 entry, with no spaces around the equals sign.
+
+The brief is also written to `/opt/MISSION.md`.
 
 ### 1. `panne-a`'s exit code
 
@@ -112,8 +61,8 @@ One of them says **nothing at all**. That is not an anomaly: it is the direct
 consequence of the answer to question 3, and its diagnosis is elsewhere, in the
 container's inspection, a field nobody ever reads.
 
-Find it. It names the cause in one line, and it is the lost hour of the scenario
-that it will save you.
+Find it. It names the cause in one line, and saves you the lost hour described
+above.
 
 ### 4. Repair, on the same image
 
@@ -126,6 +75,12 @@ image. Repairing by changing image would prove the opposite of the lesson.
 All three failures came from what the container was asked to run, not from what
 the image contained. **Knowing what is not responsible rules out half the
 leads.**
+
+## What is graded
+
+The **state of the system**. The three expected values are read from the
+containers at grading time, and none is written into the checks: the day this lab
+changes its failures, they will follow instead of becoming wrong.
 
 ### What is not graded
 

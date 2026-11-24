@@ -15,34 +15,6 @@ one** with the same name. Both give a running container, which is what makes
 the confusion last. Only one keeps the container's identity, its logs and what
 had been written inside it.
 
-## The goal
-
-Move through the life cycle without ever starting over. The image is already on
-the machine: nothing to pull, nothing to build.
-
-```text
-dormeur   STOPPED, and it carries a /empreinte.txt file
-actif     it is RUNNING
-```
-
-1. `dormeur` is **running again**, and it is the **same** container: its
-   identifier must not have changed.
-2. Its `/empreinte.txt` file is still there.
-3. `actif` is **paused**, neither stopped nor removed.
-4. A container named `sortie` has **finished**, with exit code **42**.
-
-The brief also sits in `/opt/MISSION.md`.
-
-## What is graded
-
-The **state of the engine**, never the commands typed. But here identity counts
-as much as state: `dormeur`'s original identifier was recorded **before** you
-touched anything, and it is compared. You can read it yourself in
-`/opt/lab-cycle/id-dormeur.txt`.
-
-This is not distrust, it is the only way to tell the two actions apart: their
-visible result is identical, and only the fingerprint separates them.
-
 ## What is asked
 
 On `docker.lab`, a throwaway Debian 13 with the engine running. The
@@ -52,6 +24,8 @@ On `docker.lab`, a throwaway Debian 13 with the engine running. The
 dormeur   STOPPED, it carries /empreinte.txt
 actif     it is RUNNING
 ```
+
+The brief is also written to `/opt/MISSION.md`.
 
 ### 1. `dormeur` is running again, and it is the SAME container
 
@@ -87,6 +61,16 @@ It must have **run** then **finished**, and carry exit code `42`.
 The code is the one returned by the container's main process, and it
 **outlives the container**: it is what an orchestrator reads to decide whether
 to restart or to alert. A container still running carries none.
+
+## What is graded
+
+The **state of the engine**, never the commands typed. But here identity counts
+as much as state: `dormeur`'s original identifier was recorded **before** you
+touched anything, and it is compared. You can read it yourself in
+`/opt/lab-cycle/id-dormeur.txt`.
+
+This is not distrust, it is the only way to tell the two actions apart: their
+visible result is identical, and only the fingerprint separates them.
 
 ### What is not graded
 
