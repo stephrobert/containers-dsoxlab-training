@@ -1,6 +1,4 @@
 # Surcharge francaise : `title` et `description` SEULEMENT, tout autre champ y est
 # ignore par le parseur.
 title: Revenir en arrière, et refuser le retour qui perdrait les données
-description: 'Déployer une version par son digest, revenir en arrière sans perdre la donnée écrite
-  entre-temps, puis constater qu''un second retour est impossible : la migration du schéma est
-  irréversible, et l''ancienne version ne sait plus le lire.'
+description: "Trois versions se succèdent sans perdre un seul enregistrement, et vous établissez à partir de quand le retour n'est plus possible."
