@@ -1,89 +1,191 @@
-# reseau-publication-de-ports : trois postures, un seul défaut
+# Publier un port, et seulement où il faut
 
-## Ce que ce lab éprouve
+La leçon montre les trois portées d'un `-p`, la posture sans publication et la
+différence entre publier et servir. Ce cours ajoute cinq gestes : le protocole,
+une plage de ports, deux publications pour un conteneur, une adresse que la
+machine n'a pas, et un réglage qui change le défaut.
 
-Que publier un port est un choix à **trois** branches, et que son défaut est le
-plus ouvert des trois. `-p 8080:80` publie sur toutes les interfaces, parce que
-l'adresse de publication est optionnelle. C'est le geste le plus banal de
-Docker, et celui qui expose un service sans qu'on l'ait décidé.
+Vous travaillez sur des conteneurs `essai-*` et les ports 18300 à 18323. Le
+challenge porte sur `vitrine`, `annexe` et `interne` : n'y touchez pas pendant
+le cours.
 
-## Les trois postures, mesurées avant d'être écrites
+Page associée : [Publier un port Docker sans exposer tout l'hôte](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/publier-un-port/).
 
-Sur `docker.lab`, le 2026-10-30 :
+## 🔧 Avant de commencer
 
-| Publication | depuis `127.0.0.1` | depuis l'adresse routable |
-| --- | --- | --- |
-| `-p 127.0.0.1:P:80` | joint | **ne joint pas** |
-| `-p <routable>:P:80` | **ne joint pas** | joint |
-| aucune | ne joint pas | ne joint pas |
+Lancez le lab :
 
-Les trois lignes sont le lab. Chacune correspond à un besoin réel, et chacune
-se trompe différemment.
+```bash
+dsoxlab run reseau-publication-de-ports
+```
 
-## Le piège qui invaliderait tous ces contrôles
+Vous êtes connecté à `docker.lab`, où le moteur tourne. La fonction `repondeur`
+lance un conteneur qui répond une ligne sur son port 80. **Gardez le même
+terminal jusqu'au nettoyage** : les variables n'existent que dans lui.
 
-Le proxy de Docker **accepte une connexion avant que quoi que ce soit
-n'écoute**. Vérifié ici le 2026-10-30, sur un `-p 127.0.0.1:18099:1234` dont le
-conteneur n'écoutait nulle part : la connexion aboutissait.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+HOTE=$(ip -o -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}')
+repondeur() { docker run -d "$@" "$IMAGE" sh -c 'exec nc -ll -p 80 -e echo "ici $(hostname)"'; }
+docker version --format '{{.Server.Version}}'
+```
 
-Les contrôles lisent donc la **réponse**, jamais la seule connexion. Un test qui
-se contenterait d'un `connect()` réussi déclarerait joignable un service absent,
-et ce lab noterait exactement l'inverse de ce qu'il mesure.
+```text
+29.9.2
+```
 
-C'est aussi pour cela que l'écouteur répond un jeton plutôt que de simplement
-exister : une réponse lisible est la seule preuve qu'un service sert.
+Les sorties de ce cours viennent d'un Docker 29.9.2 sur Debian 13, le 24
+novembre 2026. Les adresses et les identifiants seront différents chez vous.
 
-## Pourquoi chaque posture est mesurée deux fois
+## 📨 Exercice 1 : TCP n'est pas UDP
 
-Les contrôles lisent ce que le moteur **déclare** publier, puis éprouvent ce
-que la machine **fait**.
+Publiez le même port d'hôte deux fois, en TCP puis en UDP :
 
-Les deux peuvent diverger : une règle de pare-feu, un second conteneur publié
-sur le même port, un écouteur qui n'a pas redémarré. Un lab qui ne lirait que
-la déclaration validerait un conteneur recréé sans son service.
+```bash
+repondeur --name essai-tcp -p 127.0.0.1:18300:80 > /dev/null
+repondeur --name essai-udp -p 127.0.0.1:18300:80/udp > /dev/null
+docker ps --filter name=essai- --format '{{.Names}} {{.Ports}}'
+```
 
-## Pourquoi une image plutôt qu'une commande
+```text
+essai-udp 127.0.0.1:18300->80/udp
+essai-tcp 127.0.0.1:18300->80/tcp
+```
 
-Changer la publication d'un conteneur exige de le **recréer** : `-p` ne se
-modifie pas à chaud, et c'est une leçon du lab.
+Il n'y a pas de conflit : les numéros TCP et UDP sont distincts. Sans suffixe,
+`-p` publie en TCP seulement. Un service UDP, comme un serveur DNS, publié sans
+`/udp`, paraît publié et ne répond à personne.
 
-L'apprenant doit donc pouvoir relancer l'écouteur sans le réécrire, d'où
-l'image qui le porte en `CMD`. Un lab qui aurait passé l'écouteur en ligne de
-commande aurait obligé l'apprenant à deviner une commande qu'il n'a jamais vue,
-ce qui n'a rien à voir avec le sujet.
+## 🎲 Exercice 2 : une plage de ports, et quand elle est pleine
 
-## Aucune adresse n'est écrite en dur
+Donnez une plage de deux ports d'hôte et lancez trois conteneurs :
 
-Ni dans les tests, ni dans la solution, ni dans le setup. L'adresse routable
-est déduite de la route par défaut, au moment de la notation.
+```bash
+for i in 1 2 3; do
+  repondeur --name essai-plage$i -p 127.0.0.1:18310-18311:80 > sortie.txt 2>&1
+  echo "conteneur $i : code $?"
+done
+grep -o 'all ports are allocated' sortie.txt
+docker ps --filter name=essai-plage --format '{{.Names}} {{.Ports}}'
+```
 
-Un test qui porterait `10.10.120.11` serait faux sur une machine adressée
-autrement, et le lab mourrait au premier changement de réseau. Le setup la
-dépose en revanche dans l'énoncé, puisque l'apprenant doit l'écrire dans son
-`-p`.
+```text
+conteneur 1 : code 0
+conteneur 2 : code 0
+conteneur 3 : code 125
+all ports are allocated
+essai-plage2 127.0.0.1:18311->80/tcp
+essai-plage1 127.0.0.1:18310->80/tcp
+```
 
-## Deux assertions indissociables, et pourquoi elles ne font qu'un contrôle
+Docker a pris le premier port libre de la plage pour chacun. Le troisième est
+refusé avec le code 125 : la plage est pleine. Une plage limite ce que l'on
+ouvre, et elle se vide quand un conteneur est supprimé.
 
-Le quatrième contrôle exige que `interne` ne publie rien **et** qu'il reste
-joignable par `vitrine`.
+## 🔀 Exercice 3 : deux publications pour un conteneur
 
-Les deux ne se séparent pas : ne rien publier est trivial en détruisant le
-conteneur. Un contrôle qu'on satisfait en retirant le sujet ne mesure rien,
-donc la joignabilité interne est la contrepartie obligatoire.
+Un conteneur peut porter plusieurs `-p`. Publiez-le sur deux adresses, avec
+deux ports différents :
 
-## L'état de départ est cassé, et c'est la règle du dépôt
+```bash
+repondeur --name essai-double -p 127.0.0.1:18320:80 -p "$HOTE":18321:80 > /dev/null
+docker port essai-double
+nc -w 3 127.0.0.1 18320
+nc -w 3 "$HOTE" 18321
+nc -w 3 127.0.0.1 18321; echo "code: $?"
+```
 
-| Conteneur | État de départ | Geste attendu |
-| --- | --- | --- |
-| `vitrine` | `0.0.0.0:18080` | republier sur `127.0.0.1` seul |
-| `annexe` | ne publie rien | publier sur la seule adresse routable |
-| `interne` | `0.0.0.0:18082` | ne plus rien publier |
+```text
+80/tcp -> 10.10.120.11:18321
+80/tcp -> 127.0.0.1:18320
+ici ca10712b7a1e
+ici ca10712b7a1e
+code: 1
+```
 
-Aucune des trois fautes n'est un accident : chacune est l'erreur qu'on commet
-par défaut. Une tâche du setup **vérifie** cet état avant de rendre la main.
+Le même service répond sur deux ports, et le port prévu pour le réseau reste
+fermé en local. Chaque adresse a sa propre règle : c'est plus précis qu'une
+publication sur toutes les interfaces.
 
-## Ce que le lab n'exige pas
+## 🚫 Exercice 4 : une adresse que la machine n'a pas
 
-Un chemin. Les conteneurs se recréent en ligne de commande comme par l'API ou
-par un fichier Compose. Seul l'état compte, et il est mesuré sur le moteur et
-sur le réseau.
+Publiez sur une adresse qui n'appartient pas à cette machine, comme on le fait
+en recopiant une commande d'un autre serveur :
+
+```bash
+repondeur --name essai-ailleurs -p 10.99.99.99:18322:80 2>&1 | grep -o 'failed to bind.*'
+docker container inspect essai-ailleurs --format 'statut={{.State.Status}} code={{.State.ExitCode}}'
+```
+
+```text
+failed to bind host port 10.99.99.99:18322/tcp: cannot assign requested address
+statut=created code=128
+```
+
+`cannot assign requested address` vient du système : aucune interface ne porte
+cette adresse. Ce n'est pas un port pris. Le conteneur existe, à l'état
+`created`, et occupe son nom.
+
+## 🛡️ Exercice 5 : changer le défaut d'un réseau
+
+Le défaut d'un `-p` sans adresse se règle réseau par réseau. Créez un réseau
+qui publie sur le loopback, puis publiez sans adresse :
+
+```bash
+docker network create --opt com.docker.network.bridge.host_binding_ipv4=127.0.0.1 essai-prudent > /dev/null
+repondeur --name essai-prudence --network essai-prudent -p 18323:80 > /dev/null
+docker container inspect essai-prudence --format '{{json .HostConfig.PortBindings}}'
+docker port essai-prudence
+```
+
+```text
+{"80/tcp":[{"HostIp":"","HostPort":"18323"}]}
+80/tcp -> 127.0.0.1:18323
+```
+
+La demande ne porte aucune adresse (`HostIp` est vide), et le port n'est ouvert
+que sur `127.0.0.1`. `PortBindings` dit ce qui a été demandé, `docker port` ce
+qui a été fait. Pour savoir ce qui est ouvert, lisez toujours le second.
+
+## 🧹 Nettoyage
+
+```bash
+docker rm -f essai-tcp essai-udp essai-plage1 essai-plage2 essai-plage3 essai-double essai-ailleurs essai-prudence > /dev/null
+docker network rm essai-prudent
+rm sortie.txt
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+essai-prudent
+0
+```
+
+Quittez ensuite la machine et remettez le lab à zéro. `dsoxlab reset` rejoue le
+nettoyage puis la préparation du lab. Il vous demande de confirmer : répondez
+`y`.
+
+```bash
+exit
+dsoxlab reset reseau-publication-de-ports
+dsoxlab check reseau-publication-de-ports
+```
+
+```text
+╭─ Résultat : reseau-publication-de-ports ─╮
+│  0 / 100 pts                             │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests         │
+╰──────────────────────────────────────────╯
+```
+
+0 sur 4 : c'est le résultat attendu. Le challenge est prêt.
+
+## 🎯 Le challenge
+
+À vous, seul cette fois : trois conteneurs mal publiés, à remettre chacun dans
+la portée qui lui convient.
+
+```bash
+dsoxlab run reseau-publication-de-ports
+dsoxlab challenge reseau-publication-de-ports
+```

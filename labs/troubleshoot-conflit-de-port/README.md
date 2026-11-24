@@ -1,100 +1,190 @@
-# troubleshoot-conflit-de-port: two messages, two worlds
+# Two port conflicts, two causes
 
-## What this lab tests
+The lesson opposes the port held by a container and the one held by a program
+of the host. This course adds five cases that blur this diagnosis: the same
+port on two addresses, a publication too wide, a stopped container that loses
+its place, a container that `docker ps` does not show as the culprit, and a
+`docker-proxy` to be linked to its container.
 
-That two port conflicts which look alike do not have the same cause, and that
-Docker's tools are **blind** to one of the two.
+You work on `essai-*` containers and ports 18400 to 18410. The challenge uses
+other containers and ports 18200 and 18201.
 
-## Measured before being written
+Related page: [Publish a Docker port without exposing the whole host](https://www.stephane-robert.info/en/docs/docker/publish-a-port/).
 
-On `docker.lab`, on 2026-10-30:
+## 🔧 Before you start
 
-| Culprit | Engine's message | `docker ps` sees it | `ss` sees it |
-| --- | --- | --- | --- |
-| a container | "port is already allocated" | **yes** | yes, `docker-proxy` |
-| a host process | "failed to bind host port ... address already in use" | **no** | yes, the program |
+Start the lab:
 
-> Both wordings above are Docker 29's, measured on 2026-11-01. Docker 26 wrote
-> `Error starting userland proxy: listen tcp4 ...` in the second case. Do not
-> memorise the string, memorise the criterion: the engine talks about a
-> reservation it made itself, the system talks about a refused listen.
+```bash
+dsoxlab run troubleshoot-conflit-de-port
+```
 
-The two messages differ, and that is the key. The first comes from the
-**engine**, which knows what it has already reserved; the second comes from the
-**system**, which refuses to listen. A troubleshooter who reads that difference
-knows immediately whether to look inside Docker or outside.
+You are connected to `docker.lab`, where the engine runs. The `repondeur`
+function starts a container that answers one line on its port 80. **Keep the
+same terminal until the cleanup**: the variables only exist in it.
 
-Also measured: the refused container is **created all the same**, status
-`created`, and it therefore occupies its name. That is why a second attempt
-fails on "name already in use" and makes you believe in another failure.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+HOTE=$(ip -o -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}')
+repondeur() { docker run -d "$@" "$IMAGE" sh -c 'exec nc -ll -p 80 -e echo "ici $(hostname)"'; }
+docker version --format '{{.Server.Version}}'
+```
 
-And what is **not** a conflict: two containers can publish the same **container**
-port on two different host ports. It is the host's port that is unique.
+```text
+29.9.2
+```
 
-## Two design mistakes corrected by the validation cycle
+The outputs of this course come from a Docker 29.9.2 on Debian 13, on 24
+November 2026. Addresses and identifiers will differ on your side.
 
-This lab was red twice, and both times for the **same root cause**: a diagnostic
-value cannot be read from an object the repair modifies.
+## 🏠 Exercise 1: the same port on two addresses
 
-**First version.** The lab asked for the intruders to be given back the port
-they claimed, therefore for the culprit's port to be freed. At grading time, the
-port's culprit was no longer `occupant` but the intruder itself, and the answers
-to checks 2 and 3 became wrong. The lab contradicted itself.
+Publish port 18400 twice, on two different addresses:
 
-The correction is not technical, it is **pedagogical**: freeing the port is the
-spontaneous move and the wrong one. So the lab asks for the newcomer to be
-**moved**, which leaves the culprits in place and keeps them identifiable.
+```bash
+repondeur --name essai-local -p 127.0.0.1:18400:80 > /dev/null
+repondeur --name essai-reseau -p "$HOTE":18400:80 > /dev/null
+docker ps --filter name=essai- --format '{{.Names}} {{.Ports}}'
+nc -w 3 127.0.0.1 18400
+nc -w 3 "$HOTE" 18400
+```
 
-**Second version.** The first check still read `intrus-a`'s status, which runs
-after repair. Hence the **witness**: `temoin-refuse` fails like the others, the
-brief expressly asks for it not to be repaired, and the status is read from it.
-It stays true from start to finish.
+```text
+essai-reseau 10.10.120.11:18400->80/tcp
+essai-local 127.0.0.1:18400->80/tcp
+ici b31ec26bbf90
+ici abebdc9f35db
+```
 
-## The fourth check verifies both halves of the remedy
+No conflict: what is unique is the address and the port together. Two different
+services therefore answer on the same number, depending on the address called.
+A local test can thus succeed on another service than the one seen from the
+network.
 
-The intruders run **elsewhere**, and the culprits are **intact**.
+## 📐 Exercise 2: a publication too wide
 
-Without the second half, the most destructive answer would pass: cutting
-everything would make the intruders run and the lab would teach exactly what to
-avoid. Nothing said the container in place and the host's program were useless.
+Now ask for the same port on all interfaces:
 
-## A tooling trap, met for the second time
+```bash
+repondeur --name essai-partout -p 18400:80 2>&1 | grep -o 'Bind for.*'
+docker ps --filter name=essai-partout --format '{{.Names}}' | wc -l
+```
 
-`pkill -f "nc -l -k -p 18201"` returns **`rc: -15`**: the command line of the
-shell carrying the pkill contains the pattern sought, so the shell kills itself
-before it can return 0, and `|| true` is never reached.
+```text
+Bind for 127.0.0.1:18400 failed: port is already allocated
+0
+```
 
-The parade comes from the `ps | grep` world: one letter in brackets. `n[c] -l -k
--p 18201` matches `nc -l -k -p 18201`, and the pkill's line contains `n[c]`,
-which that pattern does not match.
+All interfaces include `127.0.0.1`, already taken. The message names the
+address in conflict, not the `0.0.0.0` you asked for: that is the clue. `docker
+ps` does not show this container: it has not started.
 
-It is this trap's second appearance in the section. In `container-limite-cpu` it
-was absorbed by accepting code 143, which was correct but less clean: here the
-process to kill is **outside** the containers, and leaving it alive would hold a
-host port indefinitely.
+## 💤 Exercise 3: a stopped container loses its port
 
-## One cleanup move this lab alone has to make
+Stop `essai-local`, give its port to another one, then try to start it again:
 
-Killing a process of the **host**. No other lab in the catalogue puts anything
-outside the containers, and a forgotten listener would hold its port
-indefinitely: the next lab wanting that port would fail for reasons unrelated to
-its subject.
+```bash
+docker stop --timeout 1 essai-local > /dev/null
+repondeur --name essai-remplacant -p 127.0.0.1:18400:80 > /dev/null
+docker start essai-local 2>&1 | grep -o 'Bind for.*'
+docker container inspect essai-local --format 'statut={{.State.Status}} code={{.State.ExitCode}} erreur={{.State.Error}}' | cut -c1-80
+```
 
-## The starting state is broken, and that is the repository's rule
+```text
+Bind for 127.0.0.1:18400 failed: port is already allocated
+statut=exited code=143 erreur=failed to set up container networking: driver fail
+```
 
-| Laid down by the setup | Starting state | Expected move | Check |
-| --- | --- | --- | --- |
-| `reponses.txt` | three keys, three **empty** values | fill them in | 1, 2 and 3 |
-| `occupant` | running, holding a port | leave it alone | 4 |
-| a host listener | listening, outside Docker | leave it alone | 4 |
-| `intrus-a`, `intrus-b` | created, refused | move them | 4 |
-| `temoin-refuse` | created, refused | **do not repair** | 1 |
+A stopped container does not reserve its port. When started again, it fails
+although its configuration has not changed. The status stays `exited` with the
+code of the previous stop: only `.State.Error` says that a start has just
+failed.
 
-The setup verifies that the three refused ones are not running and that both
-ports are indeed taken before handing over.
+## 👻 Exercise 4: a culprit docker ps does not name
 
-## What the lab does not require
+A container started with `--network host` opens its ports directly on the
+machine:
 
-A path. The container culprit can be found from the container list as well as
-the inspection, the host's one through any tool reading sockets, and the move is
-done by recreating the container on a free port, by any means.
+```bash
+docker run -d --name essai-hote --network host "$IMAGE" nc -lk -p 18410 > /dev/null
+sleep 1
+repondeur --name essai-refuse -p 18410:80 2>&1 | grep -o 'failed to bind.*'
+docker ps --filter publish=18410 --format '{{.Names}}' | wc -l
+PID=$(sudo ss -ltnp | grep ':18410' | grep -o 'pid=[0-9]*' | cut -d= -f2)
+cat /proc/$PID/cgroup | cut -c1-40
+docker container inspect "$(grep -oE '[0-9a-f]{64}' /proc/$PID/cgroup)" --format '{{.Name}}'
+```
+
+```text
+failed to bind host port 0.0.0.0:18410/tcp: address already in use
+0
+0::/system.slice/docker-186bf37e6543bf39
+/essai-hote
+```
+
+The message is the one of a host program, and the `publish` filter finds
+nothing. Yet the culprit is a container: the cgroup of its process carries the
+container identifier, which `docker container inspect` translates into a name.
+Before concluding "outside Docker", read `/proc/<pid>/cgroup`.
+
+## 🧷 Exercise 5: from docker-proxy to the container
+
+`ss` names `docker-proxy` for all published ports. Find the container served by
+the one of local port 18400:
+
+```bash
+PID=$(sudo ss -ltnp | grep '127.0.0.1:18400' | grep -o 'pid=[0-9]*' | cut -d= -f2)
+ps -o args= -p "$PID" | grep -o 'container-ip.*-container-port [0-9]*'
+docker ps --filter publish=18400 --format '{{.Names}} {{.Ports}}'
+```
+
+```text
+container-ip 172.17.0.3 -container-port 80
+essai-remplacant 127.0.0.1:18400->80/tcp
+essai-reseau 10.10.120.11:18400->80/tcp
+```
+
+The command line of `docker-proxy` gives the address and port of the container.
+`docker ps` with the filter answers faster, but returns both containers that
+publish 18400: the ports column tells them apart.
+
+## 🧹 Cleanup
+
+```bash
+docker rm -f essai-local essai-reseau essai-partout essai-remplacant essai-hote essai-refuse > /dev/null
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+sudo ss -ltn | grep -cE ':184(00|10)'
+```
+
+```text
+0
+0
+```
+
+Then leave the machine and reset the lab. `dsoxlab reset` replays the cleanup
+then the setup of the lab. It asks you to confirm: answer `y`.
+
+```bash
+exit
+dsoxlab reset troubleshoot-conflit-de-port
+dsoxlab check troubleshoot-conflit-de-port
+```
+
+```text
+╭─ Result: troubleshoot-conflit-de-port ─╮
+│  0 / 100 pts                           │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests       │
+╰────────────────────────────────────────╯
+```
+
+0 out of 4: that is the expected result. The challenge is ready.
+
+## 🎯 The challenge
+
+Your turn, on your own this time: two refused containers, two causes, and no
+running service to be cut.
+
+```bash
+dsoxlab run troubleshoot-conflit-de-port
+dsoxlab challenge troubleshoot-conflit-de-port
+```

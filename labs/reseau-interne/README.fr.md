@@ -1,97 +1,190 @@
-# reseau-interne : deux isolations qui ne se ressemblent pas
+# Deux isolations qui ne se ressemblent pas
 
-## Ce que ce lab éprouve
+La leçon compare un conteneur sans réseau et un réseau interne, et montre la
+route absente. Ce cours mesure cinq limites : un port publié qui ne s'ouvre
+pas, l'hôte qui entre quand même, la passerelle qui répond, les noms
+extérieurs, et deux conteneurs qui partagent un même réseau.
 
-Qu'il y a **deux** isolations, qu'on confond parce qu'on les appelle toutes les
-deux « isoler » :
+Vous travaillez sur le réseau `essai-clos` et des conteneurs `essai-*`. Le
+challenge porte sur `coffre`, `dehors`, `atelier-a` et `atelier-b` : n'y
+touchez pas pendant le cours.
 
-| Posture | Ce qu'elle donne | Pour quoi |
-| --- | --- | --- |
-| aucun réseau | ni interface, ni voisin, ni sortie | un traitement qui n'a besoin de personne |
-| réseau interne | les membres se parlent par leur nom, et ne sortent pas | une base que seule son application doit joindre |
+Page associée : [Isoler un conteneur du réseau : none ou réseau interne](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/reseau-interne/).
 
-Les prendre l'une pour l'autre donne soit un service inutilisable, soit un
-service exposé. Le lab fait obtenir les deux sur la même machine, pour que la
-différence se voie au lieu d'être affirmée.
+## 🔧 Avant de commencer
 
-## Mesuré avant d'être écrit
+Lancez le lab :
 
-Sur `docker.lab`, le 2026-10-30 :
+```bash
+dsoxlab run reseau-interne
+```
 
-| Posture | interfaces hors loopback | joint le témoin | voisin par son nom |
-| --- | --- | --- | --- |
-| réseau par défaut | 1 | oui | non |
-| aucun réseau | 0 | non | sans objet |
-| réseau interne | 1 | non | oui |
+Vous êtes connecté à `docker.lab`, où le moteur tourne. La fonction `repondeur`
+lance un conteneur qui répond une ligne sur son port 80. **Gardez le même
+terminal jusqu'au nettoyage** : les variables n'existent que dans lui.
 
-Et un détail qui dit tout du mécanisme : un conteneur d'un réseau interne n'a
-**aucune route par défaut**. L'isolation n'est pas un filtrage posé devant lui,
-c'est l'absence du chemin. La solution de référence le vérifie explicitement,
-parce que c'est la façon la plus nette de comprendre ce qui se passe.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+HOTE=$(ip -o -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}')
+repondeur() { docker run -d "$@" "$IMAGE" sh -c 'exec nc -ll -p 80 -e echo "ici $(hostname)"'; }
+docker version --format '{{.Server.Version}}'
+```
 
-## Comment « sortir » est mesuré, et pourquoi pas contre Internet
+```text
+29.9.2
+```
 
-Contre un témoin publié sur l'adresse routable de la machine.
+Les sorties de ce cours viennent d'un Docker 29.9.2 sur Debian 13, le 24
+novembre 2026. Les adresses et les identifiants seront différents chez vous.
 
-Un lab qui dépendrait d'un accès sortant échouerait sur une machine isolée, et
-son message parlerait d'isolation réussie alors qu'il n'y a pas de réseau du
-tout : **il noterait l'inverse de ce qu'il mesure**. Le témoin local supprime
-cette dépendance, et il rend la mesure reproductible.
+## 🚪 Exercice 1 : un port publié qui ne s'ouvre pas
 
-## Pourquoi les deux premiers contrôles sont séparés
+Publiez un port sur un conteneur d'un réseau interne :
 
-Le premier lit les interfaces **dans** le conteneur. Le second éprouve ce qu'il
-**peut joindre**.
+```bash
+docker network create --internal --subnet 10.89.1.0/24 essai-clos > /dev/null
+repondeur --name essai-dedans --network essai-clos -p 127.0.0.1:18500:80 > /dev/null; echo "code: $?"
+docker container inspect essai-dedans --format '{{json .HostConfig.PortBindings}}'
+docker port essai-dedans | wc -l
+nc -w 3 127.0.0.1 18500; echo "code: $?"
+```
 
-Ce n'est pas une redite : un conteneur peut avoir perdu son interface et garder
-un partage de pile réseau avec un autre, auquel cas il joint encore. Lire la
-configuration et éprouver le comportement sont deux mesures, et les séparer est
-ce qui permet au message de nommer la bonne cause.
+```text
+code: 0
+{"80/tcp":[{"HostIp":"127.0.0.1","HostPort":"18500"}]}
+0
+code: 1
+```
 
-## Pourquoi le premier contrôle regarde l'effet et non le chemin
+Docker accepte la commande sans un mot, garde la demande dans `PortBindings`,
+et n'ouvre rien. `docker port` est vide et la connexion échoue. Un service «
+publié » qui ne répond pas peut donc venir d'un réseau interne.
 
-Il exige qu'aucune interface ne subsiste hors loopback, pas que le conteneur
-déclare tel réseau.
+## 🏠 Exercice 2 : l'hôte entre quand même
 
-Recréer avec l'option qui le prive de réseau est le geste franc, et c'est celui
-que le lab enseigne. Détacher le conteneur de ses réseaux donne le même
-résultat. Les deux comptent, parce que la règle du dépôt est de noter l'état,
-jamais la commande.
+Joignez le conteneur depuis l'hôte, par son adresse :
 
-## Le quatrième contrôle est indivisible
+```bash
+IP=$(docker container inspect essai-dedans --format '{{(index .NetworkSettings.Networks "essai-clos").IPAddress}}')
+echo "$IP"
+nc -w 3 "$IP" 80; echo "code: $?"
+```
 
-Il exige trois choses d'un coup : les deux conteneurs sur le réseau confiné, le
-voisin joint **par son nom**, et aucune sortie.
+```text
+10.89.1.2
+ici 56d6ab346125
+code: 0
+```
 
-Elles ne se séparent pas. Confiner sans que les membres se parlent donnerait un
-service inutilisable ; les faire se parler sans les confiner ne serait qu'un
-réseau dédié de plus, ce qui est le lab précédent. C'est la conjonction qui est
-la compétence.
+L'hôte porte la passerelle de ce réseau, il en fait donc partie. Un réseau
+interne empêche les membres de sortir. Il ne les cache pas à la machine qui les
+héberge.
 
-## Pourquoi le témoin est protégé
+## 🌉 Exercice 3 : la passerelle répond, pas l'adresse routable
 
-Les contrôles 2 et 4 seraient aussi vrais si `dehors` disparaissait : il n'y
-aurait plus rien à ne pas joindre.
+Lancez un serveur web sur l'hôte et appelez-le depuis le conteneur, par les
+deux adresses de l'hôte :
 
-Un préalable vérifie donc qu'il tourne **et** qu'il répond depuis l'hôte. Si sa
-publication a été modifiée, les contrôles d'isolation passeraient pour une
-mauvaise raison, et le message le dit plutôt que de laisser croire au succès.
+```bash
+mkdir -p ~/essai-web && echo "page de l'hôte" > ~/essai-web/index.html
+python3 -m http.server 18510 --bind 0.0.0.0 --directory ~/essai-web > /dev/null 2>&1 &
+sleep 1
+docker exec essai-dedans wget -q -T 3 -O - http://10.89.1.1:18510/
+docker exec essai-dedans wget -q -T 3 -O - "http://$HOTE:18510/"; echo "code: $?"
+```
 
-## L'état de départ est cassé, et c'est la règle du dépôt
+```text
+page de l'hôte
+wget: can't connect to remote host (10.10.120.11): Network unreachable
+code: 1
+```
 
-Les trois conteneurs à isoler sont sur le réseau par défaut, donc les quatre
-contrôles sont faux. Une tâche du setup **vérifie** que `coffre` et `atelier-b`
-joignent bien le témoin avant de rendre la main : sans elle, deux contrôles
-seraient vrais avant tout travail.
+Par la passerelle, le conteneur joint le service de l'hôte. Par l'adresse
+routable, aucune route : `Network unreachable`. Un service de l'hôte qui écoute
+sur toutes les interfaces reste donc joignable depuis un réseau interne. C'est
+la faille à connaître.
 
-## Un piège du cleanup, payé d'avance
+## 🔤 Exercice 4 : les noms extérieurs, et le refus de none
 
-Deux dépendances d'ordre, et pas une. Un réseau dont des conteneurs sont encore
-membres ne se supprime pas, et une image dont des conteneurs dérivent non plus.
-Les conteneurs partent donc en premier, le réseau et l'image ensuite.
+Demandez un nom public, puis essayez de brancher un conteneur `none` sur ce
+réseau :
 
-## Ce que le lab n'exige pas
+```bash
+docker exec essai-dedans nslookup example.org 2>&1 | grep -o 'SERVFAIL'
+docker run -d --name essai-nu --network none "$IMAGE" sleep 600 > /dev/null
+docker network connect essai-clos essai-nu; echo "code: $?"
+```
 
-Un chemin. Le réseau se crée en ligne de commande comme par l'API ; les
-conteneurs se placent sur le bon réseau à la création comme par un rattachement
-suivi d'un détachement.
+```text
+SERVFAIL
+SERVFAIL
+Error response from daemon: container cannot be connected to multiple networks with one of the networks in private (none) mode
+code: 1
+```
+
+Les noms extérieurs ne se résolvent pas non plus. Et un conteneur lancé sans
+réseau ne peut pas en recevoir un ensuite : il faut le recréer.
+
+## 👥 Exercice 5 : deux conteneurs, un seul réseau
+
+`--network container:<nom>` place un second conteneur dans le réseau du premier
+:
+
+```bash
+docker run -d --name essai-voisin --network container:essai-dedans "$IMAGE" sleep 600 > /dev/null
+docker exec essai-voisin nc -w 3 127.0.0.1 80
+docker run --rm --network container:essai-dedans -p 18501:80 "$IMAGE" true 2>&1 | grep -o 'conflicting options.*'
+```
+
+```text
+ici 56d6ab346125
+conflicting options: port publishing and the container type network mode
+```
+
+Les deux partagent la même adresse et le même `127.0.0.1`. Le second ne peut
+pas publier de port : le réseau appartient au premier. Ce montage donne un
+outil de diagnostic à un conteneur confiné sans toucher à son réseau.
+
+## 🧹 Nettoyage
+
+```bash
+docker rm -f essai-voisin essai-nu essai-dedans > /dev/null
+docker network rm essai-clos
+pkill -f 'http.server 18510'
+rm -r ~/essai-web
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+essai-clos
+0
+```
+
+Quittez ensuite la machine et remettez le lab à zéro. `dsoxlab reset` rejoue le
+nettoyage puis la préparation du lab. Il vous demande de confirmer : répondez
+`y`.
+
+```bash
+exit
+dsoxlab reset reseau-interne
+dsoxlab check reseau-interne
+```
+
+```text
+╭──── Résultat : reseau-interne ────╮
+│  0 / 100 pts                      │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests  │
+╰───────────────────────────────────╯
+```
+
+0 sur 4 : c'est le résultat attendu. Le challenge est prêt.
+
+## 🎯 Le challenge
+
+À vous, seul cette fois : un conteneur sans réseau, et deux autres qui se
+parlent sans jamais sortir.
+
+```bash
+dsoxlab run reseau-interne
+dsoxlab challenge reseau-interne
+```

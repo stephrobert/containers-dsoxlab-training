@@ -1,93 +1,188 @@
-# reseau-bridge-dedie : nommer et isoler
+# Un réseau à soi : nommer et isoler
 
-## Ce que ce lab éprouve
+La leçon crée un réseau, montre son service de noms, son isolation et les
+alias. Ce cours ajoute cinq gestes : un plan d'adressage qui se recouvre, une
+adresse fixe, un nom qui disparaît, un réseau qu'on ne peut pas supprimer, et
+un nom qui se résout sans que la connexion passe.
 
-Qu'un réseau dédié apporte **deux** choses, et non une : la résolution des noms
-entre ses membres, et l'isolation de ceux qui n'en sont pas. Le lab précédent
-faisait constater l'absence de DNS sur le réseau par défaut ; celui-ci fait
-corriger la situation et mesure les deux effets.
+Vous travaillez sur des réseaux et des conteneurs `essai-*`. Le challenge porte
+sur `avant`, `arriere` et `tiers` : n'y touchez pas pendant le cours.
 
-## Aucun formulaire ici, et c'est voulu
+Page associée : [Réseau Docker par défaut ou réseau à soi : lequel choisir ?](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/network/).
 
-Les deux labs précédents faisaient écrire des réponses. Celui-ci fait
-**fabriquer**. Les quatre contrôles lisent l'état du moteur, pas un fichier.
+## 🔧 Avant de commencer
 
-C'est une décision de progression, pas une variation de forme : après deux labs
-d'observation, l'apprenant doit poser des gestes, et un troisième formulaire
-d'affilée enseignerait surtout la lassitude.
+Lancez le lab :
 
-## L'état de départ est joignable, et c'est le point délicat
+```bash
+dsoxlab run reseau-bridge-dedie
+```
 
-Au départ, les trois conteneurs sont sur le réseau par défaut, donc `tiers`
-**joint** `arriere` : le contrôle d'isolation est **faux** avant tout travail,
-ce que `valider-labs.py` exige.
+Vous êtes connecté à `docker.lab`, où le moteur tourne. La fonction `repondeur`
+lance un conteneur qui répond une ligne sur son port 80. **Gardez le même
+terminal jusqu'au nettoyage** : les variables n'existent que dans lui.
 
-Un setup qui aurait déjà séparé les conteneurs rendrait ce contrôle vrai sans
-travail, et ce ne serait plus un test mais une hypothèse du setup. C'est la
-règle la plus souvent enfreinte du dépôt, et elle est particulièrement facile à
-enfreindre sur un lab d'isolation, où l'état sain ressemble à un état vide.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+HOTE=$(ip -o -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}')
+repondeur() { docker run -d "$@" "$IMAGE" sh -c 'exec nc -ll -p 80 -e echo "ici $(hostname)"'; }
+docker version --format '{{.Server.Version}}'
+```
 
-Mesuré sur `docker.lab` le 2026-10-30 :
+```text
+29.9.2
+```
 
-| Moment | `tiers` joint `arriere` | `avant` résout `arriere` |
-| --- | --- | --- |
-| au départ | oui, il obtient le jeton | non |
-| après le travail | non | oui, vers son adresse sur `atelier` |
+Les sorties de ce cours viennent d'un Docker 29.9.2 sur Debian 13, le 24
+novembre 2026. Les adresses et les identifiants seront différents chez vous.
 
-## Le piège du lab, et il est fréquent en vrai
+## 🗺️ Exercice 1 : deux plans qui se recouvrent
 
-Attacher un conteneur à un réseau **ne le retire pas** de l'autre. Un conteneur
-sur deux réseaux garde toute sa joignabilité depuis le réseau par défaut.
+Créez un réseau, puis un second dont la plage contient la première :
 
-C'est la faute qui fait croire à une isolation qui n'existe pas : le nom
-résout, l'application fonctionne, tout semble en ordre. Le deuxième contrôle
-exige donc les deux gestes, et son message nomme celui qui manque au lieu de
-dire « pas attaché ».
+```bash
+docker network create --subnet 10.88.1.0/24 essai-plan > /dev/null
+docker network create --subnet 10.88.0.0/16 essai-recouvre; echo "code: $?"
+docker network inspect essai-plan --format '{{(index .IPAM.Config 0).Subnet}}'
+```
 
-## Pourquoi le témoin est protégé
+```text
+Error response from daemon: invalid pool request: Pool overlaps with other one on this address space
+code: 1
+10.88.1.0/24
+```
 
-Le quatrième contrôle serait aussi vrai si `tiers` ou `arriere` disparaissaient :
-il n'y aurait plus personne pour échouer à joindre. **Un contrôle qu'on
-satisfait en retirant le sujet ne mesure rien.**
+Docker refuse une plage qui en recouvre une autre, parmi ses réseaux. Le
+message ne dit pas laquelle : cherchez-la dans `docker network inspect` de
+chaque réseau.
 
-Deux garde-fous le tiennent : un préalable commun vérifie que les trois
-conteneurs tournent, et le quatrième contrôle vérifie que `tiers` est sur le
-réseau par défaut **et lui seul**. Le troisième contrôle prouve par ailleurs
-que `arriere` est vivant et répond.
+## 📌 Exercice 2 : une adresse fixe, demandée deux fois
 
-## Pourquoi le sous-réseau est imposé
+Sur un réseau dont vous avez choisi la plage, `--ip` fixe l'adresse.
+Demandez-la deux fois :
 
-Parce que c'est le geste réel. En production, un réseau de conteneurs doit
-cohabiter avec le reste sans collision, et cela se décide à la création. Un
-réseau créé sans `--subnet` reçoit un plan que le moteur choisit, ce qui est
-précisément ce qu'on veut éviter.
+```bash
+repondeur --name essai-fixe --network essai-plan --ip 10.88.1.50 > /dev/null
+docker container inspect essai-fixe --format '{{(index .NetworkSettings.Networks "essai-plan").IPAddress}}'
+repondeur --name essai-fixe2 --network essai-plan --ip 10.88.1.50 2>&1 | grep -o 'Address already in use'
+```
 
-## Résoudre n'est pas joindre
+```text
+10.88.1.50
+Address already in use
+```
 
-Le troisième contrôle ne se contente pas d'une résolution qui aboutit. Il
-vérifie que le nom rend bien l'adresse du conteneur **sur ce réseau**, puis que
-la connexion passe.
+`Address already in use` parle ici d'une adresse IP, pas d'un port. Le même
+texte sert aux deux cas : regardez ce que vous demandiez. Un nom suffit presque
+toujours, l'adresse fixe sert à un pare-feu ou à un équipement qui ne connaît
+que des adresses.
 
-Un résolveur peut répondre pour une adresse qu'aucune route n'atteint, et c'est
-un cas qu'on rencontre pour de vrai dès qu'un conteneur est sur plusieurs
-réseaux. Deux assertions valent mieux qu'une conclusion hâtive.
+## 🫥 Exercice 3 : un nom qui disparaît
 
-## Un piège du cleanup, payé d'avance
+Résolvez le nom d'un membre, arrêtez-le, puis recommencez :
 
-Un réseau dont des conteneurs sont encore membres **ne se supprime pas** :
-`docker network rm` refuse avec « has active endpoints ». Les conteneurs
-partent donc d'abord, le réseau ensuite.
+```bash
+docker run -d --name essai-client --network essai-plan "$IMAGE" sleep 600 > /dev/null
+docker exec essai-client getent hosts essai-fixe; echo "code: $?"
+docker stop --timeout 1 essai-fixe > /dev/null
+docker exec essai-client getent hosts essai-fixe; echo "code: $?"
+docker start essai-fixe > /dev/null
+docker exec essai-client nc -w 3 essai-fixe 80
+```
 
-C'est exactement le genre de dépendance qu'un cleanup écrit à l'envers fait
-découvrir au premier `dsoxlab reset`, dans un message qui ne dit pas la cause.
+```text
+10.88.1.50        essai-fixe  essai-fixe
+code: 0
+code: 2
+ici 93ee81f93376
+```
 
-Et le réseau `atelier` est retiré **même si c'est l'apprenant qui l'a créé** :
-sans cela, trois contrôles sur quatre seraient vrais au passage suivant avant
-tout travail.
+Le service de noms ne connaît que les membres en marche. Une application qui
+affiche « nom inconnu » vise peut-être un conteneur arrêté, et non un nom mal
+écrit. Au redémarrage, le nom revient.
 
-## Ce que le lab n'exige pas
+## 🔒 Exercice 4 : un réseau qu'on ne peut pas supprimer
 
-Un chemin. Le réseau se crée par `docker network create` comme par l'API ; le
-rattachement par `docker network connect` comme par une recréation du conteneur
-avec `--network` ; la résolution se constate par `nslookup`, `getent` ou une
-simple connexion.
+Essayez de supprimer le réseau pendant qu'il sert :
+
+```bash
+docker network rm essai-plan 2>&1 | grep -oE 'has active endpoints|essai-(fixe|client)"' | tr -d '"'
+docker network inspect essai-plan --format '{{range .Containers}}{{println .Name .IPv4Address}}{{end}}'
+```
+
+```text
+has active endpoints
+essai-fixe
+essai-client
+essai-client 10.88.1.2/24
+essai-fixe 10.88.1.50/24
+```
+
+Le refus nomme les membres encore attachés, qu'on retrouve dans `docker network
+inspect`. C'est une protection : lisez la liste avant de détacher qui que ce
+soit.
+
+## 🔇 Exercice 5 : résoudre n'est pas joindre
+
+Une option de réseau interdit aux membres de se parler. Créez-en un et essayez
+:
+
+```bash
+docker network create --opt com.docker.network.bridge.enable_icc=false essai-mute > /dev/null
+repondeur --name essai-muet --network essai-mute > /dev/null
+docker run -d --name essai-curieux --network essai-mute "$IMAGE" sleep 600 > /dev/null
+docker exec essai-curieux getent hosts essai-muet | awk '{print $2}'
+docker exec essai-curieux nc -w 3 essai-muet 80; echo "code: $?"
+```
+
+```text
+essai-muet
+code: 1
+```
+
+Le nom se résout et la connexion n'aboutit pas : le pare-feu du moteur bloque
+entre membres (`enable_icc=false`). Quand un nom répond mais pas le service,
+cherchez du côté du filtrage avant d'accuser l'application.
+
+## 🧹 Nettoyage
+
+```bash
+docker rm -f essai-fixe essai-fixe2 essai-client essai-muet essai-curieux > /dev/null
+docker network rm essai-plan essai-mute
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+essai-plan
+essai-mute
+0
+```
+
+Quittez ensuite la machine et remettez le lab à zéro. `dsoxlab reset` rejoue le
+nettoyage puis la préparation du lab. Il vous demande de confirmer : répondez
+`y`.
+
+```bash
+exit
+dsoxlab reset reseau-bridge-dedie
+dsoxlab check reseau-bridge-dedie
+```
+
+```text
+╭─ Résultat : reseau-bridge-dedie ──╮
+│  0 / 100 pts                      │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests  │
+╰───────────────────────────────────╯
+```
+
+0 sur 4 : c'est le résultat attendu. Le challenge est prêt.
+
+## 🎯 Le challenge
+
+À vous, seul cette fois : un réseau au plan imposé, deux conteneurs qui s'y
+trouvent par leur nom, et un troisième laissé dehors.
+
+```bash
+dsoxlab run reseau-bridge-dedie
+dsoxlab challenge reseau-bridge-dedie
+```
