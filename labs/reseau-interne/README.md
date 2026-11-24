@@ -1,98 +1,189 @@
-# reseau-interne: two isolations that are not alike
+# Two isolations that are not alike
 
-## What this lab tests
+The lesson compares a container without a network and an internal network, and
+shows the missing route. This course measures five limits: a published port
+that does not open, the host that gets in anyway, the gateway that answers,
+outside names, and two containers that share one network.
 
-That there are **two** isolations, confused because both are called
-"isolating":
+You work on the `essai-clos` network and `essai-*` containers. The challenge
+uses `coffre`, `dehors`, `atelier-a` and `atelier-b`: do not touch them during
+the course.
 
-| Posture | What it gives | What for |
-| --- | --- | --- |
-| no network | no interface, no neighbour, no way out | a job that needs nobody |
-| internal network | members talk by name, and do not get out | a database only its application must reach |
+Related page: [Isolating a container from the network: none or an internal network](https://www.stephane-robert.info/en/docs/docker/isolate-a-container-from-the-network/).
 
-Taking one for the other gives either an unusable service or an exposed one. The
-lab has both obtained on the same machine, so that the difference is seen rather
-than asserted.
+## 🔧 Before you start
 
-## Measured before being written
+Start the lab:
 
-On `docker.lab`, on 2026-10-30:
+```bash
+dsoxlab run reseau-interne
+```
 
-| Posture | interfaces besides loopback | reaches the witness | neighbour by name |
-| --- | --- | --- | --- |
-| default network | 1 | yes | no |
-| no network | 0 | no | not applicable |
-| internal network | 1 | no | yes |
+You are connected to `docker.lab`, where the engine runs. The `repondeur`
+function starts a container that answers one line on its port 80. **Keep the
+same terminal until the cleanup**: the variables only exist in it.
 
-And one detail that says everything about the mechanism: a container on an
-internal network has **no default route**. The isolation is not a filter placed
-in front of it, it is the absence of the path. The reference solution checks that
-explicitly, because it is the clearest way to understand what is going on.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+HOTE=$(ip -o -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}')
+repondeur() { docker run -d "$@" "$IMAGE" sh -c 'exec nc -ll -p 80 -e echo "ici $(hostname)"'; }
+docker version --format '{{.Server.Version}}'
+```
 
-## How "getting out" is measured, and why not against the internet
+```text
+29.9.2
+```
 
-Against a witness published on the machine's routable address.
+The outputs of this course come from a Docker 29.9.2 on Debian 13, on 24
+November 2026. Addresses and identifiers will differ on your side.
 
-A lab depending on outbound access would fail on an isolated machine, and its
-message would speak of successful isolation when there is no network at all: **it
-would grade the opposite of what it measures**. The local witness removes that
-dependency, and it makes the measurement reproducible.
+## 🚪 Exercise 1: a published port that does not open
 
-## Why the first two checks are separate
+Publish a port on a container of an internal network:
 
-The first reads the interfaces **inside** the container. The second tests what it
-**can reach**.
+```bash
+docker network create --internal --subnet 10.89.1.0/24 essai-clos > /dev/null
+repondeur --name essai-dedans --network essai-clos -p 127.0.0.1:18500:80 > /dev/null; echo "code: $?"
+docker container inspect essai-dedans --format '{{json .HostConfig.PortBindings}}'
+docker port essai-dedans | wc -l
+nc -w 3 127.0.0.1 18500; echo "code: $?"
+```
 
-That is not a repetition: a container may have lost its interface and still share
-a network stack with another one, in which case it still reaches. Reading the
-configuration and testing the behaviour are two measurements, and separating them
-is what lets the message name the right cause.
+```text
+code: 0
+{"80/tcp":[{"HostIp":"127.0.0.1","HostPort":"18500"}]}
+0
+code: 1
+```
 
-## Why the first check looks at the effect, not the path
+Docker accepts the command without a word, keeps the request in `PortBindings`,
+and opens nothing. `docker port` is empty and the connection fails. A
+"published" service that does not answer may therefore come from an internal
+network.
 
-It requires that no interface remains besides the loopback, not that the
-container declares a particular network.
+## 🏠 Exercise 2: the host gets in anyway
 
-Recreating it with the option that deprives it of a network is the plain move,
-and the one the lab teaches. Detaching the container from its networks gives the
-same result. Both count, because the repository's rule is to grade the state,
-never the command.
+Reach the container from the host, by its address:
 
-## The fourth check is indivisible
+```bash
+IP=$(docker container inspect essai-dedans --format '{{(index .NetworkSettings.Networks "essai-clos").IPAddress}}')
+echo "$IP"
+nc -w 3 "$IP" 80; echo "code: $?"
+```
 
-It requires three things at once: both containers on the confined network, the
-neighbour reached **by name**, and no way out.
+```text
+10.89.1.2
+ici fd9f0c2feb20
+code: 0
+```
 
-They do not separate. Confining without the members talking to each other would
-give an unusable service; having them talk without confining them would be just
-one more dedicated network, which is the previous lab. The conjunction is the
-skill.
+The host carries the gateway of this network, so it is part of it. An internal
+network prevents members from getting out. It does not hide them from the
+machine that hosts them.
 
-## Why the witness is protected
+## 🌉 Exercise 3: the gateway answers, the routable address does not
 
-Checks 2 and 4 would also be true if `dehors` disappeared: there would be nothing
-left to not reach.
+Start a web server on the host and call it from the container, by both
+addresses of the host:
 
-So a precondition verifies that it is running **and** that it answers from the
-host. If its publication has been changed, the isolation checks would pass for
-the wrong reason, and the message says so rather than letting success be
-believed.
+```bash
+mkdir -p ~/essai-web && echo "page de l'hôte" > ~/essai-web/index.html
+python3 -m http.server 18510 --bind 0.0.0.0 --directory ~/essai-web > /dev/null 2>&1 &
+sleep 1
+docker exec essai-dedans wget -q -T 3 -O - http://10.89.1.1:18510/
+docker exec essai-dedans wget -q -T 3 -O - "http://$HOTE:18510/"; echo "code: $?"
+```
 
-## The starting state is broken, and that is the repository's rule
+```text
+page de l'hôte
+wget: can't connect to remote host (10.10.120.11): Network unreachable
+code: 1
+```
 
-The three containers to isolate are on the default network, so all four checks
-are false. A setup task **verifies** that `coffre` and `atelier-b` do reach the
-witness before handing over: without it, two checks would be true before any
-work.
+Through the gateway, the container reaches the host's service. Through the
+routable address, no route: `Network unreachable`. A host service that listens
+on all interfaces can therefore still be reached from an internal network. This
+is the gap to know.
 
-## A cleanup trap, paid for in advance
+## 🔤 Exercise 4: outside names, and the refusal of none
 
-Two ordering dependencies, not one. A network whose containers are still members
-cannot be removed, and neither can an image containers derive from. So the
-containers go first, the network and the image second.
+Ask for a public name, then try to plug a `none` container into this network:
 
-## What the lab does not require
+```bash
+docker exec essai-dedans nslookup example.org 2>&1 | grep -o 'SERVFAIL'
+docker run -d --name essai-nu --network none "$IMAGE" sleep 600 > /dev/null
+docker network connect essai-clos essai-nu; echo "code: $?"
+```
 
-A path. The network can be created on the command line as well as through the
-API; the containers can be placed on the right network at creation as well as
-through an attach followed by a detach.
+```text
+SERVFAIL
+SERVFAIL
+Error response from daemon: container cannot be connected to multiple networks with one of the networks in private (none) mode
+code: 1
+```
+
+Outside names do not resolve either. And a container started without a network
+cannot be given one afterwards: it must be recreated.
+
+## 👥 Exercise 5: two containers, a single network
+
+`--network container:<name>` puts a second container in the network of the
+first:
+
+```bash
+docker run -d --name essai-voisin --network container:essai-dedans "$IMAGE" sleep 600 > /dev/null
+docker exec essai-voisin nc -w 3 127.0.0.1 80
+docker run --rm --network container:essai-dedans -p 18501:80 "$IMAGE" true 2>&1 | grep -o 'conflicting options.*'
+```
+
+```text
+ici fd9f0c2feb20
+conflicting options: port publishing and the container type network mode
+```
+
+Both share the same address and the same `127.0.0.1`. The second cannot publish
+a port: the network belongs to the first. This setup gives a diagnostic tool to
+a confined container without touching its network.
+
+## 🧹 Cleanup
+
+```bash
+docker rm -f essai-voisin essai-nu essai-dedans > /dev/null
+docker network rm essai-clos
+pkill -f 'http.server 18510'
+rm -r ~/essai-web
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+essai-clos
+0
+```
+
+Then leave the machine and reset the lab. `dsoxlab reset` replays the cleanup
+then the setup of the lab. It asks you to confirm: answer `y`.
+
+```bash
+exit
+dsoxlab reset reseau-interne
+dsoxlab check reseau-interne
+```
+
+```text
+╭───── Result: reseau-interne ──────╮
+│  0 / 100 pts                      │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests  │
+╰───────────────────────────────────╯
+```
+
+0 out of 4: that is the expected result. The challenge is ready.
+
+## 🎯 The challenge
+
+Your turn, on your own this time: one container without a network, and two
+others that talk to each other without ever getting out.
+
+```bash
+dsoxlab run reseau-interne
+dsoxlab challenge reseau-interne
+```

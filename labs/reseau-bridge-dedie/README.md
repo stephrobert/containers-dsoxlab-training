@@ -1,95 +1,184 @@
-# reseau-bridge-dedie: naming and isolating
+# A network of your own: naming and isolating
 
-## What this lab tests
+The lesson creates a network, shows its name service, its isolation and the
+aliases. This course adds five moves: an overlapping address plan, a fixed
+address, a name that disappears, a network that cannot be removed, and a name
+that resolves while the connection does not go through.
 
-That a dedicated network brings **two** things, not one: name resolution among
-its members, and isolation of those that are not in it. The previous lab had
-the learner observe the absence of DNS on the default network; this one has
-them fix the situation and measures both effects.
+You work on `essai-*` networks and containers. The challenge uses `avant`,
+`arriere` and `tiers`: do not touch them during the course.
 
-## No form here, and that is deliberate
+Related page: [Default Docker network or your own: which to choose?](https://www.stephane-robert.info/en/docs/docker/default-network-or-your-own/).
 
-The two previous labs had answers written down. This one has things **built**.
-The four checks read the state of the engine, not a file.
+## 🔧 Before you start
 
-That is a progression decision, not a change of style: after two labs of
-observation, the learner has to make moves, and a third form in a row would
-mostly teach weariness.
+Start the lab:
 
-## The starting state is reachable, and that is the delicate point
+```bash
+dsoxlab run reseau-bridge-dedie
+```
 
-At the start, all three containers are on the default network, so `tiers`
-**does** reach `arriere`: the isolation check is **false** before any work,
-which `valider-labs.py` requires.
+You are connected to `docker.lab`, where the engine runs. The `repondeur`
+function starts a container that answers one line on its port 80. **Keep the
+same terminal until the cleanup**: the variables only exist in it.
 
-A setup that had already separated the containers would make that check true
-with no work, and it would no longer be a test but an assumption of the setup.
-That is the repository's most often broken rule, and it is particularly easy to
-break on an isolation lab, where the healthy state looks like an empty one.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+HOTE=$(ip -o -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}')
+repondeur() { docker run -d "$@" "$IMAGE" sh -c 'exec nc -ll -p 80 -e echo "ici $(hostname)"'; }
+docker version --format '{{.Server.Version}}'
+```
 
-Measured on `docker.lab` on 2026-10-30:
+```text
+29.9.2
+```
 
-| Moment | `tiers` reaches `arriere` | `avant` resolves `arriere` |
-| --- | --- | --- |
-| at the start | yes, it gets the token | no |
-| after the work | no | yes, to its address on `atelier` |
+The outputs of this course come from a Docker 29.9.2 on Debian 13, on 24
+November 2026. Addresses and identifiers will differ on your side.
 
-## The lab's trap, and it is a common one for real
+## 🗺️ Exercise 1: two plans that overlap
 
-Attaching a container to a network **does not remove it** from the other one. A
-container on two networks keeps all of its reachability from the default
+Create a network, then a second one whose range contains the first:
+
+```bash
+docker network create --subnet 10.88.1.0/24 essai-plan > /dev/null
+docker network create --subnet 10.88.0.0/16 essai-recouvre; echo "code: $?"
+docker network inspect essai-plan --format '{{(index .IPAM.Config 0).Subnet}}'
+```
+
+```text
+Error response from daemon: invalid pool request: Pool overlaps with other one on this address space
+code: 1
+10.88.1.0/24
+```
+
+Docker refuses a range that overlaps another one among its networks. The
+message does not say which: look for it in the `docker network inspect` of each
 network.
 
-That is the mistake that creates belief in an isolation that does not exist:
-the name resolves, the application works, everything looks fine. So the second
-check requires both moves, and its message names the one that is missing
-instead of saying "not attached".
+## 📌 Exercise 2: a fixed address, asked for twice
 
-## Why the witness is protected
+On a network whose range you chose, `--ip` sets the address. Ask for it twice:
 
-The fourth check would also be true if `tiers` or `arriere` disappeared: there
-would be nobody left to fail to reach. **A check satisfied by removing the
-subject measures nothing.**
+```bash
+repondeur --name essai-fixe --network essai-plan --ip 10.88.1.50 > /dev/null
+docker container inspect essai-fixe --format '{{(index .NetworkSettings.Networks "essai-plan").IPAddress}}'
+repondeur --name essai-fixe2 --network essai-plan --ip 10.88.1.50 2>&1 | grep -o 'Address already in use'
+```
 
-Two guards hold it: a shared precondition verifies that all three containers
-are running, and the fourth check verifies that `tiers` is on the default
-network **and only that one**. The third check also proves that `arriere` is
-alive and answering.
+```text
+10.88.1.50
+Address already in use
+```
 
-## Why the subnet is imposed
+`Address already in use` is about an IP address here, not a port. The same text
+serves both cases: look at what you were asking for. A name is almost always
+enough, a fixed address serves a firewall or a device that only knows
+addresses.
 
-Because that is the real move. In production, a container network has to
-coexist with everything else without collision, and that is decided at
-creation. A network created without `--subnet` gets a plan the engine picks,
-which is precisely what we want to avoid.
+## 🫥 Exercise 3: a name that disappears
 
-## Resolving is not reaching
+Resolve the name of a member, stop it, then try again:
 
-The third check is not satisfied by a resolution that succeeds. It verifies
-that the name does return the container's address **on this network**, and then
-that the connection goes through.
+```bash
+docker run -d --name essai-client --network essai-plan "$IMAGE" sleep 600 > /dev/null
+docker exec essai-client getent hosts essai-fixe; echo "code: $?"
+docker stop --timeout 1 essai-fixe > /dev/null
+docker exec essai-client getent hosts essai-fixe; echo "code: $?"
+docker start essai-fixe > /dev/null
+docker exec essai-client nc -w 3 essai-fixe 80
+```
 
-A resolver can answer for an address no route reaches, and that is a case met
-for real as soon as a container is on several networks. Two assertions beat one
-hasty conclusion.
+```text
+10.88.1.50        essai-fixe  essai-fixe
+code: 0
+code: 2
+ici 7f4906e0e8f2
+```
 
-## A cleanup trap, paid for in advance
+The name service only knows running members. An application that shows "unknown
+name" may be aiming at a stopped container, not at a misspelled name. When it
+starts again, the name comes back.
 
-A network whose containers are still members **cannot be removed**: `docker
-network rm` refuses with "has active endpoints". So the containers go first, the
-network second.
+## 🔒 Exercise 4: a network that cannot be removed
 
-That is exactly the kind of dependency a cleanup written the wrong way round
-reveals on the first `dsoxlab reset`, in a message that does not state the
-cause.
+Try to remove the network while it is in use:
 
-And the `atelier` network is removed **even though the learner created it**:
-without that, three checks out of four would be true on the next pass before any
-work.
+```bash
+docker network rm essai-plan 2>&1 | grep -oE 'has active endpoints|essai-(fixe|client)"' | tr -d '"'
+docker network inspect essai-plan --format '{{range .Containers}}{{println .Name .IPv4Address}}{{end}}'
+```
 
-## What the lab does not require
+```text
+has active endpoints
+essai-client
+essai-fixe
+essai-fixe 10.88.1.50/24
+essai-client 10.88.1.2/24
+```
 
-A path. The network can be created through `docker network create` as well as
-through the API; the attachment through `docker network connect` as well as by
-recreating the container with `--network`; the resolution can be observed
-through `nslookup`, `getent` or a plain connection.
+The refusal names the members still attached, which `docker network inspect`
+also shows. This is a protection: read the list before you detach anyone.
+
+## 🔇 Exercise 5: resolving is not reaching
+
+A network option forbids members to talk to each other. Create one and try:
+
+```bash
+docker network create --opt com.docker.network.bridge.enable_icc=false essai-mute > /dev/null
+repondeur --name essai-muet --network essai-mute > /dev/null
+docker run -d --name essai-curieux --network essai-mute "$IMAGE" sleep 600 > /dev/null
+docker exec essai-curieux getent hosts essai-muet | awk '{print $2}'
+docker exec essai-curieux nc -w 3 essai-muet 80; echo "code: $?"
+```
+
+```text
+essai-muet
+code: 1
+```
+
+The name resolves and the connection does not go through: the engine's firewall
+blocks between members (`enable_icc=false`). When a name answers but the
+service does not, look at filtering before accusing the application.
+
+## 🧹 Cleanup
+
+```bash
+docker rm -f essai-fixe essai-fixe2 essai-client essai-muet essai-curieux > /dev/null
+docker network rm essai-plan essai-mute
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+essai-plan
+essai-mute
+0
+```
+
+Then leave the machine and reset the lab. `dsoxlab reset` replays the cleanup
+then the setup of the lab. It asks you to confirm: answer `y`.
+
+```bash
+exit
+dsoxlab reset reseau-bridge-dedie
+dsoxlab check reseau-bridge-dedie
+```
+
+```text
+╭─── Result: reseau-bridge-dedie ───╮
+│  0 / 100 pts                      │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests  │
+╰───────────────────────────────────╯
+```
+
+0 out of 4: that is the expected result. The challenge is ready.
+
+## 🎯 The challenge
+
+Your turn, on your own this time: a network with a set plan, two containers
+that find each other by name on it, and a third left outside.
+
+```bash
+dsoxlab run reseau-bridge-dedie
+dsoxlab challenge reseau-bridge-dedie
+```

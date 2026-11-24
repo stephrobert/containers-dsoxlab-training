@@ -1,87 +1,202 @@
-# reseau-bridge-par-defaut: the network nobody chooses
+# The default network, and what it does not do
 
-## What this lab tests
+The lesson shows the address, the gateway and the absence of names on the
+default network. This course adds five moves: an address that changes, what
+this network refuses, a name set by hand, access to a service of the host, and
+the host interface linked to a container.
 
-That the default network connects containers to each other and to the host, and
-that it gives them **no name resolution**. It is the network you land on when
-you say nothing, and its limits are only discovered by hitting them.
+You work on `essai-*` containers. The challenge uses `avant` and `arriere`: do
+not touch them during the course.
 
-## The lesson was measured before it was written
+Related page: [Default Docker network or your own: which to choose?](https://www.stephane-robert.info/en/docs/docker/default-network-or-your-own/).
 
-On `docker.lab`, on 2026-10-30, from a container of the default network:
+## 🔧 Before you start
 
-| Attempt | Result |
-| --- | --- |
-| connection to `arriere`'s **address** | its token |
-| connection to its **name** | `nc: bad address 'arriere'` |
-| `nslookup arriere` | times out, no server reachable |
+Start the lab:
 
-The next lab, `reseau-bridge-dedie`, creates a network and recovers DNS. **The
-contrast is the teaching**: claiming that a dedicated network "brings DNS" is
-worth nothing until you have seen the other one do without it.
+```bash
+dsoxlab run reseau-bridge-par-defaut
+```
 
-## Why `nc` and not `ping`
+You are connected to `docker.lab`, where the engine runs. The `repondeur`
+function starts a container that answers one line on its port 80. **Keep the
+same terminal until the cleanup**: the variables only exist in it.
 
-ICMP depends on the container's capabilities and on host kernel settings. A
-networking lab failing for that reason would teach the wrong lesson: the
-learner would conclude that the network does not work, when only ICMP is
-filtered. A TCP connection proves the same reachability and depends on nothing
-else.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+HOTE=$(ip -o -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "src") print $(i + 1)}')
+repondeur() { docker run -d "$@" "$IMAGE" sh -c 'exec nc -ll -p 80 -e echo "ici $(hostname)"'; }
+docker version --format '{{.Server.Version}}'
+adresse() { docker container inspect "$1" --format '{{.Name}} {{.NetworkSettings.Networks.bridge.IPAddress}}'; }
+```
 
-## Why the token is not in the logs
+```text
+29.9.2
+```
 
-A first version had `arriere` announce it on its standard output. `docker logs`
-then handed it over **without a single packet crossing the network**, and the
-lab could be solved without touching its subject.
+The outputs of this course come from a Docker 29.9.2 on Debian 13, on 24
+November 2026. Addresses and identifiers will differ on your side.
 
-So it lives only in the TCP answer, and a fresh one is drawn on every pass.
-Finding it presupposes having opened a connection.
+## 🔄 Exercise 1: an address that changes
 
-## An honest word about the fourth check
+Note the address of a container, stop it, start another one, then start the
+first again:
 
-The host also reaches the default bridge directly: the token can therefore be
-obtained from the host rather than from `avant`.
+```bash
+repondeur --name essai-un > /dev/null
+adresse essai-un
+docker stop --timeout 1 essai-un > /dev/null
+repondeur --name essai-deux > /dev/null
+docker start essai-un > /dev/null
+adresse essai-un
+adresse essai-deux
+```
 
-This is not a flaw in the lab, it is a **fact about the default network**, which
-the scenario states, and it is even a useful security point. So the check grades
-the state reached, `avant` carries the token, and not the path taken, which is
-the repository's rule.
+```text
+/essai-un 172.17.0.4
+/essai-un 172.17.0.5
+/essai-deux 172.17.0.4
+```
 
-## The three questions, and what each one builds
+`essai-deux` received the address `essai-un` had. A configuration that noted
+this address would now reach another service, without any error. This is worse
+than a failure: the connection succeeds.
 
-| Answer | Where it is read | What it teaches |
-| --- | --- | --- |
-| `adresse` | inspecting the **container** | on this network it is the only way to name a neighbour |
-| `passerelle` | inspecting the **network** | a container knows its address, the network knows its gateway |
-| `interface` | the host, through `ip addr` | the gateway is carried by a real interface |
+## 🚫 Exercise 2: what this network refuses
 
-The second and the third are the ones usually skipped, and they are the ones
-that turn container networking into something concrete.
+Try to set an address, to give an alias, then to remove this network:
 
-## Why the interface is looked up by address, not by name
+```bash
+docker run --rm --ip 172.17.0.50 "$IMAGE" true 2>&1 | grep -i 'user'
+docker run --rm --network-alias guichet "$IMAGE" true 2>&1 | grep -i 'user'
+docker network rm bridge; echo "code: $?"
+```
 
-The default network's bridge is called `docker0` on an ordinary installation,
-and the engine even names it in the network's options. But that name is
-**configurable**: a check expecting a hardcoded `docker0` would be wrong on a
-machine set up differently.
+```text
+user-specified IP address is supported on user-defined networks only
+docker: network-scoped aliases are only supported for user-defined networks
+Error response from daemon: bridge is a pre-defined network and cannot be removed
+exit status 1
+code: 1
+```
 
-So the test looks for which host interface carries the gateway's address. Same
-reason on the subnet side: no address is written into the tests, because
-`172.17.0.0/16` depends on the machine.
+All three requests are refused. A fixed address and an alias only exist on a
+network you create, and the default network cannot be removed. These messages
+are the most common reason to move to a dedicated network.
 
-## The starting state is broken, and that is the repository's rule
+## 📒 Exercise 3: a name set by hand
 
-| Laid down by the setup | Starting state | Expected move | Check |
-| --- | --- | --- | --- |
-| `reponses.txt` | three keys, three **empty** values | fill them in | 1, 2 and 3 |
-| the token, in `arriere`'s process | `avant` does not carry it | open a connection | 4 |
+Without a name service, `--add-host` writes a line in the container's
+`/etc/hosts`:
 
-A setup task **verifies** that state before handing over: both containers are
-running, and `avant` does not already carry a previous pass's token.
+```bash
+IP=$(adresse essai-un | awk '{print $2}')
+docker run -d --name essai-annuaire --add-host guichet:"$IP" "$IMAGE" sleep 600 > /dev/null
+docker exec essai-annuaire grep guichet /etc/hosts
+docker exec essai-annuaire nc -w 3 guichet 80
+docker stop --timeout 1 essai-un > /dev/null
+docker exec essai-annuaire nc -w 3 guichet 80; echo "code: $?"
+```
 
-## What the lab does not require
+```text
+172.17.0.5	guichet
+ici 76f360523345
+code: 1
+```
 
-A path. The address can be read from the container's inspection as well as from
-the network's full output; the interface through `ip addr` as well as through
-the options the engine declares; the connection through `nc` as well as `wget`
-or any other client.
+The name works as long as the address is right. The line is written when the
+container is created and nobody updates it: it points to an address, not to a
+container.
+
+## 🖥️ Exercise 4: reach a service of the host
+
+Start a web server on the host, then reach it from a container through the
+gateway, which `host-gateway` points to for you:
+
+```bash
+mkdir -p ~/essai-web && echo "page de l'hôte" > ~/essai-web/index.html
+python3 -m http.server 18420 --bind 0.0.0.0 --directory ~/essai-web > /dev/null 2>&1 &
+sleep 1
+docker run --rm --add-host hote:host-gateway "$IMAGE" sh -c 'grep -c hote /etc/hosts; wget -q -O - http://hote:18420/'
+docker run --rm "$IMAGE" wget -q -T 3 -O - http://127.0.0.1:18420/; echo "code: $?"
+```
+
+```text
+1
+page de l'hôte
+wget: can't connect to remote host (127.0.0.1): Connection refused
+code: 1
+```
+
+The `127.0.0.1` of a container is its own, not the host's: the second attempt
+fails. `host-gateway` avoids writing the address of the gateway by hand.
+
+## 🔌 Exercise 5: the host interface linked to a container
+
+Each container is linked to the bridge of its network by a virtual cable. Try
+it on a separate network. The number read in the container points to the
+interface on the host side:
+
+```bash
+docker network create --subnet 10.87.1.0/24 essai-pont > /dev/null
+repondeur --name essai-cable --network essai-pont > /dev/null
+N=$(docker exec essai-cable cat /sys/class/net/eth0/iflink)
+ip -o link | grep "^$N:" | awk '{print $2}' | grep -o '^veth'
+ip -o link | grep "^$N:" | grep -o 'master br-'
+sudo iptables -t nat -S POSTROUTING | grep '10.87.1.0' | grep -oE '10.87.1.0/24|MASQUERADE'
+```
+
+```text
+veth
+master br-
+10.87.1.0/24
+MASQUERADE
+```
+
+The other end of the cable is a `veth` interface, attached to the bridge of the
+network (`br-` followed by an identifier). The last lines come from the rule
+that replaces the container's address with the host's when traffic leaves the
+bridge. The default network follows the same setup, under another name.
+
+## 🧹 Cleanup
+
+```bash
+docker rm -f essai-un essai-deux essai-annuaire essai-cable > /dev/null
+docker network rm essai-pont
+pkill -f 'http.server 18420'
+rm -r ~/essai-web
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+essai-pont
+0
+```
+
+Then leave the machine and reset the lab. `dsoxlab reset` replays the cleanup
+then the setup of the lab. It asks you to confirm: answer `y`.
+
+```bash
+exit
+dsoxlab reset reseau-bridge-par-defaut
+dsoxlab check reseau-bridge-par-defaut
+```
+
+```text
+╭─ Result: reseau-bridge-par-defaut ─╮
+│  0 / 100 pts                       │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests   │
+╰────────────────────────────────────╯
+```
+
+0 out of 4: that is the expected result. The challenge is ready.
+
+## 🎯 The challenge
+
+Your turn, on your own this time: map this network and get a token through a
+real connection.
+
+```bash
+dsoxlab run reseau-bridge-par-defaut
+dsoxlab challenge reseau-bridge-par-defaut
+```
