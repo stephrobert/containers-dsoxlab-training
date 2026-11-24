@@ -15,34 +15,6 @@ qui ne se ressemblent pas : **redémarrer** le conteneur qui existait, ou en
 tourne, et c'est bien ce qui rend la confusion durable. Un seul garde
 l'identité du conteneur, ses journaux et ce qui avait été écrit dedans.
 
-## L'objectif
-
-Vous déplacer dans le cycle de vie sans jamais repartir de zéro. L'image est
-déjà sur la machine : rien à tirer, rien à construire.
-
-```text
-dormeur   ARRÊTÉ, et il porte un fichier /empreinte.txt
-actif     il TOURNE
-```
-
-1. `dormeur` **tourne à nouveau**, et c'est le **même** conteneur : son
-   identifiant ne doit pas avoir changé.
-2. Son fichier `/empreinte.txt` est toujours là.
-3. `actif` est **en pause**, ni arrêté ni supprimé.
-4. Un conteneur nommé `sortie` est **terminé**, avec le code de sortie **42**.
-
-L'énoncé est aussi déposé dans `/opt/MISSION.md`.
-
-## Ce qui est noté
-
-L'**état du moteur**, jamais les commandes tapées. Mais ici l'identité compte
-autant que l'état : l'identifiant d'origine de `dormeur` a été relevé **avant**
-que vous ne touchiez à quoi que ce soit, et il est comparé. Vous pouvez le lire
-vous-même dans `/opt/lab-cycle/id-dormeur.txt`.
-
-Ce n'est pas de la méfiance, c'est le seul moyen de distinguer les deux gestes :
-leur résultat visible est identique, et seule l'empreinte les sépare.
-
 ## Ce qui est demandé
 
 Sur `docker.lab`, une Debian 13 jetable, moteur en service. L'image
@@ -52,6 +24,8 @@ Sur `docker.lab`, une Debian 13 jetable, moteur en service. L'image
 dormeur   ARRÊTÉ, il porte /empreinte.txt
 actif     il TOURNE
 ```
+
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.
 
 ### 1. `dormeur` tourne à nouveau, et c'est le MÊME conteneur
 
@@ -88,6 +62,16 @@ Il doit avoir **tourné** puis s'être **terminé**, et porter le code de sortie
 Le code est celui que rend le processus principal du conteneur, et il **survit
 au conteneur** : c'est ce qu'un orchestrateur lit pour décider de relancer ou
 d'alerter. Un conteneur encore en marche n'en porte aucun.
+
+## Ce qui est noté
+
+L'**état du moteur**, jamais les commandes tapées. Mais ici l'identité compte
+autant que l'état : l'identifiant d'origine de `dormeur` a été relevé **avant**
+que vous ne touchiez à quoi que ce soit, et il est comparé. Vous pouvez le lire
+vous-même dans `/opt/lab-cycle/id-dormeur.txt`.
+
+Ce n'est pas de la méfiance, c'est le seul moyen de distinguer les deux gestes :
+leur résultat visible est identique, et seule l'empreinte les sépare.
 
 ### Ce qui n'est pas noté
 
