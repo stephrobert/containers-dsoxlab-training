@@ -1607,6 +1607,70 @@
   "store": "aucun",
   "verdict": "VALIDE"
  },
+ "conteneur-limiter-a-la-main": {
+  "apres": {
+   "echecs": [],
+   "passed": 5,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 5
+  },
+  "avant": {
+   "echecs": [
+    "test_le_cgroup_quai_plafonne_la_memoire_sans_swap",
+    "test_le_cgroup_quai_plafonne_processus_et_cpu",
+    "test_le_plafond_memoire_a_deja_tue_un_processus",
+    "test_le_root_du_conteneur_n_a_plus_cap_sys_admin",
+    "test_un_conteneur_tourne_dans_le_cgroup_quai"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "date": "2026-11-24",
+  "docker": "absent",
+  "duree_s": 33,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/5",
+   "après la solution : 5/5",
+   "après clean et run : 0/5",
+   "moteur rendu intact"
+  ],
+  "host": "oci.lab",
+  "id": "conteneur-limiter-a-la-main",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-conteneur-limiter-a-la-main.log",
+  "moteurs": {
+   "oci.lab": {
+    "docker": "absent",
+    "store": "aucun"
+   }
+  },
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_le_cgroup_quai_plafonne_la_memoire_sans_swap",
+    "test_le_cgroup_quai_plafonne_processus_et_cpu",
+    "test_le_plafond_memoire_a_deja_tue_un_processus",
+    "test_le_root_du_conteneur_n_a_plus_cap_sys_admin",
+    "test_un_conteneur_tourne_dans_le_cgroup_quai"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 5
+  },
+  "store": "aucun",
+  "verdict": "VALIDE"
+ },
  "docker-anatomie-dune-image": {
   "apres": {
    "echecs": [],
