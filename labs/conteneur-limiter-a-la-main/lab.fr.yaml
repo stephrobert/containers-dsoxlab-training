@@ -1,0 +1,2 @@
+title: "Limiter un conteneur fait main avec les cgroups et les capabilities"
+description: "Plafonner la mémoire, les processus et le CPU d'un conteneur dans un cgroup v2, voir le noyau tuer un processus qui dépasse le plafond mémoire, et retirer CAP_SYS_ADMIN à son root."

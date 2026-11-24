@@ -1,0 +1,42 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : défait le cgroup quai, le
+# conteneur qu'il contient et le rootfs posé par setup.yaml.
+#
+# L'ORDRE COMPTE. Les processus d'abord (ceux dont la racine est /srv/quai,
+# puis tout ce que contient le cgroup, par cgroup.kill) : un cgroup occupé
+# refuse rmdir. Puis le cgroup, puis les montages éventuels, puis les fichiers.
+- name: Défaire le lab conteneur-limiter-a-la-main
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Arrêter les processus du conteneur
+      ansible.builtin.shell: |
+        set -eu
+        for p in $(ls /proc | grep -E '^[0-9]+$'); do
+          if [ "$(readlink /proc/$p/root 2>/dev/null)" = /srv/quai ]; then kill -KILL "$p" 2>/dev/null || true; fi
+        done
+        sleep 1
+      changed_when: true
+
+    - name: Vider puis retirer le cgroup quai
+      ansible.builtin.shell: |
+        set -eu
+        if [ -d /sys/fs/cgroup/quai ]; then
+          echo 1 > /sys/fs/cgroup/quai/cgroup.kill
+          sleep 1
+          rmdir /sys/fs/cgroup/quai
+        fi
+      changed_when: true
+
+    - name: Démonter ce qui resterait sous /srv/quai
+      ansible.builtin.shell: |
+        findmnt -rn -o TARGET | grep '^/srv/quai' | sort -r | xargs -r umount -l || true
+      changed_when: true
+
+    - name: Retirer les fichiers du lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /srv/quai
+        - /opt/MISSION.md
