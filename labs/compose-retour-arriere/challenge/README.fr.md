@@ -1,4 +1,6 @@
-# Scénario
+# « Si ça se passe mal, on revient en arrière ? »
+
+## La situation
 
 Le service de référence de l'équipe tourne sur `docker.lab`, déployé par
 Compose, épinglé par digest, avec son volume de données. Il garde des

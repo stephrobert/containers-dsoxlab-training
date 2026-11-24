@@ -38,37 +38,14 @@ Touching the source. It must run and serve as it did before.
 You do not break what you came to back up, and that is the most tempting fault:
 stopping the database makes everything else easier.
 
-## The decisive check
+## How it is checked
 
-**The data the target serves must equal the data the source served.**
-
-This is the check this lab exists for. A restore that serves wrong data is
-worse than a restore that fails: a failure is seen and done again, wrong data is
-discovered the day it is needed, and the herbarium is lost.
-
-The check does not count rows, it compares a **fingerprint** of the content: a
-table filled with wrong values has the right number of rows.
-
-## How you are graded
-
-Five checks of equal weight, and **only the final state counts**. The path is
-yours: no check looks at which commands you typed.
-
-Four hints are available, and **they cost points**: `dsoxlab hint`.
-
-The full brief is on the machine too, in
+The brief is on the machine too, in
 `/opt/lab-sauver-restaurer/MISSION.md`.
 
-## Back up a Compose stack, and restore it elsewhere
+Five checks of equal weight, and each one rests on a verifiable fact.
 
-The `herbier` stack runs and serves. You must back it up, bring it back in a
-**fresh** project running beside it, and prove the data served is the same.
-
-### The five checks
-
-They carry equal weight, and each one rests on a verifiable fact.
-
-#### 1. The database backup is logical, and reads back
+### 1. The database backup is logical, and reads back
 
 A copy of the data directory taken while the engine writes **is not a backup**.
 It looks complete, it holds an intermediate state, and it restores without an
@@ -77,7 +54,7 @@ error until the day it does not.
 The check does not look at **how** the archive was made, it looks at what it
 **is**: a logical backup reads back, and the check reads it back.
 
-#### 2. The plates and the configuration are archived
+### 2. The plates and the configuration are archived
 
 Two separate archives, and two separate reasons.
 
@@ -85,7 +62,7 @@ The files volume **does not live in the database**: no `pg_dump` carries it
 along. And the configuration is what lets you **rebuild** the stack: without it
 you hold data and nothing to serve it with.
 
-#### 3. The target is a project of its own, and it is up
+### 3. The target is a project of its own, and it is up
 
 Restoring over the source proves nothing: the data was already there.
 
@@ -93,7 +70,7 @@ The target is therefore a Compose project of its own, and the two **live side by
 side**, which forces it to take its own published port. That is also the real
 situation: you verify a backup **before** you have lost the original.
 
-#### 4. The target serves exactly the source's data
+### 4. The target serves exactly the source's data
 
 **This is the check this lab exists for.**
 
@@ -118,7 +95,7 @@ Two values are drawn at random on every run, one in the database and one in a
 plate. They exist nowhere but in the source: they can be neither guessed nor
 reconstructed.
 
-#### 5. The target's web front does serve its plates
+### 5. The target's web front does serve its plates
 
 A correct volume and a service that does not mount it give you a target that
 **holds** the plates without **serving** them.

@@ -3,7 +3,7 @@
 id: compose-correlation-et-saturation                      # REQUIS
 title: "Correlate business requests and attribute CPU saturation"
 level: c4
-description: "Configure the supplied gateway and calculator, measure effective cgroup throttling under bounded business load and exclude sensitive headers from both JSON traces."
+description: "A request can be followed end to end in the logs, no secret appears in them, and the saturated component is named by measurements."
 skills:                       # REQUIS, non vide
   - docker
   - compose

@@ -1,4 +1,6 @@
-# Scenario
+# "If it goes wrong, do we roll back?"
+
+## The situation
 
 The team's reference service runs on `docker.lab`, deployed by Compose, pinned
 by digest, with its data volume. It keeps records, and it already holds one:

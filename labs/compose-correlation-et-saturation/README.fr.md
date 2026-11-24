@@ -1,43 +1,238 @@
-# La corrélation n'est pas le volume de logs
+# Corréler une requête métier et attribuer la saturation CPU
 
-[English](README.md) | [Énoncé](challenge/README.fr.md)
+La leçon suit une requête dans les journaux et lit les compteurs de bridage. Ce
+cours ajoute cinq situations : deux flux mêlés, un message écrit dans un
+fichier, un journal borné, un journal perdu à la recréation, et un service lent
+que personne ne bride.
 
-Dans un service d'achat neutre, un identifiant frais relie entrée, calcul aval
-et réponse métier. Les traces JSON doivent conserver une liste autorisée de
-champs utiles, jamais une copie des en-têtes de requête.
+Vous travaillez dans `~/essai-traces`, sur un projet `essai-traces`. Le
+challenge porte sur `/opt/dsoxlab-compose-correlation-et-saturation` : n'y
+touchez pas pendant le cours.
 
-```sh
-docker compose -p tutorial-shop logs --no-color
-docker exec tutorial-shop-calculator cat /sys/fs/cgroup/cpu.max
-docker exec tutorial-shop-calculator cat /sys/fs/cgroup/cpu.stat
+Page associée : [Lire les journaux et attribuer une saturation](https://www.stephane-robert.info/docs/conteneurs/orchestrateurs/docker-compose/journaux-et-saturation/).
+
+## 🔧 Avant de commencer
+
+Lancez le lab :
+
+```bash
+dsoxlab run compose-correlation-et-saturation
 ```
 
-Ces noms ne sont pas installés par ce challenge. Un quota CPU diffère d'un
-poids relatif : `cpu.max` porte le budget effectif. Comparez `usage_usec`,
-`nr_throttled` et `throttled_usec` avant et après une charge métier bornée.
-Les deltas, les résultats métier et l'identité du composant établissent
-ensemble l'attribution; taille des logs et limite mémoire déclarée ne suffisent pas.
+Vous êtes connecté à `docker.lab`. La variable `COMPOSE_PROGRESS` fait taire
+l'avancement de Compose : seuls les avertissements et les erreurs s'affichent.
+Écrivez un service qui parle à trois endroits, et un autre dont le journal est
+borné. **Gardez le même terminal jusqu'au nettoyage** : les variables
+n'existent que dans lui.
 
-Les interrupteurs de déploiement fournis sont `CORRELATE` et `SAFE_LOGS`
-(`"0"` ou `"1"`), pour chaque composant. Aucune programmation n'est requise.
-`ROLE` choisit passerelle ou worker. `/quote?quantity=N` accepte 1 à 20
-articles et retourne un total à 125 centimes par article, corrélé via
-`X-Request-ID`. Le worker consomme 0,12 seconde de CPU du thread par devis.
+```bash
+mkdir -p ~/essai-traces && cd ~/essai-traces
+export COMPOSE_PROGRESS=quiet
+export IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+docker compose version --short
+cat > compose.yaml <<'EOF'
+services:
+  guichet:
+    image: ${IMAGE}
+    init: true
+    command: ["sh", "-c", "echo demande recue; echo quantite invalide >&2; echo detail > /tmp/appli.log; sleep 600"]
+  compteur:
+    image: ${IMAGE}
+    init: true
+    command: ["sh", "-c", "for i in $$(seq 1 3000); do echo ligne $$i; done; sleep 600"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10k"
+        max-file: "2"
+EOF
+docker compose up -d && sleep 3
+```
 
-Concurrence et nombre de requêtes doivent être bornés. Le test emploie 16
-identifiants frais, quatre clients, un worker à un quart de CPU et une
-passerelle à un CPU. Deltas positifs et au moins 0,10 seconde CPU par requête
-distinguent le calcul du démarrage; le CPU worker doit dépasser deux fois
-celui de la passerelle. Ce sont des budgets de test, pas des pourcentages
-de performance inventés pour la formation.
+```text
+5.6.1
+```
 
-Ancre source : guide local `orchestrateurs/docker-compose.mdx`,
-`Configuration avancée`. L'explication humaine reste évaluée séparément.
+Les sorties de ce cours viennent d'un Docker 29.9.2 sur Debian 13, le 24
+novembre 2026. Les adresses et les identifiants seront différents chez vous.
 
-## Validation auteur
+## 🔀 Exercice 1 : deux flux mêlés
 
-Fixtures locales : `python3 -m unittest discover -s labs/compose-correlation-et-saturation/author_tests -v`.
-Protocole VM : `LAB_HOME=$PWD python3 scripts/valider-labs.py --double-passage --lab compose-correlation-et-saturation`.
-Sur `docker.lab`, le 2026-11-01 : zéro/plein/zéro/plein, 214 secondes pour le
-protocole complet, état Docker restauré. Les sondes de disponibilité des deux
-composants précèdent la charge; la recréation refuse un quota manuel non persisté.
+Lisez le journal de `guichet`, puis séparez ses deux flux :
+
+```bash
+docker compose logs --no-log-prefix guichet 2> /dev/null
+echo '-- sortie'
+docker logs essai-traces-guichet-1 2> /dev/null
+echo '-- erreur'
+docker logs essai-traces-guichet-1 2>&1 > /dev/null
+```
+
+```text
+demande recue
+quantite invalide
+-- sortie
+demande recue
+-- erreur
+quantite invalide
+```
+
+`docker compose logs` affiche tout sur sa sortie standard : y rediriger les
+erreurs n'enlève rien. `docker logs` rend les deux flux séparés. Pour ne garder
+que les erreurs, employez `docker logs`.
+
+## 📁 Exercice 2 : un message écrit dans un fichier
+
+Cherchez le mot `detail` dans le journal, puis faites pointer le fichier vers
+la sortie du conteneur :
+
+```bash
+docker compose logs guichet | grep -c detail
+docker compose exec guichet cat /tmp/appli.log
+sed 's|echo detail|ln -s /dev/stdout /tmp/appli.log; echo detail|' compose.yaml > lien.yaml
+docker compose -f lien.yaml up -d guichet && sleep 1
+docker compose -f lien.yaml logs guichet | grep -c detail
+```
+
+```text
+0
+detail
+1
+```
+
+Docker ne collecte que la sortie et l'erreur du processus principal. Un fichier
+interne lui échappe, et grossit dans la couche d'écriture. Le lien vers
+`/dev/stdout` est la méthode qu'emploient plusieurs images officielles.
+
+## ✂️ Exercice 3 : un journal borné
+
+`compteur` a écrit 3 000 lignes. Comptez celles qui restent :
+
+```bash
+docker compose logs --no-log-prefix compteur | wc -l
+docker compose logs --no-log-prefix compteur | sed -n '1p;$p'
+```
+
+```text
+131
+ligne 2870
+ligne 3000
+```
+
+Deux fichiers de 10 Ko au plus ne gardent que la fin. Le disque est protégé,
+mais une requête ancienne n'est plus là : choisissez la taille d'après la durée
+sur laquelle vous voulez pouvoir chercher.
+
+## 🧹 Exercice 4 : un journal perdu
+
+Redémarrez `guichet`, puis recréez-le, et comptez ses messages à chaque fois :
+
+```bash
+docker compose restart guichet && sleep 1
+docker compose logs guichet | grep -c 'demande recue'
+docker compose up -d --force-recreate guichet && sleep 1
+docker compose logs guichet | grep -c 'demande recue'
+```
+
+```text
+2
+1
+```
+
+Un redémarrage garde le journal, une recréation le supprime avec le conteneur.
+Relevez le journal d'un service en panne avant de le recréer.
+
+## 🐌 Exercice 5 : lent, et jamais bridé
+
+Placez trois services sur le même cœur, l'un plafonné, les deux autres libres.
+La fonction `mesure` occupe un service trois secondes :
+
+```bash
+cat > coeur.yaml <<'EOF'
+x-base: &base
+  image: ${IMAGE}
+  init: true
+  cpuset: "0"
+  command: sleep 600
+services:
+  plafonne:
+    <<: *base
+    cpus: 0.2
+  libre:
+    <<: *base
+  voisin:
+    <<: *base
+EOF
+cat > mesure.sh <<'EOF'
+bride() { awk '/nr_throttled/{print $2}' /sys/fs/cgroup/cpu.stat; }
+attente() { awk -F'total=' '/some/{print $2}' /sys/fs/cgroup/cpu.pressure; }
+b=$(bride); a=$(attente)
+timeout 3 sh -c 'while :; do :; done'
+echo "bride: $([ $(( $(bride) - b )) -gt 5 ] && echo oui || echo non), attente: $([ $(( $(attente) - a )) -gt 500000 ] && echo oui || echo non)"
+EOF
+docker compose -p essai-coeur -f coeur.yaml up -d
+mesure() { docker compose -p essai-coeur -f coeur.yaml exec -T "$1" sh < mesure.sh 2> /dev/null | grep bride; }
+mesure plafonne
+mesure libre
+docker compose -p essai-coeur -f coeur.yaml exec -d voisin timeout 6 sh -c 'while :; do :; done'
+mesure libre
+docker compose -p essai-coeur -f coeur.yaml down
+```
+
+```text
+bride: oui, attente: oui
+bride: non, attente: non
+bride: non, attente: oui
+```
+
+Le service plafonné est bridé et attend. Le service libre, seul, n'attend pas.
+Avec un voisin sur le même cœur, il attend sans être bridé : `nr_throttled` ne
+compte que les quotas. `cpu.pressure` mesure le temps passé à attendre le
+processeur, quelle qu'en soit la cause. Lisez les deux avant d'accuser un
+quota.
+
+## 🧹 Nettoyage
+
+```bash
+cd ~
+docker compose -f ~/essai-traces/compose.yaml down
+rm -r ~/essai-traces
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+docker network ls --format '{{.Name}}' | grep -c '^essai-'
+docker volume ls --format '{{.Name}}' | grep -c '^essai-'
+```
+
+```text
+0
+0
+0
+```
+
+Quittez ensuite la machine et remettez le lab à zéro. `dsoxlab reset` rejoue le
+nettoyage puis la préparation du lab. Il vous demande de confirmer : répondez
+`y`.
+
+```bash
+exit
+dsoxlab reset compose-correlation-et-saturation
+dsoxlab check compose-correlation-et-saturation
+```
+
+```text
+╭─ Résultat : compose-correlation-et-saturation ─╮
+│  0 / 100 pts                                   │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests               │
+╰────────────────────────────────────────────────╯
+```
+
+0 sur 4 : c'est le résultat attendu. Le challenge est prêt.
+
+## 🎯 Le challenge
+
+À vous, seul cette fois : deux composants, une requête à suivre, et un seul
+coupable à désigner.
+
+```bash
+dsoxlab run compose-correlation-et-saturation
+dsoxlab challenge compose-correlation-et-saturation
+```
