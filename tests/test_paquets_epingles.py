@@ -219,6 +219,57 @@ def test_l_epinglage_ne_vit_qu_a_un_seul_endroit() -> None:
     )
 
 
+#: Les fichiers où ce dépôt installe dsoxlab pour lui-même.
+INSTALLEURS_DSOXLAB = (
+    *sorted((RACINE / ".github" / "workflows").glob("*.yml")),
+    RACINE / ".pre-commit-config.yaml",
+)
+#: `uvx 'dsoxlab…'` ou `uv tool install 'dsoxlab…'`, avec ou sans guillemets.
+#: Le groupe capture ce qui suit le nom : vide, un plancher, ou une version.
+INSTALLATION_DSOXLAB = re.compile(r"(?:uvx|uv tool install)\s+['\"]?dsoxlab([^\s'\"]*)")
+DSOXLAB_EXACT = re.compile(r"^==\d+\.\d+\.\d+$")
+
+
+def test_dsoxlab_est_epingle_sur_une_seule_version_exacte() -> None:
+    """La version de dsoxlab que la CI installe est exacte, et la même partout.
+
+    Décidé par Stéphane le 2026-11-24. Avant, la CI installait
+    `dsoxlab>=0.8.0` à deux endroits et `dsoxlab` nu à un troisième. PyPI
+    choisissait donc la version, et une nouvelle version de l'outil pouvait
+    rendre la CI rouge sans que le catalogue ait bougé, ou la rendre verte sur
+    une version que personne n'avait attestée.
+
+    Deux versions différentes entre la CI et pre-commit sont refusées aussi :
+    le développeur validerait en local avec un outil, la CI avec un autre.
+    """
+    trouvees: dict[str, list[str]] = {}
+    for fichier in INSTALLEURS_DSOXLAB:
+        if not fichier.is_file():
+            continue
+        for numero, ligne in enumerate(fichier.read_text(encoding="utf-8").splitlines(), 1):
+            if ligne.lstrip().startswith("#"):
+                continue
+            for spec in INSTALLATION_DSOXLAB.findall(ligne):
+                lieu = f"{fichier.relative_to(RACINE)}:{numero}"
+                trouvees.setdefault(spec, []).append(lieu)
+
+    assert trouvees, (
+        "aucune installation de dsoxlab trouvée dans la CI ni dans pre-commit : "
+        "ce test ne contrôle plus rien. Relisez le motif INSTALLATION_DSOXLAB."
+    )
+    flottantes = {s: lieux for s, lieux in trouvees.items() if not DSOXLAB_EXACT.match(s)}
+    assert not flottantes, (
+        "ces installations de dsoxlab ne portent pas de version exacte :\n"
+        + "\n".join(f"  dsoxlab{s or ' (rien)'} : {', '.join(lieux)}" for s, lieux in flottantes.items())
+        + "\nÉcrivez dsoxlab==X.Y.Z, la version sur laquelle les labs ont été attestés."
+    )
+    assert len(trouvees) == 1, (
+        "dsoxlab est épinglé sur plusieurs versions :\n"
+        + "\n".join(f"  dsoxlab{s} : {', '.join(lieux)}" for s, lieux in trouvees.items())
+        + "\nLa CI et pre-commit doivent valider avec le même outil."
+    )
+
+
 def test_le_releve_dit_la_version_sur_laquelle_il_porte() -> None:
     """Un verdict qui ne dit pas sa version n'est pas un fait, c'est un souvenir.
 
