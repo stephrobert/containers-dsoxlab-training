@@ -11,7 +11,7 @@ You work in `~/essai-digest`, with a practice registry on port `5098` and
 release and a container already running: you will do it on your own, at the
 end.
 
-Related page (in French): [Publier et récupérer une image sur Docker Hub](https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/).
+Related page: [Publish and pull an image in a controlled way](https://www.stephane-robert.info/en/docs/docker/publish-and-pull-an-image/).
 
 ## 🔧 Before you start
 

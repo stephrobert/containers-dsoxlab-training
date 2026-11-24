@@ -12,7 +12,7 @@ You work in `~/essai-registre`, with a practice registry on port `5099` and
 `127.0.0.1:5099/essai/*` images. The challenge uses another registry, another
 image and another repository: you will do it on your own, at the end.
 
-Related page (in French): [Publier et récupérer une image sur Docker Hub](https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/).
+Related page: [Publish and pull an image in a controlled way](https://www.stephane-robert.info/en/docs/docker/publish-and-pull-an-image/).
 
 ## 🔧 Before you start
 

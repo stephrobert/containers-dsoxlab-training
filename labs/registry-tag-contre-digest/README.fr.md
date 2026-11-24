@@ -12,7 +12,7 @@ Vous travaillez dans `~/essai-digest`, avec un registre d'essai sur le port
 registre, une autre release et un conteneur déjà lancé : vous le ferez seul, à
 la fin.
 
-Page associée : [Publier et récupérer une image sur Docker Hub](https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/).
+Page associée : [Publier et récupérer une image de façon maîtrisée](https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/).
 
 ## 🔧 Avant de commencer
 

@@ -12,7 +12,7 @@ Vous travaillez dans `~/essai-registre`, avec un registre d'essai sur le port
 `5099` et des images `127.0.0.1:5099/essai/*`. Le challenge porte sur un autre
 registre, une autre image et un autre dépôt : vous le ferez seul, à la fin.
 
-Page associée : [Publier et récupérer une image sur Docker Hub](https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/).
+Page associée : [Publier et récupérer une image de façon maîtrisée](https://www.stephane-robert.info/docs/conteneurs/registres/docker-hub/).
 
 ## 🔧 Avant de commencer
 
