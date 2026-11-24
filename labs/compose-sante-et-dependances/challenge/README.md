@@ -23,8 +23,4 @@ start in the second. Do not hardcode global container or network names.
 Compose's health dependency gates initial startup; it does not automatically
 stop or restart an already-running dependent when backend becomes unhealthy.
 
-## Probe readiness and wait for health
-
-Follow `/opt/MISSION.md`; write `/opt/lab-compose-health/compose.yaml`.
-Checks require meaningful health transitions and correct dependency gating
-with slow and permanently unavailable backends.
+The brief is also written to `/opt/MISSION.md`.

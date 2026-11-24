@@ -1,4 +1,6 @@
-# Scénario
+# Un montage de développement parti en production
+
+## La situation
 
 L'équipe a un seul fichier Compose, et deux façons de s'en servir. En
 développement, les sources sont montées dans le conteneur : on édite, on

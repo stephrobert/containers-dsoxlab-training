@@ -3,7 +3,7 @@
 id: compose-secrets                      # REQUIS
 title: "Grant a Compose secret only to its consumer"
 level: c4                     # REQUIS
-description: "Mount a file-backed secret read-only for one service without leaking it into container metadata or another service."
+description: "A single service reads a token, its value leaks nowhere, and a new value replaces it without changing the declaration."
 skills:                       # REQUIS, non vide
   - compose-secrets
   - least-privilege

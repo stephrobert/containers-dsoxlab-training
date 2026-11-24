@@ -27,8 +27,8 @@ ni dans la configuration rendue, ni dans les journaux ou l'historique Git.
 Le dépôt préparé ignore `credentials/` ; n'ajoutez jamais le jeton, même
 brièvement avant de l'effacer d'un commit. Les contrôles parcourent les vrais
 blobs accessibles, sans imprimer le secret. L'empreinte au démarrage
-doit correspondre aux octets du fichier. L'empreinte doit correspondre aux octets de la valeur
-mise en service, et le conteneur doit être plus jeune que le fichier.
+doit correspondre aux octets de la valeur mise en service, et le conteneur doit
+être plus jeune que le fichier.
 
 Les secrets fichiers de Compose autonome sont des fichiers hôte montés par bind,
 pas un stockage Swarm chiffré. Root sur l'hôte et les administrateurs Docker
@@ -36,12 +36,4 @@ peuvent toujours les lire. Cette application demande une recréation pour consom
 un nouveau jeton ; Compose ne redémarre pas automatiquement les consommateurs
 quand un fichier change.
 
-## Accorder seulement le secret nécessaire
-
-Suivez `/opt/MISSION.md` et écrivez `/opt/lab-compose-secret/compose.yaml`.
-Les contrôles mesurent l'accès en lecture seule de app, le refus pour observer,
-l'absence de fuite dans les métadonnées, journaux et blobs Git accessibles,
-l'exclusion Git effective, l'identité protégée de l'image fournie et la mise en
-service de la valeur suivante, que vous effectuez vous-même : le lab pose
-`credentials/token-next.txt`, et le contrôle lit l'état final, l'empreinte et
-l'âge du conteneur.
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.

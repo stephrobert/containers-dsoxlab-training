@@ -27,8 +27,4 @@ Le nettoyage retire uniquement les ressources du projet et garde l'image de base
 Le même service doit rester opérationnel après la charge CPU, sans redémarrage
 ni perte de son reçu applicatif frais. L'essai retire seulement ce reçu.
 
-## Appliquer des budgets qui survivent au remplacement
-
-Suivez `/opt/MISSION.md` et écrivez `/opt/lab-compose-resources/compose.yaml`.
-Les trois contrôles lisent les budgets cgroup effectifs, mesurent le bridage CPU
-borné et vérifient à nouveau les limites après remplacement du conteneur.
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.
