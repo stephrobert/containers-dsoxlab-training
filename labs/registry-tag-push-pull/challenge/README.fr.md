@@ -23,11 +23,3 @@ Un `docker run` local ne prouve pas le push : le moteur peut déjà avoir l'imag
 Les contrôles lisent le manifeste distant, téléchargent une archive avec Skopeo
 sans consulter le cache Docker, puis chargent et exécutent cette archive.
 Ils ne suppriment jamais votre release pour simuler un client vierge.
-
-## Mission : publier la release
-
-Sur `docker.lab`, publiez l'image existante `dsoxlab-registry-app:release` sous
-`127.0.0.1:15000/catalogue/appli:1.0`. Un client indépendant doit récupérer et
-exécuter exactement la même release.
-
-Le scénario décrit le banc et les critères.

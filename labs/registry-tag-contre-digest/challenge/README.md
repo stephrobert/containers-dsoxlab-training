@@ -33,10 +33,3 @@ by the digest gives a reference that cannot lie.
 
 Checks verify the image actually running, its startup reference, product and
 availability of the original manifest through an independent client.
-
-## Mission: recover the original delivery
-
-On `docker.lab`, restore `dsoxlab-digest-app` using the first delivery's registry
-digest from `/opt/lab-registry-digest/livraison.json`, without changing `stable`.
-
-Read the scenario for the incident and acceptance criteria.

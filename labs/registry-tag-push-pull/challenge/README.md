@@ -22,11 +22,3 @@ A local `docker run` does not prove a push: the engine may already have the
 image. Checks read the remote manifest, download an archive using Skopeo
 without consulting Docker's cache, then load and run that archive. They never
 delete your release to simulate a fresh client.
-
-## Mission: publish the release
-
-On `docker.lab`, publish the existing `dsoxlab-registry-app:release` image as
-`127.0.0.1:15000/catalogue/appli:1.0`. An independent client must recover and
-execute the exact same release.
-
-The scenario explains the bench and acceptance criteria.
