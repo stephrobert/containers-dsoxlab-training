@@ -14,7 +14,7 @@ built: your task is to distribute them, not replace them.
 - A client without access to your engine's cache must recover every layer and
   run the same release without networking.
 
-Do not change the registry or the bench's stored reference. The HTTP registry
+Do not change the registry or the reference kept for the checks. The HTTP registry
 is restricted to loopback: no unencrypted external registry access is needed,
 and no daemon configuration change is expected.
 

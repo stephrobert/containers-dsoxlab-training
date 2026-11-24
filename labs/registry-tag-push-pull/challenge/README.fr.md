@@ -15,7 +15,7 @@ déjà construits : votre travail est de les distribuer, pas de les remplacer.
 - Un client sans accès au cache de votre moteur doit pouvoir récupérer toutes
   ses couches et exécuter la même release sans réseau.
 
-Ne modifiez ni le registre ni la référence conservée par le banc. Le registre
+Ne modifiez ni le registre ni la référence conservée pour les contrôles. Le registre
 HTTP est limité à la boucle locale : aucun accès non chiffré à un registre
 externe n'est nécessaire, et aucune modification du démon n'est attendue.
 
