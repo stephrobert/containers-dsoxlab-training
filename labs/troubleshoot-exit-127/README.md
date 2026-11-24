@@ -1,88 +1,199 @@
-# troubleshoot-exit-127: a grid, not a symptom
+# Three failures, three exit codes to read
 
-## What this lab tests
+The lesson gives the grid of codes 125, 126 and 127, and says where to read the
+error. This course makes you meet five failures whose first diagnosis is
+misleading: a missing interpreter, a file written on Windows, quotes too many, a
+right that depends on the user, and a container that never started.
 
-That an exit code is a **diagnosis**, and that two neighbouring codes say two
-opposite things.
+You work in `~/essai-codes`, on `essai-*` containers. The challenge uses
+`panne-a`, `panne-b` and `panne-c`: do not touch them during the course.
 
-A troubleshooting lab is not taught with a symptom: it is taught with a **grid**,
-and a grid needs neighbouring cases that can be compared. Hence three failures
-rather than one.
+Related page: [Read a Docker startup failure: exit codes and loops](https://www.stephane-robert.info/en/docs/docker/read-a-startup-failure/).
 
-It is the first of the section's four troubleshooting labs.
+## 🔧 Before you start
 
-## Measured before being written
+Start the lab:
 
-On `docker.lab`, on 2026-10-30:
-
-| Cause | Code | Log | Status |
-| --- | --- | --- | --- |
-| command not found | 127 | **empty** | **`created`** |
-| file not executable | 126 | empty | `exited` |
-| command that fails | its own code | what it wrote | `exited` |
-
-## The distinction that is worth the whole lab
-
-When the command is not found, the container **never started**. Its status stays
-`created`, its log is empty, and the diagnosis is in the inspection's
-`.State.Error`, which nobody looks at:
-
-```text
-unable to start container process: exec: "…": executable file not found in $PATH
+```bash
+dsoxlab run troubleshoot-exit-127
 ```
 
-However, **if a shell wraps the command, the log speaks**, because the shell did
-start. Measured: `sh: /tmp/inexistant: not found`.
+You are connected to `docker.lab`, where the engine runs. The `lire` function
+shows the status, the code and the error of a container. **Keep the same
+terminal until the cleanup.**
 
-The same code 127, two opposite situations, and the log is what separates them.
-That is what explains the lost hour in the scenario: you search the image for a
-cause the inspection announced in one line.
+```bash
+mkdir -p ~/essai-codes && cd ~/essai-codes
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+lire() { docker container inspect "$1" --format 'statut={{.State.Status}} code={{.State.ExitCode}} erreur={{.State.Error}}'; }
+docker version --format '{{.Server.Version}}'
+```
 
-## Why three failures, and why the check verifies they differ
+```text
+29.9.2
+```
 
-Two neighbouring codes are only learned one against the other. So the second
-check also verifies that the two codes **differ**: a grid with two cells holding
-the same value is not a grid.
+The outputs of this course come from a Docker 29.9.2 on Debian 13, on
+24 November 2026.
 
-The setup verifies it too before setting the lab, which protects it from a future
-drift: if an image change made two failures identical, the lab would stop rather
-than teach a false distinction.
+## 🐚 Exercise 1: the file exists, and Docker says otherwise
 
-## The repair uses the same image, and that is graded
+This script exists and is executable. Its first line asks for `bash`, which the
+Alpine image does not hold:
 
-The repaired container must derive from the **same image** as the failures. That
-is what demonstrates the image was not at fault.
+```bash
+printf '#!/bin/bash\necho bonjour\n' > lancer.sh
+chmod 755 lancer.sh
+docker run --name essai-bash -v "$PWD:/outils:ro" "$IMAGE" /outils/lancer.sh > /dev/null 2>&1
+lire essai-bash
+docker logs essai-bash
+docker run --rm "$IMAGE" ls /bin/bash
+```
 
-Repairing by changing image would prove the opposite of the lesson, and the check
-explicitly refuses it. **Knowing what is not responsible rules out half the
-leads**: it is the most profitable conclusion of any troubleshooting.
+```text
+statut=exited code=255 erreur=
+exec /outils/lancer.sh: no such file or directory
+ls: /bin/bash: No such file or directory
+```
 
-## No code is hardcoded
+The message names `lancer.sh`, which does exist. The missing file is its
+interpreter, `/bin/bash`. The code is 255, outside the grid, and `.State.Error`
+is empty: the message is in the logs. The last command confirms that `bash` is
+not in the image.
 
-The three expected values are read from the containers at grading time. A test
-carrying `127` would be wrong the day the setup changed its failures, and the lab
-would die of an unrelated change.
+## 🪟 Exercise 2: Windows line endings
 
-The reference solution applies the same rule: it **reads** the three answers, and
-it also consults the error field, which no question asks for. Its `failed_when`
-requires finding the expected trace there, so it **proves** it instead of
-mentioning it: a reference solution is also a teaching document.
+Same message, another cause: this script asks for `/bin/sh`, which does exist.
 
-## One setup detail that is not negligence
+```bash
+printf '#!/bin/sh\r\necho bonjour\r\n' > windows.sh
+chmod 755 windows.sh
+docker run --name essai-windows -v "$PWD:/outils:ro" "$IMAGE" /outils/windows.sh > /dev/null 2>&1
+lire essai-windows
+docker logs essai-windows
+head -1 windows.sh | od -c
+sed -i 's/\r$//' windows.sh
+docker run --rm -v "$PWD:/outils:ro" "$IMAGE" /outils/windows.sh
+```
 
-The setup's three `docker run` carry `failed_when: false`. That is deliberate:
-all three commands fail, which is the lab's whole object, and without that line
-the setup would stop on the first failure it had just set up.
+```text
+statut=exited code=255 erreur=
+exec /outils/windows.sh: no such file or directory
+0000000   #   !   /   b   i   n   /   s   h  \r  \n
+0000013
+bonjour
+```
 
-## The starting state is broken, and that is the repository's rule
+`od -c` shows `\r` before `\n`: the file comes from a Windows editor. The
+kernel looked for a program named `/bin/sh` followed by this invisible character.
+The `sed` removes it and the script runs. Facing this message, check the
+interpreter, then the line endings.
 
-| Laid down by the setup | Starting state | Expected move | Check |
-| --- | --- | --- | --- |
-| `reponses.txt` | three keys, three **empty** values | fill them in | 1, 2 and 3 |
-| three failures | stopped, three distinct codes | diagnose them | 1, 2 and 3 |
-| *nothing* | `repare` absent | start it on the same image | 4 |
+## ✂️ Exercise 3: quotes too many
 
-## What the lab does not require
+Compare the same kind of command with and without quotes around the whole:
 
-A path. The codes can be read from the inspection as well as the container list,
-and the repair uses any command that exists and lasts.
+```bash
+docker run --name essai-guillemets "$IMAGE" "ls -l /etc/hostname" > /dev/null 2>&1
+lire essai-guillemets | cut -c1-60
+docker container inspect essai-guillemets --format '{{json .Config.Cmd}}'
+docker run --name essai-separes "$IMAGE" ls /etc/alpine-release
+docker container inspect essai-separes --format '{{json .Config.Cmd}}'
+```
+
+```text
+statut=created code=127 erreur=failed to create task for con
+["ls -l /etc/hostname"]
+/etc/alpine-release
+["ls","/etc/alpine-release"]
+```
+
+With the quotes, `.Config.Cmd` holds a single element: Docker looks for a program
+whose name contains spaces, hence code 127. Without them, there are two elements,
+the program and its argument. Read `.Config.Cmd` before suspecting the image.
+
+## 🔑 Exercise 4: a right that depends on the user
+
+This script can only be read by its owner. Run it as uid 4242, then as root:
+
+```bash
+printf '#!/bin/sh\necho bonjour\n' > prive.sh
+chmod 700 prive.sh
+docker run --name essai-prive --user 4242 -v "$PWD:/outils:ro" "$IMAGE" /outils/prive.sh > /dev/null 2>&1
+lire essai-prive
+docker logs essai-prive
+docker run --rm -v "$PWD:/outils:ro" "$IMAGE" /outils/prive.sh
+```
+
+```text
+statut=exited code=2 erreur=
+/bin/sh: can't open '/outils/prive.sh': Permission denied
+bonjour
+```
+
+The code is not 126 but 2, and the container did start: the shell returned this
+code, as it could not read the script. As root, it runs. The same file can
+therefore succeed or fail depending on `--user`.
+
+## 📦 Exercise 5: search a container that never started
+
+`docker exec` is useless on a container that did not start. Its files can still
+be read:
+
+```bash
+docker create --name essai-jamais "$IMAGE" outil-absent > /dev/null
+lire essai-jamais
+docker export essai-jamais | tar -t | grep -E '^bin/(sh|bash)$|outil-absent'
+docker cp essai-jamais:/etc/alpine-release - | tar -xO
+```
+
+```text
+statut=created code=0 erreur=
+bin/sh
+3.24.3
+```
+
+`docker export` returns the whole file system as an archive, which `tar -t`
+lists: `sh` is there, `bash` and `outil-absent` are not. You answer the question
+"is this program in the image?" without running anything.
+
+## 🧹 Cleanup
+
+```bash
+cd ~
+docker rm -f essai-bash essai-windows essai-guillemets essai-separes essai-prive essai-jamais > /dev/null
+rm -r ~/essai-codes
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+0
+```
+
+Then leave the machine and reset the lab. `dsoxlab reset` replays the cleanup
+then the setup of the lab. It asks you to confirm: answer `y`.
+
+```bash
+exit
+dsoxlab reset troubleshoot-exit-127
+dsoxlab check troubleshoot-exit-127
+```
+
+```text
+╭── Result: troubleshoot-exit-127 ──╮
+│  0 / 100 pts                      │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests  │
+╰───────────────────────────────────╯
+```
+
+0 out of 4: that is the expected result. The challenge is ready.
+
+## 🎯 The challenge
+
+Your turn, on your own this time: read three failures, note their codes and the
+status of one of them, then start a container that runs on the same image.
+
+```bash
+dsoxlab run troubleshoot-exit-127
+dsoxlab challenge troubleshoot-exit-127
+```

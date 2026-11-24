@@ -1,107 +1,187 @@
-# troubleshoot-boucle-de-redemarrage : la politique ne répare rien
+# Une boucle de redémarrage, et deux issues
 
-## Ce que ce lab éprouve
+La leçon explique les politiques de redémarrage et la réparation d'une boucle.
+Ce cours ajoute cinq gestes d'enquête : mesurer la cadence des relances,
+reconnaître une boucle sans échec, isoler les journaux du dernier essai,
+examiner un conteneur qui ne reste pas en marche, et plafonner les relances sans
+le recréer.
 
-Qu'une politique de redémarrage ne corrige aucun défaut. Elle décide seulement
-de ce qui se passe **après** l'échec, et trois conteneurs qui partagent le même
-défaut s'en sortent de trois façons :
+Vous travaillez sur `essai-boucle` et `essai-zero`. Le challenge porte sur les
+conteneurs `appli-*` : n'y touchez pas pendant le cours.
 
-| Politique | Ce qu'elle donne | Ce qu'on en conclut |
-| --- | --- | --- |
-| plafonnée | le moteur relance N fois, puis renonce | l'échec est figé, donc lisible |
-| sans fin | il relance indéfiniment | l'échec est bruyant, et toujours là |
-| sans fin, cause levée | il rattrape tout seul | il suffisait de lever la cause |
+Page associée : [Lire un échec de démarrage Docker : codes et boucles](https://www.stephane-robert.info/docs/conteneurs/moteurs-conteneurs/docker/execution-depannage/).
 
-Le geste spontané est de faire cesser le bruit : retirer la politique, ou
-détruire le conteneur. Les deux marchent, et les deux ne règlent rien.
+## 🔧 Avant de commencer
 
-## Mesuré avant d'être écrit
+Lancez le lab :
 
-Sur `docker.lab`, le 2026-10-30 :
+```bash
+dsoxlab run troubleshoot-boucle-de-redemarrage
+```
 
-| Politique | État | RestartCount | Code de sortie |
-| --- | --- | --- | --- |
-| `on-failure:4` | `exited` | figé à **4** | celui du script |
-| `always` | `restarting` | **10 en 60 s** | celui du script |
-| `always`, cause levée | `running` | figé | sans objet |
+Vous êtes connecté à `docker.lab`, où le moteur tourne. Lancez deux conteneurs
+qui bouclent. La fonction `attendre` patiente jusqu'au moment où un conteneur
+est entre deux essais. **Gardez le même terminal jusqu'au nettoyage.**
 
-Et le fait qui porte la seconde moitié du lab : **le conteneur en politique
-infinie est reparti tout seul**, mesuré à une soixantaine de secondes après le
-dépôt du fichier manquant, sans qu'on le touche. Le moteur attend entre deux
-tentatives, et ce délai croît. Relancer le conteneur ne fait que ne pas
-attendre.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+DEBUT=$(date +%s)
+docker run -d --name essai-boucle --restart always "$IMAGE" sh -c 'echo "essai $(date +%T)"; echo reste > /trace.txt; exit 1' > /dev/null
+docker run -d --name essai-zero --restart always "$IMAGE" sh -c 'echo tache finie; exit 0' > /dev/null
+attendre() { until [ "$(docker container inspect "$1" --format '{{.State.Restarting}}')" = true ]; do sleep 0.2; done; }
+docker version --format '{{.Server.Version}}'
+```
 
-Le conteneur plafonné, lui, n'est pas reparti : le moteur avait renoncé.
+```text
+29.9.2
+```
 
-## Pourquoi le conteneur plafonné est le témoin
+Les sorties de ce cours viennent d'un Docker 29.9.2 sur Debian 13, le 24
+novembre 2026. Les heures et les nombres d'essais seront différents chez vous.
 
-Il porte **deux** des trois réponses, et ses deux valeurs sont stables
-précisément parce que le moteur a renoncé : le compteur ne bouge plus, et le
-code reste celui de la dernière tentative.
+## ⏱️ Exercice 1 : mesurer la cadence des relances
 
-L'énoncé interdit de le réparer, et un contrôle vérifie qu'il est resté
-`exited`. Un conteneur relancé repart de zéro, sans compteur de relances ni
-code de sortie : la question n'aurait plus d'objet. C'est la règle que la
-section a dégagée, et c'est sa quatrième application : **une valeur de
-diagnostic ne se lit jamais sur l'objet que la réparation modifie.**
+Chaque fin du programme produit un événement `die`. Calculez l'écart en secondes
+entre deux fins :
 
-## Pourquoi deux politiques, et tirées au hasard
+```bash
+sleep 12
+docker events --since "$DEBUT" --until "$(date +%s)" --filter container=essai-boucle --filter event=die --format '{{.Time}}' | awk 'NR>1 {printf "%d ", $1-avant} {avant=$1} END {print ""}'
+docker container inspect essai-boucle --format 'relances={{.RestartCount}}'
+```
 
-`always` et `unless-stopped` produisent **exactement la même boucle**. Elles ne
-se distinguent que sur un point qui n'a rien à voir avec elle, et c'est le sort
-d'un conteneur arrêté à la main quand le moteur redémarre.
+```text
+0 1 0 1 2 3
+relances=7
+```
 
-Le setup en tire une au hasard à chaque passage. La question ne se devine donc
-pas, elle se lit, et elle se lit **avant** de réparer : retirer la politique la
-ferait disparaître.
+Les écarts s'allongent : Docker attend de plus en plus longtemps. Cette trace
+sert aussi après coup, pour dater le début d'une boucle.
 
-Le plafond et le code d'échec sont tirés de la même façon. Le code évite 0, 1,
-2 et la plage 125-127, qui ont chacun un sens dans ce catalogue et
-orienteraient le diagnostic par élimination.
+## 0️⃣ Exercice 2 : une boucle sans échec
 
-## Pourquoi le quatrième contrôle exige la politique intacte
+Le second conteneur boucle aussi. Regardez son code :
 
-Retirer la politique fait cesser la boucle **sans rien régler** : le conteneur
-cesse d'être relancé, et le défaut est entier. C'est la faute que ce lab existe
-pour empêcher, et un contrôle qui ne regarderait que « le conteneur ne boucle
-plus » la récompenserait.
+```bash
+attendre essai-zero
+docker ps -a --filter name=essai-zero --format '{{.Names}} {{.Status}}'
+docker logs --tail 1 essai-zero
+```
 
-Il exige donc trois choses d'un coup : le conteneur tourne avec la trace de son
-script, sa politique est toujours celle du départ, et le conteneur sain est
-**celui du départ**, reconnu par son identifiant et non par son nom. Un
-homonyme recréé après une table rase porterait le même nom, et c'est justement
-le geste qui emporte un service qui tournait.
+```text
+essai-zero Restarting (0) 4 seconds ago
+tache finie
+```
 
-## Pourquoi le contrôle accorde du temps, mais pas toujours
+`Restarting (0)` : le programme réussit et se termine, et la politique `always`
+le relance. Il n'y a rien à réparer dans le programme. C'est la politique qui ne
+convient pas à une tâche qui a une fin.
 
-Le délai du moteur atteint la minute. Un apprenant qui lève la cause et note
-aussitôt serait refusé pour avoir fait exactement ce qu'il fallait, et il en
-retiendrait qu'il faut recréer.
+## 📜 Exercice 3 : les journaux du dernier essai
 
-Le contrôle attend donc jusqu'à 150 secondes, **mais seulement quand la cause
-est levée** : il vérifie d'abord la présence du fichier qui manquait, et refuse
-sans attendre quand il est toujours absent. Un `check` joué sans rien avoir
-corrigé répond tout de suite.
+Les journaux d'un conteneur en boucle mélangent tous les essais. Comptez les
+lignes, puis ne gardez que la dernière, datée :
 
-## Pourquoi le setup constate la boucle sur le compteur
+```bash
+docker logs essai-boucle | wc -l
+docker logs --tail 1 --timestamps essai-boucle
+```
 
-Mesuré le 2026-10-30 : entre deux tentatives, le conteneur en boucle passe par
-`running` le temps que son script échoue. Un contrôle sur l'état est donc vrai
-une fois sur deux, et le premier jet du setup a échoué là.
+```text
+7
+2026-11-24T09:53:55.490754079Z essai 09:53:55
+```
 
-Le compteur de relances, lui, ne redescend jamais. C'est la preuve stable qu'un
-conteneur boucle.
+`--timestamps` date la ligne, en temps universel. Avec `--since` et cette date,
+vous isolez les lignes d'un seul essai quand le programme en écrit plusieurs.
 
-## Un piège du cleanup, payé d'avance
+## 🔬 Exercice 4 : examiner un conteneur qui ne tient pas
 
-Les conteneurs partent **avant** leur configuration. Deux d'entre eux portent
-une politique de redémarrage, et le moteur les relance tant qu'ils existent :
-retirer le répertoire d'abord laisserait l'un d'eux boucler sur une
-configuration disparue, en remplissant le journal du moteur.
+Vous voulez voir les fichiers du conteneur, mais il ne reste pas en marche :
 
-## Ce que le lab n'exige pas
+```bash
+attendre essai-boucle
+docker exec essai-boucle cat /trace.txt
+docker diff essai-boucle
+docker commit essai-boucle essai-autopsie:1 > /dev/null
+docker run --rm essai-autopsie:1 cat /trace.txt
+```
 
-Un chemin. Le fichier manquant se dépose par n'importe quel moyen, et la
-reprise se fait en laissant le moteur rattraper comme en lui rendant la main.
-Les trois valeurs se lisent dans l'inspection, qui s'interroge de plusieurs
-façons.
+```text
+Error response from daemon: Container 764de12d158c610dd7c3e4511ec284da99c6cb6955e3505479d6cd692ecaf443 is restarting, wait until the container is running
+A /trace.txt
+reste
+```
+
+`docker exec` est refusé entre deux essais. `docker diff` liste quand même ce que
+le programme a écrit. `docker commit` fige les fichiers du conteneur dans une
+image, que vous ouvrez avec une autre commande. Le conteneur d'origine continue
+de boucler, intact.
+
+## 🛑 Exercice 5 : plafonner sans recréer
+
+`docker update` change la politique d'un conteneur existant. Donnez un plafond
+aux deux, attendez, puis redémarrez `essai-boucle` :
+
+```bash
+docker update --restart on-failure:2 essai-zero essai-boucle
+sleep 20
+docker ps -a --filter name=^essai- --format '{{.Names}} {{.Status}}'
+docker start essai-boucle > /dev/null
+sleep 6
+docker container inspect essai-boucle --format 'relances={{.RestartCount}} statut={{.State.Status}} code={{.State.ExitCode}}'
+```
+
+```text
+essai-zero
+essai-boucle
+essai-zero Exited (0) 19 seconds ago
+essai-boucle Exited (1) 19 seconds ago
+relances=2 statut=exited code=1
+```
+
+Les deux se sont arrêtés, pour deux raisons : `essai-zero` a rendu 0, que
+`on-failure` ne relance pas, et `essai-boucle` avait déjà dépassé son plafond.
+Après `docker start`, le compteur est reparti de zéro et s'est arrêté à 2. La
+panne, elle, est toujours là : la boucle a cessé, rien n'est réparé.
+
+## 🧹 Nettoyage
+
+```bash
+docker rm -f essai-boucle essai-zero > /dev/null
+docker rmi essai-autopsie:1 > /dev/null
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+0
+```
+
+Quittez ensuite la machine et remettez le lab à zéro. `dsoxlab reset` rejoue le
+nettoyage puis la préparation du lab. Il vous demande de confirmer : répondez
+`y`.
+
+```bash
+exit
+dsoxlab reset troubleshoot-boucle-de-redemarrage
+dsoxlab check troubleshoot-boucle-de-redemarrage
+```
+
+```text
+╭─ Résultat : troubleshoot-boucle-de-redemarrage ─╮
+│  0 / 100 pts                                    │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests                │
+╰─────────────────────────────────────────────────╯
+```
+
+0 sur 4 : c'est le résultat attendu. Le challenge est prêt.
+
+## 🎯 Le challenge
+
+À vous, seul cette fois : lire deux conteneurs en échec, lever leur cause, et
+laisser le moteur relancer celui qui boucle sans lui retirer sa politique.
+
+```bash
+dsoxlab run troubleshoot-boucle-de-redemarrage
+dsoxlab challenge troubleshoot-boucle-de-redemarrage
+```
