@@ -33,7 +33,7 @@ docker run --rm dsoxlab-cache:finale
 ```
 
 Change the source to invalidate the step: repeating an identical build only
-proves layer caching. Do not force `--no-cache`: on this bench's BuildKit
+proves layer caching. Do not force `--no-cache`: on the BuildKit installed here
 version, that option also empties the cache mount.
 
 Checks use an isolated builder, change the source and restore it afterwards.
