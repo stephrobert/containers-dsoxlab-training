@@ -126,6 +126,33 @@ also starts again at 1, although nothing was cleaned: the option ignores the
 mounted cache along with the layers. A Dockerfile must therefore work with
 an empty mounted cache.
 
+## 🚫 Exercise 4: a refused cache
+
+A non-root image often builds under its own uid. Give it a mounted cache, first
+without any setting, then with the `uid` option:
+
+```bash
+cat > Dockerfile.refus <<EOF
+FROM $ALPINE
+USER 30100
+RUN --mount=type=cache,id=essai-droits,target=/reserve echo paquet > /reserve/paquet
+EOF
+docker build -t essai-montage:droits -f Dockerfile.refus . 2>&1 | grep -oE "can't create.*denied|exit code: [0-9]+" | sort -u
+sed 's|target=/reserve|target=/reserve,uid=30100|' Dockerfile.refus > Dockerfile.droits
+docker build -q -t essai-montage:droits -f Dockerfile.droits . > /dev/null; echo "code: $?"
+```
+
+```text
+can't create /reserve/paquet: Permission denied
+exit code: 1
+code: 0
+```
+
+The mounted directory belongs to root: the step fails on a right, although the
+Dockerfile holds no syntax error. The `uid` option gives the cache to the build
+user. Do not answer this refusal with `USER root`: the step would produce files
+the application could no longer change.
+
 ## 🧹 Clean-up
 
 Delete the scratch images and directory, then the mounted caches the course
@@ -134,15 +161,15 @@ counts the `essai-*` images left:
 
 ```bash
 cd ~
-docker rmi essai-montage:passages essai-montage:ecrit essai-montage:lit | grep -c Untagged
+docker rmi essai-montage:passages essai-montage:ecrit essai-montage:lit essai-montage:droits | grep -c Untagged
 rm -rf ~/essai-montage
 docker builder prune -f --filter type=exec.cachemount | tail -1
 docker images --format '{{.Repository}}' | grep -c '^essai-'
 ```
 
 ```text
-3
-Total:	8.192kB
+4
+Total:	12.29kB
 0
 ```
 

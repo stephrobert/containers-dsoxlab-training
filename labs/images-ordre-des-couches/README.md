@@ -161,6 +161,42 @@ This time, both steps run again. `docker builder prune` only removes the
 cache that no image uses: to really start from scratch, delete the images,
 or build with `--no-cache`.
 
+## 🚫 Exercise 4: a step placed too high
+
+By moving steps up, one ends up above the file it needs. Cause the failure, then
+fix the order:
+
+```bash
+echo 'echo "outil prêt"' > outil.sh
+cat > Dockerfile.faux <<EOF
+FROM $ALPINE
+RUN echo preparation-\$(date +%s) > /preparation
+RUN sh /outil.sh
+COPY outil.sh /outil.sh
+EOF
+docker build -t essai-cache:ordre -f Dockerfile.faux . 2>&1 | grep -oE "can't open.*|exit code: [0-9]+" | sort -u
+cat > Dockerfile.juste <<EOF
+FROM $ALPINE
+RUN echo preparation-\$(date +%s) > /preparation
+COPY outil.sh /outil.sh
+RUN sh /outil.sh
+EOF
+docker build --progress=plain -t essai-cache:ordre -f Dockerfile.juste . 2>&1 | etapes
+```
+
+```text
+can't open '/outil.sh': No such file or directory
+exit code: 2
+[2/4] RUN echo preparation-$(date +%s) > /preparation  CACHED
+[3/4] COPY outil.sh /outil.sh
+[4/4] RUN sh /outil.sh
+```
+
+The message blames a file that does exist on your disk: it is not in the image yet
+at that point. In the second build, the `preparation` step is served by the cache:
+a build that fails keeps the steps that succeeded before the failure. Fixing a
+Dockerfile therefore does not start everything over.
+
 ## 🧹 Clean-up
 
 Delete the scratch images and directory. The last command counts the
@@ -168,13 +204,13 @@ Delete the scratch images and directory. The last command counts the
 
 ```bash
 cd ~
-docker rmi essai-cache:haut essai-cache:bas essai-cache:date | grep -c Untagged
+docker rmi essai-cache:haut essai-cache:bas essai-cache:date essai-cache:ordre | grep -c Untagged
 rm -rf ~/essai-cache
 docker images --format '{{.Repository}}' | grep -c '^essai-'
 ```
 
 ```text
-3
+4
 0
 ```
 

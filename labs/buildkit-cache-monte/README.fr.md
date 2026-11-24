@@ -127,6 +127,33 @@ repart aussi à 1, alors que rien n'a été nettoyé : l'option ignore le cache
 monté en même temps que les couches. Un Dockerfile doit donc fonctionner avec
 un cache monté vide.
 
+## 🚫 Exercice 4 : un cache refusé
+
+Une image non root construit souvent sous son propre uid. Donnez-lui un cache
+monté, d'abord sans rien préciser, puis avec l'option `uid` :
+
+```bash
+cat > Dockerfile.refus <<EOF
+FROM $ALPINE
+USER 30100
+RUN --mount=type=cache,id=essai-droits,target=/reserve echo paquet > /reserve/paquet
+EOF
+docker build -t essai-montage:droits -f Dockerfile.refus . 2>&1 | grep -oE "can't create.*denied|exit code: [0-9]+" | sort -u
+sed 's|target=/reserve|target=/reserve,uid=30100|' Dockerfile.refus > Dockerfile.droits
+docker build -q -t essai-montage:droits -f Dockerfile.droits . > /dev/null; echo "code: $?"
+```
+
+```text
+can't create /reserve/paquet: Permission denied
+exit code: 1
+code: 0
+```
+
+Le répertoire monté appartient à root : l'étape échoue sur un droit, alors que le
+Dockerfile ne contient aucune erreur de syntaxe. L'option `uid` donne le cache à
+l'utilisateur du build. Ne répondez pas à ce refus par `USER root` : l'étape
+produirait des fichiers que l'application ne pourrait plus modifier.
+
 ## 🧹 Nettoyage
 
 Supprimez les images et le répertoire d'essai, puis les caches montés que le
@@ -135,15 +162,15 @@ commande compte les images `essai-*` qui restent :
 
 ```bash
 cd ~
-docker rmi essai-montage:passages essai-montage:ecrit essai-montage:lit | grep -c Untagged
+docker rmi essai-montage:passages essai-montage:ecrit essai-montage:lit essai-montage:droits | grep -c Untagged
 rm -rf ~/essai-montage
 docker builder prune -f --filter type=exec.cachemount | tail -1
 docker images --format '{{.Repository}}' | grep -c '^essai-'
 ```
 
 ```text
-3
-Total:	8.192kB
+4
+Total:	24.58kB
 0
 ```
 

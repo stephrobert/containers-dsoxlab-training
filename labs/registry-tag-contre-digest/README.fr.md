@@ -186,6 +186,31 @@ La ligne marquée `prod` est la version B. La version A apparaît sous
 digest qui l'a ramenée, sans tag local. Son digest est là. C'est une autre
 façon de le retrouver, à condition d'être sur la machine qui avait l'image.
 
+## 🚫 Exercice 5 : trois refus autour d'un digest
+
+Changez le dernier caractère du digest, puis tronquez-le comme le fait un copier
+trop court, et essayez enfin de pousser vers un digest :
+
+```bash
+FAUX=$(echo "$D" | sed 's/.$/0/; t')
+[ "$FAUX" = "$D" ] && FAUX=$(echo "$D" | sed 's/.$/1/')
+docker pull "127.0.0.1:5098/essai/carnet@$FAUX" 2>&1 | grep -oE 'not found|manifest unknown' | tail -1
+docker pull "127.0.0.1:5098/essai/carnet@$(echo "$D" | cut -c1-30)"
+docker push "127.0.0.1:5098/essai/carnet@$D"; echo "code: $?"
+```
+
+```text
+not found
+invalid reference format
+cannot push a digest reference
+code: 1
+```
+
+Un digest qui diffère d'un caractère désigne un autre contenu, que le registre n'a
+pas : `not found`. Un digest tronqué n'est pas un digest : Docker le refuse avant
+même d'appeler le registre. Et on ne pousse jamais vers un digest, puisqu'il se
+calcule sur le contenu : on pousse vers un tag, et le registre rend le digest.
+
 ## 🧹 Nettoyage
 
 Retirez les conteneurs, le registre d'essai, son volume, les images et le

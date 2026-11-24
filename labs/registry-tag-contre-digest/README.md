@@ -187,6 +187,32 @@ exercise 1 it was no longer listed, and the pull by digest brought it back, with
 It is another way to find it, provided you are on the machine that had the
 image.
 
+## 🚫 Exercise 5: three refusals around a digest
+
+Change the last character of the digest, then cut it short as an incomplete copy
+does, and finally try to push to a digest:
+
+```bash
+FAUX=$(echo "$D" | sed 's/.$/0/; t')
+[ "$FAUX" = "$D" ] && FAUX=$(echo "$D" | sed 's/.$/1/')
+docker pull "127.0.0.1:5098/essai/carnet@$FAUX" 2>&1 | grep -oE 'not found|manifest unknown' | tail -1
+docker pull "127.0.0.1:5098/essai/carnet@$(echo "$D" | cut -c1-30)"
+docker push "127.0.0.1:5098/essai/carnet@$D"; echo "code: $?"
+```
+
+```text
+not found
+invalid reference format
+cannot push a digest reference
+code: 1
+```
+
+A digest that differs by one character points to another content, which the
+registry does not have: `not found`. A truncated digest is not a digest: Docker
+refuses it before even calling the registry. And you never push to a digest, since
+it is computed from the content: you push to a tag, and the registry returns the
+digest.
+
 ## 🧹 Cleanup
 
 Remove the containers, the practice registry, its volume, the images and the
