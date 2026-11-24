@@ -28,6 +28,21 @@
         fi
       changed_when: true
 
+    - name: Rendre les contrôleurs que le setup a activés
+      # Seulement ceux que le setup a ajoutés (fichier marqueur). Le retrait
+      # peut être refusé (« Device or resource busy ») si un service les
+      # emploie entre-temps pour ses propres enfants : le noyau a alors raison,
+      # et on ne force rien.
+      ansible.builtin.shell: |
+        marque=/var/tmp/dsoxlab-conteneur-limiter-a-la-main.controleurs-a-rendre
+        if [ -f "$marque" ]; then
+          while read -r c; do
+            echo "-$c" > /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null || echo "garde : $c"
+          done < "$marque"
+          rm -f "$marque"
+        fi
+      changed_when: true
+
     - name: Démonter ce qui resterait sous /srv/quai
       ansible.builtin.shell: |
         findmnt -rn -o TARGET | grep '^/srv/quai' | sort -r | xargs -r umount -l || true
