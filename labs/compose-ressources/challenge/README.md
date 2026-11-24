@@ -27,8 +27,4 @@ Cleanup removes only this project's resources and leaves the base image.
 The same service must remain operational after the CPU load, without restarting
 or losing its fresh application receipt. The trial removes only that receipt.
 
-## Apply budgets that survive replacement
-
-Follow `/opt/MISSION.md` and write `/opt/lab-compose-resources/compose.yaml`.
-The three checks read effective cgroup budgets, measure bounded CPU throttling
-and verify the limits again after container replacement.
+The brief is also written to `/opt/MISSION.md`.

@@ -3,7 +3,7 @@
 id: compose-sante-et-dependances                      # REQUIS
 title: "Wait for readiness, not just a running container"
 level: c4                     # REQUIS
-description: "Use a meaningful HTTP healthcheck and gate a dependent service on readiness, including during a simulated outage."
+description: "A service that tries only once starts only when its server really answers, and an outage shows."
 skills:                       # REQUIS, non vide
   - compose-healthcheck
   - readiness

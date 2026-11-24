@@ -23,8 +23,4 @@ jamais démarrer dans le second. Ne fixez pas de noms globaux de conteneur ou r�
 La dépendance de santé Compose conditionne le démarrage initial ; elle n'arrête
 ni ne redémarre automatiquement un dépendant déjà actif quand backend devient unhealthy.
 
-## Sonder la disponibilité et attendre la santé
-
-Suivez `/opt/MISSION.md` ; écrivez `/opt/lab-compose-health/compose.yaml`.
-Les contrôles exigent des transitions de santé pertinentes et une dépendance
-correcte avec des backends lents ou définitivement indisponibles.
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.

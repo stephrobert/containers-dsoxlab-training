@@ -25,8 +25,4 @@ de migration volontaire à 42. Dans le cas d'échec, app ne doit jamais démarre
 Ne fixez pas de noms globaux de volume, conteneur ou réseau, ni `name:` pour le
 projet : les valeurs distinctes de `-p` doivent isoler les ressources d'essai.
 
-## Attendre une fin réussie
-
-Suivez `/opt/MISSION.md` et écrivez `/opt/lab-compose-migrate/compose.yaml`.
-Les trois contrôles exigent une vraie base migrée, des rejeux idempotents et
-le blocage correct quand une migration échoue sur un volume vide isolé.
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.

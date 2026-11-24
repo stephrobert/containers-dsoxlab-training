@@ -1,4 +1,6 @@
-# Scenario
+# A development mount that went to production
+
+## The situation
 
 The team has a single Compose file, and two ways of using it. In development the
 sources are mounted into the container: you edit, you reload, you do not

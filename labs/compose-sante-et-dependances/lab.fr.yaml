@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "Attendre la disponibilité, pas seulement un conteneur démarré"
-description: "Configurer une sonde HTTP pertinente et conditionner un service à la disponibilité, y compris lors d'une panne simulée."
+description: "Un service qui n'essaie qu'une fois démarre seulement quand son serveur répond vraiment, et une panne se voit."

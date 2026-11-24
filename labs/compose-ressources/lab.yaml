@@ -3,7 +3,7 @@
 id: compose-ressources                      # REQUIS
 title: "Enforce Compose resource budgets on the engine"
 level: c4                     # REQUIS
-description: "Apply memory, CPU and process limits and verify cgroup enforcement instead of trusting the YAML alone."
+description: "A service fits in three budgets the kernel really enforces, including after its container is replaced."
 skills:                       # REQUIS, non vide
   - compose-resources
   - cgroups

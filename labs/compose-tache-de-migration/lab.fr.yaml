@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "Conditionner le démarrage à une migration réussie"
-description: "Exécuter une migration SQLite ponctuelle et idempotente, puis démarrer seulement après sa réussite."
+description: "Une application ne démarre que sur une base migrée, et rejouer la migration ne perd rien."
