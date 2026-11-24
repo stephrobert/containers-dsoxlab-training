@@ -161,7 +161,7 @@ conteneur entier.
 
 ## 🔍 Exercice 5 : lire un masque de capabilities
 
-La leçon conseille `capsh --decode`, qui n'est pas installé sur cette machine.
+La leçon cite `capsh --decode`, qui n'est pas installé sur cette machine.
 On peut s'en passer. `setpriv --list-caps` liste les capabilities dans
 l'ordre des bits, en partant de 0. Regardez les lignes 19 à 23 de cette liste,
 numérotées à partir de 0, puis les masques de votre shell, avec et sans

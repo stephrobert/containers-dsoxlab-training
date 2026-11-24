@@ -12,7 +12,7 @@ Vous travaillez dans `~/essai-isolation`, avec des processus nommés `essai-*`
 et sans changer de racine. Le challenge porte sur un autre système de fichiers
 et un autre nom de machine : vous le ferez seul, à la fin.
 
-Page associée : [Fabriquer un conteneur à la main](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/).
+Page associée : [Un conteneur à la main avec unshare et nsenter](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/).
 
 ## 🔧 Avant de commencer
 
