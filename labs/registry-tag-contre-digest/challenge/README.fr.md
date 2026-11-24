@@ -36,11 +36,3 @@ du tag ; lancer par le digest donne une référence qui ne peut pas mentir.
 Les contrôles vérifient l'image réellement exécutée, sa référence de démarrage,
 son produit et la disponibilité du manifeste d'origine avec un client
 indépendant.
-
-## Mission : retrouver la livraison originale
-
-Sur `docker.lab`, rétablissez `dsoxlab-digest-app` par le digest de registre
-de la première livraison dans `/opt/lab-registry-digest/livraison.json`,
-sans modifier `stable`.
-
-Lisez le scénario pour l'incident et les critères.
