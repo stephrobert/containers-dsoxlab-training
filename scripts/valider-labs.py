@@ -447,9 +447,18 @@ def valider(lab: Path, rejeu: bool = True, double_passage: bool = False) -> dict
     ident = lab.name
     debut = time.time()
     etapes: list[str] = []
+    # L'HORODATAGE, À LA SECONDE ET AVEC SON FUSEAU, en plus de la date. Le
+    # générateur du site compare les commits du lab au verdict : à la date
+    # seule, une réattestation rejouée un autre jour que le changement du
+    # setup ne changeait pas le relevé quand le verdict était le même, et le
+    # lab sortait « à réattester » à tort. Une valeur sans fuseau est ignorée
+    # par le générateur (convenu avec la session du site, validé par Stéphane
+    # le 2026-11-15, écrit le 2026-11-24).
+    maintenant = datetime.now(UTC)
     resultat: dict = {
         "id": ident,
-        "date": datetime.now(UTC).strftime("%Y-%m-%d"),
+        "date": maintenant.strftime("%Y-%m-%d"),
+        "horodatage": maintenant.astimezone().isoformat(timespec="seconds"),
     }
     if double_passage:
         resultat["protocole"] = "double-passage"
