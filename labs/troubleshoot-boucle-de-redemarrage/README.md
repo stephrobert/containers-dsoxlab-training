@@ -1,107 +1,184 @@
-# troubleshoot-boucle-de-redemarrage: the policy fixes nothing
+# A restart loop, and two outcomes
 
-## What this lab tests
+The lesson explains the restart policies and how to repair a loop. This course
+adds five investigation moves: measure the pace of restarts, recognise a loop
+without failure, isolate the logs of the last attempt, examine a container that
+does not stay up, and cap the restarts without recreating it.
 
-That a restart policy corrects no defect. It only decides what happens
-**after** the failure, and three containers sharing the same defect get out of
-it in three different ways:
+You work on `essai-boucle` and `essai-zero`. The challenge uses the `appli-*`
+containers: do not touch them during the course.
 
-| Policy | What it gives | What it tells you |
-| --- | --- | --- |
-| capped | the engine relaunches N times, then gives up | the failure is frozen, so readable |
-| endless | it relaunches indefinitely | the failure is noisy, and still there |
-| endless, cause lifted | it catches up on its own | lifting the cause was enough |
+Related page: [Read a Docker startup failure: exit codes and loops](https://www.stephane-robert.info/en/docs/docker/read-a-startup-failure/).
 
-The reflex gesture is to make the noise stop: remove the policy, or destroy the
-container. Both work, and neither fixes anything.
+## 🔧 Before you start
 
-## Measured before being written
+Start the lab:
 
-On `docker.lab`, on 2026-10-30:
+```bash
+dsoxlab run troubleshoot-boucle-de-redemarrage
+```
 
-| Policy | State | RestartCount | Exit code |
-| --- | --- | --- | --- |
-| `on-failure:4` | `exited` | frozen at **4** | the script's |
-| `always` | `restarting` | **10 in 60 s** | the script's |
-| `always`, cause lifted | `running` | frozen | moot |
+You are connected to `docker.lab`, where the engine runs. Start two containers
+that loop. The `attendre` function waits until a container is between two
+attempts. **Keep the same terminal until the cleanup.**
 
-And the fact carrying the second half of the lab: **the container under the
-endless policy came back on its own**, measured at about a minute after the
-missing file was laid down, without touching it. The engine waits between two
-attempts, and that delay grows. Relaunching the container merely skips the
-wait.
+```bash
+IMAGE=alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+DEBUT=$(date +%s)
+docker run -d --name essai-boucle --restart always "$IMAGE" sh -c 'echo "essai $(date +%T)"; echo reste > /trace.txt; exit 1' > /dev/null
+docker run -d --name essai-zero --restart always "$IMAGE" sh -c 'echo tache finie; exit 0' > /dev/null
+attendre() { until [ "$(docker container inspect "$1" --format '{{.State.Restarting}}')" = true ]; do sleep 0.2; done; }
+docker version --format '{{.Server.Version}}'
+```
 
-The capped container, for its part, did not come back: the engine had given up.
+```text
+29.9.2
+```
 
-## Why the capped container is the witness
+The outputs of this course come from a Docker 29.9.2 on Debian 13, on
+24 November 2026. The times and the numbers of attempts will differ.
 
-It carries **two** of the three answers, and its two values are stable
-precisely because the engine gave up: the count no longer moves, and the code
-stays the one of the last attempt.
+## ⏱️ Exercise 1: measure the pace of restarts
 
-The brief forbids repairing it, and a check verifies it stayed `exited`. A
-relaunched container starts over, with neither restart count nor exit code: the
-question would be moot. It is the rule this section has drawn out, and its
-fourth application: **a diagnostic value is never read from the object the
-repair modifies.**
+Each end of the program produces a `die` event. Compute the gap in seconds
+between two ends:
 
-## Why two policies, and drawn at random
+```bash
+sleep 12
+docker events --since "$DEBUT" --until "$(date +%s)" --filter container=essai-boucle --filter event=die --format '{{.Time}}' | awk 'NR>1 {printf "%d ", $1-avant} {avant=$1} END {print ""}'
+docker container inspect essai-boucle --format 'relances={{.RestartCount}}'
+```
 
-`always` and `unless-stopped` produce **exactly the same loop**. They differ on
-one point only, which has nothing to do with it, and that is the fate of a
-container stopped by hand when the engine restarts.
+```text
+0 0 1 1 1 4
+relances=7
+```
 
-The setup draws one at random on each pass. So the question cannot be guessed,
-it has to be read, and read **before** repairing: removing the policy would
-make it disappear.
+The gaps grow: Docker waits longer and longer. This trace is also useful
+afterwards, to date the start of a loop.
 
-The ceiling and the failure code are drawn the same way. The code avoids 0, 1,
-2 and the 125-127 range, which each have a meaning in this catalogue and would
-steer the diagnosis by elimination.
+## 0️⃣ Exercise 2: a loop without failure
 
-## Why the fourth check requires the policy intact
+The second container loops too. Look at its code:
 
-Removing the policy makes the loop stop **without fixing anything**: the
-container stops being relaunched, and the defect is whole. That is the mistake
-this lab exists to prevent, and a check looking only at "the container no
-longer loops" would reward it.
+```bash
+attendre essai-zero
+docker ps -a --filter name=essai-zero --format '{{.Names}} {{.Status}}'
+docker logs --tail 1 essai-zero
+```
 
-So it requires three things at once: the container runs with its script's
-trace, its policy is still the one of the start, and the healthy container is
-**the one of the start**, recognised by its identifier and not by its name. A
-namesake recreated after a clean slate would carry the same name, and that is
-precisely the gesture carrying away a running service.
+```text
+essai-zero Restarting (0) 4 seconds ago
+tache finie
+```
 
-## Why the check grants time, but not always
+`Restarting (0)`: the program succeeds and ends, and the `always` policy starts
+it again. There is nothing to repair in the program. The policy does not suit a
+task that has an end.
 
-The engine's delay reaches the minute. A learner lifting the cause and grading
-right away would be refused for having done exactly the right thing, and would
-conclude that recreating is the way.
+## 📜 Exercise 3: the logs of the last attempt
 
-So the check waits up to 150 seconds, **but only when the cause is lifted**: it
-first verifies the presence of the file that was missing, and refuses without
-waiting when it is still absent. A `check` played without having fixed
-anything answers at once.
+The logs of a looping container mix all the attempts. Count the lines, then keep
+only the last one, dated:
 
-## Why the setup observes the loop on the count
+```bash
+docker logs essai-boucle | wc -l
+docker logs --tail 1 --timestamps essai-boucle
+```
 
-Measured on 2026-10-30: between two attempts, the looping container passes
-through `running` while its script fails. A check on the state is therefore
-true half of the time, and the setup's first draft failed right there.
+```text
+7
+2026-11-24T09:55:15.063471586Z essai 09:55:15
+```
 
-The restart count, for its part, never goes back down. It is the stable proof
-that a container is looping.
+`--timestamps` dates the line, in universal time. With `--since` and this date,
+you isolate the lines of a single attempt when the program writes several.
 
-## A cleanup trap, paid in advance
+## 🔬 Exercise 4: examine a container that does not stay up
 
-The containers go away **before** their configuration. Two of them carry a
-restart policy, and the engine relaunches them as long as they exist: removing
-the directory first would leave one of them looping on a vanished
-configuration, filling the engine's journal.
+You want to see the container's files, but it does not stay up:
 
-## What the lab does not require
+```bash
+attendre essai-boucle
+docker exec essai-boucle cat /trace.txt
+docker diff essai-boucle
+docker commit essai-boucle essai-autopsie:1 > /dev/null
+docker run --rm essai-autopsie:1 cat /trace.txt
+```
 
-A path. The missing file can be laid down by any means, and the recovery can
-come from letting the engine catch up as well as from handing it back the
-wheel. The three values are read in the inspection, which can be questioned in
-several ways.
+```text
+Error response from daemon: Container f4c438d058db0c8bd1f9d125719e029f3ecc29b1a0423c5e7a5b6776dd617d78 is restarting, wait until the container is running
+A /trace.txt
+reste
+```
+
+`docker exec` is refused between two attempts. `docker diff` still lists what the
+program wrote. `docker commit` freezes the container's files in an image, which
+you open with another command. The original container keeps looping, untouched.
+
+## 🛑 Exercise 5: cap without recreating
+
+`docker update` changes the policy of an existing container. Give both a cap,
+wait, then start `essai-boucle` again:
+
+```bash
+docker update --restart on-failure:2 essai-zero essai-boucle
+sleep 20
+docker ps -a --filter name=^essai- --format '{{.Names}} {{.Status}}'
+docker start essai-boucle > /dev/null
+sleep 6
+docker container inspect essai-boucle --format 'relances={{.RestartCount}} statut={{.State.Status}} code={{.State.ExitCode}}'
+```
+
+```text
+essai-zero
+essai-boucle
+essai-zero Exited (0) 19 seconds ago
+essai-boucle Exited (1) 19 seconds ago
+relances=2 statut=exited code=1
+```
+
+Both stopped, for two reasons: `essai-zero` returned 0, which `on-failure` does
+not restart, and `essai-boucle` was already over its cap. After `docker start`,
+the counter went back to zero and stopped at 2. The failure is still there: the
+loop has ceased, nothing is repaired.
+
+## 🧹 Cleanup
+
+```bash
+docker rm -f essai-boucle essai-zero > /dev/null
+docker rmi essai-autopsie:1 > /dev/null
+docker ps -a --format '{{.Names}}' | grep -c '^essai-'
+```
+
+```text
+0
+```
+
+Then leave the machine and reset the lab. `dsoxlab reset` replays the cleanup
+then the setup of the lab. It asks you to confirm: answer `y`.
+
+```bash
+exit
+dsoxlab reset troubleshoot-boucle-de-redemarrage
+dsoxlab check troubleshoot-boucle-de-redemarrage
+```
+
+```text
+╭─ Result: troubleshoot-boucle-de-redemarrage ─╮
+│  0 / 100 pts                                 │
+│  ░░░░░░░░░░░░░░░░░░░░  0/4 tests             │
+╰──────────────────────────────────────────────╯
+```
+
+0 out of 4: that is the expected result. The challenge is ready.
+
+## 🎯 The challenge
+
+Your turn, on your own this time: read two failing containers, remove their
+cause, and let the engine restart the looping one without removing its policy.
+
+```bash
+dsoxlab run troubleshoot-boucle-de-redemarrage
+dsoxlab challenge troubleshoot-boucle-de-redemarrage
+```
