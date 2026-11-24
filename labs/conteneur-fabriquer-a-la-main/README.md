@@ -12,7 +12,7 @@ You work in `~/essai-isolation`, with processes named `essai-*` and without
 changing the root. The challenge uses another file system and another host
 name: you will do it on your own, at the end.
 
-Related page: [Build a container by hand](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/).
+Related page (in French): [Un conteneur à la main avec unshare et nsenter](https://www.stephane-robert.info/docs/conteneurisation/conteneur-a-la-main/).
 
 ## 🔧 Before you start
 

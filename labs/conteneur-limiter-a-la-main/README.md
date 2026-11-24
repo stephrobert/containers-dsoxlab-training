@@ -12,7 +12,7 @@ You work with cgroups named `essai-*` and processes of the host, without a
 container. The challenge uses another cgroup, other caps and a detached
 container: you will do it on your own, at the end.
 
-Related page: [Limit a container: cgroups v2 and capabilities](https://www.stephane-robert.info/docs/conteneurisation/limiter-un-conteneur/).
+Related page: [Limit a container: cgroups v2 and capabilities](https://www.stephane-robert.info/en/docs/conteneurisation/limit-a-container-cgroups-and-capabilities/).
 
 ## 🔧 Before you start
 
@@ -157,7 +157,7 @@ The group is now empty, so it can be removed. This is the move of the
 
 ## 🔍 Exercise 5: read a capability mask
 
-The lesson suggests `capsh --decode`, which is not installed on this machine.
+The lesson mentions `capsh --decode`, which is not installed on this machine.
 You can do without it. `setpriv --list-caps` lists the capabilities in bit
 order, starting from 0. Look at lines 19 to 23 of this list, numbered from 0,
 then at the masks of your shell, with and without `sudo`:
