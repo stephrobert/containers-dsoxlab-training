@@ -150,9 +150,11 @@ unexpected EOF
 ```
 
 `skopeo` reads each layer again and refuses the changed byte. `docker load`
-accepted this damaged archive on this machine, and only refused the cut one. So
-check a received archive with `skopeo copy ... dir:`, or with a fingerprint
-sent separately, before loading it.
+accepted the damaged archive because the healthy layer was already on this
+machine: it reused it without reading the archive's. Measured on a machine
+without that layer, it prints `Loaded image`, then `Error unpacking image`, and
+still returns code 0. So check a received archive with `skopeo copy ... dir:`,
+or with a fingerprint sent separately, before loading it.
 
 ## 🧹 Cleanup
 
