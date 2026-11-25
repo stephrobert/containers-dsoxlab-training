@@ -5146,7 +5146,7 @@
    "après clean et run : 0/4",
    "moteur rendu intact"
   ],
-  "horodatage": "2026-11-25T10:48:25+01:00",
+  "horodatage": "2026-11-25T11:20:15+01:00",
   "host": "docker.lab",
   "id": "securite-apparmor",
   "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-securite-apparmor.log",
