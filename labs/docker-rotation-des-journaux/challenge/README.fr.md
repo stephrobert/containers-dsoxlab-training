@@ -1,27 +1,25 @@
-# Scénario
+# Un service bavard remplit le disque
 
-Un conteneur de démonstration émet un flux borné mais autorise un journal trop volumineux. Ne modifiez pas les valeurs globales ; seul ce service est concerné.
+## La situation
+
+Sur `docker.lab`, le service `dsoxlab-log-rotation` écrit un flux limité, mais
+son journal a le droit de devenir beaucoup trop gros. Seul ce service est
+concerné : les valeurs par défaut du démon ne doivent pas changer.
 
 ## Mission
 
-Le service utilise des journaux json-file plafonnés à 1 Kio et trois fichiers conservés.
+Le service garde ses journaux `json-file` dans des fichiers de 1 Kio au plus,
+trois fichiers conservés. Il doit rester actif et garder son label `dsoxlab.lab`.
+L'énoncé est aussi déposé dans `/opt/dsoxlab-docker-rotation-des-journaux/MISSION.md`.
 
-## Contrat fonctionnel : docker-rotation-des-journaux
-
-Travaillez sur `docker.lab`. Le service `dsoxlab-log-rotation` doit rester actif
-et conserver son label `dsoxlab.lab`.
-
-Trois contrôles indépendants mesurent trois choses différentes, et le premier ne
-suffit pas.
+## Ce qui est noté
 
 ### 1. Le pilote déclaré borne les journaux
 
 Le service utilise le pilote `json-file`, avec `max-size=1k` et `max-file=3`.
 
-C'est ce qui a été **demandé au démon**, et c'est la seule chose que mesurait la
-version précédente de ce lab. Un plafond accepté par le démon et jamais appliqué
-l'aurait satisfaite, et vous auriez eu le point sans que votre journal soit
-borné.
+C'est ce qui a été **demandé au démon**. Les deux contrôles suivants mesurent ce
+qu'il en fait.
 
 ### 2. Les lignes les plus anciennes ont été jetées
 
@@ -54,18 +52,3 @@ de journal demande root, ce qui rendrait la vérification dépendante d'un déta
 d'environnement. Le contenu rendu par `docker logs` est de toute façon plus petit
 que les fichiers JSON qui l'encapsulent : s'il dépasse le budget, les fichiers le
 dépassent aussi.
-
-### Ce qui n'est pas noté, et pourquoi on vous le dit
-
-Deux vérifications précèdent les mesures sans être des exigences : que le service
-existe et porte son label, et que ses journaux soient lisibles. Sans elles aucun
-contrôle ne peut observer quoi que ce soit, et un contrôle qui n'a pas pu
-regarder ne doit jamais conclure au vert. Quand la lecture échoue sur un service
-qui tourne, le message vous dit que ce n'est pas votre faute.
-
-Une limite de ce contrat, pour que personne ne s'y trompe : les contrôles 2 et 3
-mordent réellement, mais ils ne refusent **jamais seuls**, puisque toute erreur
-sur les bornes est aussi vue par le contrôle 1. Ils existent parce qu'ils ne
-mesurent pas la même chose que lui : il croit la déclaration, eux regardent le
-journal. Le jour où le moteur accepterait une option sans l'appliquer, ils
-seraient les seuls à le voir.

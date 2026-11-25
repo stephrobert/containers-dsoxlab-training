@@ -1,11 +1,31 @@
-# Scénario
+# Des journaux sans limite, sur toute la machine
 
-Les nouveaux conteneurs n’ont aucune limite de rétention. Conservez le pilote json-file par défaut, plafonnez les fichiers à 1 Mio et gardez deux fichiers. Les autres réglages du démon doivent être préservés.
+## La situation
+
+Sur `docker.lab`, un conteneur créé sans option garde un journal bien trop gros.
+Régler chaque conteneur à la main ne tient pas : il suffit d'en oublier un. La
+limite doit venir du démon.
 
 ## Mission
 
-Les nouveaux conteneurs utilisent les valeurs demandées ; le nettoyage restaure la configuration initiale du démon.
+Configurez le démon pour que tout **nouveau** conteneur, créé sans aucune option
+de journal, obtienne :
 
-## Contrat fonctionnel : docker-configurer-le-demon
+- le pilote `json-file` ;
+- des fichiers de `1m` au plus ;
+- `2` fichiers conservés.
 
-Les tests inspectent l’état effectif sur l’hôte distant `docker.lab`. Ils refusent l’état initial et ne réussissent que si la mission est accomplie. Les ressources de test sont bornées et portent l’étiquette unique du lab.
+Ne perdez aucun autre réglage du démon. L'énoncé est aussi déposé dans
+`/opt/dsoxlab-docker-configurer-le-demon/MISSION.md`.
+
+## Ce qui est noté
+
+Les contrôles créent leurs propres conteneurs, sans option de journal :
+
+1. le pilote, la taille et le nombre de fichiers sont ceux demandés ;
+2. la limite agit vraiment : sur un journal qui la dépasse, les premières lignes
+   ont été jetées et le volume gardé tient dans le budget.
+
+Le fichier de configuration n'est pas lu : seul compte ce qu'un nouveau conteneur
+reçoit. Les conteneurs d'essai sont retirés, et le nettoyage du lab remet la
+configuration de départ.
