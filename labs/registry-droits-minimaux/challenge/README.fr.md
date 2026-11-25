@@ -1,45 +1,39 @@
 # Des identifiants ne sont pas des permissions
 
-L'équipe de livraison dispose d'un registre TLS et de deux comptes valides,
-mais aucun ne peut distribuer une image. Donner les droits administrateur
-aux deux ferait du serveur de déploiement un éditeur.
+## La situation
 
-Rétablissez le chemin de livraison sans élargir sa frontière. L'éditeur
-travaille sur `docker.lab` ; le lecteur utilise le moteur distinct de
-`docker-client.lab`. Un produit nouvellement publié doit arriver intact par
-son digest immuable, et le lecteur doit rester incapable d'uploader.
+L'équipe de livraison a un registre en TLS et deux comptes valides, et aucun des
+deux ne peut distribuer une image. Donner tous les droits aux deux rétablirait
+la livraison, et ferait de la machine de déploiement un éditeur.
 
-Travaillez dans `/opt/lab-registry-rights` sur les VM, pas dans un répertoire
-local. Consultez [les exigences](challenge/README.fr.md).
+## Mission
 
-## Mission : un éditeur n'est pas un lecteur
+Travaillez dans `/opt/lab-registry-rights`, sur les VM. L'éditeur est sur
+`docker.lab`, le lecteur sur `docker-client.lab`. Le registre écoute sur
+`registry-rights.lab.test:15447`, le service de jetons sur le port `15448`. TLS
+est prêt. Les mots de passe sont dans `credentials.json` sur `docker.lab`, à lire
+avec `sudo`. La seule chose à réparer est `auth.yml`, sur `docker.lab`.
 
-Travaillez à distance dans `/opt/lab-registry-rights`. L'éditeur est
-`docker.lab`, le lecteur distinct `docker-client.lab`. Le registre HTTPS
-écoute sur `registry-rights.lab.test:15447`, le service de jetons HTTPS sur
-le port `15448`. TLS est déjà préparé. Les identifiants générés à l'exécution
-sont dans `credentials.json` sur l'éditeur (lecture avec sudo). Ne les commitez pas.
+### 1. L'éditeur publie
 
-1. Corrigez `auth.yml` pour que `publisher` puisse tirer et pousser
-   `catalogue/appli`, tandis que `reader` puisse seulement le tirer.
-   Aucun compte ne doit écrire dans un autre dépôt. Conservez
-   l'authentification et l'autorisation Bearer signée.
-2. Rechargez `dsoxlab-registry-droits-minimaux-auth`. Publiez une image depuis
-   le Dockerfile épinglé fourni et un contenu de release neuf. Les dossiers
-   Docker de connexion dédiés restent dans le chemin du lab, pas dans votre
-   configuration personnelle.
-3. Récupérez le digest exact publié avec le lecteur sur la VM distincte,
-   initialement sans cette image produit. L'identifiant d'image et la sortie
-   sans réseau doivent correspondre au produit de l'éditeur.
-4. Prouvez que le lecteur ne peut ni pousser ni ouvrir une session d'upload,
-   même en demandant `pull,push` au service de jetons. Refusez les écritures
-   dans les autres dépôts, l'accès anonyme et les mots de passe incorrects.
-5. Préservez la vérification TLS stricte sur les deux hôtes. Un mauvais nom
-   et un pull Docker sans CA privée doivent échouer. N'utilisez ni
-   insecure-registry, ni substitut HTTP en boucle locale, ni API Docker hôte,
-   ni le cache de l'éditeur comme preuve.
+Le compte `publisher` tire et pousse `catalogue/appli`. Rechargez ensuite le
+conteneur `dsoxlab-registry-droits-minimaux-auth`. Le contrôle construit une
+image neuve depuis le `Dockerfile` fourni, la pousse, et attend un digest.
 
-`dsoxlab check registry-droits-minimaux` crée des sondes de transfert neuves
-et les nettoie dans tous les cas. `dsoxlab clean registry-droits-minimaux`
-restaure la confiance préexistante et retire seulement les ressources
-possédées par le lab sur les deux moteurs.
+### 2. Le lecteur tire, et ne publie pas
+
+Depuis `docker-client.lab`, le compte `reader` tire ce digest. L'identifiant de
+l'image et sa sortie sans réseau sont ceux de l'éditeur. Le push d'un contenu
+neuf par `reader` est refusé pour manque de droits, et sans la CA du lab, le pull
+échoue.
+
+### Ce que les deux contrôles exigent aussi
+
+- `reader` ne peut pas ouvrir d'envoi, même en demandant `pull,push`.
+- Aucun des deux comptes ne lit ni n'écrit dans un autre dépôt.
+- L'accès anonyme et les mauvais mots de passe sont refusés.
+- TLS reste vérifié sur les deux machines : pas d'`insecure-registry`.
+
+Pour vos essais, rangez les identifiants dans un dossier à part, avec
+`docker --config`, sous `/opt/lab-registry-rights`. `dsoxlab clean` remet les deux
+machines dans leur état d'avant.

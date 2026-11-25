@@ -1,121 +1,41 @@
-# An OOM confined to one cgroup
+# An OOM that stays in its container
 
-The starter worker has a safe 96 MiB ceiling. The deployment contract instead
-requires 32 MiB of RAM and no swap, with the OOM killer enabled.
+## The situation
 
-In `/opt/dsoxlab-container-memoire-et-oom`, apply that budget to `worker` in
-project `dsoxlab-container-memoire-et-oom`. A bounded allocation probe should be
-killed in that container's cgroup while its small PID 1 survives.
+The `worker` service runs with 96 MiB of memory. Its deployment contract grants
+it 32, without swap. You must bring it back within this budget, and check that
+an oversized allocation is killed there without taking the service down.
 
-The checker verifies both limits and host headroom before allocating. It
-observes `memory.events`, not a guessed exit code. Do not stress the host,
-change host swap or use an unbounded allocator.
+## Mission
 
-This note also said « do not disable OOM killing ». It is removed because it
-described a move that does not exist here: under cgroup v2 the kernel cannot
-disable it, and Docker discards the option with a warning. Forbidding the
-impossible suggests there is a way around it.
-The same PID 1 must remain running without restarting and a freshly written
-application receipt must remain readable afterward. The trial removes only
-its own receipt; preserving it during this incident is not a reboot guarantee.
+On `docker.lab`, the Compose project is in
+`/opt/dsoxlab-container-memoire-et-oom`, under the name
+`dsoxlab-container-memoire-et-oom`. Keep a single `worker` running, with its
+`dsoxlab.lab=container-memoire-et-oom` label and its task and CPU limits.
 
-## Brief
+### 1. The declared limits
 
-Work on `docker.lab`, in `/opt/dsoxlab-container-memoire-et-oom`.
+`Memory` and `MemorySwap` both equal 33554432, that is 32 MiB. The machine has
+no swap: it is the contract that asks to forbid it, not a spill you could
+observe here.
 
-Keep `worker` active in project `dsoxlab-container-memoire-et-oom`, with its
-`dsoxlab.lab=container-memoire-et-oom` label. Keep the project's pids and CPU
-guards too. No host swap changes, no unbounded allocator.
-
-Four independent checks measure four different things.
-
-### 1. The declared limits bound memory and forbid swap
-
-`Memory` and `MemorySwap` both equal 33554432, that is 32 MiB.
-
-Their equality is what forbids swap, and the distinction is not cosmetic.
-Measured on the lab host, in both views:
-
-| Form | declared `MemorySwap` | `memory.swap.max` |
-| --- | --- | --- |
-| `--memory 32m` alone | 67108864, that is **twice** | 33554432 |
-| `--memory-swap` equal | 33554432 | **0** |
-| `--memory-swap -1` | -1 | `max` |
-
-So a `--memory` set on its own does not leave swap "open": Docker doubles the
-value, and the cgroup grants a swap budget **equal to memory**. Unlimited only
-comes with `-1`. Only their equality sets `memory.swap.max` to 0.
-
-Worth noting, because it changes what can be concluded: this lab's host has **no
-swap at all**. An allocation therefore spills nowhere here, whatever the value,
-and it is the deployment contract that requires the equality, not a spill one
-could observe on this machine.
-
-This check requires nothing about `OomKillDisable`, and that is measured: on a
-cgroup v2 host the kernel cannot disable the OOM killer. Docker discards the
-option with a warning and the field does not even hold `false`. A requirement
-that cannot be violated checks nothing; what it aimed at is measured by check 3,
-which observes a real OOM. A counted OOM **is** the proof that the killer is
-active.
-
-### 2. The cgroup actually applies the bound
+### 2. The applied limits
 
 Inside the container, `memory.max` is 33554432 and `memory.swap.max` is 0.
 
-The previous check reads what was **asked** of the daemon, this one what the
-kernel **retained**. A declaration the kernel did not retain bounds nothing, and
-it is the cgroup that is authoritative.
+### 3. An oversized allocation is killed
 
-### 3. An excessive allocation hits a real OOM
+The check runs a limited allocation in the container, which fits under 96 MiB
+and not under 32. It must be killed, and the `oom_kill` counter of
+`memory.events` must increase. A non-zero exit code is not enough.
 
-A bounded probe is run inside the container. It must be killed, and above all
-`memory.events`'s `oom_kill` counter must **increase**.
+### 4. The service survives
 
-A non-zero exit code proves nothing by itself: a command can fail for a thousand
-reasons. It is `memory.events` that says the kernel killed the allocation, so
-that is what gets read, before and after.
+After an OOM caused by this check, `worker` is still running, its `StartedAt`
+has not changed, and a file written before the incident can be read.
 
-The probe is bounded deliberately. An endless allocator would stress the host,
-which the scenario forbids, and would measure the global OOM killer instead of
-the cgroup's.
+### What is forbidden
 
-Its size is **measured**, and that is less trivial than it looks: it must be
-killed under 32 MiB *and survive* under the starting 96 MiB, or else it declares
-the mission accomplished before any work.
-
-The probe doubles a string on every round, so on the last round it holds both
-the old and the new one: its peak usage therefore exceeds its stated size. By
-how much is a matter of measurement. Read from the cgroup's `memory.peak`, the
-ratio of peak to size tends towards **1.53**, not towards 2 as a quick reading
-of the doubling suggests. A 32 MiB probe peaks at 49 MiB: above 32, under 96.
-
-### 4. The service survives the OOM and keeps its state
-
-Three things, after an OOM this check triggers itself: the worker is still
-running, its `StartedAt` has not changed, and a receipt written **before** the
-incident can be read after it.
-
-This is the other half of the requirement, and the easiest to lose. A budget
-that takes PID 1 down at every spike does not protect the service, it replaces
-it with a restart. Surviving as a process is not enough either: a service that
-starts over has lost what it held.
-
-This check triggers **its own** probe rather than reusing check 3's. A check
-that assumes another has already run would lie the moment you run it alone, and
-that is also why it verifies for itself that an OOM happened: with no incident,
-survival cannot be told from nothing having occurred.
-
-### What is not graded, and why we tell you
-
-Three verifications precede the measurements without being requirements: that
-exactly one `worker` runs, that it carries its label, and that the host has
-enough free memory. Without them no check can observe anything, and a check that
-could not look must never conclude green.
-
-The last two do not even depend on you. If the host margin is too small, the
-probe risks being killed by the **global** OOM killer rather than the cgroup's:
-the check would measure the machine instead of your work. The message then tells
-you it is not your fault, and what to free.
-
-Finally, keeping the receipt through the incident says nothing about surviving a
-reboot of the machine: that is not what this lab measures.
+Do not stress the machine, do not change its swap and do not run an unlimited
+allocation. If the machine lacks free memory, the check stops and tells you so:
+your work is not the cause.
