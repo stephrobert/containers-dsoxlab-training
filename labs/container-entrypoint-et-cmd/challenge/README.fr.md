@@ -15,40 +15,7 @@ passe quelque chose.
 Deux règles suffisent à tout expliquer. Ce lab ne vous les énonce pas : il vous
 fait produire les quatre situations où elles se manifestent.
 
-## L'objectif
-
-Les deux images sont déjà construites sur la machine, et **leurs Dockerfile
-sont lisibles** dans `/opt/lab-entrypoint` :
-
-```text
-img-cmd:1.0          déclare seulement un CMD
-img-entrypoint:1.0   déclare un ENTRYPOINT et un CMD
-```
-
-Produisez quatre conteneurs. Chacun doit **rester** : c'est dans ses journaux
-qu'on lit ce qui a tourné, et un `--rm` effacerait la preuve.
-
-| Conteneur | Depuis | Ce que ses journaux doivent montrer |
-| --- | --- | --- |
-| `defaut` | `img-cmd:1.0`, sans argument | `defaut-de-limage` |
-| `remplace` | `img-cmd:1.0` | `remplacement-total`, **à la place** du défaut |
-| `complete` | `img-entrypoint:1.0` | le préfixe de l'entrypoint **et** `complement-cmd` |
-| `contourne` | `img-entrypoint:1.0` | `sans-prefixe`, **sans** le préfixe |
-
-L'énoncé est aussi déposé dans `/opt/MISSION.md`.
-
-## Ce qui est noté
-
-Ce qui s'est **exécuté**, lu dans les journaux des quatre conteneurs. Pas ce
-que les images déclarent : cela, le setup l'a écrit, et le vérifier ne vous
-apprendrait rien.
-
-Chaque contrôle vérifie aussi une **absence**, et c'est ce qui le rend
-sérieux : un conteneur dont les journaux portent à la fois le défaut et votre
-texte n'a rien remplacé, et un conteneur qui garde le préfixe n'a rien
-contourné.
-
-## Ce qui est demandé
+## Mission
 
 Sur `docker.lab`, une Debian 13 jetable, moteur en service. Deux images sont
 déjà construites, et **leurs Dockerfile sont lisibles** dans

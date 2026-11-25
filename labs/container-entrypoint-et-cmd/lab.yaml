@@ -3,7 +3,7 @@
 id: container-entrypoint-et-cmd                      # REQUIS
 title: "ENTRYPOINT and CMD: which one do your arguments replace?"            # REQUIS
 level: c1                     # REQUIS
-description: "See for yourself the four behaviours ENTRYPOINT and CMD produce against docker run arguments: the default, the full replacement, the completion, and the override."
+description: "Four containers show what becomes of docker run arguments depending on the command the image declares."
 skills:                       # REQUIS, non vide
   - docker
   - dockerfile

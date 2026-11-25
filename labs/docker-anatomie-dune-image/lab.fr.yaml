@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "L'anatomie d'une image : couches, partage, configuration"
-description: "Disséquer une image plutôt que lire son Dockerfile : compter les couches qu'elle porte vraiment, mesurer ce qu'elle partage avec une image sœur, et retrouver la révision qui ne vit que dans sa configuration."
+description: "Deux images sont décrites à partir du moteur : leurs couches, ce qu'elles partagent et une valeur de leur configuration."
