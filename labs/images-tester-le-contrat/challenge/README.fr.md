@@ -15,28 +15,6 @@ Personne n'a testé l'image **de l'extérieur**, comme le font les gens qui la
 font tourner. Les tests unitaires du code passaient, et ils ne pouvaient rien
 attraper de tout cela : les défauts sont dans l'image, pas dans le programme.
 
-## L'objectif
-
-Le contexte est dans `/opt/dsoxlab-images-tester-le-contrat`. Le service qui s'y
-trouve est un **guichet**, un petit comptoir qui délivre des tickets numérotés.
-Deux images en sont déjà construites :
-
-```text
-guichet:1.0   respecte le contrat
-guichet:0.9   un ancien build, qui ne le respecte pas
-```
-
-Écrivez **`/opt/dsoxlab-images-tester-le-contrat/tester-contrat.sh`**. Il prend
-un nom d'image, lance cette image comme le ferait un utilisateur, puis rend :
-
-```text
-0         l'image respecte le contrat
-non nul   elle ne le respecte pas, et la sortie dit quel contrôle l'a refusée
-```
-
-L'énoncé est aussi déposé dans
-`/opt/dsoxlab-images-tester-le-contrat/MISSION.md`.
-
 ## Ce qu'un utilisateur de l'image peut attendre
 
 | Attente | Ce que cela veut dire pour le guichet |
@@ -47,24 +25,6 @@ L'énoncé est aussi déposé dans
 | Elle n'exige aucun privilège | le processus n'est pas root, et le service tourne encore quand le conteneur est lancé avec un système de fichiers en lecture seule, son dossier de données `/var/lib/guichet` étant le seul endroit inscriptible |
 | Elle s'arrête quand on le demande | `docker stop` la termine bien avant le délai de grâce de dix secondes, avec le code 0 ou 143, et le compteur est toujours là quand on remonte le même dossier de données |
 
-## Ce qui est noté
-
-Votre **script**, joué par les contrôles contre un jeu d'images. L'une respecte
-le contrat et doit être acceptée. Les autres sont cassées de manières
-différentes, vous ne les avez pas toutes vues : chacune doit être refusée par
-un code non nul.
-
-Un script qui rend toujours 0 accepte toutes les images cassées. Un script qui
-rend toujours 1 refuse aussi la bonne, et aucun de ses refus ne compte alors.
-Seul un script qui les distingue est noté.
-
-Ce que le script crée, il le retire : conteneurs et volumes. Un test qui laisse
-ses débris derrière lui empoisonne le suivant.
-
-Le langage est libre, du moment que `bash tester-contrat.sh <image>` le lance.
-Ne modifiez pas la configuration du démon, et ne supprimez pas `guichet:1.0` :
-les contrôles construisent leurs propres images à partir d'elle.
-
 ## Énoncé
 
 Travaillez sur `docker.lab`, dans `/opt/dsoxlab-images-tester-le-contrat`. Le
@@ -74,6 +34,8 @@ contexte du service est dans `guichet/`. Les images `guichet:1.0` (correcte) et
 Écrivez **`tester-contrat.sh`** dans ce répertoire. `bash tester-contrat.sh
 <image>` rend 0 quand l'image respecte le contrat ci-dessous, et un code non nul
 sinon.
+
+L'énoncé est aussi déposé dans `/opt/dsoxlab-images-tester-le-contrat/MISSION.md`.
 
 ### 1. Il accepte l'image correcte, et ne laisse rien derrière lui
 
@@ -109,6 +71,11 @@ délivrés avant l'arrêt.
 
 Sans argument, ou avec le nom d'une image qui n'existe pas, il rend un code non
 nul.
+
+### Ce que vous ne devez pas toucher
+
+Ne modifiez pas la configuration du démon, et ne supprimez pas `guichet:1.0` :
+les contrôles construisent leurs propres images à partir d'elle.
 
 ### Ce qui n'est pas noté
 
