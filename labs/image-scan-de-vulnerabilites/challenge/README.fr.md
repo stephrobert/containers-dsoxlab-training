@@ -1,12 +1,17 @@
-# Un scan est une preuve datée, pas un certificat permanent
+# Un scan est une preuve datée
 
-Sur `docker.lab`, travaillez dans `/opt/lab-image-scan`. Deux images scratch
-de **bibliothèques témoins** contiennent les fichiers et inventaires de vrais
-paquets Debian. Ce ne sont pas des services : ne les exécutez jamais.
-`legacy` contient OpenSSL 1.1.1n et `fixed` OpenSSL 3.0.17.
-[PROVENANCE.md](fixtures/PROVENANCE.md) donne les sources et SHA-256 exacts.
-La base Debian originale est figée au 2026-11-01 11:37:02 UTC : elle ne dépend
-pas de l'état d'une image publique demain.
+## La situation
+
+Sur `docker.lab`, `/opt/lab-image-scan` contient deux images de bibliothèques
+Debian : `legacy` porte OpenSSL 1.1.1n, `fixed` porte OpenSSL 3.0.17. Ce sont des
+échantillons sans leurs dépendances : **ne les exécutez jamais** et ne les publiez
+pas. Leurs sources et leurs sommes sont dans `fixtures/PROVENANCE.md`.
+
+Le scan se fait hors ligne, avec **debsecan**, sur une base Debian figée au
+2026-11-01 11:37:02 UTC. Il lit l'inventaire des paquets Debian, pas toutes les
+dépendances ni tous les fichiers. La machine doit être en amd64.
+
+## Mission
 
 1. Lancez `python3 scan.py dsoxlab-scan:legacy legacy-report.json` ; utilisez
    `/usr/bin/python3` pour les paquets système. Le script extrait l'inventaire
@@ -21,21 +26,6 @@ pas de l'état d'une image publique demain.
    conserve le JSON et retourne son statut. Prouvez le refus de legacy et
    l'acceptation de fixed. Ne filtrez, modifiez ni inventez les résultats.
 
-Aucun rapport réussi, tag candidat ou gate au départ. L'évaluation compare les
-preuves aux sorties réelles d'un nouveau scan, aux ID d'images et aux hash des
-inventaires et de la base. Les preuves expirent après 24 heures.
-Il s'agit de métadonnées de paquets Debian, **pas** d'un scan exhaustif des
-dépendances applicatives ou du système de fichiers. Les fixtures scratch
-omettent les dépendances : témoins non exécutés, pas applications déployables.
-
-Toutes les données sont locales ; apt installe `debsecan`, `python3-apt`,
-Docker et dpkg au setup. Puis scans et builds sont hors ligne. Les paquets
-témoins sont amd64 ; VM amd64 requise. Ne publiez jamais ces images témoins
-dans un registre public.
-
-## Preuve et promotion
-
-Suivez la mission. Trois contrôles exigent la preuve
-ancienne datée, un candidat corrigé avec preuve fidèle, puis une barrière
-exécutable fraîche. Tous échouent au départ. Toutes les vraies alertes restent
-visibles même quand la politique ciblée accepte une image corrigée.
+Au départ, il n'y a ni rapport valable, ni candidat, ni barrière. Les trois contrôles
+refont le scan et comparent vos preuves : alertes, identifiants d'images, empreintes
+de l'inventaire et de la base. Une preuve expire après 24 heures.

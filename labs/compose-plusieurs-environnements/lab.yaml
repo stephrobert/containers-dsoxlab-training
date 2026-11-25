@@ -3,7 +3,7 @@
 id: compose-plusieurs-environnements                      # REQUIS
 title: "Deploy isolated development and production Compose projects"
 level: c6                     # REQUIS
-description: "Promote the same prepared image to two distinct VMs, apply environment-specific overrides and prove independent configuration, runtime behavior and data persistence without a deployment rebuild."
+description: "The same image runs on two machines, with a configuration and data specific to each environment."
 skills:                       # REQUIS, non vide
   - compose-overrides
   - environment-isolation
