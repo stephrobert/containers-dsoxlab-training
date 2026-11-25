@@ -13,70 +13,10 @@ instruction of this Dockerfile. It comes from the **base**.
 An `rm -rf` hides it from the container, and the image still weighs 39 MB.
 Measured on this machine.
 
-## The goal
-
-The context is in `/opt/lab-multietapes/appli`. Build the Dockerfile as it
-stands under the name `appli:finale`: it works, the application runs, the
-product is correct.
-
-Go inside and look for `/usr/lib/atelier` and `/usr/local/bin/fabriquer`. They
-are there. Try to remove them, and see what it changes on the scales.
-
-`appli:finale` must:
-
-```text
-print its token and the product's content
-carry NEITHER the tooling NOR the fabrication tool
-be built on the execution base
-carry a product REALLY FABRICATED, not copied
-```
-
-An execution base is already on the machine, under the name
-`lab-execution:1.0`. The brief is also laid down in `/opt/MISSION.md`.
-
-## Why there is only one route
-
-What comes from the base cannot be uninstalled. The only way for an image not
-to carry a tooling is for it **not to start from the base that carries it**.
-
-The fabrication, for its part, needs it. So two bases are needed in the same
-Dockerfile: the workshop to build, the execution base to ship, and the product
-passing from one to the other.
-
-**The fabrication tool refuses to run without its tooling.** Building directly
-on the execution base is therefore impossible, and that is not an oversight: it
-is what closes the false route.
-
-## What is measured
-
-| Image | Size | Tooling present |
-| --- | --- | --- |
-| execution base | 8.3 MB | moot |
-| workshop base | 39.8 MB | yes |
-| one single stage | 39.8 MB | **yes** |
-| two stages | 8.3 MB | **no** |
-
-Measured on 2026-10-30. The two-stage image weighs exactly 85 bytes more than
-its base, and its product is identical.
-
-## What is graded
-
-The **system state**, at four places that do not overlap: the product and its
-source, the absence of the tooling **doubled with a weighing**, the base read in
-the layers, and the product's dependency on its source.
-
-That last check changes the source in a **copy** of the context and requires the
-product to follow. A product copied from the host would stay frozen, and that is
-the only way to see it: the product carries a fingerprint drawn at the moment
-the fabrication runs.
-
-Your image is not overwritten in the process: the rebuild happens under a name
-of its own.
-
 ## What is asked
 
-On `docker.lab`, a throwaway Debian 13 with the engine running. Two bases and a
-context are already there:
+On `docker.lab`, a throwaway Debian 13 with the engine running. Two bases are
+already there, and the context is in `/opt/lab-multietapes/appli`:
 
 ```text
 lab-atelier:1.0     39.8 MB, 30 of which are fabrication tooling
@@ -87,6 +27,8 @@ appli/Dockerfile    a single stage, on the workshop
 **Start by building it as it stands under the name `appli:finale`**, then look
 for `/usr/lib/atelier` inside the image. Try to remove it, and weigh.
 
+The brief is also written to `/opt/MISSION.md`.
+
 ### 1. The application must run and carry its product
 
 `appli:finale` must print its token and the product's content, whose **source**
@@ -96,6 +38,8 @@ This check exists for a precise reason: the fastest way to remove a tooling is
 to stop building anything.
 
 ### 2. Neither the tooling nor the tool may be there
+
+The tooling is `/usr/lib/atelier`, the tool `/usr/local/bin/fabriquer`.
 
 Two measurements, and they are complementary: the **absence of the files** says
 the container no longer sees them, the **weighing** says they are no longer in
