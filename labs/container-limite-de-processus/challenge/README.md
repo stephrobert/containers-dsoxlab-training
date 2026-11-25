@@ -1,99 +1,38 @@
-# Contain process creation
+# A service, and no more than sixteen tasks
 
-The worker has a safe starter ceiling of 32 tasks, but its operational budget is
-16. A process ceiling must be a cgroup limit, not just a shell's ulimit.
+## The situation
 
-In `/opt/dsoxlab-container-limite-de-processus`, apply the 16-task budget to
-`worker` in project `dsoxlab-container-limite-de-processus`. Keep it running and
-retain the memory and CPU guards.
+The `worker` service may create up to 32 tasks. Its operating budget is 16. You
+must bring it back to that without losing its other limits, and check that a
+burst of processes is refused without taking the service down.
 
-The checker launches at most 24 short-lived sleep children, only after verifying
-the effective cap. This is not a fork bomb. Never use recursion, unbounded loops
-that fork, or host-wide process limits.
-After the finite burst ends, the original service must resume without restarting
-or losing a freshly written application receipt. Only the trial receipt is removed.
+## Mission
 
-## Brief
+On `docker.lab`, the Compose project is in
+`/opt/dsoxlab-container-limite-de-processus`, under the name
+`dsoxlab-container-limite-de-processus`. Keep a single `worker` running, with its
+`dsoxlab.lab=container-limite-de-processus` label and its CPU limit.
 
-Work on `docker.lab`, in `/opt/dsoxlab-container-limite-de-processus`.
+### 1. The declared limits
 
-Keep one active `worker` in project `dsoxlab-container-limite-de-processus`,
-with its `dsoxlab.lab=container-limite-de-processus` label. The checker performs
-the guarded burst itself; do not run an unbounded stressor.
+`PidsLimit` is 16, and the memory limit stays in place, at 64 MiB at most.
 
-Four independent checks measure four different things.
+### 2. The applied limit
 
-### 1. The declared limits carry the task budget
+Inside the container, `pids.max` is 16. A shell `ulimit` changes nothing there.
 
-`PidsLimit` is exactly 16, and the memory cap stays positive and no larger than
-64 MiB.
+### 3. A burst is refused
 
-The memory guard is checked here rather than in a check of its own, and that is
-deliberate: it is set from the start, so a separate check would pass before any
-work and hand out points for nothing. Bounding tasks must not cost the memory
-guard, but that is a requirement you preserve, not one you satisfy.
+The check starts 24 two-second `sleep` in the container. They fit under 32 and
+not under 16. The `max` counter of `pids.events` must increase. A non-zero exit
+code is not enough.
 
-### 2. The cgroup actually applies the task cap
+### 4. The service survives
 
-Inside the container, `pids.max` is 16.
+After a burst started by this check, `worker` is still running, its `StartedAt`
+has not changed, and a file written before the burst can be read.
 
-The previous check reads what was **asked** of the daemon, this one what the
-kernel **retained**. It is also what separates a cgroup limit from a shell
-`ulimit`: the latter binds only the descendants of the shell that set it and
-disappears with it, so it does not bound the service.
+### What is forbidden
 
-### 3. A bounded burst is refused by the kernel
-
-Twenty-four two-second `sleep` children are started, then waited on.
-`pids.events`'s `max` counter must **increase**.
-
-This is not a fork bomb: no recursion, no unbounded loop. The number is chosen
-to exceed 16 without approaching the starting 32, and that is measured: the
-cgroup already holds three tasks before the burst, so 3 + 24 fits under 32 and
-overflows under 16. Under 32 the counter stays at 0; under 16 it goes to 1.
-
-A non-zero exit code would prove nothing by itself. Only this counter says the
-kernel refused a creation.
-
-### 4. The service survives saturation and keeps its state
-
-Three things, after a burst this check triggers itself: the worker is still
-running, its `StartedAt` has not changed, and a receipt written **before** the
-burst can be read after it.
-
-A cap that takes PID 1 down at every spike does not protect the service, it
-replaces it with a restart. And surviving as a process is not enough: a service
-that starts over has lost what it held.
-
-If the worker is down, the message gives its **exit code**, and that code must
-not be made to say more than it does. A 137 is 128 + 9, that is a SIGKILL,
-whatever sent it. Measured on the lab host:
-
-| Cause | `ExitCode` | `OOMKilled` |
-| --- | --- | --- |
-| `docker kill` | 137 | false |
-| `docker stop` on a PID 1 that ignores SIGTERM | 137 | false |
-| a real cgroup OOM | 137 | **true** |
-
-All three causes yield the same code, and only `OOMKilled` tells them apart:
-`docker inspect -f '{{.State.OOMKilled}}'`. Note that its absence does not
-entirely rule out an OOM: a case of an OOM exiting 137 with `OOMKilled=false`
-has been reported on another machine, with no cause established.
-
-The check does not sort the two causes itself, and that is measured rather than
-chosen. Such sorting would be decoration here: across five memory levels, from
-10 to 32 MiB, the twenty-four `sleep` burst never caused an OOM, and below the
-start threshold it is the running-service guard that refuses first. Twenty-four
-busybox `sleep` processes consume almost nothing.
-
-This check triggers **its own** burst rather than reusing check 3's, and it
-verifies for itself that saturation happened: with no incident, survival cannot
-be told from nothing having occurred.
-
-### What is not graded, and why we tell you
-
-Three verifications precede the measurements without being requirements: that
-exactly one `worker` runs, that it carries its label, and that `pids.events` is
-readable. Without them no check can observe anything, and a check that could not
-look must never conclude green. When the read fails on a running service, the
-message tells you it is not your fault.
+Do not run any endless process-creating loop, and do not set a limit on the
+whole machine. The check does the burst itself.

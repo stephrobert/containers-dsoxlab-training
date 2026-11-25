@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "Accorder les droits minimaux à un éditeur et un lecteur distinct"
-description: "Corriger les ACL d'un service de jetons, publier en TLS vérifié et tirer le digest exact sur un second hôte Docker tout en refusant les uploads du lecteur."
+description: "Rétablir la livraison d'une image entre deux machines, avec un compte qui publie et un compte qui ne fait que lire."

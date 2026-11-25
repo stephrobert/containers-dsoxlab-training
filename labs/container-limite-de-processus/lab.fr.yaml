@@ -1,2 +1,2 @@
 title: "Plafonner le nombre de tâches du conteneur"
-description: "Appliquer un plafond cgroup de 16 tâches et observer le refus d'une rafale finie de processus éphémères."
+description: "Ramener un service dans son budget de tâches, et prouver qu'une rafale de processus est refusée sans l'emporter."

@@ -1,35 +1,36 @@
 # The same Dockerfile no longer finds the same base
 
-On `docker.lab`, `/opt/lab-image-pin/appli` builds an application on
-`127.0.0.1:15004/socle:stable`. The registry moved that tag to an unapproved
-base. `/opt/lab-image-pin/approbation.json` records the approved base's manifest
-digest and identity.
+## The situation
 
-The previous lab recovered a container by digest. Here, a **future rebuild**
-must retain the right base while incorporating new application source.
+The `/opt/lab-image-pin/appli` context builds an application on
+`127.0.0.1:15004/socle:stable`. The registry moved that tag to a base nobody
+approved. The `/opt/lab-image-pin/approbation.json` file gives the reference and
+the identity of the approved base.
 
 ## Mission
 
-- Fix the application Dockerfile to use the approved base.
-- Build `dsoxlab-pin:finale` from that context.
-- Its container must print the approved base followed by the current source:
-  `docker run --rm --network none dsoxlab-pin:finale`.
-- Changing the source must change the product without changing its base layers.
-- Moving `stable` must not change the base of a forced rebuild using
-  `docker build --pull --no-cache`.
-
-Do not change the base images, approval receipt or registry. Reusing an old
-final image or printing a hardcoded response does not meet the mission.
-The HTTP registry listens only on loopback.
-
-Checks copy your context, change its source, move `stable` twice and rebuild.
-They run products without networking and compare layers with the approved
-layers. The tag is restored afterwards.
-
-## Mission: rebuild without changing the base
-
 On `docker.lab`, fix `/opt/lab-image-pin/appli/Dockerfile` and build
-`dsoxlab-pin:finale` using the digest in `/opt/lab-image-pin/approbation.json`.
-New source must be incorporated without following changes to `stable`.
+`dsoxlab-pin:finale` from that context.
 
-The scenario describes the bench and acceptance criteria.
+### 1. The right delivery
+
+`docker run --rm --network none dsoxlab-pin:finale` prints the identity of the
+approved base, then the current source. The image derives from the layers of the
+approved base.
+
+### 2. A new source enters the product
+
+The check copies your context, changes `source.txt` and rebuilds. The product
+carries the new source and the approved base.
+
+### 3. The base does not follow the tag
+
+The check moves `stable` twice and rebuilds with
+`docker build --pull --no-cache`. The base layers remain those of the approved
+base. The tag is then put back.
+
+### What is forbidden
+
+Do not change the bases, `approbation.json` or the registry. An old renamed
+image or a hardcoded answer does not pass. The registry uses HTTP and listens
+only on the loopback.
