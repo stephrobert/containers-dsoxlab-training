@@ -34,9 +34,4 @@ not your terminal: giving a CA only to curl is insufficient. This bench is
 restricted to the private VM network and its checks require no public registry.
 Do not change the product, CA or bench files.
 
-## Mission: make the registry trusted
-
-On `docker.lab`, enable TLS on `registry-tls.lab.test:15443`, install its CA
-for Docker and pull `catalogue/appli:1.0` without bypassing verification.
-
-The scenario describes the certificates and acceptance criteria.
+The brief is also written to `/opt/MISSION.md`.

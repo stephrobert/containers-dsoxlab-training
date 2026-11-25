@@ -37,10 +37,4 @@ failure of Docker's pull when the private CA is temporarily removed.
 The registry's path is inside its container: `/auth/htpasswd`, not the host's
 work directory. A successful curl with credentials does not log Docker in.
 
-## Mission: authenticated publication and retrieval
-
-Protect `registry-auth.lab.test:15445` with the supplied account, then save a
-Docker login in the dedicated client directory and perform authenticated image
-transfers without bypassing TLS.
-
-Read the scenario for paths and acceptance criteria.
+The brief is also written to `/opt/MISSION.md`.
