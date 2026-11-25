@@ -3,7 +3,7 @@
 id: container-limite-cpu                      # REQUIS
 title: "Capping a processor, and proving it"            # REQUIS
 level: c6                     # REQUIS
-description: "Read the quota a cgroup declares, see that a time limit changes nothing in what the container believes it has, use the other mechanism that does change it, and prove through the throttling counter that the limit has bitten."
+description: "A slow container's limit is read in the kernel and proven under load, and a second container sees only one CPU."
 skills:                       # REQUIS, non vide
   - docker
   - cgroups

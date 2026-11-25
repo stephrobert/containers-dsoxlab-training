@@ -3,7 +3,7 @@
 id: container-ulimits-et-shm                      # REQUIS
 title: "Shared memory and descriptors"            # REQUIS
 level: c6                     # REQUIS
-description: "Measure two defaults nobody ever looks at, set them both at a container's creation, and see that shared memory is not a separate space: it counts in the cgroup's memory."
+description: "Two default values are measured, then a container carries its own, and the cost of its shared memory is weighed."
 skills:                       # REQUIS, non vide
   - docker
   - cgroups

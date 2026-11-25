@@ -144,6 +144,7 @@
           chemin=
           memoire_max=
           sans_limite=
+          sans_limite_pids=
 
     - name: Déposer l'énoncé sur la machine, comme le fait le reste du catalogue
       ansible.builtin.copy:
@@ -162,11 +163,12 @@
           les cgroups comptent et plafonnent, la ou les namespaces restreignent
           une vue.
 
-          Renseignez les trois lignes de {{ atelier }}/reponses.txt :
+          Renseignez les quatre lignes de {{ atelier }}/reponses.txt :
 
             chemin=<le chemin ABSOLU du cgroup de `mesure`, sur l hote>
             memoire_max=<la limite memoire que ce cgroup declare, telle quelle>
             sans_limite=<ce que le MEME fichier contient pour `libre`>
+            sans_limite_pids=<ce que `pids.max` contient pour `libre`>
 
           La troisieme question n est pas une formalite : on cherche
           spontanement un nombre, et la reponse n en est pas un.

@@ -3,7 +3,7 @@
 id: internes-namespaces                      # REQUIS
 title: "A namespace is a view, not a wall"            # REQUIS
 level: c6                     # REQUIS
-description: "Find on the host the process a container calls PID 1, read the namespaces the kernel gave it, and discover by comparison the one Docker does not isolate: the reason root in a container is a security subject."
+description: "A container's process is found on the machine, its namespaces are compared with the host's, and a second container sees the first one's processes."
 skills:                       # REQUIS, non vide
   - docker
   - internes
