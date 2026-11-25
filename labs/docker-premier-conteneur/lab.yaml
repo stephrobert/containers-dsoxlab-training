@@ -14,7 +14,7 @@
 id: docker-premier-conteneur                      # REQUIS
 title: "Run, stop, remove: three verbs that do not overlap"            # REQUIS
 level: c1                     # REQUIS
-description: "The container life cycle in three actions: run one and keep it alive, stop another without removing it, and remove a third. A stopped container still exists."
+description: "Three containers end in three states: one runs, another is stopped but still exists, the last one is gone."
 skills:                       # REQUIS, non vide
   - docker
   - cli

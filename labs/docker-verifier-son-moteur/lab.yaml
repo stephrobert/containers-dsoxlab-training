@@ -16,7 +16,7 @@
 id: docker-verifier-son-moteur                      # REQUIS
 title: "Is the engine actually working? Four answers, not one"            # REQUIS
 level: c1                     # REQUIS
-description: "Check that a container engine is genuinely usable: service running, enabled at boot, reachable without sudo, and able to execute a container."
+description: "A Docker engine that is installed but unusable answers, comes back at boot, opens to your account and runs a container."
 skills:                       # REQUIS, non vide
   - docker
   - systemd
