@@ -22,6 +22,19 @@
       ansible.builtin.systemd_service:
         name: docker
         state: started
+    - name: Laisser les ponts hors du pare-feu de l'hote, et noter ce qui etait regle
+      # Docker charge br_netfilter des qu'un reseau demande enable_icc=false, et
+      # le module reste charge apres le retrait de ce reseau. Les paquets routes
+      # entre conteneurs passent alors par la chaine FORWARD de l'hote, qui les
+      # jette : le lab devient insoluble. Mesure du 2026-11-25, Docker 29.9.2.
+      ansible.builtin.shell: |
+        set -eu
+        reglage=/proc/sys/net/bridge/bridge-nf-call-iptables
+        if [ -e "$reglage" ] && [ "$(cat "$reglage")" = 1 ]; then
+          : > /var/tmp/dsoxlab-reseau-pare-feu-cible.nf-call-a-rendre
+          echo 0 > "$reglage"
+        fi
+      changed_when: false
     - name: Authorize the learner account
       ansible.builtin.user:
         name: "{{ ansible_user | default('ansible') }}"

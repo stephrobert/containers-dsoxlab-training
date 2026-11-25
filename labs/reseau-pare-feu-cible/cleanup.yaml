@@ -18,3 +18,12 @@
         path: "{{ work }}"
         state: absent
       when: ownership.stat.exists
+    - name: Rendre le reglage des ponts tel qu'il etait
+      ansible.builtin.shell: |
+        set -eu
+        reglage=/proc/sys/net/bridge/bridge-nf-call-iptables
+        if [ -e /var/tmp/dsoxlab-reseau-pare-feu-cible.nf-call-a-rendre ]; then
+          if [ -e "$reglage" ]; then echo 1 > "$reglage"; fi
+          rm -f /var/tmp/dsoxlab-reseau-pare-feu-cible.nf-call-a-rendre
+        fi
+      changed_when: false
