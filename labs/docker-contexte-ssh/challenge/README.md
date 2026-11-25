@@ -1,19 +1,28 @@
-# Scenario
+# A context for staging
 
-Operations needs a named context for the staging engine on the distinct VM
-`docker-client.lab`. A dedicated SSH identity is prepared on `docker.lab`;
-the alias `dsoxlab-ssh-target` names the remote VM. Leave the default context unchanged.
+## The situation
+
+Operations wants to drive the staging engine from `docker.lab`. That engine runs
+on another VM, `docker-client.lab`. SSH access is ready: the remote account
+exists, a dedicated key is in place, and the SSH alias `dsoxlab-ssh-target` leads
+to the second VM with that key.
 
 ## Mission
 
-The named context reaches the real second-VM daemon over SSH; the default
-context remains selected. A separate unauthorized key must fail authentication
-against that same reachable SSH service. No unauthenticated Docker TCP API is needed.
+On `docker.lab`, under your account:
 
-## Functional contract: docker-contexte-ssh
+- create a Docker context named `dsoxlab-maintenance`, whose address goes through
+  the SSH alias `dsoxlab-ssh-target`;
+- this context answers, and it is the engine of `docker-client.lab` that answers;
+- the context selected at the start stays selected.
 
-The Docker client on `docker.lab` must use a named SSH context reaching the real
-engine on `docker-client.lab`. Tests compare engine IDs, preserve the selected
-default context and require refusal of a readable but unauthorized SSH key.
-They reject the prepared starter state. Only dedicated lab identities and
-workspaces are changed.
+Do not open a Docker API over TCP, and authorise no other key on the second VM:
+the one in `/opt/dsoxlab-docker-contexte-ssh/unauthorized` must stay refused.
+
+## What is graded
+
+1. The `dsoxlab-maintenance` context targets the SSH alias.
+2. It returns the identity of the second VM's engine, different from the local
+   engine's, and the unauthorised key is refused by the SSH service.
+
+Changing the selected context makes both checks fail.

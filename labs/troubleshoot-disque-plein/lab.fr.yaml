@@ -1,2 +1,2 @@
 title: "Récupérer de l'espace dans un sandbox ENOSPC borné"
-description: "Diagnostiquer et libérer un système de fichiers de conteneur plafonné à 16 Mio sans remplir une partition hôte."
+description: "Un worker dont l'espace de travail est plein peut écrire de nouveau, sans perdre le fichier à garder ni être recréé."

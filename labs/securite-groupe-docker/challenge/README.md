@@ -1,38 +1,27 @@
-# Scenario
+# An audit account that no longer needs the engine
 
-A temporary audit account, `dsoxlab-auditor`, no longer needs its access to the
-Docker daemon. That access is equivalent to root on this machine, since it grants
-write access to the engine's socket.
+## The situation
+
+On `docker.lab`, the temporary audit account `dsoxlab-auditor` can still reach
+the Docker daemon. That access is equivalent to root on the machine, and its
+assignment is over.
 
 ## Mission
 
-`dsoxlab-auditor` still exists, but **can no longer reach the daemon**.
+`dsoxlab-auditor` still exists, but **can no longer reach the daemon**. A
+`docker ps` run as that account must fail on a permission refusal.
 
-Two checks measure this, and the second is the more demanding one: it does not
-read a configuration line, it attempts a real call to the engine as that account.
-A `docker ps` must fail there on a permission refusal.
+Two prohibitions:
 
-The distinction matters, because **group membership is only one of the routes**
-to the socket. Removing the account from the `docker` group without touching
-anything else is enough here; but if another route remained, an ACL set on the
-socket file for instance, the first check would be satisfied and the account
-would keep its privilege. It is the access that is measured, not its
-declaration.
+- **Keep the account**, and the rest of its rights.
+- **Do not change your own access**: the `docker` group keeps its other members.
 
-If you use ACLs, note that `ls -l` still shows the `+` after a `setfacl -x`,
-since the mask stays in place: only `getfacl` says what remains.
+## What is graded
 
-## Two prohibitions
+1. The account is no longer a member of the `docker` group.
+2. A real call to the engine, as that account, is refused. Group membership is
+   only one route to the socket: an ACL set on its file would leave the
+   privilege. `getfacl` shows what remains; `ls -l` still displays the `+` after
+   a `setfacl -x`, since the mask stays in place.
 
-- **Keep the account.** Deleting it does remove its access, by removing what the
-  exercise asks you to keep: the audit account stays, only its privilege goes.
-- **Do not change your own access.** Emptying the `docker` group of all its
-  members would remove the audit account's access, and with it the access the
-  work itself needs.
-
-Both are verified before the measurements, and their message names the one you
-crossed.
-
-## Functional contract: securite-groupe-docker
-
-Tests inspect effective state on the remote `docker.lab` host. They reject the prepared starter state and pass only when the mission is satisfied. Test-created resources are bounded and carry this lab’s unique label.
+Crossing a prohibition makes both checks fail, and the message names it.

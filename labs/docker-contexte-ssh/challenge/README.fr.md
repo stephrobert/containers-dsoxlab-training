@@ -1,20 +1,28 @@
-# Scénario
+# Un contexte pour la préproduction
 
-L'exploitation a besoin d'un contexte nommé pour le moteur de préproduction
-sur la VM distincte `docker-client.lab`. Une identité SSH dédiée est prête sur
-`docker.lab` ; l'alias `dsoxlab-ssh-target` désigne la VM distante.
-Ne changez pas le contexte par défaut.
+## La situation
+
+L'exploitation veut piloter le moteur de préproduction depuis `docker.lab`. Ce
+moteur tourne sur une autre VM, `docker-client.lab`. L'accès SSH est déjà prêt :
+le compte distant existe, une clé dédiée est posée, et l'alias SSH
+`dsoxlab-ssh-target` mène à la seconde VM avec cette clé.
 
 ## Mission
 
-Le contexte nommé joint le vrai démon de la seconde VM par SSH ; le contexte
-par défaut reste sélectionné. Une clé distincte non autorisée doit être refusée
-par ce même service SSH joignable. Aucune API Docker TCP non authentifiée n'est nécessaire.
+Sur `docker.lab`, sous votre compte :
 
-## Contrat fonctionnel : docker-contexte-ssh
+- créez un contexte Docker nommé `dsoxlab-maintenance`, dont l'adresse passe par
+  l'alias SSH `dsoxlab-ssh-target` ;
+- ce contexte répond, et c'est bien le moteur de `docker-client.lab` qui répond ;
+- le contexte sélectionné au départ reste sélectionné.
 
-Le client Docker sur `docker.lab` doit utiliser un contexte SSH nommé vers
-le vrai moteur de `docker-client.lab`. Les tests comparent les identités des
-moteurs, préservent le contexte sélectionné et exigent le refus d'une clé SSH
-lisible mais non autorisée. L'état initial est refusé. Seuls les identités et
-espaces dédiés au lab sont modifiés.
+N'ouvrez pas d'API Docker en TCP, et n'autorisez aucune autre clé sur la seconde
+VM : celle de `/opt/dsoxlab-docker-contexte-ssh/unauthorized` doit rester refusée.
+
+## Ce qui est noté
+
+1. Le contexte `dsoxlab-maintenance` vise l'alias SSH.
+2. Il rend l'identité du moteur de la seconde VM, différente de celle du moteur
+   local, et la clé non autorisée est refusée par le service SSH.
+
+Changer le contexte sélectionné fait échouer les deux contrôles.

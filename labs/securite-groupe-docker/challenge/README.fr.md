@@ -1,38 +1,29 @@
-# Scénario
+# Un compte d'audit qui n'a plus besoin du moteur
 
-Un compte d'audit temporaire, `dsoxlab-auditor`, n'a plus besoin de son accès au
-démon Docker. Cet accès équivaut à root sur cette machine, puisqu'il donne
-l'écriture sur le socket du moteur.
+## La situation
+
+Sur `docker.lab`, le compte d'audit temporaire `dsoxlab-auditor` peut encore
+joindre le démon Docker. Cet accès équivaut à root sur la machine, et sa mission
+est terminée.
 
 ## Mission
 
-`dsoxlab-auditor` existe toujours, mais **ne peut plus joindre le démon**.
+`dsoxlab-auditor` existe toujours, mais **ne peut plus joindre le démon**. Un
+`docker ps` lancé sous ce compte doit échouer sur un refus de permission.
 
-Deux contrôles le mesurent, et le second est le plus exigeant : il ne lit pas une
-ligne de configuration, il tente un vrai appel au moteur sous ce compte. Un
-`docker ps` doit y échouer sur un refus de permission.
+Deux interdictions :
 
-La distinction compte, parce que **l'appartenance au groupe n'est qu'une des
-voies** vers le socket. Retirer le compte du groupe `docker` sans toucher au
-reste suffit ici ; mais si une autre voie subsistait, une ACL posée sur le
-fichier du socket par exemple, le premier contrôle serait satisfait et le compte
-garderait son privilège. C'est l'accès qui est mesuré, pas sa déclaration.
+- **Conservez le compte**, et le reste de ses droits.
+- **Ne modifiez pas vos propres accès** : le groupe `docker` garde ses autres
+  membres.
 
-Si vous employez des ACL, sachez que `ls -l` affiche encore le `+` après un
-`setfacl -x`, le masque restant en place : seul `getfacl` dit ce qui subsiste.
+## Ce qui est noté
 
-## Deux interdictions
+1. Le compte n'est plus membre du groupe `docker`.
+2. Un vrai appel au moteur, sous ce compte, est refusé. L'appartenance au groupe
+   n'est qu'une voie vers le socket : une ACL posée sur son fichier laisserait le
+   privilège. `getfacl` montre ce qui subsiste ; `ls -l` affiche encore le `+`
+   après un `setfacl -x`, car le masque reste en place.
 
-- **Conservez le compte.** Le supprimer retire bien son accès, en supprimant ce
-  que l'exercice demande de garder : le compte d'audit reste, seul son privilège
-  part.
-- **Ne modifiez pas vos propres accès.** Vider le groupe `docker` de tous ses
-  membres retirerait l'accès du compte d'audit, et avec lui celui dont le travail
-  a besoin.
-
-Les deux sont vérifiées avant les mesures, et leur message nomme celle qui a été
-franchie.
-
-## Contrat fonctionnel : securite-groupe-docker
-
-Les tests inspectent l’état effectif sur l’hôte distant `docker.lab`. Ils refusent l’état initial et ne réussissent que si la mission est accomplie. Les ressources de test sont bornées et portent l’étiquette unique du lab.
+Franchir une interdiction fait échouer les deux contrôles, et le message la
+nomme.

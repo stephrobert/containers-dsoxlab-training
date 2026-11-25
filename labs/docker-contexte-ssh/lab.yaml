@@ -1,7 +1,7 @@
 id: docker-contexte-ssh
 title: "Create an SSH Docker context"
 level: c6
-description: "Administer a distinct VM through a named SSH Docker context, verify the remote engine identity, reject an unauthorized key and preserve the original default context."
+description: "A named Docker context drives the engine of a second VM, and the default context stays selected."
 skills:
   - docker
   - context

@@ -18,22 +18,6 @@ and the subscriber list must come out exactly as it went in. Restarting the
 daemon is part of any engine update, and a container that comes back after a
 daemon restart is a container that was stopped first.
 
-## The goal
-
-The brief is laid down in `/opt/dsoxlab-docker-mettre-a-jour-le-moteur/MISSION.md`.
-The gateway container is `passerelle-sms`, its volume `volume-passerelle`.
-
-Bring the engine to **29.9.2 exactly**, and leave the host in this state:
-
-```text
-engine         Docker 29.9.2, server and client, the engine packages in that version
-packages       the six Docker packages held, as before
-live-restore   active, the daemon having read it, the log options of the original
-               configuration still there
-gateway        never restarted: same process, same start time, heartbeat unbroken
-data           the subscriber list identical, byte for byte
-```
-
 ## What you will find
 
 `/etc/docker/daemon.json` already exists and carries the host's log rotation:
@@ -43,19 +27,7 @@ afterwards.
 The engine is held by `apt-mark hold`: `apt-get` refuses to change a held
 package, and it does so on purpose.
 
-## What is graded
-
-The **final state** of the host. How you got there is yours: the checks read
-the engine, its packages, its configuration and the gateway, never the
-commands you typed.
-
-What is **not** graded is the way back. Going back to the previous version is
-taught by the lesson, and it is not asked here.
-
-Nothing in the checks leaves anything behind on the host: the cleanup gives
-the catalogue its own engine version back.
-
-## Brief
+## Mission
 
 Work on `docker.lab`, in `/opt/dsoxlab-docker-mettre-a-jour-le-moteur` (the
 brief is also in `MISSION.md`). The host runs Docker 29.8.2 and a gateway,
