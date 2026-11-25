@@ -1,74 +1,32 @@
-# Scénario
+# Un démon sans root, qui n'attend que d'être démarré
 
-Un second moteur Docker est préparé sur `docker.lab` pour le compte dédié
-`dsoxlab-rootless`. Le démon rootful du système doit rester intact.
+## La situation
 
-Tout est déjà en place : le compte, sa plage de sous-identifiants, son volume
-de travail, son lingering et le fichier d'unité de son service. La préparation
-s'arrête volontairement avant le dernier geste, et c'est lui qui vous revient.
+Sur `docker.lab`, un second moteur Docker est préparé pour le compte dédié
+`dsoxlab-rootless`, à côté du moteur du système. Le compte, ses sous-identifiants,
+son dossier de travail, son `linger` et le fichier de son service sont en place.
+Il manque le dernier geste.
 
 ## Mission
 
-**Démarrez le service utilisateur `dsoxlab-rootless.service` du compte dédié.**
-C'est le seul geste attendu, et c'est le geste difficile du rootless.
+**Démarrez le service utilisateur `dsoxlab-rootless.service` du compte
+`dsoxlab-rootless`.** Ce n'est pas un service du système : le compte qui le porte
+n'a pas de session ouverte, et son UID est dans
+`/opt/dsoxlab-securite-rootless/state.json`.
 
-Le démon n'est pas un service système avec `User=` : c'est un service
-**utilisateur**, et le compte qui le porte est un compte système sans session
-ouverte. `systemctl --user` échoue donc tant qu'il ne trouve ni son répertoire
-d'exécution ni son bus. Lisez l'UID dans
-`/opt/dsoxlab-securite-rootless/state.json`, puis lancez `systemctl --user`
-sous le compte `dsoxlab-rootless` avec `XDG_RUNTIME_DIR=/run/user/<uid>` et
-`DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/<uid>/bus`.
+Le moteur du système doit rester intact.
 
-## Ce que les contrôles prouvent, et que vous n'avez pas à construire
+## Ce qui est noté
 
-Les contrôles ne se contentent pas de demander son état au démon : ils
-**fabriquent eux-mêmes** un réseau, un volume nommé, un serveur HTTP et deux
-pairs sur ce moteur, puis jugent ce qu'il en fait. Vous n'avez aucun de ces
-objets à créer, et le `check` ne vous en demandera pas.
+Huit contrôles. Ils fabriquent eux-mêmes le réseau, le volume et le serveur HTTP
+dont ils ont besoin, puis les retirent : vous n'avez rien d'autre à créer.
 
-Ce qu'ils établissent à partir de votre seul geste :
-
-- le service dédié est actif, et le processus réel appartient au compte non
-  privilégié, pas à root ;
-- le démon annonce le mode rootless ;
-- son stockage d'images est **distinct** de celui du moteur rootful, prouvé
-  avant tout chargement : l'image épinglée de la VM lui est inconnue ;
-- il crée son propre réseau et son propre volume nommé ;
-- une donnée nouvelle survit à **deux** recréations du conteneur ;
-- sa publication reste sur la boucle locale, sur un port non privilégié ;
-- un pair de son réseau joint le service, et un pair sans réseau est refusé.
-
-## Pour aller plus loin
-
-Sachez expliquer la correspondance des UID, le stockage d'images distinct et
-les limites du réseau rootless, sans confondre root dans le conteneur et root
-sur la VM. Ce lab ne qualifie ni les ports privilégiés natifs, ni la haute
-disponibilité.
-
-## Contrat fonctionnel : securite-rootless
-
-### Ce que vous livrez
-
-Un seul geste : **le service utilisateur `dsoxlab-rootless.service` du compte
-dédié est actif**. Tout le reste est déjà posé par la préparation.
-
-### Ce que les huit contrôles prouvent
-
-Ils inspectent le démon réel sur `docker.lab`, et **fabriquent eux-mêmes** le
-décor dont ils ont besoin. Vous n'avez ni réseau, ni volume, ni serveur HTTP à
-créer.
-
-1. le service dédié est actif ;
-2. son démon annonce le mode rootless ;
-3. le processus réel du service appartient au compte non privilégié, et son UID
-   n'est pas 0 ;
-4. son stockage d'images est distinct de celui du moteur rootful, prouvé avant
-   tout chargement ;
-5. il crée son propre réseau et son propre volume nommé ;
-6. une donnée nouvelle survit à deux recréations du conteneur ;
-7. sa publication reste sur la boucle locale, sur un port non privilégié ;
-8. un pair de son réseau joint le service, et un pair sans réseau est refusé.
-
-Les objets d'essai portent des noms uniques bornés et sont retirés, y compris
-après une allocation partielle. L'état initial ne rapporte aucun point.
+1. Le service dédié est actif.
+2. Son démon annonce le mode rootless.
+3. Son processus appartient au compte dédié, et son UID n'est pas 0.
+4. Son stockage d'images est distinct de celui du moteur du système.
+5. Il crée son propre réseau et son propre volume nommé.
+6. Une donnée nouvelle survit à deux recréations du conteneur.
+7. Sa publication reste sur la boucle locale, sur un port non privilégié.
+8. Un conteneur de son réseau joint le service, un conteneur sans réseau est
+   refusé.

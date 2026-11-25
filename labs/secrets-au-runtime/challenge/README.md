@@ -1,28 +1,21 @@
-# Deliver a secret without publishing it
+# Deliver a token without publishing it
 
-A random pedagogic token is stored privately in `secrets/token`. The worker
-currently cannot access it. Its supplied command only writes a SHA-256 digest
-to `/run/result` after the secret becomes readable; it never prints the token.
+## The situation
 
-In `/opt/dsoxlab-secrets-au-runtime`, deliver the token as a read-only runtime
-file at `/run/secrets/token` in `worker`, project `dsoxlab-secrets-au-runtime`.
-Keep the source private and use the supplied application.
+On `docker.lab`, the `worker` of project `dsoxlab-secrets-au-runtime` waits for a
+token in `/run/secrets/token`. As soon as it can read it, it writes its SHA-256
+fingerprint in `/run/result`, without ever displaying the token. The value, drawn
+at random, is in `secrets/token`, under `/opt/dsoxlab-secrets-au-runtime`.
 
-Never paste the token into commands, environment variables, Compose, images or
-logs. Do not replace it with a real credential. Cleanup deletes this disposable
-token; it does not claim cryptographic erasure.
+## Mission
 
-## Brief
+1. `worker` receives `secrets/token` read-only, at `/run/secrets/token`.
+2. `/run/result` carries the token's fingerprint.
+3. A write into the mounted file is refused, and the source does not change: a
+   regular file, in mode 0600.
+4. The token appears neither in `docker inspect`, nor in the logs, nor in the image
+   or its history, nor in the Dockerfile, nor in the Compose file.
 
-Work on `docker.lab`, in `/opt/dsoxlab-secrets-au-runtime`.
-
-1. Keep `worker` active, project `dsoxlab-secrets-au-runtime`,
-   label `dsoxlab.lab=secrets-au-runtime`.
-2. Mount the supplied `secrets/token` read-only at `/run/secrets/token`.
-   The host source must remain a regular mode-0600 file.
-3. Keep the supplied application producing the source's SHA-256 in `/run/result`.
-4. No token value may appear in inspect, logs, image metadata/history,
-   Dockerfile or Compose configuration.
-
-Use only the random pedagogic token. Never display it or put it in an environment
-variable. Preserve the pinned image and resource guards.
+Keep the project, the `dsoxlab.lab=secrets-au-runtime` label, the supplied command,
+the pinned image and the resource limits. Paste the token nowhere and do not
+replace it with a real credential.

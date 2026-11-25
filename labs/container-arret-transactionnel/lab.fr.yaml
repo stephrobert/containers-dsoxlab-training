@@ -1,2 +1,2 @@
 title: "Terminer une transaction HTTP avant l'arrêt"
-description: "Réparer la transmission du signal, terminer une écriture SQLite réelle, la relire après recréation et comparer un abandon forcé contrôlé."
+description: "Un service termine son écriture avant de s'arrêter, et la retrouve après recréation ; un arrêt forcé n'abîme rien de ce qui était validé."

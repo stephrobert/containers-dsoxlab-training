@@ -1,28 +1,21 @@
 # Orphelin ne signifie pas jetable
 
-Deux volumes appartiennent exclusivement à ce lab.
-`dsoxlab-donnees-volume-orphelin-data` contient un reçu original à récupérer.
-`dsoxlab-donnees-volume-orphelin-stale`, vide, est jetable. Aucun n'est attaché
-au worker initial.
+## La situation
 
-Dans `/opt/dsoxlab-donnees-volume-orphelin`, reconnectez les données originales
-en lecture seule à `/data` dans `worker`, projet
-`dsoxlab-donnees-volume-orphelin`. Conservez le reçu et supprimez seulement le
-volume stale du lab.
+Sur `docker.lab`, deux volumes ne sont attachés à aucun conteneur.
+`dsoxlab-donnees-volume-orphelin-data` contient un reçu à récupérer.
+`dsoxlab-donnees-volume-orphelin-stale` est vide et ne sert plus. Le `worker` du
+projet `dsoxlab-donnees-volume-orphelin` tourne sans ses données. Le projet se
+trouve dans `/opt/dsoxlab-donnees-volume-orphelin`.
 
-Vérifiez les deux labels de propriété avant suppression. Ni volume prune,
-ni system prune, ni suppression d'un volume sans label ou sans rapport.
+## Mission
 
-## Cahier des charges
+1. `worker` monte le volume d'origine `dsoxlab-donnees-volume-orphelin-data` en
+   lecture seule, à `/data`. Ce volume garde ses deux étiquettes, celle du lab et
+   celle du projet Compose.
+2. `/data/receipt.txt` est identique au fichier `expected.txt` fourni.
+3. `dsoxlab-donnees-volume-orphelin-stale`, et lui seul, est retiré. Vérifiez ses
+   deux étiquettes avant.
 
-Travaillez sur `docker.lab`, dans `/opt/dsoxlab-donnees-volume-orphelin`.
-
-1. Gardez `worker` actif, projet `dsoxlab-donnees-volume-orphelin`,
-   label `dsoxlab.lab=donnees-volume-orphelin`.
-2. Montez le volume original `dsoxlab-donnees-volume-orphelin-data` en lecture
-   seule à `/data`, en conservant ses deux labels de propriété.
-3. `/data/receipt.txt` doit correspondre exactement à `expected.txt` fourni.
-4. Supprimez seulement `dsoxlab-donnees-volume-orphelin-stale`, après
-   vérification de ses labels de lab et de projet Compose.
-
-Ne recréez pas le volume conservé et n'utilisez aucun prune global.
+Gardez le projet et l'étiquette `dsoxlab.lab=donnees-volume-orphelin`. Ne recréez
+pas le volume à garder, et n'utilisez ni `volume prune` ni `system prune`.

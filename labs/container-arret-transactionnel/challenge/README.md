@@ -1,22 +1,12 @@
 # A stop that loses an order
 
-The supplied HTTP ledger accepts a write but the deployment interrupts it
-during shutdown. The application is already implemented. Repair its launch
-and stopping behavior in `/opt/dsoxlab-container-arret-transactionnel`.
+## The situation
 
-Prove signal reception, request completion and durable domain data after
-container recreation. Compare an intentionally forced stop of another
-in-flight transaction, without damaging earlier committed records.
-Run this same service as UID/GID 10001 with a read-only root filesystem.
-Only `/data` holds writable application data; another application UID must
-be refused access to its transactions. Preserve these restrictions during recovery.
+On `docker.lab`, an HTTP ledger accepts a write, then its deployment interrupts it
+at shutdown. The application is sound: its launch and its stop must be repaired,
+in `/opt/dsoxlab-container-arret-transactionnel`.
 
-Use only this lab's labelled resources. The numbered contract is in
-[challenge/README.md](challenge/README.md); explanation review is separate.
-
-## Contract 05: transactional shutdown
-
-[Français](README.fr.md)
+## Mission
 
 1. Use the supplied Python service and pinned image in project
    `dsoxlab-container-arret-transactionnel-stack`. Work directory:
@@ -42,8 +32,6 @@ Use only this lab's labelled resources. The numbered contract is in
    service image. `SERVICE_MODE` defaults to `standard`; changing only that
    variable must change the reported `service_mode`, without losing the ledger.
 
-The single functional verdict deliberately covers the whole contract:
-zero before repair, full after repair. The versioned ledger records the
-actually measured passages for this revision.
-No command history is graded. Explain cause and limits in the separate
-[human review](review.md), not by adding a token file.
+Three checks read the service, compare a clean stop with a forced one, and read the
+data again after recreation. They all fail before the repair. Use only this lab's
+labelled resources.

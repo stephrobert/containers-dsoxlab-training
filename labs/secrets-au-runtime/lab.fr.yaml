@@ -1,2 +1,2 @@
 title: "Garder un jeton runtime hors de l'environnement"
-description: "Fournir un jeton pédagogique aléatoire privé et vérifier sa consommation sans fuite dans l'environnement, les logs ni l'image."
+description: "Un service lit un jeton privé, qui n'apparaît ni dans son environnement, ni dans ses journaux, ni dans son image."

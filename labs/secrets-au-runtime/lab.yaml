@@ -1,7 +1,7 @@
 id: secrets-au-runtime
 title: "Keep a runtime token out of Env"
 level: c6
-description: "Deliver a private random pedagogic token at runtime and verify consumption without leakage into environment, logs or image metadata."
+description: "A service reads a private token, which appears neither in its environment, nor in its logs, nor in its image."
 skills:
   - docker
   - runtime-secrets
