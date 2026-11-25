@@ -152,9 +152,11 @@ unexpected EOF
 ```
 
 `skopeo` relit chaque couche et refuse l'octet changé. `docker load` a accepté
-cette archive abîmée sur cette machine, et n'a refusé que celle qui est coupée.
-Vérifiez donc une archive reçue avec `skopeo copy ... dir:`, ou avec une
-empreinte transmise à part, avant de la charger.
+l'archive abîmée parce que la couche saine était déjà sur cette machine : il
+l'a reprise sans lire celle de l'archive. Mesuré sur une machine qui n'a pas la
+couche, il affiche `Loaded image`, puis `Error unpacking image`, et rend quand
+même le code 0. Vérifiez donc une archive reçue avec `skopeo copy ... dir:`, ou
+avec une empreinte transmise à part, avant de la charger.
 
 ## 🧹 Nettoyage
 

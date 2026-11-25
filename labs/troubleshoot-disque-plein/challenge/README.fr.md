@@ -1,60 +1,30 @@
-# ENOSPC dans un système de fichiers borné
+# Un espace de travail plein
 
-`/sandbox` du worker est un tmpfs de 16 Mio, pas une partition hôte.
-Un remplissage fini a consommé la capacité disponible. `/sandbox/keep.txt`
-est utile ; `/sandbox/fill.bin` est jetable.
+## La situation
 
-Dans `/opt/dsoxlab-troubleshoot-disque-plein`, récupérez de l'espace modifiable
-dans le `worker` existant, projet `dsoxlab-troubleshoot-disque-plein`, sans
-perdre le reçu ni augmenter le plafond.
+Sur `docker.lab`, le `worker` du projet `dsoxlab-troubleshoot-disque-plein` ne
+peut plus rien écrire dans `/sandbox`. Ce dossier est un tmpfs de 16 Mio, pas une
+partition de l'hôte. Il contient deux fichiers : `/sandbox/keep.txt`, un reçu à
+garder, et `/sandbox/fill.bin`, un remplissage jetable. Le projet se trouve dans
+`/opt/dsoxlab-troubleshoot-disque-plein`.
 
-Ne recréez pas le conteneur pour effacer ses données, ne redimensionnez pas le
-sandbox, ne remplissez aucun chemin hôte et n'utilisez pas prune global.
-Le contrôle écrit au plus 1 Mio dans le sandbox vérifié, puis retire sa sonde.
+## Mission
 
-## Cahier des charges
+Rendez `/sandbox` de nouveau inscriptible dans le conteneur **existant** :
 
-Travaillez sur `docker.lab`, dans `/opt/dsoxlab-troubleshoot-disque-plein`, dans
-le `worker` **existant** du projet `dsoxlab-troubleshoot-disque-plein`.
+- `/sandbox/fill.bin` est absent ;
+- `/sandbox/keep.txt` porte toujours `keep-this-receipt` ;
+- une écriture d'un Mio dans `/sandbox` aboutit.
 
-Deux contrôles seulement, et c'est une contrainte, non un choix de confort.
+Ne recréez pas le conteneur, n'agrandissez pas `/sandbox`, ne le remplacez pas
+par un dossier de l'hôte, ne changez pas ses limites de mémoire et ne lancez
+aucun prune global.
 
-### 1. Le remplissage jetable a été retiré, sans perdre le reçu
+## Ce qui est noté
 
-`/sandbox/fill.bin` est absent, et `/sandbox/keep.txt` porte encore son contenu
-`keep-this-receipt`.
+1. Le remplissage est parti et le reçu est intact.
+2. Le contrôle écrit un Mio dans `/sandbox`, vérifie que le fichier pèse
+   1048576 octets, puis retire sa sonde.
 
-Les deux vont ensemble parce que ce sont les deux faces d'une même exigence :
-récupérer de l'espace sans jeter ce qui compte. Vider le bac à sable en entier
-récupère bien de l'espace, en détruisant ce que l'exercice demandait de
-protéger.
-
-### 2. L'espace récupéré permet une écriture réelle
-
-Le contrôle écrit un Mio dans `/sandbox`, vérifie que le fichier pèse réellement
-1048576 octets, puis retire sa sonde dans tous les cas.
-
-Un `df` ne suffirait pas : un `dd` peut rendre un succès en ayant écrit moins que
-demandé, et c'est la taille réelle du fichier qui tranche. Le setup garantit
-l'état de départ en exigeant qu'une sonde de 4 Kio **échoue**, donc ce contrôle
-refuse bien avant tout travail.
-
-### Ce qui n'est pas noté, et pourquoi on vous le dit
-
-Trois exigences de ce lab sont **déjà satisfaites au départ** : le conteneur
-d'origine existe, `/sandbox` est un tmpfs de 16 Mio, et le reçu est présent. Ce
-sont des exigences de **préservation**, pas des objectifs à atteindre.
-
-Elles ne peuvent donc pas devenir des contrôles séparés : un contrôle qui passe
-avant tout travail accorderait des points pour rien. Elles vivent dans le
-garde-fou commun aux deux contrôles, qui refuse la triche sans rien donner, et
-son message nomme l'interdiction franchie :
-
-- recréer le conteneur, ce qui efface ses données au lieu de récupérer de
-  l'espace ;
-- relever le plafond du bac à sable, ce qui n'est pas récupérer de l'espace ;
-- le faire pointer ailleurs qu'un tmpfs, ce qui écrirait dans une partition
-  hôte.
-
-Le plafond est lu dans le conteneur, par `df`, et non dans la déclaration : c'est
-le système qui fait foi.
+Franchir une interdiction fait échouer les deux contrôles, et le message la
+nomme. Le plafond est lu dans le conteneur, par `df`.

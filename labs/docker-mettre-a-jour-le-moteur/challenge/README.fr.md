@@ -20,24 +20,6 @@ Redémarrer le démon fait partie de toute mise à jour du moteur, et un contene
 qui revient après un redémarrage du démon est un conteneur qu'on a d'abord
 arrêté.
 
-## L'objectif
-
-L'énoncé est déposé dans
-`/opt/dsoxlab-docker-mettre-a-jour-le-moteur/MISSION.md`. Le conteneur de la
-passerelle est `passerelle-sms`, son volume `volume-passerelle`.
-
-Amenez le moteur en **29.9.2 exactement**, et laissez l'hôte dans cet état :
-
-```text
-moteur         Docker 29.9.2, serveur et client, les paquets du moteur dans cette version
-paquets        les six paquets Docker retenus, comme avant
-live-restore   actif, le démon l'ayant lu, les options de journal de la
-               configuration d'origine toujours là
-passerelle     jamais relancée : même processus, même heure de démarrage,
-               battements ininterrompus
-donnée         la liste d'abonnés identique, octet pour octet
-```
-
 ## Ce que vous trouverez
 
 `/etc/docker/daemon.json` existe déjà et porte la rotation des journaux de cet
@@ -47,19 +29,7 @@ encore après.
 Le moteur est retenu par `apt-mark hold` : `apt-get` refuse de changer un paquet
 retenu, et il le fait exprès.
 
-## Ce qui est noté
-
-L'**état final** de l'hôte. La façon d'y arriver est la vôtre : les contrôles
-lisent le moteur, ses paquets, sa configuration et la passerelle, jamais les
-commandes que vous avez tapées.
-
-Ce qui n'est **pas** noté, c'est le retour arrière. Revenir à la version
-précédente est enseigné par la leçon, et n'est pas demandé ici.
-
-Aucun contrôle ne laisse de trace sur l'hôte : le nettoyage rend au catalogue sa
-propre version du moteur.
-
-## Énoncé
+## Mission
 
 Travaillez sur `docker.lab`, dans `/opt/dsoxlab-docker-mettre-a-jour-le-moteur`
 (l'énoncé est aussi dans `MISSION.md`). L'hôte porte Docker 29.8.2 et une
