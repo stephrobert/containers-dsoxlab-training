@@ -1,56 +1,32 @@
 # Resserrer le profil du moteur, et non le remplacer
 
-La politique de votre équipe doit refuser `getpgid(2147483647)` avec EPERM tout
-en autorisant `getpgid(0)` et `getpid`. L'argument de PID réservé ne vise que la
-sonde inoffensive, pas l'initialisation du runtime. Sans filtre, interroger ce
-PID inexistant rend ESRCH et non EPERM : les deux erreurs diffèrent, et une seule
-prouve que le filtre a mordu. La sonde C fournie n'effectue que ces appels en
-lecture et affiche leur verdict.
+## La situation
 
-**Partez du profil par défaut du moteur, pas d'une page blanche.** Un profil dont
-le `defaultAction` vaut `SCMP_ACT_ALLOW` permet tout sauf les lignes qu'il
-refuse : c'est une liste noire et non une politique, et ce n'est jamais ce qu'un
-service doit porter. `assets/seccomp-defaut.json`, recopié dans l'espace de
-travail du lab, est le profil de référence. Dérivez-le : sortez `getpgid` de sa
-liste d'autorisation massive, puis réautorisez-le pour tout argument sauf celui
-qui est réservé.
+Sur `docker.lab`, le `worker` du projet `dsoxlab-securite-seccomp` tourne sans
+filtre (`unconfined`). Votre équipe veut lui refuser un seul appel,
+`getpgid(2147483647)`, et rien d'autre. Cet identifiant de processus n'existe
+pas : sans filtre, l'appel rend ESRCH ; refusé, il rend EPERM.
 
-Il faut deux règles et non une, et elles doivent être mutuellement exclusives.
-Un `SCMP_ACT_ERRNO` sur l'argument réservé posé à côté d'un `SCMP_ACT_ALLOW`
-inconditionnel ne mord pas : c'est l'autorisation qui gagne, et l'appel atteint
-le noyau. Utilisez `SCMP_CMP_EQ` pour refuser et `SCMP_CMP_NE` pour autoriser.
+Le projet se trouve dans `/opt/dsoxlab-securite-seccomp`. Il contient
+`seccomp-defaut.json`, une copie épinglée du profil par défaut de Docker
+(`moby/profiles`, `seccomp/v0.3.0`) : le moteur embarque le sien dans son
+binaire, il n'y a pas de fichier à relever sur l'hôte.
 
-Dans `/opt/dsoxlab-securite-seccomp`, attachez votre profil dérivé à `worker`
-dans le projet `dsoxlab-securite-seccomp`. Le starter emploie explicitement
-`unconfined`. Tout ce que le profil par défaut refuse déjà doit rester refusé,
-donc n'ajoutez aucune capacité : `unshare` n'y est permis que pour les conteneurs
-qui détiennent `CAP_SYS_ADMIN`.
+## Mission
 
-Le profil de référence est une copie épinglée de `moby/profiles`
-(`seccomp/v0.3.0`), car le moteur embarque le sien dans son binaire : il n'existe
-aucun fichier à relever sur l'hôte. Ce que vous durcissez est donc cette copie,
-et non le profil vivant du démon.
-
-Ne changez jamais les valeurs par défaut du démon et n'utilisez pas privileged.
-
-## Cahier des charges
-
-Travaillez sur `docker.lab`, dans `/opt/dsoxlab-securite-seccomp`.
-
-1. Gardez un `worker` actif, projet `dsoxlab-securite-seccomp`,
-   label `dsoxlab.lab=securite-seccomp`.
-2. Attachez un profil seccomp JSON explicite, pas `unconfined`.
-3. PID 1 doit annoncer le mode de filtrage 2.
-4. `/usr/local/bin/syscall-probe`, déjà fourni, doit observer
+1. Attachez à `worker` un profil JSON, pas `unconfined`.
+2. PID 1 annonce le mode de filtrage 2.
+3. `/usr/local/bin/syscall-probe`, déjà dans l'image, affiche
    `getpgid(sentinel)=EPERM getpgid(0)=allowed getpid=allowed`.
-   L'argument sentinelle vaut 2147483647 ; ne bloquez pas les appels runtime ordinaires.
-5. **Dérivez `seccomp-defaut.json`, le profil par défaut du moteur fourni avec
-   le lab**, plutôt que d'écrire un profil neuf. Tout ce que ce profil refuse
-   déjà doit rester refusé : le contrôle joue `unshare -U` dans le conteneur, et
-   il doit échouer. N'ajoutez aucune capacité.
+4. **Le profil dérive de `seccomp-defaut.json`.** Tout ce que ce profil refuse
+   reste refusé : le contrôle joue `unshare -U` dans le conteneur, qui doit
+   échouer.
 
-Un profil dont le `defaultAction` vaut `SCMP_ACT_ALLOW` permet tout sauf les
-lignes qu'il refuse : c'est une liste noire, et ce n'est jamais ce qu'un service
-doit porter.
+Le profil par défaut autorise `getpgid` sans condition. Un refus ajouté à côté de
+cette autorisation ne mord pas : il faut que les deux cas ne se recouvrent pas.
+Un profil dont le `defaultAction` vaut `SCMP_ACT_ALLOW` ne convient pas, car il
+permet tout sauf ce qu'il cite.
 
-Gardez la sonde fournie et les plafonds de ressources. Ne modifiez pas le démon.
+Gardez le projet, l'étiquette `dsoxlab.lab=securite-seccomp`, la sonde et les
+limites de ressources. N'ajoutez aucune capability, n'utilisez pas `privileged`
+et ne modifiez pas le démon.

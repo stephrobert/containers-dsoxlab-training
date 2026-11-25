@@ -1,25 +1,21 @@
-# A non-root process can still acquire privileges
+# A program that hands root to an ordinary account
 
-The worker starts as UID 1000, but its tiny `identity` executable is owned by
-root with mode 4755. It only prints real and effective UIDs; it does not start a
-shell or modify files. Without a privilege barrier, executing it gains EUID 0.
+## The situation
 
-In `/opt/dsoxlab-securite-no-new-privileges`, keep that executable intact but
-prevent elevation in the running service. Keep project
-`dsoxlab-securite-no-new-privileges` and its lab label. The kernel flag and a
-real execution must agree.
+On `docker.lab`, the `worker` of project `dsoxlab-securite-no-new-privileges`
+starts under UID 1000. Its image contains `/usr/local/bin/identity`, a setuid root
+program that displays the real UID and the effective UID. Run by the worker, it
+displays `1000:0`: it obtained root. The project is in
+`/opt/dsoxlab-securite-no-new-privileges`.
 
-Do not modify host binaries, setuid policy or daemon configuration.
+## Mission
 
-## Brief
+Prevent this gain in the service, without touching the program:
 
-Work on `docker.lab`, in `/opt/dsoxlab-securite-no-new-privileges`.
+1. the barrier is declared on the container;
+2. PID 1 reports `NoNewPrivs: 1`;
+3. `identity`, run under UID and GID 1000, displays `1000:1000`.
 
-1. Keep `worker` running in project `dsoxlab-securite-no-new-privileges`,
-   with label `dsoxlab.lab=securite-no-new-privileges`.
-2. Enable no-new-privileges at runtime; PID 1 must report `NoNewPrivs: 1`.
-3. Preserve `/usr/local/bin/identity`, owned by UID 0 with mode 4755.
-4. Executing that binary as UID/GID 1000 must report `1000:1000`, not `1000:0`.
-
-Do not replace the binary, change its mode or alter the host's setuid policy.
-Preserve the bounded resource settings.
+The program keeps its root owner and mode 4755. Keep the project, the
+`dsoxlab.lab=securite-no-new-privileges` label and the resource limits. Change
+neither the host nor the daemon.

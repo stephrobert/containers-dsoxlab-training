@@ -1,24 +1,19 @@
 # A worker that should not rewrite its system
 
-The worker updates `/run/heartbeat` every second. Its entire root filesystem is
-writable even though only runtime storage is needed.
+## The situation
 
-In `/opt/dsoxlab-container-systeme-en-lecture-seule`, make the root filesystem
-read-only without stopping that heartbeat. Give `/run` a writable 4 MiB tmpfs,
-with noexec and nosuid. Keep project
-`dsoxlab-container-systeme-en-lecture-seule` and its lab label.
+On `docker.lab`, the `worker` of project `dsoxlab-container-systeme-en-lecture-seule`
+writes the time in `/run/heartbeat` every second. It is its only write, and yet
+its whole root is writable. The project is in
+`/opt/dsoxlab-container-systeme-en-lecture-seule`.
 
-Do not make host mounts read-only, change daemon settings or mount host paths.
-The checker makes tiny disposable writes only inside this container.
+## Mission
 
-## Brief
+1. The root is read-only: a real write in `/` fails.
+2. `/run` is a writable tmpfs of exactly 4 MiB, with `noexec` and `nosuid`.
+3. The worker runs and `/run/heartbeat` keeps moving forward.
 
-Work on `docker.lab`, in `/opt/dsoxlab-container-systeme-en-lecture-seule`.
-
-1. Keep `worker` active in project `dsoxlab-container-systeme-en-lecture-seule`,
-   with label `dsoxlab.lab=container-systeme-en-lecture-seule`.
-2. Enable read-only root; a real write at `/` must fail.
-3. Provide a writable `/run` tmpfs of exactly 4 MiB with noexec and nosuid.
-4. Keep the supplied command updating `/run/heartbeat`.
-
-Preserve the pinned image and bounded resources. No host mounts or daemon edits.
+Keep the project, the `dsoxlab.lab=container-systeme-en-lecture-seule` label, the
+supplied command, the pinned image and the resource limits. Add no host mount and
+do not change the daemon. The check makes a few small writes in the container,
+then removes them.

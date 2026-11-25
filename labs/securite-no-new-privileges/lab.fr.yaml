@@ -1,2 +1,2 @@
 title: "Empêcher les gains de privilèges au runtime"
-description: "Empêcher une sonde setuid inoffensive d'obtenir EUID 0 grâce à une barrière runtime héritée."
+description: "Un programme setuid présent dans un conteneur ne donne plus root au compte ordinaire qui le lance."

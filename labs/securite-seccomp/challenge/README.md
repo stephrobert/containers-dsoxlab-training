@@ -1,53 +1,32 @@
 # Narrow the engine profile, do not replace it
 
-Your team's policy must reject `getpgid(2147483647)` with EPERM while allowing
-`getpgid(0)` and `getpid`. The reserved PID argument targets only the harmless
-probe, not runtime initialization. Without a filter, querying that nonexistent
-PID returns ESRCH, not EPERM: the two errors differ, and only one proves the
-filter bit. The supplied C probe performs these read-only calls and prints their
-verdict.
+## The situation
 
-**Start from the engine default profile, not from a blank one.** A profile whose
-`defaultAction` is `SCMP_ACT_ALLOW` permits everything except the lines it
-denies: that is a blacklist, not a policy, and it is never what a service should
-carry. `assets/seccomp-defaut.json`, copied into the lab workspace, is the
-reference profile. Derive it: take `getpgid` out of its blanket allow list, then
-allow it back for every argument but the reserved one.
+On `docker.lab`, the `worker` of project `dsoxlab-securite-seccomp` runs without a
+filter (`unconfined`). Your team wants to refuse it a single call,
+`getpgid(2147483647)`, and nothing else. That process identifier does not exist:
+without a filter, the call returns ESRCH; refused, it returns EPERM.
 
-Two rules are needed, not one, and they must be mutually exclusive. An
-`SCMP_ACT_ERRNO` on the reserved argument placed next to an unconditional
-`SCMP_ACT_ALLOW` does not bite: the allow wins and the call reaches the kernel.
-Use `SCMP_CMP_EQ` to deny and `SCMP_CMP_NE` to allow.
+The project is in `/opt/dsoxlab-securite-seccomp`. It contains
+`seccomp-defaut.json`, a pinned copy of Docker's default profile
+(`moby/profiles`, `seccomp/v0.3.0`): the engine embeds its own in its binary,
+there is no file to copy off the host.
 
-In `/opt/dsoxlab-securite-seccomp`, attach your derived profile to `worker` in
-project `dsoxlab-securite-seccomp`. The starter explicitly uses `unconfined`.
-Everything the default profile already refuses must stay refused, so add no
-capability: `unshare` is only permitted there for containers holding
-`CAP_SYS_ADMIN`.
+## Mission
 
-The reference profile is a pinned copy from `moby/profiles` (`seccomp/v0.3.0`),
-because the engine embeds its own in the binary: there is no file to copy off the
-host. What you harden is therefore that copy, not the daemon's live profile.
-
-Never change daemon defaults or run privileged containers.
-
-## Brief
-
-Work on `docker.lab`, in `/opt/dsoxlab-securite-seccomp`.
-
-1. Keep one active `worker`, project `dsoxlab-securite-seccomp`,
-   label `dsoxlab.lab=securite-seccomp`.
-2. Attach an explicit JSON seccomp profile, not `unconfined`.
-3. PID 1 must report filtering mode 2.
-4. The existing `/usr/local/bin/syscall-probe` must observe
+1. Attach a JSON profile to `worker`, not `unconfined`.
+2. PID 1 reports filtering mode 2.
+3. `/usr/local/bin/syscall-probe`, already in the image, displays
    `getpgid(sentinel)=EPERM getpgid(0)=allowed getpid=allowed`.
-   The sentinel argument is 2147483647; do not block ordinary runtime calls.
-5. **Derive `seccomp-defaut.json`, the engine default profile shipped with the
-   lab**, rather than writing a new one. Everything that profile already
-   refuses must stay refused: the check runs `unshare -U` inside the container,
-   and it must fail. Add no capability.
+4. **The profile derives from `seccomp-defaut.json`.** Everything that profile
+   refuses stays refused: the check runs `unshare -U` in the container, which must
+   fail.
 
-A profile whose `defaultAction` is `SCMP_ACT_ALLOW` permits everything except
-the lines it denies: that is a blacklist, and never what a service should carry.
+The default profile allows `getpgid` without condition. A refusal added next to
+that permission does not bite: the two cases must not overlap. A profile whose
+`defaultAction` is `SCMP_ACT_ALLOW` does not fit, because it permits everything
+but what it mentions.
 
-Keep the supplied probe and resource caps. Do not change the daemon.
+Keep the project, the `dsoxlab.lab=securite-seccomp` label, the probe and the
+resource limits. Add no capability, do not use `privileged` and do not change the
+daemon.
