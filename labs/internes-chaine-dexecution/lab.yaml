@@ -3,7 +3,7 @@
 id: internes-chaine-dexecution                      # REQUIS
 title: "Who really starts a container"            # REQUIS
 level: c6                     # REQUIS
-description: "Walk the chain between the daemon and a container's process, discover that its parent is none of the ones you expect, then start a second container and see that it has its own intermediary, detached towards the same parent."
+description: "The intermediary that carries each container is identified on the machine, for two different containers."
 skills:                       # REQUIS, non vide
   - docker
   - internes

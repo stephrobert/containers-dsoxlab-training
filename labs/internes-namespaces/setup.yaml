@@ -145,8 +145,8 @@
             pid_hote=<le PID que ce MEME processus porte sur L HOTE>
             ns_pid=<l identifiant du namespace PID de `cloisonne`,
                     de la forme pid:[...]>
-            partage=<le NOM du seul namespace que `cloisonne` partage avec
-                     l hote>
+            partage=<l IDENTIFIANT COMPLET du seul namespace que `cloisonne`
+                     partage avec l hote, de la forme nom:[...]>
 
           Puis lancez un conteneur nomme `indiscret` qui VOIT les processus de
           l hote, et donc le `sleep {{ marqueur }}` de son voisin.
