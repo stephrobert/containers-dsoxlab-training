@@ -1,2 +1,2 @@
 title: "Retirer l'accès direct au socket Docker"
-description: "Retirer la capacité d'atteindre le socket du démon, par tout chemin : la lecture seule porte sur le fichier du socket, pas sur les requêtes qui y transitent."
+description: "Un conteneur applicatif n'atteint plus le socket du moteur Docker, par aucun chemin."

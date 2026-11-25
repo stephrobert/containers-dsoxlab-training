@@ -1,74 +1,31 @@
-# Scenario
+# A daemon without root, only waiting to be started
 
-A second Docker engine is prepared on `docker.lab` for the dedicated
-`dsoxlab-rootless` account. The system's rootful daemon must stay intact.
+## The situation
 
-Everything is already in place: the account, its subordinate id range, its work
-directory, its lingering and its service unit file. Setup deliberately stops
-short of the last step, and that one is yours.
+On `docker.lab`, a second Docker engine is prepared for the dedicated
+`dsoxlab-rootless` account, next to the system's engine. The account, its
+subordinate ids, its work directory, its `linger` and its service file are in
+place. The last step is missing.
 
 ## Mission
 
-**Start the dedicated account's `dsoxlab-rootless.service` user service.** That
-is the only step expected of you, and it is the hard step of rootless.
+**Start the `dsoxlab-rootless.service` user service of the `dsoxlab-rootless`
+account.** It is not a system service: the account that carries it has no open
+session, and its UID is in `/opt/dsoxlab-securite-rootless/state.json`.
 
-The daemon is not a system service with `User=`: it is a **user** service, and
-the account carrying it is a system account with no open session. `systemctl
---user` therefore fails as long as it finds neither its runtime directory nor
-its bus. Read the UID from `/opt/dsoxlab-securite-rootless/state.json`, then
-run `systemctl --user` as `dsoxlab-rootless` with
-`XDG_RUNTIME_DIR=/run/user/<uid>` and
-`DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/<uid>/bus`.
+The system's engine must stay intact.
 
-## What the checks prove, and what you do not have to build
+## What is graded
 
-The checks do not merely ask the daemon about its own state: they **build
-themselves** a network, a named volume, an HTTP server and two peers on that
-engine, then judge what it does with them. None of those objects is yours to
-create, and `check` will not ask you for them.
+Eight checks. They build themselves the network, the volume and the HTTP server
+they need, then remove them: you have nothing else to create.
 
-What they establish from your single step:
-
-- the dedicated service is active, and the real process belongs to the
-  unprivileged account, not to root;
-- the daemon reports rootless mode;
-- its image store is **separate** from the rootful engine's, proven before any
-  load: the VM's pinned image is unknown to it;
-- it creates its own network and its own named volume;
-- a fresh value survives **two** container recreations;
-- its publication stays on loopback, on a nonprivileged port;
-- a peer of its network reaches the service, and a networkless peer is refused.
-
-## Going further
-
-Be ready to explain UID mapping, the separate image store and the limits of
-rootless networking, without confusing root inside the container with root on
-the VM. This lab qualifies neither native privileged ports nor high
-availability.
-
-## Functional contract: securite-rootless
-
-### What you deliver
-
-One step only: **the dedicated account's `dsoxlab-rootless.service` user
-service is active**. Everything else is already laid down by setup.
-
-### What the eight checks prove
-
-They inspect the real daemon on `docker.lab`, and **build the scenery
-themselves**. You have no network, no volume and no HTTP server to create.
-
-1. the dedicated service is active;
-2. its daemon reports rootless mode;
-3. the service's real process belongs to the unprivileged account, and its UID
-   is not 0;
-4. its image store is separate from the rootful engine's, proven before any
-   load;
-5. it creates its own network and its own named volume;
-6. a fresh value survives two container recreations;
-7. its publication stays on loopback, on a nonprivileged port;
-8. a peer of its network reaches the service, and a networkless peer is
+1. The dedicated service is active.
+2. Its daemon reports rootless mode.
+3. Its process belongs to the dedicated account, and its UID is not 0.
+4. Its image store is distinct from the system engine's.
+5. It creates its own network and its own named volume.
+6. A new piece of data survives two recreations of the container.
+7. Its publication stays on the loopback, on an unprivileged port.
+8. A container of its network reaches the service, a container without network is
    refused.
-
-Trial objects carry unique bounded names and are removed, including after a
-partial allocation. The initial state scores nothing.

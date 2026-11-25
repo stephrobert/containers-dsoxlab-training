@@ -1,29 +1,21 @@
-# Fournir un secret sans le publier
+# Fournir un jeton sans le publier
 
-Un jeton pédagogique aléatoire est conservé dans `secrets/token`, privé.
-Le worker n'y a pas accès. Sa commande fournie écrit seulement une empreinte
-SHA-256 dans `/run/result` lorsque le secret devient lisible ; elle n'affiche
-jamais le jeton.
+## La situation
 
-Dans `/opt/dsoxlab-secrets-au-runtime`, fournissez le jeton comme fichier
-runtime en lecture seule à `/run/secrets/token` dans `worker`, projet
-`dsoxlab-secrets-au-runtime`. Gardez la source privée et l'application fournie.
+Sur `docker.lab`, le `worker` du projet `dsoxlab-secrets-au-runtime` attend un
+jeton dans `/run/secrets/token`. Dès qu'il peut le lire, il écrit son empreinte
+SHA-256 dans `/run/result`, sans jamais afficher le jeton. La valeur, tirée au
+hasard, est dans `secrets/token`, sous `/opt/dsoxlab-secrets-au-runtime`.
 
-Ne collez jamais le jeton dans une commande, une variable d'environnement,
-Compose, une image ni des logs. Ne le remplacez pas par un vrai identifiant.
-Cleanup supprime ce jeton jetable sans promettre un effacement cryptographique.
+## Mission
 
-## Cahier des charges
+1. `worker` reçoit `secrets/token` en lecture seule, à `/run/secrets/token`.
+2. `/run/result` porte l'empreinte du jeton.
+3. Une écriture dans le fichier monté est refusée, et la source ne change pas :
+   un fichier ordinaire, en mode 0600.
+4. Le jeton n'apparaît ni dans `docker inspect`, ni dans les journaux, ni dans
+   l'image ou son historique, ni dans le Dockerfile, ni dans le fichier Compose.
 
-Travaillez sur `docker.lab`, dans `/opt/dsoxlab-secrets-au-runtime`.
-
-1. Gardez `worker` actif, projet `dsoxlab-secrets-au-runtime`,
-   label `dsoxlab.lab=secrets-au-runtime`.
-2. Montez `secrets/token` fourni en lecture seule à `/run/secrets/token`.
-   La source hôte doit rester un fichier ordinaire en mode 0600.
-3. Gardez l'application fournie produisant son SHA-256 dans `/run/result`.
-4. Aucune valeur du jeton dans inspect, logs, métadonnées/historique d'image,
-   Dockerfile ni configuration Compose.
-
-Utilisez seulement le jeton pédagogique aléatoire. Ne l'affichez pas et ne le
-placez pas dans l'environnement. Gardez l'image épinglée et les garde-fous.
+Gardez le projet, l'étiquette `dsoxlab.lab=secrets-au-runtime`, la commande
+fournie, l'image épinglée et les limites de ressources. Ne collez le jeton nulle
+part et ne le remplacez pas par un vrai identifiant.

@@ -1,27 +1,21 @@
 # An orphan is not necessarily disposable
 
-Two volumes belong exclusively to this lab. `dsoxlab-donnees-volume-orphelin-data`
-contains an original receipt and must be recovered. The empty
-`dsoxlab-donnees-volume-orphelin-stale` is expendable. Neither is attached to the
-starter worker.
+## The situation
 
-In `/opt/dsoxlab-donnees-volume-orphelin`, reconnect the original data read-only
-at `/data` in `worker`, project `dsoxlab-donnees-volume-orphelin`. Retain the
-receipt and delete only the stale lab volume.
+On `docker.lab`, two volumes are attached to no container.
+`dsoxlab-donnees-volume-orphelin-data` contains a receipt to recover.
+`dsoxlab-donnees-volume-orphelin-stale` is empty and no longer useful. The `worker`
+of project `dsoxlab-donnees-volume-orphelin` runs without its data. The project is
+in `/opt/dsoxlab-donnees-volume-orphelin`.
 
-Inspect both ownership labels before deletion. Never run volume prune, system
-prune, or delete any unlabelled or unrelated volume.
+## Mission
 
-## Brief
+1. `worker` mounts the original `dsoxlab-donnees-volume-orphelin-data` volume
+   read-only, at `/data`. This volume keeps its two labels, the lab's and the
+   Compose project's.
+2. `/data/receipt.txt` is identical to the supplied `expected.txt` file.
+3. `dsoxlab-donnees-volume-orphelin-stale`, and it alone, is removed. Check its two
+   labels first.
 
-Work on `docker.lab`, in `/opt/dsoxlab-donnees-volume-orphelin`.
-
-1. Keep `worker` active, project `dsoxlab-donnees-volume-orphelin`,
-   label `dsoxlab.lab=donnees-volume-orphelin`.
-2. Mount the original `dsoxlab-donnees-volume-orphelin-data` volume read-only
-   at `/data`, preserving both of its ownership labels.
-3. `/data/receipt.txt` must exactly match the supplied `expected.txt`.
-4. Remove only `dsoxlab-donnees-volume-orphelin-stale`, after checking its
-   lab and Compose project labels.
-
-Do not recreate the retained volume or use any global prune command.
+Keep the project and the `dsoxlab.lab=donnees-volume-orphelin` label. Do not recreate
+the volume to keep, and use neither `volume prune` nor `system prune`.
