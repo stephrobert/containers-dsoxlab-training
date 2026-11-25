@@ -1,26 +1,21 @@
-# Un processus non-root peut encore acquérir des privilèges
+# Un programme qui rend root à un compte ordinaire
 
-Le worker démarre sous UID 1000, mais son petit exécutable `identity` appartient
-à root en mode 4755. Il affiche seulement les UID réel et effectif : ni shell
-ni modification de fichiers. Sans barrière de privilèges, son exécution obtient
-EUID 0.
+## La situation
 
-Dans `/opt/dsoxlab-securite-no-new-privileges`, gardez ce binaire intact mais
-empêchez l'élévation dans le service actif. Conservez le projet
-`dsoxlab-securite-no-new-privileges` et son label. Le drapeau du noyau et une
-véritable exécution doivent concorder.
+Sur `docker.lab`, le `worker` du projet `dsoxlab-securite-no-new-privileges`
+démarre sous l'UID 1000. Son image contient `/usr/local/bin/identity`, un
+programme setuid de root qui affiche l'UID réel et l'UID effectif. Lancé par le
+worker, il affiche `1000:0` : il a obtenu root. Le projet se trouve dans
+`/opt/dsoxlab-securite-no-new-privileges`.
 
-Ne modifiez aucun binaire hôte, aucune politique setuid ni le démon.
+## Mission
 
-## Cahier des charges
+Empêchez ce gain dans le service, sans toucher au programme :
 
-Travaillez sur `docker.lab`, dans `/opt/dsoxlab-securite-no-new-privileges`.
+1. la barrière est déclarée sur le conteneur ;
+2. PID 1 annonce `NoNewPrivs: 1` ;
+3. `identity`, lancé sous l'UID et le GID 1000, affiche `1000:1000`.
 
-1. Gardez `worker` actif dans le projet `dsoxlab-securite-no-new-privileges`,
-   avec le label `dsoxlab.lab=securite-no-new-privileges`.
-2. Activez no-new-privileges au runtime ; PID 1 doit annoncer `NoNewPrivs: 1`.
-3. Conservez `/usr/local/bin/identity`, propriétaire UID 0, mode 4755.
-4. Son exécution sous UID/GID 1000 doit afficher `1000:1000`, pas `1000:0`.
-
-Ne remplacez pas le binaire, ne changez pas son mode ni la politique setuid hôte.
-Préservez les réglages de ressources bornées.
+Le programme garde son propriétaire root et le mode 4755. Gardez le projet,
+l'étiquette `dsoxlab.lab=securite-no-new-privileges` et les limites de
+ressources. Ne modifiez ni l'hôte ni le démon.

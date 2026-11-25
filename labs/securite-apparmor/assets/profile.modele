@@ -13,7 +13,8 @@
 #   2. attachez-le au service et demarrez-le. En complain, rien n est refuse :
 #      tout ce qui n est pas permis est PERMIS ET JOURNALISE ;
 #   3. relevez les refus que le noyau a journalises :
-#        dmesg | grep 'apparmor="DENIED"'
+#        sudo dmesg | grep 'apparmor="ALLOWED"'
+#      (en complain, le noyau note ALLOWED ce qu il aurait refuse)
 #      chaque ligne nomme un chemin (`name=`) et un mode d acces (`requested_mask=`) ;
 #   4. ajoutez la regle correspondante ici, une par une, jusqu a ce que le
 #      service tourne sans rien journaliser ;
