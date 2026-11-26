@@ -1,0 +1,44 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : retire le conteneur Podman
+# vigie et les images Podman du lab et de son cours, puis vide et supprime
+# les namespaces containerd du lab (equipe, nuit) et du cours (essai, essai2).
+#
+# Un namespace containerd ne se supprime que vide : tâches, conteneurs,
+# images, snapshots et contenus partent d'abord (mesuré le 2026-11-26).
+# containerd crée aussi un cgroup par namespace (/sys/fs/cgroup/<ns>) : il
+# reste après la suppression du namespace, et se retire vide par rmdir.
+- name: Défaire le lab runtime-qui-appelle-qui
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Retirer les conteneurs et les images Podman
+      ansible.builtin.shell: |
+        command -v podman > /dev/null || exit 0
+        for c in vigie essai-code essai-pid; do podman rm -f -t 0 "$c" > /dev/null 2>&1 || true; done
+        podman rmi -f -a > /dev/null 2>&1 || true
+      changed_when: true
+
+    - name: Vider puis supprimer les namespaces containerd du lab
+      ansible.builtin.shell: |
+        command -v ctr > /dev/null || exit 0
+        for ns in equipe nuit essai essai2; do
+          ctr namespaces ls -q | grep -qx "$ns" || continue
+          for t in $(ctr -n "$ns" task ls -q); do ctr -n "$ns" task kill -s KILL "$t" 2>/dev/null; done
+          sleep 1
+          for t in $(ctr -n "$ns" task ls -q); do ctr -n "$ns" task rm -f "$t" > /dev/null 2>&1; done
+          for c in $(ctr -n "$ns" container ls -q); do ctr -n "$ns" container rm "$c" > /dev/null 2>&1; done
+          for i in $(ctr -n "$ns" image ls -q); do ctr -n "$ns" image rm --sync "$i" > /dev/null 2>&1; done
+          for s in $(ctr -n "$ns" snapshots ls | awk 'NR>1 {print $1}'); do ctr -n "$ns" snapshots rm "$s" > /dev/null 2>&1; done
+          for d in $(ctr -n "$ns" content ls -q); do ctr -n "$ns" content rm "$d" > /dev/null 2>&1; done
+          ctr namespaces rm "$ns" > /dev/null || echo "garde : $ns"
+          rmdir "/sys/fs/cgroup/$ns" 2>/dev/null || true
+        done
+      changed_when: true
+
+    - name: Retirer les fichiers du lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /srv/reponses
+        - /opt/MISSION.md

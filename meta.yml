@@ -155,6 +155,7 @@ sections:
       see which programs an engine adds on top of it.
     labs:
       - runtime-lancer-un-bundle
+      - runtime-qui-appelle-qui
   # ── Niveau c1 : utiliser et comprendre les conteneurs ────────────────────
   - id: conteneurs-utilisation
     title: "Use containers"

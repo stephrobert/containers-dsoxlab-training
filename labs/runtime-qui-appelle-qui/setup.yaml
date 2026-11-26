@@ -1,0 +1,84 @@
+---
+# Joué par `dsoxlab run` : pose la situation du lab runtime-qui-appelle-qui
+# sur oci.lab, une Debian 13 SANS Docker (niveau 1, rôle sans-docker).
+#
+# CE QUE CE SETUP POSE.
+# - Podman, conmon, crun, runc et containerd, aux versions de la leçon
+#   (Debian 13, relevé du 2026-11-26 : Podman 5.4.2, conmon 2.1.12, crun 1.21,
+#   runc 1.1.15, containerd 1.7.24).
+# - Une tâche containerd `gardien`, busybox 1.37.0, dans le namespace `nuit`.
+#   `ctr task ls` lit le namespace `default` : il ne la montre pas.
+# - /srv/reponses, où l'apprenant écrit deux PID.
+#
+# CE QU'IL NE POSE PAS. Le conteneur Podman `vigie` et la tâche containerd
+# `releve` : c'est le travail.
+#
+# containerd 1.7.24 est la version du paquet Debian, celle de la leçon. Le
+# dépôt amont publie des 2.x : le lab suit la leçon, et changera avec elle.
+- name: Préparer le lab runtime-qui-appelle-qui
+  hosts: lab_target
+  become: true
+  vars:
+    busybox: docker.io/library/busybox:1.37.0@sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec
+  tasks:
+    - name: Refuser un hôte où Docker est installé
+      ansible.builtin.shell: "! command -v docker"
+      changed_when: false
+
+    - name: Installer Podman et containerd aux versions de la leçon
+      ansible.builtin.apt:
+        name:
+          - podman=5.4.2+ds1-2+b2
+          - conmon=2.1.12-4
+          - crun=1.21-1
+          - runc=1.1.15+ds1-2+deb13u1
+          - containerd=1.7.24~ds1-6+deb13u1
+          - jq=1.7.1-6+deb13u4
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Démarrer containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: started
+
+    - name: Défaire un passage précédent
+      ansible.builtin.shell: |
+        podman rm -f -t 0 vigie > /dev/null 2>&1 || true
+        for ns in equipe nuit; do
+          ctr namespaces ls -q | grep -qx "$ns" || continue
+          for t in $(ctr -n "$ns" task ls -q); do ctr -n "$ns" task kill -s KILL "$t" 2>/dev/null; done
+          sleep 1
+          for t in $(ctr -n "$ns" task ls -q); do ctr -n "$ns" task rm -f "$t" > /dev/null 2>&1; done
+          for c in $(ctr -n "$ns" container ls -q); do ctr -n "$ns" container rm "$c" > /dev/null 2>&1; done
+          for i in $(ctr -n "$ns" image ls -q); do ctr -n "$ns" image rm --sync "$i" > /dev/null 2>&1; done
+          for s in $(ctr -n "$ns" snapshots ls | awk 'NR>1 {print $1}'); do ctr -n "$ns" snapshots rm "$s" > /dev/null 2>&1; done
+          for d in $(ctr -n "$ns" content ls -q); do ctr -n "$ns" content rm "$d" > /dev/null 2>&1; done
+          ctr namespaces rm "$ns" > /dev/null
+          rmdir "/sys/fs/cgroup/$ns" 2>/dev/null || true
+        done
+        rm -rf /srv/reponses
+      changed_when: true
+
+    - name: Lancer gardien dans le namespace nuit
+      ansible.builtin.shell: |
+        set -eu
+        ctr -n nuit image pull "{{ busybox }}" > /dev/null
+        ctr -n nuit run -d "{{ busybox }}" gardien sleep infinity
+        sleep 1
+        ctr -n nuit task ls | grep -q 'gardien .*RUNNING'
+      changed_when: true
+
+    - name: Préparer le dossier des réponses
+      ansible.builtin.file:
+        path: /srv/reponses
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: "0755"
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "challenge/README{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"
