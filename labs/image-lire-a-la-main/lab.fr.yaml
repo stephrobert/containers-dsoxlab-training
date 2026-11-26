@@ -1,0 +1,19 @@
+title: "Lire une image OCI à la main et trouver un blob altéré"
+description: "Copier une image par digest dans un layout OCI local, suivre la chaîne de l'index à la couche, recalculer chaque sha256, et trouver le seul blob altéré."
+criteria:
+  - id: layout-oci
+    label: "/srv/etal est un layout OCI qui nomme le tag 1.37.0"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/
+  - id: image-amd64-intacte
+    label: "Le layout porte l'image linux/amd64, chaque blob nommé par son empreinte"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/
+  - id: digest-manifeste-note
+    label: "Le digest du manifeste linux/amd64 est noté"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/
+  - id: blob-altere-designe
+    label: "Le blob altéré du layout suspect est désigné"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/

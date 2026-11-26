@@ -1,0 +1,64 @@
+# Lab guidé de la leçon « Exécuter un bundle OCI avec runc », module executer
+# du niveau 1 « Introduction aux conteneurs ». Commandé par la session du site
+# dans le plan de fusion du 2026-11-22 (labs.a_commander).
+#
+# Le niveau 1 se joue SANS Docker, sur oci.lab (hôte optionnel, rôle
+# sans-docker). Le setup installe runc, umoci, skopeo et jq, copie busybox
+# 1.37.0 dans /srv/oci-busybox, et laisse un essai arrêté sous l'identifiant
+# veilleur. L'apprenant le supprime, fabrique le bundle /srv/veilleur, règle
+# commande, nom de machine et racine en lecture seule, et lance le conteneur
+# détaché. Mesuré le 2026-11-26 : runc 1.1.15 (spec 1.2.0), umoci 0.4.7,
+# Debian 13. runc 1.1 est la version du paquet Debian, celle de la leçon ; le
+# dépôt amont publie des 1.3, de la même version majeure.
+#
+# La leçon lance Alpine 3.24.2 avec un config.json de runc spec ; le challenge
+# lance busybox avec celui d'umoci, qui laisse la racine modifiable ; le cours
+# travaille sur Alpine 3.23.
+id: runtime-lancer-un-bundle
+title: "Run an OCI bundle with runc, read-only and detached"
+level: c1
+description: "Free an identifier held by a stopped container, turn an image into a bundle, set its command, host name and read-only root in config.json, and keep it running detached."
+skills:
+  - runc
+  - oci
+  - umoci
+  - bundle
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: oci.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false
+criteria:
+  - id: bundle-decrit
+    label: "The bundle describes the command, host name and read-only root asked"
+    tests:
+      - test_le_bundle_decrit_ce_qui_est_demande
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/
+  - id: veilleur-tourne
+    label: "veilleur runs from /srv/veilleur"
+    tests:
+      - test_veilleur_tourne_depuis_ce_bundle
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/
+  - id: nom-et-lecture-seule
+    label: "Inside, the container has its name and refuses writing at the root"
+    tests:
+      - test_le_conteneur_porte_son_nom_et_refuse_l_ecriture
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/
+  - id: essai-arrete-retire
+    label: "No stopped test container is left"
+    tests:
+      - test_plus_aucun_essai_arrete
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/

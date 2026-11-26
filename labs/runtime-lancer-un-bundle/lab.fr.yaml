@@ -1,0 +1,19 @@
+title: "Lancer un bundle OCI avec runc, en lecture seule et détaché"
+description: "Libérer un identifiant occupé par un conteneur arrêté, transformer une image en bundle, régler sa commande, son nom de machine et sa racine en lecture seule dans le config.json, et le garder en marche détaché."
+criteria:
+  - id: bundle-decrit
+    label: "Le bundle décrit la commande, le nom de machine et la racine en lecture seule demandés"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/
+  - id: veilleur-tourne
+    label: "veilleur tourne depuis /srv/veilleur"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/
+  - id: nom-et-lecture-seule
+    label: "Vu de l'intérieur, le conteneur porte son nom et refuse l'écriture à la racine"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/
+  - id: essai-arrete-retire
+    label: "Plus aucun essai arrêté ne reste"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-oci/

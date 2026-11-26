@@ -1,0 +1,19 @@
+title: "Lire qui appelle qui : Podman, conmon, containerd et son shim"
+description: "Faire confier un conteneur à runc par Podman, lancer une tâche containerd dans un namespace nommé, retrouver une tâche que ctr task ls ne montre pas, et noter le vrai moniteur de chaque conteneur."
+criteria:
+  - id: vigie-avec-runc
+    label: "vigie tourne sur busybox avec le runtime runc"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/
+  - id: releve-dans-equipe
+    label: "releve tourne dans le namespace containerd equipe"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/
+  - id: shim-de-gardien
+    label: "Le PID du shim de gardien est noté"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/
+  - id: conmon-de-vigie
+    label: "Le PID du conmon de vigie est noté"
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/

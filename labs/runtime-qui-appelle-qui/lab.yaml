@@ -1,0 +1,64 @@
+# Lab guidé de la leçon « Runtime, moteur, orchestrateur : qui fait quoi ? »,
+# module executer du niveau 1 « Introduction aux conteneurs ». Commandé par
+# la session du site dans le plan de fusion du 2026-11-22 (labs.a_commander).
+#
+# Le niveau 1 se joue SANS Docker, sur oci.lab (hôte optionnel, rôle
+# sans-docker). Le setup installe Podman et containerd, et lance une tâche
+# gardien dans le namespace containerd nuit, que `ctr task ls` ne montre pas.
+# L'apprenant lance vigie avec Podman et runc, releve avec ctr dans le
+# namespace equipe, et note les PID du shim de gardien et du conmon de vigie.
+# Mesuré le 2026-11-26 : Podman 5.4.2, conmon 2.1.12, crun 1.21, runc 1.1.15,
+# containerd 1.7.24, Debian 13. containerd 1.7 est la version du paquet
+# Debian, celle de la leçon ; le dépôt amont publie des 2.x.
+#
+# La leçon lance Alpine 3.24.2 dans le namespace default ; le challenge lance
+# busybox dans equipe et cache gardien dans nuit ; le cours travaille sur
+# Alpine 3.23, dans les namespaces essai et essai2.
+id: runtime-qui-appelle-qui
+title: "Read who calls whom: Podman, conmon, containerd and its shim"
+level: c1
+description: "Make Podman hand a container to runc, run a containerd task in a named namespace, find a task that ctr task ls does not show, and write down the real monitor of each container."
+skills:
+  - podman
+  - containerd
+  - conmon
+  - shim
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: oci.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false
+criteria:
+  - id: vigie-avec-runc
+    label: "vigie runs busybox with the runc runtime"
+    tests:
+      - test_vigie_tourne_avec_runc
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/
+  - id: releve-dans-equipe
+    label: "releve runs in the containerd namespace equipe"
+    tests:
+      - test_releve_tourne_dans_le_namespace_equipe
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/
+  - id: shim-de-gardien
+    label: "The PID of the shim of gardien is written down"
+    tests:
+      - test_le_shim_de_gardien_est_note
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/
+  - id: conmon-de-vigie
+    label: "The PID of the conmon of vigie is written down"
+    tests:
+      - test_le_conmon_de_vigie_est_note
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/runtime-moteur-orchestrateur/

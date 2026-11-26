@@ -1,0 +1,70 @@
+---
+# Joué par `dsoxlab run` : pose la situation du lab runtime-lancer-un-bundle
+# sur oci.lab, une Debian 13 SANS Docker (niveau 1, rôle sans-docker).
+#
+# CE QUE CE SETUP POSE.
+# - runc, umoci, skopeo et jq, aux versions de la leçon (Debian 13, relevé du
+#   2026-11-26 : runc 1.1.15, spec 1.2.0 ; umoci 0.4.7).
+# - /srv/oci-busybox : busybox 1.37.0 pour amd64, copiée par digest dans un
+#   layout OCI. C'est de là que l'apprenant tire son bundle.
+# - Un essai précédent, arrêté : le conteneur `veilleur`, à l'état stopped,
+#   dont le bundle est /srv/ancien. Il occupe l'identifiant que le challenge
+#   demande, et `runc run veilleur` répond « container with given ID already
+#   exists » tant qu'il n'a pas été supprimé.
+#
+# CE QU'IL NE POSE PAS. /srv/veilleur et le conteneur qui tourne : c'est le
+# travail.
+- name: Préparer le lab runtime-lancer-un-bundle
+  hosts: lab_target
+  become: true
+  vars:
+    index_busybox: sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec
+  tasks:
+    - name: Refuser un hôte où Docker est installé
+      ansible.builtin.shell: "! command -v docker"
+      changed_when: false
+
+    - name: Installer runc, umoci, skopeo et jq aux versions de la leçon
+      ansible.builtin.apt:
+        name:
+          - runc=1.1.15+ds1-2+deb13u1
+          - umoci=0.4.7+ds-4+b10
+          - skopeo=1.18.0+ds1-1+b5
+          - jq=1.7.1-6+deb13u4
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Défaire un passage précédent
+      ansible.builtin.shell: |
+        set -eu
+        runc list -f json | jq -r '.[]? | select(.bundle | test("^/srv/(veilleur|ancien|essai-)")) | .id' |
+          while read -r id; do runc delete -f "$id" || true; done
+        rm -rf /srv/veilleur /srv/ancien /srv/oci-busybox
+      changed_when: true
+
+    - name: Copier busybox 1.37.0 amd64 dans /srv/oci-busybox
+      ansible.builtin.shell: |
+        set -eu
+        mkdir -p /srv/oci-busybox
+        skopeo copy -q --override-arch amd64 \
+          "docker://docker.io/library/busybox@{{ index_busybox }}" oci:/srv/oci-busybox:1.37.0
+      changed_when: true
+
+    - name: Laisser un essai arrêté sous l'identifiant veilleur
+      ansible.builtin.shell: |
+        set -eu
+        umoci unpack --image /srv/oci-busybox:1.37.0 /srv/ancien > /dev/null
+        cd /srv/ancien
+        jq '.process.terminal=false | .process.args=["sleep","infinity"] | .hostname="ancien"' \
+          config.json > c.tmp && mv c.tmp config.json
+        runc create veilleur
+        runc kill veilleur KILL
+        sleep 1
+        test "$(runc state veilleur | jq -r .status)" = stopped
+      changed_when: true
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "challenge/README{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"

@@ -28,6 +28,15 @@ quelle version du moteur Docker et dans quel mode de stockage. C'est ce que
 
 ### Ajouté
 
+- **Trois labs guidés du niveau 1, joués sur `oci.lab` sans Docker
+  (2026-11-26).** `image-lire-a-la-main` ouvre une image OCI avec skopeo et jq
+  et fait trouver un blob altéré ; `runtime-lancer-un-bundle` lance busybox
+  avec runc, en lecture seule et détaché ; `runtime-qui-appelle-qui` fait lire
+  qui lance et qui surveille un conteneur, chez Podman (conmon) et chez
+  containerd (shim). Deux sections nouvelles, `image` et `executer`, les
+  rangent après `isoler`. Versions des paquets de Debian 13, celles des
+  leçons : skopeo 1.18.0, umoci 0.4.7, runc 1.1.15, Podman 5.4.2,
+  containerd 1.7.24 (le dépôt amont de containerd publie des 2.x).
 - **Les quatorze épreuves déclarent leurs critères et les leçons à réviser.**
   Chaque épreuve regroupe ses tests en critères nommés par la capacité mesurée
   (`criteria:`, libellés EN dans `lab.yaml`, FR dans `lab.fr.yaml`), chacun
