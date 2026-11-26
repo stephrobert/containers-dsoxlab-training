@@ -3208,6 +3208,69 @@
   "store": "containerd",
   "verdict": "VALIDE"
  },
+ "image-lire-a-la-main": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_etal_est_un_layout_oci_qui_nomme_le_tag",
+    "test_etal_porte_l_image_amd64_intacte",
+    "test_le_blob_altere_est_designe",
+    "test_le_digest_du_manifeste_amd64_est_note"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-11-26",
+  "docker": "absent",
+  "duree_s": 36,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "horodatage": "2026-11-26T08:19:16+01:00",
+  "host": "oci.lab",
+  "id": "image-lire-a-la-main",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-image-lire-a-la-main.log",
+  "moteurs": {
+   "oci.lab": {
+    "docker": "absent",
+    "store": "aucun"
+   }
+  },
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_etal_est_un_layout_oci_qui_nomme_le_tag",
+    "test_etal_porte_l_image_amd64_intacte",
+    "test_le_blob_altere_est_designe",
+    "test_le_digest_du_manifeste_amd64_est_note"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "aucun",
+  "verdict": "VALIDE"
+ },
  "image-scan-de-vulnerabilites": {
   "apres": {
    "echecs": [],
@@ -5068,6 +5131,132 @@
    "total": 4
   },
   "store": "containerd",
+  "verdict": "VALIDE"
+ },
+ "runtime-lancer-un-bundle": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_le_bundle_decrit_ce_qui_est_demande",
+    "test_le_conteneur_porte_son_nom_et_refuse_l_ecriture",
+    "test_plus_aucun_essai_arrete",
+    "test_veilleur_tourne_depuis_ce_bundle"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-11-26",
+  "docker": "absent",
+  "duree_s": 31,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "horodatage": "2026-11-26T08:19:51+01:00",
+  "host": "oci.lab",
+  "id": "runtime-lancer-un-bundle",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-runtime-lancer-un-bundle.log",
+  "moteurs": {
+   "oci.lab": {
+    "docker": "absent",
+    "store": "aucun"
+   }
+  },
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_le_bundle_decrit_ce_qui_est_demande",
+    "test_le_conteneur_porte_son_nom_et_refuse_l_ecriture",
+    "test_plus_aucun_essai_arrete",
+    "test_veilleur_tourne_depuis_ce_bundle"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "aucun",
+  "verdict": "VALIDE"
+ },
+ "runtime-qui-appelle-qui": {
+  "apres": {
+   "echecs": [],
+   "passed": 4,
+   "recorded": true,
+   "score": 100,
+   "skipped": 0,
+   "status": "passed",
+   "total": 4
+  },
+  "avant": {
+   "echecs": [
+    "test_le_conmon_de_vigie_est_note",
+    "test_le_shim_de_gardien_est_note",
+    "test_releve_tourne_dans_le_namespace_equipe",
+    "test_vigie_tourne_avec_runc"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "date": "2026-11-26",
+  "docker": "absent",
+  "duree_s": 40,
+  "ecarts": [],
+  "etapes": [
+   "état photographié : 0 image(s), 0 conteneur(s), 0 volume(s)",
+   "avant le travail : 0/4",
+   "après la solution : 4/4",
+   "après clean et run : 0/4",
+   "moteur rendu intact"
+  ],
+  "horodatage": "2026-11-26T08:20:22+01:00",
+  "host": "oci.lab",
+  "id": "runtime-qui-appelle-qui",
+  "journal": ".cache/dsoxlab/containers-dsoxlab-training/validation-runtime-qui-appelle-qui.log",
+  "moteurs": {
+   "oci.lab": {
+    "docker": "absent",
+    "store": "aucun"
+   }
+  },
+  "raisons": [],
+  "rejeu": {
+   "echecs": [
+    "test_le_conmon_de_vigie_est_note",
+    "test_le_shim_de_gardien_est_note",
+    "test_releve_tourne_dans_le_namespace_equipe",
+    "test_vigie_tourne_avec_runc"
+   ],
+   "passed": 0,
+   "recorded": true,
+   "score": 0,
+   "skipped": 0,
+   "status": "failed",
+   "total": 4
+  },
+  "store": "aucun",
   "verdict": "VALIDE"
  },
  "secrets-au-runtime": {
