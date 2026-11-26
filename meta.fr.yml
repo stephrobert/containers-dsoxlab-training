@@ -38,6 +38,11 @@ sections:
     description: >-
       Ouvrir une image OCI sans moteur : suivre la chaîne de l'index à la
       couche, recalculer chaque digest, et voir un fichier altéré refusé.
+  - id: executer
+    title: "Exécuter un conteneur"
+    description: >-
+      Transformer une image en bundle et la lancer avec un runtime bas
+      niveau, puis voir quels programmes un moteur ajoute par-dessus.
 
   - id: conteneurs-utilisation
     title: "Utiliser les conteneurs"

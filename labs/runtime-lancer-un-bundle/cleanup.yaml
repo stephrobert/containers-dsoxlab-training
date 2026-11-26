@@ -1,0 +1,29 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : supprime les conteneurs runc
+# du lab et de son cours, puis les bundles et le layout. Les paquets restent :
+# le lab suivant du module s'en sert.
+#
+# Seuls les conteneurs dont le bundle est sous /srv/veilleur, /srv/ancien ou
+# /srv/essai-* sont supprimés : Podman et containerd, au lab suivant, pilotent
+# runc eux aussi, et leurs conteneurs ne sont pas ceux de ce lab.
+- name: Défaire le lab runtime-lancer-un-bundle
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Supprimer les conteneurs runc du lab
+      ansible.builtin.shell: |
+        if command -v runc > /dev/null; then
+          runc list -f json | jq -r '.[]? | select(.bundle | test("^/srv/(veilleur|ancien|essai-)")) | .id' |
+            while read -r id; do runc delete -f "$id" || true; done
+        fi
+      changed_when: true
+
+    - name: Retirer les fichiers du lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /srv/veilleur
+        - /srv/ancien
+        - /srv/oci-busybox
+        - /opt/MISSION.md
