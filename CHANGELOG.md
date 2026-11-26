@@ -29,6 +29,15 @@ of the Docker engine and in which storage mode. That is what
 
 ### Added
 
+- **Three guided labs of level 1, played on `oci.lab` with no Docker
+  (2026-11-26).** `image-lire-a-la-main` opens an OCI image with skopeo and jq
+  and has you find an altered blob; `runtime-lancer-un-bundle` runs busybox
+  with runc, read-only and detached; `runtime-qui-appelle-qui` has you read
+  who starts and who watches over a container, with Podman (conmon) and with
+  containerd (shim). Two new sections, `image` and `executer`, put them after
+  `isoler`. Versions of the Debian 13 packages, those of the lessons:
+  skopeo 1.18.0, umoci 0.4.7, runc 1.1.15, Podman 5.4.2, containerd 1.7.24
+  (the upstream containerd repository publishes 2.x).
 - **The fourteen exams declare their criteria and the lessons to review.**
   Each exam groups its tests into criteria named after the measured capability
   (`criteria:`, EN labels in `lab.yaml`, FR in `lab.fr.yaml`), each linked to
