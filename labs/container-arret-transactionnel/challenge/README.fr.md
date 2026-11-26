@@ -1,23 +1,12 @@
 # Un arrêt qui perd une commande
 
-Le registre HTTP fourni accepte une écriture mais le déploiement l'interrompt
-pendant l'arrêt. L'application est déjà implémentée. Réparez son lancement et
-son arrêt dans `/opt/dsoxlab-container-arret-transactionnel`.
+## La situation
 
-Prouvez réception du signal, fin de requête et durabilité métier après
-recréation. Comparez un arrêt volontairement forcé d'une autre transaction en
-vol, sans endommager les enregistrements déjà validés.
-Exécutez ce même service sous UID/GID 10001 avec une racine en lecture seule.
-Seul `/data` porte les données applicatives inscriptibles ; un autre UID
-applicatif doit subir un refus d'accès aux transactions. Gardez ces restrictions
-pendant la reprise.
+Sur `docker.lab`, un registre HTTP accepte une écriture, puis son déploiement
+l'interrompt à l'arrêt. L'application est bonne : c'est son lancement et son
+arrêt qu'il faut réparer, dans `/opt/dsoxlab-container-arret-transactionnel`.
 
-Utilisez seulement les ressources labellisées de ce lab. Le contrat numéroté
-est dans [challenge/README.fr.md](challenge/README.fr.md); la revue est séparée.
-
-## Contrat 05 : arrêt transactionnel
-
-[English](README.md)
+## Mission
 
 1. Utilisez le service Python fourni et l'image épinglée dans le projet
    `dsoxlab-container-arret-transactionnel-stack`, répertoire
@@ -43,8 +32,6 @@ est dans [challenge/README.fr.md](challenge/README.fr.md); la revue est séparé
    image de service. `SERVICE_MODE` vaut `standard` par défaut; modifier cette
    seule variable change le `service_mode` retourné, sans perdre le registre.
 
-Le verdict unique couvre volontairement tout le contrat : zéro attendu
-avant réparation, plein après. Le registre versionné conserve les passages
-réellement mesurés pour cette révision. Aucun historique
-n'est noté. Cause et limites relèvent de la [revue humaine](review.fr.md)
-séparée, pas de la présence d'un fichier témoin.
+Trois contrôles lisent le service, comparent un arrêt propre à un arrêt forcé, et
+relisent les données après recréation. Ils échouent tous avant la réparation.
+Utilisez seulement les ressources étiquetées de ce lab.

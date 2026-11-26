@@ -35,9 +35,4 @@ Docker, pas par votre terminal : une CA ajoutée seulement à curl ne suffit pas
 Le lab est limité au réseau privé des VM et ne contacte aucun registre public
 pour les contrôles. Ne modifiez pas le produit, la CA ou les fichiers du banc.
 
-## Mission : rendre le registre digne de confiance
-
-Sur `docker.lab`, activez TLS sur `registry-tls.lab.test:15443`, installez sa CA
-pour Docker et tirez `catalogue/appli:1.0` sans exception de vérification.
-
-Le scénario décrit les certificats et les critères.
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.

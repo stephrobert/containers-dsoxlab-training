@@ -40,10 +40,4 @@ temporairement retirée.
 Le chemin du fichier est celui dans le conteneur : `/auth/htpasswd`, pas le
 répertoire de travail hôte. Un curl authentifié ne connecte pas Docker.
 
-## Mission : publier et récupérer avec authentification
-
-Protégez `registry-auth.lab.test:15445` avec le compte fourni, puis enregistrez
-une connexion Docker dans le client dédié et transférez les images avec
-authentification sans contourner TLS.
-
-Le scénario donne les chemins et les critères de réussite.
+L'énoncé est aussi déposé dans `/opt/MISSION.md`.

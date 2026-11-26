@@ -1,101 +1,39 @@
-# Contenir la création de processus
+# Un service, et pas plus de seize tâches
 
-Le worker démarre avec un plafond sûr de 32 tâches, mais son budget opérationnel
-est de 16. Le plafond doit être une limite de cgroup, pas seulement un ulimit
-de shell.
+## La situation
 
-Dans `/opt/dsoxlab-container-limite-de-processus`, appliquez le budget de
-16 tâches à `worker` dans le projet `dsoxlab-container-limite-de-processus`.
-Gardez le service actif et les garde-fous mémoire et CPU.
+Le service `worker` peut créer jusqu'à 32 tâches. Son budget d'exploitation est
+de 16. Vous devez l'y ramener sans perdre ses autres limites, et vérifier qu'une
+rafale de processus est refusée sans emporter le service.
 
-Le contrôle lance au plus 24 enfants sleep de courte durée, uniquement après
-vérification du plafond effectif. Ce n'est pas une fork bomb. Ni récursion,
-ni boucle de fork non bornée, ni limite de processus globale sur l'hôte.
-Après la rafale finie, le service original doit reprendre sans redémarrage ni
-perte d'un reçu applicatif frais. Seul le reçu de l'essai est retiré.
+## Mission
 
-## Cahier des charges
+Sur `docker.lab`, le projet Compose est dans
+`/opt/dsoxlab-container-limite-de-processus`, sous le nom
+`dsoxlab-container-limite-de-processus`. Gardez un seul `worker` en marche, avec
+son label `dsoxlab.lab=container-limite-de-processus` et sa limite de
+processeur.
 
-Travaillez sur `docker.lab`, dans `/opt/dsoxlab-container-limite-de-processus`.
+### 1. Les limites déclarées
 
-Gardez un `worker` actif dans le projet `dsoxlab-container-limite-de-processus`,
-avec son label `dsoxlab.lab=container-limite-de-processus`. Le contrôle effectue
-lui-même la rafale protégée ; n'exécutez aucun stresseur non borné.
+`PidsLimit` vaut 16, et la limite mémoire reste en place, à 64 Mio au plus.
 
-Quatre contrôles indépendants mesurent quatre choses différentes.
+### 2. La limite appliquée
 
-### 1. Les limites déclarées portent le budget de tâches
+Dans le conteneur, `pids.max` vaut 16. Un `ulimit` de shell n'y change rien.
 
-`PidsLimit` vaut exactement 16, et la limite mémoire reste positive et au plus
-égale à 64 Mio.
+### 3. Une rafale est refusée
 
-Le garde-fou mémoire est vérifié ici plutôt que dans un contrôle à lui, et c'est
-délibéré : il est posé dès le départ, donc un contrôle séparé passerait avant
-tout travail et donnerait des points pour rien. Borner les tâches ne doit pas
-coûter le garde-fou mémoire, mais ce n'est pas une exigence qu'on satisfait, c'en
-est une qu'on préserve.
+Le contrôle lance 24 `sleep` de deux secondes dans le conteneur. Ils tiennent
+sous 32 et pas sous 16. Le compteur `max` de `pids.events` doit augmenter. Un
+code de sortie non nul ne suffit pas.
 
-### 2. Le cgroup applique vraiment le plafond de tâches
+### 4. Le service survit
 
-Dans le conteneur, `pids.max` vaut 16.
+Après une rafale lancée par ce contrôle, `worker` tourne encore, son `StartedAt`
+n'a pas changé, et un fichier écrit avant la rafale se relit.
 
-Le contrôle précédent lit ce qu'on a **demandé** au démon, celui-ci ce que le
-noyau a **retenu**. C'est aussi ce qui distingue une limite de cgroup d'un
-`ulimit` de shell : ce dernier ne lie que les descendants du shell qui l'a posé
-et disparaît avec lui, si bien qu'il ne borne pas le service.
+### Ce qui est interdit
 
-### 3. Une rafale bornée est refusée par le noyau
-
-Vingt-quatre enfants `sleep` de deux secondes sont lancés, puis attendus. Le
-compteur `max` de `pids.events` doit **augmenter**.
-
-Ce n'est pas une fork bomb : ni récursion, ni boucle non bornée. Le nombre est
-choisi pour dépasser 16 sans approcher les 32 du départ, et c'est mesuré : le
-cgroup porte déjà trois tâches avant la rafale, donc 3 + 24 tient sous 32 et
-déborde sous 16. Sous 32, le compteur reste à 0 ; sous 16, il passe à 1.
-
-Un code de sortie non nul ne prouverait rien par lui-même. Seul ce compteur dit
-que le noyau a refusé une création.
-
-### 4. Le service survit à la saturation et garde son état
-
-Trois choses, après une rafale que ce contrôle provoque lui-même : le worker
-tourne encore, son `StartedAt` n'a pas changé, et un reçu écrit **avant** la
-rafale se relit après.
-
-Un plafond qui emporte le PID 1 à chaque pic ne protège pas le service, il le
-remplace par un redémarrage. Et survivre comme processus ne suffit pas : un
-service qui repart de zéro a perdu ce qu'il tenait.
-
-Si le worker est à l'arrêt, le message donne son **code de sortie**, et il ne
-faut pas le faire dire plus qu'il ne dit. Un 137 vaut 128 + 9, donc un SIGKILL,
-quelle qu'en soit l'origine. Mesuré sur l'hôte du lab :
-
-| Cause | `ExitCode` | `OOMKilled` |
-| --- | --- | --- |
-| `docker kill` | 137 | false |
-| `docker stop` sur un PID 1 qui ignore SIGTERM | 137 | false |
-| un vrai OOM du cgroup | 137 | **true** |
-
-Les trois causes rendent le même code, et seul `OOMKilled` les sépare :
-`docker inspect -f '{{.State.OOMKilled}}'`. À noter que son absence n'exclut pas
-tout à fait l'OOM, un cas d'OOM sorti en 137 avec `OOMKilled=false` ayant été
-rapporté sur une autre machine sans que la cause en soit établie.
-
-Le contrôle ne trie pas lui-même les deux causes, et c'est mesuré plutôt que
-choisi. Un tri de ce genre serait du décor ici : sur cinq paliers de mémoire,
-de 10 à 32 Mio, la rafale de vingt-quatre `sleep` n'a jamais provoqué d'OOM,
-et sous le seuil de démarrage c'est le garde-fou du service actif qui refuse
-avant. Vingt-quatre `sleep` busybox ne consomment presque rien.
-
-Ce contrôle provoque **sa propre** rafale plutôt que de réutiliser celle du
-contrôle 3, et il vérifie lui-même qu'une saturation a eu lieu : sans incident,
-la survie ne se distingue pas du fait que rien ne s'est produit.
-
-### Ce qui n'est pas noté, et pourquoi on vous le dit
-
-Trois vérifications précèdent les mesures sans être des exigences : qu'un seul
-`worker` tourne, qu'il porte son label, et que `pids.events` soit lisible. Sans
-elles aucun contrôle ne peut observer quoi que ce soit, et un contrôle qui n'a
-pas pu regarder ne doit jamais conclure au vert. Quand la lecture échoue sur un
-service qui tourne, le message vous dit que ce n'est pas votre faute.
+Ne lancez aucune boucle de création de processus sans fin, et ne posez pas de
+limite sur toute la machine. Le contrôle fait lui-même la rafale.

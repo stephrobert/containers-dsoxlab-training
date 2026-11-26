@@ -1,62 +1,44 @@
 # Write a policy that refuses by default
 
-The worker holds two files in mode 444: Unix permissions allow both reads. No
-AppArmor profile is loaded for this lab, and the starter is `unconfined`.
+## The situation
 
-In `/opt/dsoxlab-securite-apparmor`, **write the profile, load it, and attach
-it** to `worker`. `profile.modele` is a template carrying the imposed name and
-the method; complete it. Keep `/lab/public.txt` readable and make
-`/lab/private.txt` unreadable **by mandatory policy, not by chmod**: both files
-must stay in mode 444.
+On `docker.lab`, the `worker` of project `dsoxlab-securite-apparmor` creates two
+files in mode 444, `/lab/public.txt` and `/lab/private.txt`. Unix permissions let
+both be read. The service is `unconfined`, and no profile is loaded for it. The
+project is in `/opt/dsoxlab-securite-apparmor`, with `profile.modele`, a template
+to complete.
 
-**Refuse by omission, not with a `deny` rule.** An explicit `deny` applies even
-in `complain` mode, so a profile built that way returns the same verdict in both
-modes and proves nothing about the one in force. A permission you never name is
-refused in `enforce` only, because `complain` permits and logs whatever is not
-allowed. The service must create `/lab/private.txt`, so grant the write and
-never name the read.
+## Mission
 
-**A policy names what the service needs and refuses the rest.** A bare `file,`
-rule, or a bare `capability,` or `network,` rule, allows everything and turns the
-profile into a one-line blacklist. The lab checks this by reading `/etc/shadow`,
-which a service handling two files in `/lab` has no reason to read.
+1. **Write** the `dsoxlab-securite-apparmor` profile from `profile.modele`,
+   **load it**, and attach it to `worker`.
+2. PID 1 reports that profile in `enforce` mode.
+3. `/lab/public.txt` returns `public`. `/lab/private.txt` stays in mode 444, and
+   reading it fails with Permission denied.
+4. The profile **refuses by default**: no bare `file,`, `capability,` or
+   `network,`. The check tries to read `/etc/shadow` from the container.
 
-One rule the method will not reveal on this lab, and that you need to know:
-`signal (receive) peer=runc,`. Without it, a dedicated profile denies runc the
-right to send SIGTERM to the service, and `docker stop` cleans nothing up: twelve
-seconds, then SIGKILL and exit code 137. This service's PID 1 installs no signal
-handler, so it ignores SIGTERM anyway and the denial is never even attempted:
-`complain` therefore does not log it. That is the limit of the method, and it is
-worth knowing: it shows what the service **attempted**, never what another
-service would attempt.
+**The refusal comes from an omission, not from a `deny` rule**: a `deny` applies in
+`complain` too, and would prove nothing about the mode in force. The service must
+be able to create `/lab/private.txt`: grant it the write, not the read.
 
-The method is the real one, and the template spells it out: load in `complain`,
-start the service, read the refusals the kernel logged with
-`dmesg | grep 'apparmor="DENIED"'`, add the matching rule, repeat, then drop
-`complain` and reload.
+## The method
 
-Change no other profile, do not disable AppArmor, do not leave the profile in
-`complain`, and do not touch `/etc/apparmor.d`: a profile loaded with
-`apparmor_parser` lives until it is unloaded, and cleanup removes only the one
-this lab owns.
+Load the profile in `complain`, start the service, and note what the kernel would
+have refused. In `complain`, it records it as `ALLOWED`:
 
-## Brief
+```bash
+sudo dmesg | grep 'apparmor="ALLOWED"'
+```
 
-Work on `docker.lab`, in `/opt/dsoxlab-securite-apparmor`.
+Add the matching rule, repeat, then remove `complain` and reload. Once in
+`enforce`, a refusal reads `DENIED`.
 
-1. Keep `worker` active in project `dsoxlab-securite-apparmor`,
-   label `dsoxlab.lab=securite-apparmor`.
-2. **Write** the `dsoxlab-securite-apparmor` profile from `profile.modele`,
-   **load it** yourself, and attach it to the service. No profile is loaded to
-   begin with, and the starter is `unconfined`.
-3. PID 1 must report that profile in `enforce` mode, not `complain`.
-4. `/lab/public.txt` must still return `public`.
-5. `/lab/private.txt` must remain mode 444, but reading it must fail with
-   Permission denied. **The refusal must come from omitting the read
-   permission, not from a `deny` rule**: an explicit `deny` applies in
-   `complain` too, and would prove nothing about the mode in force.
-6. The profile must **refuse by default**: no bare `file,` `capability,` or
-   `network,` rule. The check reads `/etc/shadow` from inside the container,
-   which a service handling two files in `/lab` has no reason to read.
+This method shows what the service attempted. Here it will not show
+`signal (receive) peer=runc,`, because this PID 1 ignores SIGTERM. Add it anyway:
+without it, `docker stop` cannot cleanly stop a service that handles that signal.
 
-Only this new profile is in scope. Do not reload or change any existing policy.
+Keep the project and the `dsoxlab.lab=securite-apparmor` label. Change no other
+profile, do not disable AppArmor and do not touch `/etc/apparmor.d`: a profile
+loaded with `apparmor_parser` lives until it is removed, and the cleanup removes
+only this lab's.

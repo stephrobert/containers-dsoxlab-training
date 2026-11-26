@@ -1,23 +1,17 @@
-# A digest does not identify its author
+# A checksum does not identify its author
 
-The team exports its container image as an archive. A checksum detects
-changed bytes, but anyone who changes those bytes can publish a new checksum.
-The release gate needs an authenticated author, not a label saying "signed".
+## The situation
 
-A local administrator has approved a signing CA and one release identity.
-The archive and a detached signature are ready; the verifier refuses
-everything because its policy implementation is missing.
+The team ships its container image as an archive. A checksum detects changed
+bytes, but whoever changes them can publish a new checksum. The delivery therefore
+requires an authenticated author.
 
-Implement a gate that accepts the approved signer and rejects a valid signer
-with another identity, an unrelated key, and altered content.
-Work on `docker.lab` in `/opt/lab-image-signature`.
-See [the requirements](challenge/README.md).
+On `docker.lab`, `/opt/lab-image-signature` contains `archive.tar`,
+`archive.sig`, `keys/approved.crt`, test private keys, and what the administrator
+approves: `trust/ca.crt` and `trust/policy.json`. The `verify.py` verifier refuses
+everything, because its policy is not written.
 
-## Mission: accept only the approved release signer
-
-Work on `docker.lab` in `/opt/lab-image-signature`, not in local challenge/work.
-The fixture provides `archive.tar`, `archive.sig`, `keys/approved.crt`,
-runtime-generated synthetic private keys, and the administrator's trust inputs.
+## Mission
 
 1. Implement `verify.py ARCHIVE SIGNATURE CERTIFICATE`. Exit 0 only when the
    supplied signature authenticates those exact bytes with the public key of
@@ -36,6 +30,4 @@ runtime-generated synthetic private keys, and the administrator's trust inputs.
    lab-owned directory and labelled image. Do not add a scanner or claim
    Sigstore, keyless signing or a transparency log.
 
-`dsoxlab check images-signature-identite` generates real fresh positive and
-negative signatures. `dsoxlab clean images-signature-identite` removes
-the archive, generated keys and only images added by this lab.
+Three checks make new signatures, good and bad, at each run.

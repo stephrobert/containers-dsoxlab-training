@@ -1,36 +1,35 @@
 # Le même Dockerfile ne retrouve plus le même socle
 
-Sur `docker.lab`, le contexte `/opt/lab-image-pin/appli` construit une application
-sur `127.0.0.1:15004/socle:stable`. Le registre a déplacé ce tag vers un socle
-non approuvé. Le bon `/opt/lab-image-pin/approbation.json` donne le digest de
-manifeste du socle approuvé et son identité.
+## La situation
 
-Le lab précédent retrouvait un conteneur par digest. Ici, c'est une
-**reconstruction future** qui doit garder le bon socle, tout en intégrant une
-source applicative nouvelle.
+Le contexte `/opt/lab-image-pin/appli` construit une application sur
+`127.0.0.1:15004/socle:stable`. Le registre a déplacé ce tag vers un socle que
+personne n'a approuvé. Le fichier `/opt/lab-image-pin/approbation.json` donne la
+référence et l'identité du socle approuvé.
 
 ## Mission
 
-- Corrigez le Dockerfile de l'application pour utiliser le socle approuvé.
-- Construisez `dsoxlab-pin:finale` depuis ce contexte.
-- Le conteneur doit afficher le socle approuvé puis la source courante :
-  `docker run --rm --network none dsoxlab-pin:finale`.
-- Changer la source doit changer le produit, sans changer les couches du socle.
-- Un déplacement de `stable` ne doit pas changer le socle d'une reconstruction
-  forcée avec `docker build --pull --no-cache`.
-
-Ne modifiez pas les socles, le bon d'approbation ou le registre. Le constructeur
-ne doit pas se contenter d'une vieille image finale ou d'une réponse écrite en dur.
-Le registre HTTP écoute seulement en boucle locale.
-
-Les contrôles copient votre contexte, changent sa source, déplacent deux fois
-le tag `stable` et reconstruisent. Ils exécutent les produits sans réseau et
-comparent les couches aux couches approuvées. Le tag est ensuite restauré.
-
-## Mission : reconstruire sans changer de socle
-
 Sur `docker.lab`, corrigez `/opt/lab-image-pin/appli/Dockerfile` et construisez
-`dsoxlab-pin:finale` avec le digest du bon `/opt/lab-image-pin/approbation.json`.
-Une nouvelle source doit être intégrée sans suivre les changements de `stable`.
+`dsoxlab-pin:finale` depuis ce contexte.
 
-Le scénario donne le banc et les critères.
+### 1. La bonne livraison
+
+`docker run --rm --network none dsoxlab-pin:finale` affiche l'identité du socle
+approuvé, puis la source actuelle. L'image dérive des couches du socle approuvé.
+
+### 2. Une nouvelle source entre dans le produit
+
+Le contrôle copie votre contexte, change `source.txt` et reconstruit. Le produit
+porte la nouvelle source et le socle approuvé.
+
+### 3. Le socle ne suit pas le tag
+
+Le contrôle déplace deux fois `stable` et reconstruit avec
+`docker build --pull --no-cache`. Les couches du socle restent celles du socle
+approuvé. Le tag est ensuite remis en place.
+
+### Ce qui est interdit
+
+Ne modifiez ni les socles, ni `approbation.json`, ni le registre. Une ancienne
+image renommée ou une réponse écrite en dur ne passe pas. Le registre est en
+HTTP et n'écoute que sur la boucle locale.

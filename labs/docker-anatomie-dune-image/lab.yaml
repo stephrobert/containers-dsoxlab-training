@@ -3,7 +3,7 @@
 id: docker-anatomie-dune-image                      # REQUIS
 title: "The anatomy of an image: layers, sharing, configuration"            # REQUIS
 level: c1                     # REQUIS
-description: "Dissect an image rather than read its Dockerfile: count the layers it really has, measure what it shares with a sibling image, and find the revision that lives only in its configuration."
+description: "Two images are described from the engine: their layers, what they share and a value of their configuration."
 skills:                       # REQUIS, non vide
   - docker
   - images

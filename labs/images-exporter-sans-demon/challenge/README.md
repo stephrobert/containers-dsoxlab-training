@@ -9,27 +9,6 @@ have nothing to install.
 The image to deliver is **`busybox:1.37.0-musl`**, pinned by its index digest:
 `sha256:f6a95d611e0a8780fabdb2aec43e31275b2720dfefa3e41b16835bfc42454478`.
 
-## What must be produced
-
-1. **`livraison/socle-oci.tar`**, an **OCI** format archive, copied **straight
-   from the registry**, carrying the full destination name
-   `livraison.test/socle:1.0`.
-2. **`livraison/socle-docker.tar`**, the same image in **docker-archive**
-   format, with the same destination name. The two formats share neither
-   structure nor size, and the delivery must show it.
-3. **`livraison/socle-arm64.tar`**, an OCI archive of the **arm64** variant of
-   that same image, while this host is amd64.
-
-## What the daemon must never do
-
-**The daemon must not have pulled the image.** That is the whole point: `skopeo`
-talks to the registry itself, without going through it. After your work,
-`docker images` must carry no trace of `busybox:1.37.0-musl`.
-
-A `docker pull` followed by `docker save` would produce an archive, and would be
-refused: that path requires the daemon to pull the image, which a host without a
-daemon cannot do.
-
 ## What survives the transport, and what changes
 
 Load `livraison/socle-oci.tar` into the daemon to see for yourself. Three
@@ -77,7 +56,7 @@ to install. `A-LIVRER.txt` recalls the image and its digest.
    since it requires from the daemon what a host without a daemon cannot do.
 3. **The archive loads as a named image**, `livraison.test/socle:1.0`, and
    **its layers are the source's**. The local identifier does change: that is
-   expected, and the scenario says why.
+   expected, the section on transport says why.
 4. **`livraison/socle-arm64.tar`** holds the **arm64** architecture, while this
    host is amd64, and its manifest differs from the main archive's.
 5. **`livraison/socle-docker.tar`** is in **docker-archive** format: it carries

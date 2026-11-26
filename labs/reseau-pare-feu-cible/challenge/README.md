@@ -1,17 +1,14 @@
 # The route exists, but the request does not arrive
 
-The dedicated topology in `/opt/dsoxlab-reseau-pare-feu-cible` has an allowed
-client, an untrusted client, a router and an inventory service. A real firewall
-rule blocks the business flow. Locate the failing hop and correct only that
-flow, retaining the untrusted-client and debug-port exclusions.
+## The situation
 
-All firewall commands belong inside the router container's namespace.
-Do not alter the workstation or VM firewall, host forwarding, or Docker API.
-See [the numbered contract](challenge/README.md) and separate explanation review.
+On `docker.lab`, the project in `/opt/dsoxlab-reseau-pare-feu-cible` contains an
+allowed client, an untrusted client, a router and an inventory server. A rule of
+the router blocks the business flow.
 
-## Contract 39: a targeted routed firewall repair
+## Mission
 
-[Français](README.fr.md)
+Find the faulty hop and correct only that flow. The other exclusions stay.
 
 1. Use project `dsoxlab-reseau-pare-feu-cible-stack`, directory
    `/opt/dsoxlab-reseau-pare-feu-cible`. Keep both dedicated bridge networks.
@@ -34,6 +31,5 @@ See [the numbered contract](challenge/README.md) and separate explanation review
    the containers setting namespace routes; no privileged, host network/PID/IPC,
    host/API socket mounts or published ports. Keep prefixes and lab labels.
 
-One complete verdict measured zero before correction and full after, twice on
-`docker.lab` on 2026-11-01. A blanket firewall removal fails negative paths and
-policy/counter checks. Explanation is a separate [human review](review.md).
+Two checks: the flow passes and the exclusions hold, then the same after a
+recreation. Removing the whole firewall makes both fail.

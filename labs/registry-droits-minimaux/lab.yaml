@@ -3,7 +3,7 @@
 id: registry-droits-minimaux                      # REQUIS
 title: "Grant minimal registry scopes to a publisher and a separate reader"
 level: c2
-description: "Correct a token service ACL, publish over verified TLS and pull the exact digest on a second Docker host while denying reader uploads."
+description: "Restore the delivery of an image between two machines, with one account that publishes and one that only reads."
 skills:                       # REQUIS, non vide
   - docker
   - registry

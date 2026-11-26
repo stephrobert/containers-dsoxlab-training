@@ -3,7 +3,7 @@
 id: images-epingler-par-digest                      # REQUIS
 title: "Keep a rebuild on its approved base when a tag moves"
 level: c5                     # REQUIS
-description: "Pin a build to its approved registry manifest, rebuild after a source change, and prove that replacing the base tag does not change the delivered base."
+description: "Rebuild an application with a new source on the approved base, although the tag of that base has changed."
 skills:                       # REQUIS, non vide
   - docker
   - dockerfile

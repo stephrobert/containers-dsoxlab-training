@@ -1,11 +1,17 @@
-# A scan is dated evidence, not a permanent certificate
+# A scan is dated evidence
 
-On `docker.lab`, work in `/opt/lab-image-scan`. Two scratch **library fixture**
-images contain genuine Debian package contents and inventories. They are not
-services and must never be executed. `legacy` has OpenSSL 1.1.1n; `fixed` has
-OpenSSL 3.0.17. [PROVENANCE.md](fixtures/PROVENANCE.md) documents exact sources
-and SHA-256 checksums. The unmodified Debian database is frozen at
-2026-11-01 11:37:02 UTC, independent of tomorrow's public-image state.
+## The situation
+
+On `docker.lab`, `/opt/lab-image-scan` contains two images of Debian libraries:
+`legacy` carries OpenSSL 1.1.1n, `fixed` carries OpenSSL 3.0.17. They are specimens
+without their dependencies: **never run them** and do not publish them. Their
+sources and checksums are in `fixtures/PROVENANCE.md`.
+
+The scan is offline, with **debsecan**, on a Debian database frozen at
+2026-11-01 11:37:02 UTC. It reads the Debian package inventory, not all
+dependencies nor all files. The machine must be amd64.
+
+## Mission
 
 1. Run `python3 scan.py dsoxlab-scan:legacy legacy-report.json`. Use
    `/usr/bin/python3` if your interpreter lacks system packages. It extracts
@@ -20,21 +26,6 @@ and SHA-256 checksums. The unmodified Debian database is frozen at
    preserves its JSON evidence and returns its status. Prove rejection of
    legacy and acceptance of fixed. Do not filter, edit or fake scanner output.
 
-No success reports, candidate tag or gate exist initially. Checks compare
-evidence with freshly executed scanner output, image IDs, inventory and database
-hashes. Evidence expires after 24 hours. This is Debian package metadata
-scanning, **not** comprehensive language-package or filesystem scanning.
-Scratch fixtures deliberately omit package dependencies; they are safe
-non-executed library specimens, not deployable applications.
-
-All data and packages are supplied locally; apt installs `debsecan`,
-`python3-apt`, Docker and dpkg during setup. Scans/builds then need no network,
-scanner container or remote DB update. Fixture packages are amd64; runtime VM
-must be amd64. Never publish these specimen images to a public registry.
-
-## Evidence and promotion
-
-Follow the mission. The three checks require dated legacy
-evidence, a corrected candidate with truthful evidence, and a fresh executable
-gate. All fail initially. Full real findings remain visible even when the
-narrowly scoped policy accepts a corrected image.
+At the start, there is no valid report, no candidate and no gate. The three checks
+run the scan again and compare your evidence: findings, image identifiers,
+fingerprints of the inventory and of the database. Evidence expires after 24 hours.

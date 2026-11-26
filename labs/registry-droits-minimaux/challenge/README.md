@@ -1,41 +1,39 @@
 # Credentials are not permissions
 
-The release team has a TLS registry and two valid accounts, but neither can
-distribute an image. Giving both accounts administrator access would turn
-the deployment machine into a publisher.
+## The situation
 
-Restore the release path without widening its boundary. The publisher lives
-on `docker.lab`; the reader uses the separate engine on `docker-client.lab`.
-A newly published product must arrive unchanged at its immutable digest,
-and the reader must remain unable to upload.
+The release team has a TLS registry and two valid accounts, and neither can
+distribute an image. Giving every right to both would restore delivery, and
+would turn the deployment machine into a publisher.
 
-Work in `/opt/lab-registry-rights` on the VMs, not in a local working directory.
-See [the requirements](challenge/README.md).
+## Mission
 
-## Mission: a publisher is not a reader
+Work in `/opt/lab-registry-rights`, on the VMs. The publisher is on `docker.lab`,
+the reader on `docker-client.lab`. The registry listens on
+`registry-rights.lab.test:15447`, the token service on port `15448`. TLS is
+ready. The passwords are in `credentials.json` on `docker.lab`, to be read with
+`sudo`. The only thing to repair is `auth.yml`, on `docker.lab`.
 
-Work remotely in `/opt/lab-registry-rights`. The publisher is `docker.lab`,
-the separate reader is `docker-client.lab`. Registry HTTPS listens on
-`registry-rights.lab.test:15447`; token HTTPS on port `15448`.
-TLS is already provisioned. Runtime-only credentials are in
-`credentials.json` on the publisher (read with sudo). Never commit them.
+### 1. The publisher publishes
 
-1. Correct `auth.yml` so `publisher` can pull and push `catalogue/appli`,
-   while `reader` can only pull it. Neither account may write other repositories.
-   Keep authentication and signed Bearer authorization enabled.
-2. Reload `dsoxlab-registry-droits-minimaux-auth`. Publish an image from the
-   supplied pinned Dockerfile and fresh release content. Dedicated Docker
-   login directories belong under this lab's path, not in your home config.
-3. Retrieve the exact published digest using the reader account on the
-   separate VM, initially without that product image. Its image ID and
-   network-free output must match the publisher's product.
-4. Prove the reader cannot push or open an upload session, including when it
-   asks the token server for `pull,push`. Refuse writes to other repositories,
-   anonymous access and incorrect passwords.
-5. Preserve strict TLS verification on both hosts. A wrong hostname and a
-   Docker pull without the private CA must fail. Do not use insecure-registry,
-   a loopback HTTP substitute, a host Docker API or publisher cache as proof.
+The `publisher` account pulls and pushes `catalogue/appli`. Then reload the
+`dsoxlab-registry-droits-minimaux-auth` container. The check builds a fresh image
+from the supplied `Dockerfile`, pushes it, and expects a digest.
 
-`dsoxlab check registry-droits-minimaux` creates fresh transfer probes and
-cleans them in all cases. `dsoxlab clean registry-droits-minimaux` restores
-preexisting trust and removes only lab-owned resources on both engines.
+### 2. The reader pulls, and does not publish
+
+From `docker-client.lab`, the `reader` account pulls this digest. The image's
+identifier and its output without network are the publisher's. The push of new
+content by `reader` is refused for lack of rights, and without the lab's CA, the
+pull fails.
+
+### What both checks also require
+
+- `reader` cannot open an upload, even when asking for `pull,push`.
+- Neither account reads or writes in another repository.
+- Anonymous access and wrong passwords are refused.
+- TLS remains verified on both machines: no `insecure-registry`.
+
+For your own tries, keep the credentials in a separate folder, with
+`docker --config`, under `/opt/lab-registry-rights`. `dsoxlab clean` puts both
+machines back in their previous state.

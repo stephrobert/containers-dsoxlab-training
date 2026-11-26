@@ -8,7 +8,7 @@
 id: images-identifier-image                      # REQUIS
 title: "Image identity: the tag lies, the digest does not"            # REQUIS
 level: c2                     # REQUIS
-description: "Tell exactly which image is running: compare a tag to a digest, read a multi-platform index, and catch an image that was replaced under the same tag."
+description: "A tag did not move and the image changed: you say exactly which one runs, on which base and for which platform."
 skills:                       # REQUIS, non vide
   - docker
   - oci

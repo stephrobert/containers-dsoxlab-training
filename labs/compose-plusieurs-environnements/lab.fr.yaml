@@ -2,4 +2,4 @@
 # `description` : tout autre champ y est ignoré en silence, parce que le
 # contrat ne se traduit pas.
 title: "Déployer des projets Compose de développement et production isolés"
-description: "Promouvoir l'image préparée exacte sans rebuild sur deux VM et fusionner des surcharges sans mélanger données ni ressources."
+description: "La même image tourne sur deux machines, avec une configuration et des données propres à chaque environnement."

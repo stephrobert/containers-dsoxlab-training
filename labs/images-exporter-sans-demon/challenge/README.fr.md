@@ -9,27 +9,6 @@ vous n'avez rien à installer.
 L'image à livrer est **`busybox:1.37.0-musl`**, épinglée par le digest de son
 index : `sha256:f6a95d611e0a8780fabdb2aec43e31275b2720dfefa3e41b16835bfc42454478`.
 
-## Ce qu'il faut produire
-
-1. **`livraison/socle-oci.tar`**, une archive au format **OCI**, copiée
-   **directement depuis le registre**, portant le nom de destination complet
-   `livraison.test/socle:1.0`.
-2. **`livraison/socle-docker.tar`**, la même image au format **docker-archive**,
-   avec le même nom de destination. Les deux formats n'ont ni la même structure
-   ni la même taille, et c'est ce que la livraison doit montrer.
-3. **`livraison/socle-arm64.tar`**, une archive OCI de la variante **arm64** de
-   cette même image, alors que cet hôte est amd64.
-
-## Ce que le démon ne doit jamais faire
-
-**Le démon ne doit pas avoir tiré l'image.** C'est tout le sujet : `skopeo`
-parle au registre lui-même, sans passer par lui. Après votre travail,
-`docker images` ne doit porter aucune trace de `busybox:1.37.0-musl`.
-
-Un `docker pull` suivi d'un `docker save` produirait une archive, et serait
-refusé : cette voie exige justement que le démon tire l'image, ce qu'un hôte
-sans démon ne peut pas faire.
-
 ## Ce qui doit survivre au transport, et ce qui change
 
 Chargez `livraison/socle-oci.tar` dans le démon pour le vérifier vous-même.
@@ -79,7 +58,7 @@ Le lanceur `skopeo` y est fourni : appelez-le par `./skopeo`, vous n'avez rien
    ne peut pas faire.
 3. **L'archive se charge en une image nommée**, `livraison.test/socle:1.0`, et
    **ses couches sont celles de la source**. L'identifiant local, lui, change :
-   c'est normal, et le scénario dit pourquoi.
+   c'est normal, la section sur le transport dit pourquoi.
 4. **`livraison/socle-arm64.tar`** porte l'architecture **arm64**, alors que cet
    hôte est amd64, et son manifeste diffère de celui de l'archive principale.
 5. **`livraison/socle-docker.tar`** est au format **docker-archive** : elle

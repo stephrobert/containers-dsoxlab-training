@@ -3,7 +3,7 @@
 id: reseau-pare-feu-cible                      # REQUIS
 title: "Repair one routed firewall path without dropping protections"
 level: c6
-description: "Diagnose client, router and server hops, correct one namespace-scoped nftables rule and retain default-deny, untrusted-client and debug-port protections after recreation."
+description: "A client reaches a server through a router again, and everything that was refused stays refused."
 skills:                       # REQUIS, non vide
   - docker
   - reseau

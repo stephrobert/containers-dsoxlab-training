@@ -9,11 +9,14 @@ Measure bounded business load, identify the saturated component from effective
 cgroup counters and preserve fresh end-to-end request identities. Never retain
 Authorization headers or the test witness in logs.
 
-See [the numbered contract](challenge/README.md) and the separate human review.
+## The supplied settings
 
-## Contract 31: correlated business load and real saturation
+Each component reads three deployment variables: `ROLE`, which makes it the
+gateway or the worker, `CORRELATE` and `SAFE_LOGS`, which are `"0"` or `"1"`.
+`/quote?quantity=N` returns a quote, and the worker uses 0.12 seconds of CPU
+per quote.
 
-[Français](README.fr.md)
+## What is asked
 
 1. Configure the supplied stack, project `dsoxlab-compose-correlation-et-saturation-stack`,
    in `/opt/dsoxlab-compose-correlation-et-saturation`. No application coding.
@@ -33,7 +36,3 @@ See [the numbered contract](challenge/README.md) and the separate human review.
    this isolated variant, without printing raw logs or secrets.
 6. Keep supplied image, labels and private cgroup namespaces, no added
    capabilities or privileged containers. Recreate from your Compose declaration.
-
-Verdict: zero initially, full after correction, measured twice on `docker.lab` on 2026-11-01.
-Human explanation is separate in [review.md](review.md). Thresholds are bounded
-test conditions, not training percentages or an acceptance claim.

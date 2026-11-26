@@ -9,11 +9,14 @@ Mesurez une charge métier bornée, attribuez la saturation grâce aux compteurs
 cgroup effectifs et conservez des identifiants de requête frais de bout en bout.
 Ne conservez jamais Authorization ni le témoin de test dans les journaux.
 
-Consultez [le contrat numéroté](challenge/README.fr.md) et la revue humaine séparée.
+## Les réglages fournis
 
-## Contrat 31 : charge métier corrélée et saturation réelle
+Chaque composant lit trois variables de déploiement : `ROLE`, qui en fait la
+passerelle ou le worker, `CORRELATE` et `SAFE_LOGS`, qui valent `"0"` ou `"1"`.
+`/quote?quantity=N` rend un devis, et le worker consomme 0,12 seconde de CPU
+par devis.
 
-[English](README.md)
+## Ce qui est demandé
 
 1. Configurez la stack fournie, projet `dsoxlab-compose-correlation-et-saturation-stack`,
    dans `/opt/dsoxlab-compose-correlation-et-saturation`. Aucun code applicatif à écrire.
@@ -33,7 +36,3 @@ Consultez [le contrat numéroté](challenge/README.fr.md) et la revue humaine s�
    cette variante isolée sans afficher de journaux bruts ni de secrets.
 6. Conservez image fournie, labels et namespaces cgroup privés, sans capacité
    ajoutée ni conteneur privilégié. Recréez depuis votre déclaration Compose.
-
-Verdict : zéro initialement, plein après correction, mesurés deux fois sur `docker.lab` le 2026-11-01.
-L'explication humaine est séparée dans [review.fr.md](review.fr.md). Les seuils
-sont des conditions de test bornées, pas des pourcentages ni une acceptation.

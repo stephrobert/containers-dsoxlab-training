@@ -1,11 +1,31 @@
-# Scenario
+# Unbounded logs, on the whole machine
 
-New containers have no log retention limit. Set the default driver to json-file, cap files at 1 MiB and retain two files. Existing daemon settings may not be discarded.
+## The situation
+
+On `docker.lab`, a container created without any option keeps a log that is far
+too big. Setting each container by hand does not hold: forgetting one is enough.
+The limit must come from the daemon.
 
 ## Mission
 
-Newly created containers use the requested defaults; cleanup restores the original daemon configuration.
+Configure the daemon so that every **new** container, created without any log
+option, gets:
 
-## Functional contract: docker-configurer-le-demon
+- the `json-file` driver;
+- files of `1m` at most;
+- `2` files kept.
 
-Tests inspect effective state on the remote `docker.lab` host. They reject the prepared starter state and pass only when the mission is satisfied. Test-created resources are bounded and carry this lab’s unique label.
+Do not lose any other setting of the daemon. The brief is also written to
+`/opt/dsoxlab-docker-configurer-le-demon/MISSION.md`.
+
+## What is graded
+
+The checks create their own containers, without any log option:
+
+1. the driver, the size and the number of files are those requested;
+2. the limit really acts: on a log that exceeds it, the first lines have been
+   dropped and the volume kept fits the budget.
+
+The configuration file is not read: only what a new container receives counts.
+The test containers are removed, and the lab's cleanup puts the starting
+configuration back.

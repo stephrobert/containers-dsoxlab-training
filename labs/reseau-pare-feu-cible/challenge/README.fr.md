@@ -1,17 +1,14 @@
 # La route existe, mais la requête n'arrive pas
 
-La topologie dédiée de `/opt/dsoxlab-reseau-pare-feu-cible` contient un client
-autorisé, un client non autorisé, un routeur et un inventaire. Une vraie règle
-de pare-feu bloque le flux métier. Localisez le saut fautif et corrigez ce seul
-flux en conservant les exclusions du client non autorisé et du port debug.
+## La situation
 
-Les commandes pare-feu appartiennent uniquement au namespace du routeur
-conteneur. Ne modifiez ni pare-feu du poste ou de la VM, ni forwarding hôte,
-ni API Docker. Voir [le contrat](challenge/README.fr.md) et la revue séparée.
+Sur `docker.lab`, le projet de `/opt/dsoxlab-reseau-pare-feu-cible` contient un
+client autorisé, un client non autorisé, un routeur et un serveur d'inventaire.
+Une règle du routeur bloque le flux métier.
 
-## Contrat 39 : réparer un flux routé de façon ciblée
+## Mission
 
-[English](README.md)
+Trouvez le saut fautif et corrigez ce seul flux. Les autres exclusions restent.
 
 1. Utilisez le projet `dsoxlab-reseau-pare-feu-cible-stack`, répertoire
    `/opt/dsoxlab-reseau-pare-feu-cible`. Gardez les deux réseaux bridge dédiés.
@@ -34,6 +31,5 @@ ni API Docker. Voir [le contrat](challenge/README.fr.md) et la revue séparée.
    seulement dans les conteneurs posant leurs routes; ni privilégié, réseau/PID/IPC
    hôte, montages hôte/socket API ou ports publiés. Gardez préfixes et labels.
 
-Verdict unique : zéro avant correction, plein après, mesurés deux fois sur
-`docker.lab` le 2026-11-01. Retirer tout le pare-feu échoue sur chemins négatifs, politiques et
-compteurs. L'explication relève de la [revue humaine](review.fr.md) séparée.
+Deux contrôles : le flux passe et les exclusions tiennent, puis la même chose après
+une recréation. Retirer tout le pare-feu fait échouer les deux.
