@@ -216,7 +216,7 @@ jobs:
       # tests/test_paquets_epingles.py refuse une version flottante ou deux
       # versions différentes.
       - name: Le contrat de chaque lab
-        run: uvx 'dsoxlab==0.11.1' validate-structure
+        run: uvx 'dsoxlab==0.11.2' validate-structure
 
       - name: Le catalogue des README est à jour
         run: uv run --no-sync python scripts/gen_catalog.py --check
@@ -393,7 +393,7 @@ jobs:
       - name: Installer dsoxlab
         run: |
           set -euo pipefail
-          uv tool install 'dsoxlab==0.11.1'
+          uv tool install 'dsoxlab==0.11.2'
           dsoxlab --version
 
       # Le moteur du runner, et son MODE DE STOCKAGE : les tailles d'image en
