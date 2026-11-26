@@ -141,6 +141,13 @@ sections:
     labs:
       - conteneur-fabriquer-a-la-main
       - conteneur-limiter-a-la-main
+  - id: image
+    title: "Read an image"
+    description: >-
+      Open an OCI image without an engine: follow the chain from index to
+      layer, recompute every digest, and see an altered file refused.
+    labs:
+      - image-lire-a-la-main
   # ── Niveau c1 : utiliser et comprendre les conteneurs ────────────────────
   - id: conteneurs-utilisation
     title: "Use containers"

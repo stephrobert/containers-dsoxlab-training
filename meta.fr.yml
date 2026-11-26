@@ -33,6 +33,11 @@ sections:
       Fabriquer un conteneur à la main avec les namespaces du noyau, puis le
       limiter avec les cgroups et les capabilities : ce que fait un moteur,
       sans moteur.
+  - id: image
+    title: "Lire une image"
+    description: >-
+      Ouvrir une image OCI sans moteur : suivre la chaîne de l'index à la
+      couche, recalculer chaque digest, et voir un fichier altéré refusé.
 
   - id: conteneurs-utilisation
     title: "Utiliser les conteneurs"

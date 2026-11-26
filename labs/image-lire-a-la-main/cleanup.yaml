@@ -1,0 +1,18 @@
+---
+# Joué par `dsoxlab clean` et `dsoxlab reset` : retire les layouts, les
+# réponses et la marque du blob altéré. skopeo, jq et umoci restent installés :
+# les labs suivants du module s'en servent.
+- name: Défaire le lab image-lire-a-la-main
+  hosts: lab_target
+  become: true
+  tasks:
+    - name: Retirer les fichiers du lab
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /srv/etal
+        - /srv/suspect
+        - /srv/reponses
+        - /var/lib/dsoxlab-image-lire-a-la-main.altere
+        - /opt/MISSION.md

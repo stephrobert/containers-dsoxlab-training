@@ -1,0 +1,61 @@
+# Lab guidé de la leçon « Lire une image OCI et vérifier son digest », module
+# image du niveau 1 « Introduction aux conteneurs ». Commandé par la session
+# du site dans le plan de fusion du 2026-11-22 (labs.a_commander).
+#
+# Le niveau 1 se joue SANS Docker, sur oci.lab (hôte optionnel, rôle
+# sans-docker). Le setup installe skopeo, jq et umoci, et pose /srv/suspect :
+# busybox 1.37.0 amd64 et arm64 dans un même layout, un blob sur six altéré
+# d'un octet, tiré au hasard. L'apprenant copie busybox par digest dans
+# /srv/etal, note le digest du manifeste amd64, et désigne le blob altéré.
+# Mesuré le 2026-11-26 : skopeo 1.18.0, jq 1.7.1, umoci 0.4.7, Debian 13.
+#
+# La leçon lit alpine 3.24.2 et altère sa configuration ; le challenge lit
+# busybox et altère un blob quelconque ; le cours lit hello-world.
+id: image-lire-a-la-main
+title: "Read an OCI image by hand and find an altered blob"
+level: c1
+description: "Copy an image by digest into a local OCI layout, follow the chain from index to layer, recompute every sha256, and find the one blob that was altered."
+skills:
+  - oci
+  - skopeo
+  - jq
+  - digest
+distros:
+  - debian13
+doc_url: https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/
+lab_type: lab
+estimated_time: 30m
+runtime:
+  type: vm
+  targets:
+    - name: cible
+      host: oci.lab
+  default: cible
+validation:
+  functional: true
+  persistence_after_reboot: false
+criteria:
+  - id: layout-oci
+    label: "/srv/etal is an OCI layout that names the 1.37.0 tag"
+    tests:
+      - test_etal_est_un_layout_oci_qui_nomme_le_tag
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/
+  - id: image-amd64-intacte
+    label: "The layout holds the linux/amd64 image, every blob named by its hash"
+    tests:
+      - test_etal_porte_l_image_amd64_intacte
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/
+  - id: digest-manifeste-note
+    label: "The digest of the linux/amd64 manifest is written down"
+    tests:
+      - test_le_digest_du_manifeste_amd64_est_note
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/
+  - id: blob-altere-designe
+    label: "The altered blob of the suspect layout is named"
+    tests:
+      - test_le_blob_altere_est_designe
+    lessons:
+      - https://www.stephane-robert.info/docs/conteneurisation/lire-image-oci/

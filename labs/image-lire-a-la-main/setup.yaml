@@ -1,0 +1,88 @@
+---
+# Joué par `dsoxlab run` : pose la situation du lab image-lire-a-la-main sur
+# oci.lab, une Debian 13 SANS Docker (niveau 1, rôle sans-docker).
+#
+# CE QUE CE SETUP POSE.
+# - skopeo, jq et umoci, aux versions de la leçon (Debian 13, relevé du
+#   2026-11-26 : skopeo 1.18.0, jq 1.7.1, umoci 0.4.7).
+# - /srv/suspect : un layout OCI qui porte busybox 1.37.0 pour amd64 ET arm64,
+#   soit six blobs, dont UN a été altéré d'un octet. Le blob altéré est tiré au
+#   hasard à chaque passage, et son nom est noté dans un fichier que seul root
+#   lit : les tests le comparent à la réponse de l'apprenant.
+# - /srv/reponses, où l'apprenant écrit ses deux réponses.
+#
+# CE QU'IL NE POSE PAS. /srv/etal, le layout que l'apprenant copie lui-même
+# depuis le registre : c'est le travail.
+#
+# L'altération ne change pas la taille du blob : un octet est remplacé, aucun
+# n'est ajouté. Seule l'empreinte trahit la modification, comme dans la leçon.
+- name: Préparer le lab image-lire-a-la-main
+  hosts: lab_target
+  become: true
+  vars:
+    index_busybox: sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec
+    marque: /var/lib/dsoxlab-image-lire-a-la-main.altere
+  tasks:
+    - name: Refuser un hôte où Docker est installé
+      ansible.builtin.shell: "! command -v docker"
+      changed_when: false
+
+    - name: Installer skopeo, jq et umoci aux versions de la leçon
+      ansible.builtin.apt:
+        name:
+          - skopeo=1.18.0+ds1-1+b5
+          - jq=1.7.1-6+deb13u4
+          - umoci=0.4.7+ds-4+b10
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Défaire un passage précédent
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /srv/etal
+        - /srv/suspect
+        - /srv/reponses
+        - "{{ marque }}"
+
+    - name: Copier busybox 1.37.0 amd64 et arm64 dans /srv/suspect
+      ansible.builtin.shell: |
+        set -eu
+        mkdir -p /srv/suspect
+        for a in amd64 arm64; do
+          skopeo copy -q --override-arch "$a" \
+            "docker://docker.io/library/busybox@{{ index_busybox }}" "oci:/srv/suspect:$a"
+        done
+        test "$(ls /srv/suspect/blobs/sha256 | wc -l)" -eq 6
+      changed_when: true
+
+    - name: Altérer un blob tiré au hasard, sans changer sa taille
+      ansible.builtin.shell: |
+        set -eu
+        python3 - <<'PY'
+        import pathlib, random
+        blobs = sorted(pathlib.Path("/srv/suspect/blobs/sha256").iterdir())
+        cible = random.choice(blobs)
+        octets = bytearray(cible.read_bytes())
+        i = len(octets) // 2
+        octets[i] ^= 0x01
+        cible.write_bytes(bytes(octets))
+        pathlib.Path("{{ marque }}").write_text(cible.name + "\n")
+        PY
+        chmod 600 "{{ marque }}"
+      changed_when: true
+
+    - name: Préparer le dossier des réponses
+      ansible.builtin.file:
+        path: /srv/reponses
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: "0755"
+
+    - name: Déposer la mission
+      ansible.builtin.copy:
+        src: "challenge/README{{ '.fr' if lookup('env', 'DSOXLAB_LANG') == 'fr' else '' }}.md"
+        dest: /opt/MISSION.md
+        mode: "0644"
